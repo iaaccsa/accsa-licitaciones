@@ -2,13 +2,13 @@
 
 import React, { useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, FileStack, Upload, X } from "lucide-react";
+import { FileText, FileStack, Upload, X, BookOpen, Receipt } from "lucide-react";
 
 interface FileUploadZoneProps {
     title: string;
     description: string;
     subtitle: string;
-    icon: "document" | "multi-document";
+    icon: "document" | "multi-document" | "normativas" | "ofertas";
     accept?: string;
     maxFiles?: number;
     maxSizeMB?: number;
@@ -28,7 +28,13 @@ export function FileUploadZone({
     const [files, setFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false);
 
-    const Icon = icon === "document" ? FileText : FileStack;
+    const iconMap = {
+        document: FileText,
+        "multi-document": FileStack,
+        normativas: BookOpen,
+        ofertas: Receipt,
+    };
+    const Icon = iconMap[icon] || FileText;
 
     const handleFiles = useCallback(
         (newFiles: FileList | null) => {
@@ -88,7 +94,7 @@ export function FileUploadZone({
     }, [accept, maxFiles, handleFiles]);
 
     return (
-        <Card className="flex-1 min-w-[280px]">
+        <Card className="flex-1 min-w-[280px]" >
             <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base font-medium">
                     <Icon className="h-5 w-5 text-blue-500" />
@@ -151,6 +157,6 @@ export function FileUploadZone({
                     )}
                 </div>
             </CardContent>
-        </Card>
+        </Card >
     );
 }

@@ -193,7 +193,7 @@ export default function Home() {
               title="Normativas"
               description="Subir ofertas técnicas"
               subtitle="Múltiples archivos (máx. 5)"
-              icon="multi-document"
+              icon="normativas"
               accept=".txt,.pdf,.docx"
               maxFiles={5}
               maxSizeMB={10}
@@ -204,7 +204,7 @@ export default function Home() {
               title="Ofertas"
               description="Subir ofertas técnicas"
               subtitle="Múltiples archivos (máx. 5)"
-              icon="multi-document"
+              icon="ofertas"
               accept=".txt,.pdf,.docx"
               maxFiles={5}
               maxSizeMB={10}
