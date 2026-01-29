@@ -7,7 +7,7 @@ import JSZip from "jszip";
 import { Loader2, CheckCircle, XCircle, Search, Clock, AlertCircle } from "lucide-react";
 
 type UploadStatus = "idle" | "loading" | "success" | "error";
-type StatusCheckStatus = "idle" | "loading" | "success" | "error";
+type StatusCheckStatus = "idle" | "loading" | "success" | "error" | "not_found";
 
 interface JobStatus {
   id: string;
@@ -118,8 +118,13 @@ export default function Home() {
 
       if (response.ok) {
         const data = await response.json();
-        setJobStatus(data);
-        setStatusCheckStatus("success");
+        // Check if response is empty object
+        if (!data || Object.keys(data).length === 0) {
+          setStatusCheckStatus("not_found");
+        } else {
+          setJobStatus(data);
+          setStatusCheckStatus("success");
+        }
       } else {
         setStatusCheckStatus("error");
       }
@@ -318,6 +323,13 @@ export default function Home() {
             </div>
           )}
 
+          {statusCheckStatus === "not_found" && (
+            <div className="flex items-center justify-center gap-2 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-700">
+              <AlertCircle className="h-5 w-5" />
+              <span>ID de Análisis no existe.</span>
+            </div>
+          )}
+
           {jobStatus && statusCheckStatus === "success" && (
             <div className="border border-zinc-200 rounded-xl overflow-hidden">
               <div className="bg-zinc-50 px-4 py-3 border-b border-zinc-200">
@@ -340,10 +352,6 @@ export default function Home() {
                     {new Date(jobStatus.created_at).toLocaleString()}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-zinc-500 w-32">Actualizado:</span>
-                  <span className="text-zinc-700">{new Date(jobStatus.updated_at).toLocaleString()}</span>
-                </div>
                 {jobStatus.is_success !== null && (
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-zinc-500 w-32">Éxito:</span>
@@ -355,7 +363,18 @@ export default function Home() {
                 {jobStatus.output_path && (
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-zinc-500 w-32">Resultado:</span>
-                    <code className="bg-zinc-100 px-2 py-1 rounded font-mono text-zinc-700 text-xs">{jobStatus.output_path}</code>
+                    <a
+                      href={jobStatus.output_path}
+                      download
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Descargar Resultado
+                    </a>
                   </div>
                 )}
                 {jobStatus.error_details && (
