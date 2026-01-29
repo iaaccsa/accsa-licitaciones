@@ -180,22 +180,22 @@ export default function Home() {
           <div key={uploadKey} className="flex flex-col lg:flex-row gap-6 mb-8">
             <FileUploadZone
               title="Pliego de Condiciones"
-              description="Subir documento base"
-              subtitle="TXT, PDF, DOCX (máx. 10 MB)"
+              description="Subir documentos base"
+              subtitle="Hasta 5 archivos PDF (máx. 10 MB c/u)"
               icon="document"
-              accept=".txt,.pdf,.docx"
-              maxFiles={1}
+              accept=".pdf"
+              maxFiles={5}
               maxSizeMB={10}
               onFilesChange={setPliegoFiles}
             />
 
             <FileUploadZone
               title="Normativas"
-              description="Subir ofertas técnicas"
-              subtitle="Múltiples archivos (máx. 5)"
+              description="Subir normativas aplicables"
+              subtitle="Hasta 10 archivos PDF (máx. 10 MB c/u)"
               icon="normativas"
-              accept=".txt,.pdf,.docx"
-              maxFiles={5}
+              accept=".pdf"
+              maxFiles={10}
               maxSizeMB={10}
               onFilesChange={setNormativasFiles}
             />
@@ -203,10 +203,10 @@ export default function Home() {
             <FileUploadZone
               title="Ofertas"
               description="Subir ofertas técnicas"
-              subtitle="Múltiples archivos (máx. 5)"
+              subtitle="Hasta 10 archivos PDF (máx. 10 MB c/u)"
               icon="ofertas"
-              accept=".txt,.pdf,.docx"
-              maxFiles={5}
+              accept=".pdf"
+              maxFiles={10}
               maxSizeMB={10}
               onFilesChange={setOfertasFiles}
             />
@@ -264,7 +264,7 @@ export default function Home() {
 
         {/* Status Check Section */}
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
-          <h2 className="text-lg font-medium text-zinc-700 mb-6">Consultar Estado del Procesamiento</h2>
+          <h2 className="text-lg font-medium text-zinc-700 mb-6">Consultar Estado del Análisis</h2>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <input
