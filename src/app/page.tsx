@@ -21,9 +21,8 @@ interface JobStatus {
 }
 
 export default function Home() {
-  const [pliegoFiles, setPliegoFiles] = useState<File[]>([]);
-  const [normativasFiles, setNormativasFiles] = useState<File[]>([]);
-  const [ofertasFiles, setOfertasFiles] = useState<File[]>([]);
+  const [pliegoNormativasFiles, setPliegoNormativasFiles] = useState<File[]>([]);
+  const [ofertaFiles, setOfertaFiles] = useState<File[]>([]);
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [jobId, setJobId] = useState<string | null>(null);
   const [uploadKey, setUploadKey] = useState(0);
@@ -36,9 +35,8 @@ export default function Home() {
   const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const hasFiles =
-    pliegoFiles.length > 0 ||
-    normativasFiles.length > 0 ||
-    ofertasFiles.length > 0;
+    pliegoNormativasFiles.length > 0 ||
+    ofertaFiles.length > 0;
 
   const handleAnalysis = useCallback(async () => {
     if (!hasFiles) return;
@@ -53,25 +51,18 @@ export default function Home() {
       // Create ZIP file with all documents
       const zip = new JSZip();
 
-      // Add Pliego de Condiciones files
-      const pliegoFolder = zip.folder("pliego_condiciones");
-      for (const file of pliegoFiles) {
+      // Add Pliego de Condiciones y Normativas files -> 'tender' folder
+      const tenderFolder = zip.folder("tender");
+      for (const file of pliegoNormativasFiles) {
         const buffer = await file.arrayBuffer();
-        pliegoFolder?.file(file.name, buffer);
+        tenderFolder?.file(file.name, buffer);
       }
 
-      // Add Normativas files
-      const normativasFolder = zip.folder("normativas");
-      for (const file of normativasFiles) {
+      // Add Oferta files -> 'proposal' folder
+      const proposalFolder = zip.folder("proposal");
+      for (const file of ofertaFiles) {
         const buffer = await file.arrayBuffer();
-        normativasFolder?.file(file.name, buffer);
-      }
-
-      // Add Ofertas files
-      const ofertasFolder = zip.folder("ofertas");
-      for (const file of ofertasFiles) {
-        const buffer = await file.arrayBuffer();
-        ofertasFolder?.file(file.name, buffer);
+        proposalFolder?.file(file.name, buffer);
       }
 
       // Generate ZIP blob
@@ -94,9 +85,8 @@ export default function Home() {
         setStatus("success");
 
         // Clear all files by remounting components with new key
-        setPliegoFiles([]);
-        setNormativasFiles([]);
-        setOfertasFiles([]);
+        setPliegoNormativasFiles([]);
+        setOfertaFiles([]);
         setUploadKey((prev) => prev + 1);
       } else {
         setStatus("error");
@@ -105,7 +95,7 @@ export default function Home() {
       console.error("Error uploading files:", error);
       setStatus("error");
     }
-  }, [pliegoFiles, normativasFiles, ofertasFiles, hasFiles]);
+  }, [pliegoNormativasFiles, ofertaFiles, hasFiles]);
 
   const handleCheckStatus = useCallback(async () => {
     if (!searchJobId.trim()) return;
@@ -184,36 +174,25 @@ export default function Home() {
           {/* Upload Zones - key prop forces remount to clear state */}
           <div key={uploadKey} className="flex flex-col lg:flex-row gap-6 mb-8">
             <FileUploadZone
-              title="Pliego de Condiciones"
-              description="Subir documentos base"
-              subtitle="Hasta 5 archivos PDF (máx. 10 MB c/u)"
+              title="Pliego de Condiciones y Normativas"
+              description="Subir documentos base y normativas aplicables"
+              subtitle="Hasta 15 archivos PDF (máx. 10 MB c/u)"
               icon="document"
               accept=".pdf"
-              maxFiles={5}
+              maxFiles={15}
               maxSizeMB={10}
-              onFilesChange={setPliegoFiles}
+              onFilesChange={setPliegoNormativasFiles}
             />
 
             <FileUploadZone
-              title="Normativas"
-              description="Subir normativas aplicables"
-              subtitle="Hasta 10 archivos PDF (máx. 10 MB c/u)"
-              icon="normativas"
-              accept=".pdf"
-              maxFiles={10}
-              maxSizeMB={10}
-              onFilesChange={setNormativasFiles}
-            />
-
-            <FileUploadZone
-              title="Ofertas"
-              description="Subir ofertas técnicas"
+              title="Oferta"
+              description="Subir oferta técnica"
               subtitle="Hasta 10 archivos PDF (máx. 10 MB c/u)"
               icon="ofertas"
               accept=".pdf"
               maxFiles={10}
               maxSizeMB={10}
-              onFilesChange={setOfertasFiles}
+              onFilesChange={setOfertaFiles}
             />
           </div>
 
