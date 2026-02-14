@@ -12,10 +12,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const webhookUrl = process.env.CREATE_JOB_WEBHOOK_URL;
+        const webhookUrl = process.env.CREATE_ANALYSIS_WEBHOOK_URL;
 
         if (!webhookUrl) {
-            console.error("CREATE_JOB_WEBHOOK_URL not configured");
+            console.error("CREATE_ANALYSIS_WEBHOOK_URL not configured");
             return NextResponse.json(
                 { error: "Webhook not configured" },
                 { status: 500 }
@@ -31,17 +31,10 @@ export async function POST(request: NextRequest) {
             body: webhookFormData,
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            return NextResponse.json({ success: true, job_id: data.job_id });
-        } else {
-            const errorText = await response.text();
-            console.error("Webhook error:", response.status, errorText);
-            return NextResponse.json(
-                { error: "Webhook request failed", details: errorText },
-                { status: response.status }
-            );
-        }
+        const data = await response.json();
+
+        // Proxy the response as-is (200 with analysis object, or 400 with error)
+        return NextResponse.json(data, { status: response.status });
     } catch (error) {
         console.error("Error processing upload:", error);
         return NextResponse.json(

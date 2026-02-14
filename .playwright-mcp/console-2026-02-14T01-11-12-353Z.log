@@ -1,0 +1,641 @@
+[ 1184312ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=110mg:0
+[ 1184424ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=110mg:0
+[ 1184926ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=110mg:0
+[ 1185041ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=110mg:0
+[ 1185169ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status:0
+[ 1185496ms] [WARNING] Image with src "/images/logo-square.png" was detected as the Largest Contentful Paint (LCP). Please add the `loading="eager"` property if this image is above the fold.
+Read more: https://nextjs.org/docs/app/api-reference/components/image#loading @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:2297
+[ 1270762ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:153:11
+Parsing ecmascript source code failed
+  151 |                 </div>
+  152 |             </div>
+> 153 |         </div>
+      |           ^^^
+  154 |     );
+  155 | }
+  156 |
+
+Expected corresponding JSX closing tag for <Link>
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1270843ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:153:11
+Parsing ecmascript source code failed
+  151 |                 </div>
+  152 |             </div>
+> 153 |         </div>
+      |           ^^^
+  154 |     );
+  155 | }
+  156 |
+
+Expected corresponding JSX closing tag for <Link>
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1271894ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:153:11
+Parsing ecmascript source code failed
+  151 |                 </div>
+  152 |             </div>
+> 153 |         </div>
+      |           ^^^
+  154 |     );
+  155 | }
+  156 |
+
+Expected corresponding JSX closing tag for <Link>
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1272009ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:153:11
+Parsing ecmascript source code failed
+  151 |                 </div>
+  152 |             </div>
+> 153 |         </div>
+      |           ^^^
+  154 |     );
+  155 | }
+  156 |
+
+Expected corresponding JSX closing tag for <Link>
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1272630ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:153:11
+Parsing ecmascript source code failed
+  151 |                 </div>
+  152 |             </div>
+> 153 |         </div>
+      |           ^^^
+  154 |     );
+  155 | }
+  156 |
+
+Expected corresponding JSX closing tag for <Link>
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1272928ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:153:11
+Parsing ecmascript source code failed
+  151 |                 </div>
+  152 |             </div>
+> 153 |         </div>
+      |           ^^^
+  154 |     );
+  155 | }
+  156 |
+
+Expected corresponding JSX closing tag for <Link>
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1273190ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:153:11
+Parsing ecmascript source code failed
+  151 |                 </div>
+  152 |             </div>
+> 153 |         </div>
+      |           ^^^
+  154 |     );
+  155 | }
+  156 |
+
+Expected corresponding JSX closing tag for <Link>
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1279766ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1283307ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1283311ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1283518ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1283528ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1283748ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1283943ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1284154ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status:0
+[ 1284572ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1284618ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1287035ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1287194ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1287219ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1287294ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1287326ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1287336ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1287393ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1287453ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1287467ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1287482ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status:0
+[ 1287807ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1287833ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1287866ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1289202ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1289265ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1289270ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1289304ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1289374ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1289394ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1289406ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1289419ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status:0
+[ 1289665ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1289747ms] [ERROR] ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx:54:1
+Parsing ecmascript source code failed
+  52 | if (diffInSeconds < 86400) return `hace ${Math.floor(diffInSeconds / 3600)} horas`;
+  53 | if (diffInSeconds < 604800) return `hace ${Math.floor(diffInSeconds / 86400)} días`;
+> 54 | return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  55 | }
+  56 |
+  57 | export function AnalysisList() {
+
+Return statement is not allowed here
+
+Import traces:
+  Client Component Browser:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component Browser]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./workspace/accsa/accsa-licitaciones-ui/src/components/AnalysisList.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Client Component SSR]
+    ./workspace/accsa/accsa-licitaciones-ui/src/app/analyses/page.tsx [Server Component] @ http://localhost:3000/_next/static/chunks/8c51c_next_dist_0daf0a55._.js:3127
+[ 1360277ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1360844ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status:0
+[ 1418449ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1418534ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1419199ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status?_rsc=kw9md:0
+[ 1419329ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/status:0
