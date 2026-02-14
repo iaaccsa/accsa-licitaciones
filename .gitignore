@@ -1,0 +1,55 @@
+# ===========================
+# Secrets & Credentials
+# ===========================
+.env
+credentials
+az-token
+
+# ===========================
+# Temporary / Test Data
+# ===========================
+temp/
+
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+*.whl
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+Thumbs.db
+
+# ===========================
+# IDE / Editor
+# ===========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===========================
+# Docker
+# ===========================
+*.log
+
+# ===========================
+# Misc
+# ===========================
+*.zip
+*.bak
+curl
+service-file-extractor/job-template.yaml
+job-template.yaml
