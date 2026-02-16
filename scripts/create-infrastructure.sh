@@ -37,4 +37,24 @@ az containerapp job create \
   --replica-completion-count 1 \
   --cpu 1 --memory 2Gi
 
+JOB_NAME_CONVERTER="files-converter"
+IMAGE_CONVERTER="accsalicitaciones.azurecr.io/licitaciones/service-files-converter:latest"
+
+echo "Creating Container App Job '$JOB_NAME_CONVERTER'..."
+az containerapp job create \
+  --name "$JOB_NAME_CONVERTER" \
+  --resource-group "$RESOURCE_GROUP" \
+  --environment "$ACA_ENV" \
+  --subscription "$SUBSCRIPTION_ID" \
+  --image "$IMAGE_INGESTION" \
+  --registry-server "$ACR_NAME.azurecr.io" \
+  --registry-username "$ACR_NAME" \
+  --registry-password "$ACR_PASSWORD" \
+  --trigger-type "Manual" \
+  --replica-timeout 3600 \
+  --replica-retry-limit 0 \
+  --parallelism 1 \
+  --replica-completion-count 1 \
+  --cpu 2 --memory 4Gi
+
 echo "Infrastructure setup complete!"

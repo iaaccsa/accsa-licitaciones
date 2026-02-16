@@ -53,3 +53,6 @@ Thumbs.db
 curl
 service-file-extractor/job-template.yaml
 job-template.yaml
+fase-1-2-ingest-tender.py
+fase-1-1-setup-qdrant.py
+env_vars

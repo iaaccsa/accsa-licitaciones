@@ -100,25 +100,27 @@ az containerapp job create \
 
 > No se configuran secrets ni env-vars en el job. Todo se pasa al ejecutar.
 
-### Job: (futuro servicio con Qdrant)
+### Job: files-converter
 
 ```bash
 az containerapp job create \
-  --name "otro-servicio" \
+  --name "files-converter" \
   --resource-group "accsa-licitaciones" \
   --environment "env-licitaciones" \
   --subscription "d3fbaef6-2413-47bf-be3d-2019470dc20e" \
-  --image "accsalicitaciones.azurecr.io/licitaciones/otro-servicio:latest" \
+  --image "accsalicitaciones.azurecr.io/licitaciones/service-files-converter:latest" \
   --registry-server "accsalicitaciones.azurecr.io" \
   --registry-username "accsalicitaciones" \
   --registry-password "<ACR_PASSWORD>" \
   --trigger-type "Manual" \
-  --replica-timeout 1800 \
+  --replica-timeout 3600 \
   --replica-retry-limit 0 \
   --parallelism 1 \
   --replica-completion-count 1 \
-  --cpu 1 --memory 2Gi
+  --cpu 2 --memory 4Gi
 ```
+
+> Más timeout (3600s) y recursos (2 CPU, 4Gi) que el extractor, ya que LlamaParse es más pesado.
 
 ---
 
@@ -169,8 +171,6 @@ Este nodo devolverá un JSON con `access_token`.
       "name": "file-extractor",
       "image": "accsalicitaciones.azurecr.io/licitaciones/service-file-extractor:latest",
       "env": [
-        { "name": "SUPABASE_URL", "value": "{{SUPABASE_URL}}" },
-        { "name": "SUPABASE_SERVICE_ROLE_KEY", "value": "{{SUPABASE_SERVICE_ROLE_KEY}}" },
         { "name": "ANALYSIS_ID", "value": "{{ANALYSIS_ID}}" }
       ]
     }
@@ -180,18 +180,18 @@ Este nodo devolverá un JSON con `access_token`.
 
 > **⚠️ Importante:** `containers` va **directamente** en el body, NO envuelto en `"template"`. El schema `StartJobExecutionTemplate` no acepta la propiedad `template`.
 
-Para un futuro servicio con Qdrant, solo cambiás el nombre del job y las env vars:
+Para el servicio de files-converter, cambiás el nombre del job y agregás `LLAMA_CLOUD_API_KEY`:
+
+**Nodo: "Trigger Files Converter"**
+*   **URL:** `https://management.azure.com/subscriptions/d3fbaef6-2413-47bf-be3d-2019470dc20e/resourceGroups/accsa-licitaciones/providers/Microsoft.App/jobs/files-converter/start?api-version=2024-03-01`
 
 ```json
 {
   "containers": [
     {
-      "name": "otro-servicio",
-      "image": "accsalicitaciones.azurecr.io/licitaciones/otro-servicio:latest",
+      "name": "files-converter",
+      "image": "accsalicitaciones.azurecr.io/licitaciones/service-files-converter:latest",
       "env": [
-        { "name": "SUPABASE_URL", "value": "{{SUPABASE_URL}}" },
-        { "name": "SUPABASE_SERVICE_ROLE_KEY", "value": "{{SUPABASE_SERVICE_ROLE_KEY}}" },
-        { "name": "QDRANT_API_KEY", "value": "{{QDRANT_API_KEY}}" },
         { "name": "ANALYSIS_ID", "value": "{{ANALYSIS_ID}}" }
       ]
     }
@@ -237,8 +237,6 @@ curl -X POST \
         "name": "file-extractor",
         "image": "accsalicitaciones.azurecr.io/licitaciones/service-file-extractor:latest",
         "env": [
-          { "name": "SUPABASE_URL", "value": "<URL>" },
-          { "name": "SUPABASE_SERVICE_ROLE_KEY", "value": "<KEY>" },
           { "name": "ANALYSIS_ID", "value": "<ID>" }
         ]
       }
