@@ -120,7 +120,29 @@ az containerapp job create \
   --cpu 2 --memory 4Gi
 ```
 
-> Más timeout (3600s) y recursos (2 CPU, 4Gi) que el extractor, ya que LlamaParse es más pesado.
+### Job: setup-qdrant
+
+```bash
+az containerapp job create \
+  --name "setup-qdrant" \
+  --resource-group "accsa-licitaciones" \
+  --environment "env-licitaciones" \
+  --subscription "d3fbaef6-2413-47bf-be3d-2019470dc20e" \
+  --image "accsalicitaciones.azurecr.io/licitaciones/service-setup-qdrant:latest" \
+  --registry-server "accsalicitaciones.azurecr.io" \
+  --registry-username "accsalicitaciones" \
+  --registry-password "<ACR_PASSWORD>" \
+  --trigger-type "Manual" \
+  --replica-timeout 600 \
+  --replica-retry-limit 0 \
+  --parallelism 1 \
+  --replica-completion-count 1 \
+  --cpu 0.5 --memory 1Gi
+```
+
+> Menos recursos requeridos (0.5 CPU, 1Gi) ya que solo configura la colección.
+
+
 
 ---
 
@@ -193,6 +215,27 @@ Para el servicio de files-converter, cambiás el nombre del job y agregás `LLAM
       "image": "accsalicitaciones.azurecr.io/licitaciones/service-files-converter:latest",
       "env": [
         { "name": "ANALYSIS_ID", "value": "{{ANALYSIS_ID}}" }
+      ]
+    }
+  ]
+}
+```
+
+**Nodo: "Trigger Setup Qdrant"**
+*   **URL:** `https://management.azure.com/subscriptions/d3fbaef6-2413-47bf-be3d-2019470dc20e/resourceGroups/accsa-licitaciones/providers/Microsoft.App/jobs/setup-qdrant/start?api-version=2024-03-01`
+
+```json
+{
+  "containers": [
+    {
+      "name": "setup-qdrant",
+      "image": "accsalicitaciones.azurecr.io/licitaciones/service-setup-qdrant:latest",
+      "env": [
+        { "name": "ANALYSIS_ID", "value": "{{ANALYSIS_ID}}" },
+        { "name": "SUPABASE_URL", "value": "{{SUPABASE_URL}}" },
+        { "name": "SUPABASE_SERVICE_ROLE_KEY", "value": "{{SUPABASE_SERVICE_ROLE_KEY}}" },
+        { "name": "QDRANT_URL", "value": "{{QDRANT_URL}}" },
+        { "name": "QDRANT_API_KEY", "value": "{{QDRANT_API_KEY}}" }
       ]
     }
   ]
