@@ -30,7 +30,7 @@ interface AnalysisEvent {
     source: string;
     message: string;
     created_at: string;
-    details?: any;
+    details?: Record<string, unknown>;
 }
 
 // ... existing code ...
@@ -99,22 +99,25 @@ export default function AnalysisDetailPage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // Fetch Analysis Details
-                const analysisRes = await fetch(`/api/analyses/${id}`);
+                // Start fetches in parallel
+                const analysisPromise = fetch(`/api/analyses/${id}`);
+                const filesPromise = fetch(`/api/analyses/${id}/files`, { method: "POST" });
+                const eventsPromise = fetchEvents(0);
+
+                const [analysisRes, filesRes] = await Promise.all([
+                    analysisPromise,
+                    filesPromise,
+                    eventsPromise
+                ]);
+
                 if (!analysisRes.ok) throw new Error("Error fetching analysis details");
                 const analysisData = await analysisRes.json();
                 setAnalysis(analysisData);
 
-                // Fetch Files
-                const filesRes = await fetch(`/api/analyses/${id}/files`, { method: "POST" });
                 if (filesRes.ok) {
                     const filesData = await filesRes.json();
                     setFiles(Array.isArray(filesData) ? filesData : []);
                 }
-
-                // Fetch Events
-                // Fetch Events (Initial)
-                await fetchEvents(0);
 
             } catch (err) {
                 console.error(err);
@@ -247,7 +250,7 @@ export default function AnalysisDetailPage() {
                 {events.length > 0 ? (
                     <>
                         <div className="relative pl-6 border-l-2 border-zinc-100 space-y-8">
-                            {events.map((event, index) => (
+                            {events.map((event) => (
                                 <div key={event.id} className="relative">
                                     {/* Dot */}
                                     <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-white border-2 border-blue-500"></div>
