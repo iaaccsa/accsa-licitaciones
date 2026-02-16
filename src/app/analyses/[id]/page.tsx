@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, FileText, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Cpu, Download, ChevronDown } from "lucide-react";
+import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Cpu, ExternalLink, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Analysis {
@@ -12,36 +12,6 @@ interface Analysis {
     is_success: boolean | null;
     created_at: string;
     updated_at: string;
-}
-
-interface AnalysisFile {
-    id: string;
-    file_name: string;
-    category: "tender" | "proposal";
-    file_size: number;
-    mime_type: string;
-    storage_path: string;
-    created_at: string;
-}
-
-interface AnalysisEvent {
-    id: string;
-    level: string;
-    source: string;
-    message: string;
-    created_at: string;
-    details?: Record<string, unknown>;
-}
-
-// ... existing code ...
-
-function formatBytes(bytes: number, decimals = 2) {
-    if (!+bytes) return '0 Bytes';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
 function formatDate(dateString: string) {
@@ -59,65 +29,18 @@ export default function AnalysisDetailPage() {
     const id = params.id as string;
 
     const [analysis, setAnalysis] = useState<Analysis | null>(null);
-    const [files, setFiles] = useState<AnalysisFile[]>([]);
-    const [events, setEvents] = useState<AnalysisEvent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isLoadingEvents, setIsLoadingEvents] = useState(false);
-    const [offset, setOffset] = useState(0);
-    const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const LIMIT = 10;
-
-    const fetchEvents = useCallback(async (currentOffset: number) => {
-        setIsLoadingEvents(true);
-        try {
-            const res = await fetch(`/api/analyses/${id}/events`, {
-                method: "POST",
-                body: JSON.stringify({ limit: LIMIT, offset: currentOffset })
-            });
-            if (res.ok) {
-                const newEvents: AnalysisEvent[] = await res.json();
-                const list = Array.isArray(newEvents) ? newEvents : [];
-
-                if (list.length < LIMIT) {
-                    setHasMore(false);
-                }
-
-                setEvents(prev => currentOffset === 0 ? list : [...prev, ...list]);
-            } else {
-                setHasMore(false);
-            }
-        } catch (err) {
-            console.error("Error fetching events:", err);
-            setHasMore(false);
-        } finally {
-            setIsLoadingEvents(false);
-        }
-    }, [id]);
 
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // Start fetches in parallel
-                const analysisPromise = fetch(`/api/analyses/${id}`);
-                const filesPromise = fetch(`/api/analyses/${id}/files`, { method: "POST" });
-                const eventsPromise = fetchEvents(0);
-
-                const [analysisRes, filesRes] = await Promise.all([
-                    analysisPromise,
-                    filesPromise,
-                    eventsPromise
-                ]);
+                const analysisRes = await fetch(`/api/analyses/${id}`);
 
                 if (!analysisRes.ok) throw new Error("Error fetching analysis details");
                 const analysisData = await analysisRes.json();
                 setAnalysis(analysisData);
-
-                if (filesRes.ok) {
-                    const filesData = await filesRes.json();
-                    setFiles(Array.isArray(filesData) ? filesData : []);
-                }
 
             } catch (err) {
                 console.error(err);
@@ -130,7 +53,7 @@ export default function AnalysisDetailPage() {
         if (id) {
             fetchData();
         }
-    }, [id, fetchEvents]);
+    }, [id]);
 
     if (error) {
         return (
@@ -148,157 +71,66 @@ export default function AnalysisDetailPage() {
 
     if (!analysis) return null;
 
-    const tenderFiles = files.filter(f => f.category === 'tender');
-    const proposalFiles = files.filter(f => f.category === 'proposal');
-
     return (
         <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
             {/* Header */}
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <h1 className="text-2xl font-bold font-mono text-zinc-900 uppercase">
-                                {analysis.slug}
-                            </h1>
-                            <StatusBadge status={analysis.status} isSuccess={analysis.is_success} />
-                        </div>
-                        <div className="flex items-center text-sm text-zinc-500 gap-4">
-                            <span className="flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                {formatDate(analysis.created_at)}
-                            </span>
-                            <span className="flex items-center gap-1 font-mono text-xs bg-zinc-100 px-2 py-0.5 rounded">
-                                ID: {analysis.id}
-                            </span>
-                        </div>
+                <div className="flex flex-col gap-2 mb-6">
+                    <div className="flex items-center justify-between gap-3">
+                        <h1 className="text-2xl font-bold font-mono text-zinc-900 uppercase">
+                            {analysis.slug}
+                        </h1>
+                        <StatusBadge status={analysis.status} isSuccess={analysis.is_success} />
                     </div>
-                    {/* Actions or additional info could go here */}
+                    <div className="flex items-center justify-between text-sm text-zinc-500 gap-4">
+                        <span className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            {formatDate(analysis.created_at)}
+                        </span>
+                        <span className="flex items-center gap-1 font-mono text-xs bg-zinc-100 px-2 py-0.5 rounded">
+                            ID: {analysis.id}
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            {/* Files Section */}
-            <div className="space-y-6">
-                {/* Tender Files */}
-                <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-blue-600" />
-                        Pliego y Normativas
-                    </h2>
-                    {tenderFiles.length > 0 ? (
-                        <ul className="space-y-3">
-                            {tenderFiles.map(file => (
-                                <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 rounded-lg border border-zinc-100 group hover:border-blue-200 transition-colors">
-                                    <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
-                                        <span className="truncate font-medium text-zinc-700">{file.file_name}</span>
-                                        <span className="text-zinc-400 text-xs whitespace-nowrap font-mono bg-zinc-100 px-1.5 py-0.5 rounded">
-                                            {formatBytes(file.file_size)}
-                                        </span>
-                                    </div>
-                                    <button
-                                        className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
-                                        title="Descargar documento"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-sm text-zinc-400 italic">No hay archivos de pliego.</p>
-                    )}
-                </div>
+            {/* Navigation Buttons */}
+            <div className="grid md:grid-cols-2 gap-6">
+                <a
+                    href={`/analyses/${id}/files`}
+                    className="flex items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all group"
+                >
+                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <FileText className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-blue-600 transition-colors">
+                            Archivos
+                        </h3>
+                        <p className="text-sm text-zinc-500">
+                            Ver pliegos, normativas y ofertas
+                        </p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-zinc-300 group-hover:text-blue-600 transition-colors" />
+                </a>
 
-                {/* Proposal Files */}
-                <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-green-600" />
-                        Ofertas
-                    </h2>
-                    {proposalFiles.length > 0 ? (
-                        <ul className="space-y-3">
-                            {proposalFiles.map(file => (
-                                <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 rounded-lg border border-zinc-100 group hover:border-blue-200 transition-colors">
-                                    <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
-                                        <span className="truncate font-medium text-zinc-700">{file.file_name}</span>
-                                        <span className="text-zinc-400 text-xs whitespace-nowrap font-mono bg-zinc-100 px-1.5 py-0.5 rounded">
-                                            {formatBytes(file.file_size)}
-                                        </span>
-                                    </div>
-                                    <button
-                                        className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
-                                        title="Descargar documento"
-                                    >
-                                        <Download className="w-4 h-4" />
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="text-sm text-zinc-400 italic">No hay archivos de oferta.</p>
-                    )}
-                </div>
-            </div>
-
-            {/* Events Section */}
-            <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-zinc-800 mb-6 flex items-center gap-2">
-                    <Cpu className="w-5 h-5 text-purple-600" />
-                    Historial de Eventos
-                </h2>
-
-                {events.length > 0 ? (
-                    <>
-                        <div className="relative pl-6 border-l-2 border-zinc-100 space-y-8">
-                            {events.map((event) => (
-                                <div key={event.id} className="relative">
-                                    {/* Dot */}
-                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-white border-2 border-blue-500"></div>
-
-                                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-1">
-                                        <span className="text-sm font-semibold text-zinc-900 uppercase tracking-wide">
-                                            {(event.source || 'evento_desconocido').replace(/_/g, ' ')}
-                                        </span>
-                                        <span className="text-xs text-zinc-400 font-mono">
-                                            {formatDate(event.created_at)}
-                                        </span>
-                                    </div>
-                                    <p className="text-sm text-zinc-600 leading-relaxed">
-                                        {event.message}
-                                    </p>
-                                    {event.details && Object.keys(event.details).length > 0 && (
-                                        <pre className="mt-2 text-xs bg-zinc-50 p-2 rounded border border-zinc-100 overflow-x-auto text-zinc-500">
-                                            {JSON.stringify(event.details, null, 2)}
-                                        </pre>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        {hasMore && (
-                            <div className="pl-6 border-l-2 border-zinc-100 mt-4">
-                                <button
-                                    onClick={() => {
-                                        const nextOffset = offset + LIMIT;
-                                        setOffset(nextOffset);
-                                        fetchEvents(nextOffset);
-                                    }}
-                                    disabled={isLoadingEvents}
-                                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 transition-colors"
-                                >
-                                    {isLoadingEvents ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                    ) : (
-                                        <ChevronDown className="w-4 h-4" />
-                                    )}
-                                    {isLoadingEvents ? "Cargando..." : "Cargar más eventos"}
-                                </button>
-                            </div>
-                        )}
-                    </>
-                ) : (
-                    <p className="text-sm text-zinc-400 italic">No hay eventos registrados.</p>
-                )}
+                <a
+                    href={`/analyses/${id}/events`}
+                    className="flex items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group"
+                >
+                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <Cpu className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-purple-600 transition-colors">
+                            Historial de Eventos
+                        </h3>
+                        <p className="text-sm text-zinc-500">
+                            Ver bitácora de ejecución
+                        </p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-zinc-300 group-hover:text-purple-600 transition-colors" />
+                </a>
             </div>
         </div>
     );
@@ -329,22 +161,7 @@ function AnalysisDetailSkeleton() {
                 <Skeleton className="h-64 rounded-xl" />
             </div>
 
-            {/* Events Skeleton */}
-            <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm space-y-6">
-                <Skeleton className="h-6 w-48 mb-6" />
-                <div className="pl-6 border-l-2 border-zinc-100 space-y-8">
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="relative space-y-2">
-                            <div className="flex justify-between">
-                                <Skeleton className="h-4 w-32" />
-                                <Skeleton className="h-3 w-24" />
-                            </div>
-                            <Skeleton className="h-4 w-full" />
-                            <Skeleton className="h-4 w-2/3" />
-                        </div>
-                    ))}
-                </div>
-            </div>
+
         </div>
     );
 }
