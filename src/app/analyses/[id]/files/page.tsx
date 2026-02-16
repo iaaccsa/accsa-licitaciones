@@ -13,6 +13,9 @@ interface AnalysisFile {
     mime_type: string;
     storage_path: string;
     created_at: string;
+    proposal_label?: string;
+    proposal_provider_name?: string;
+    is_processed_version?: boolean;
 }
 
 function formatBytes(bytes: number, decimals = 2) {
@@ -130,6 +133,15 @@ export default function AnalysisFilesPage() {
                                             <span className="text-zinc-400 text-xs whitespace-nowrap font-mono bg-zinc-100 px-1.5 py-0.5 rounded">
                                                 {formatBytes(file.file_size)}
                                             </span>
+                                            {file.is_processed_version ? (
+                                                <span className="text-blue-600 bg-blue-50 border border-blue-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider">
+                                                    Procesado
+                                                </span>
+                                            ) : (
+                                                <span className="text-zinc-500 bg-zinc-50 border border-zinc-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider">
+                                                    Original
+                                                </span>
+                                            )}
                                         </div>
                                         <button
                                             className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
@@ -146,32 +158,57 @@ export default function AnalysisFilesPage() {
                     </div>
 
                     {/* Proposal Files */}
-                    <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-green-600" />
-                            Ofertas
-                        </h2>
+                    <div className="space-y-6">
                         {proposalFiles.length > 0 ? (
-                            <ul className="space-y-3">
-                                {proposalFiles.map(file => (
-                                    <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 rounded-lg border border-zinc-100 group hover:border-blue-200 transition-colors">
-                                        <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
-                                            <span className="truncate font-medium text-zinc-700">{file.file_name}</span>
-                                            <span className="text-zinc-400 text-xs whitespace-nowrap font-mono bg-zinc-100 px-1.5 py-0.5 rounded">
-                                                {formatBytes(file.file_size)}
-                                            </span>
-                                        </div>
-                                        <button
-                                            className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
-                                            title="Descargar documento"
-                                        >
-                                            <Download className="w-4 h-4" />
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
+                            Object.entries(proposalFiles.reduce((acc, file) => {
+                                // Prioritize provider name, then label, then default
+                                const label = file.proposal_provider_name || file.proposal_label || 'Sin etiqueta';
+                                if (!acc[label]) acc[label] = [];
+                                acc[label].push(file);
+                                return acc;
+                            }, {} as Record<string, AnalysisFile[]>)).map(([label, files]) => (
+                                <div key={label} className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
+                                    <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-green-600" />
+                                        Oferta: {label}
+                                    </h2>
+                                    <ul className="space-y-3">
+                                        {files.map(file => (
+                                            <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 rounded-lg border border-zinc-100 group hover:border-blue-200 transition-colors">
+                                                <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
+                                                    <span className="truncate font-medium text-zinc-700">{file.file_name}</span>
+                                                    <span className="text-zinc-400 text-xs whitespace-nowrap font-mono bg-zinc-100 px-1.5 py-0.5 rounded">
+                                                        {formatBytes(file.file_size)}
+                                                    </span>
+                                                    {file.is_processed_version ? (
+                                                        <span className="text-blue-600 bg-blue-50 border border-blue-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider">
+                                                            Procesado
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-zinc-500 bg-zinc-50 border border-zinc-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider">
+                                                            Original
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <button
+                                                    className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
+                                                    title="Descargar documento"
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))
                         ) : (
-                            <p className="text-sm text-zinc-400 italic">No hay archivos de oferta.</p>
+                            <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
+                                <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-green-600" />
+                                    Ofertas
+                                </h2>
+                                <p className="text-sm text-zinc-400 italic">No hay archivos de oferta.</p>
+                            </div>
                         )}
                     </div>
                 </div>
