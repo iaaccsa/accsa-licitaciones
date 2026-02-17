@@ -16,6 +16,10 @@ interface AnalysisFile {
     proposal_label?: string;
     proposal_provider_name?: string;
     is_processed_version?: boolean;
+    total_chunks?: number;
+    analysis_id: string;
+    proposal_id?: string;
+    is_merged?: boolean;
 }
 
 function formatBytes(bytes: number, decimals = 2) {
@@ -105,7 +109,7 @@ export default function AnalysisFilesPage() {
                     </h1>
                 </div>
                 {analysis && (
-                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200">
+                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase">
                         {analysis.slug}
                     </span>
                 )}
@@ -141,6 +145,16 @@ export default function AnalysisFilesPage() {
                                                 <span className="text-zinc-500 bg-zinc-50 border border-zinc-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider">
                                                     Original
                                                 </span>
+                                            )}
+                                            {(file.total_chunks || 0) > 0 && (
+                                                <a
+                                                    href={`/analyses/${id}/files/${file.id}/chunks`}
+                                                    className="flex items-center gap-1 text-orange-600 bg-orange-50 border border-orange-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 transition-colors"
+                                                    title="Ver chunks extraídos"
+                                                >
+                                                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                                                    chunks: {file.total_chunks}
+                                                </a>
                                             )}
                                         </div>
                                         <button
@@ -188,6 +202,16 @@ export default function AnalysisFilesPage() {
                                                         <span className="text-zinc-500 bg-zinc-50 border border-zinc-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider">
                                                             Original
                                                         </span>
+                                                    )}
+                                                    {(file.total_chunks || 0) > 0 && (
+                                                        <a
+                                                            href={`/analyses/${id}/files/${file.id}/chunks`}
+                                                            className="flex items-center gap-1 text-orange-600 bg-orange-50 border border-orange-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 transition-colors"
+                                                            title="Ver chunks extraídos"
+                                                        >
+                                                            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+                                                            chunks: {file.total_chunks}
+                                                        </a>
                                                     )}
                                                 </div>
                                                 <button
