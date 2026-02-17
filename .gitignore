@@ -56,3 +56,4 @@ job-template.yaml
 fase-1-2-ingest-tender.py
 fase-1-1-setup-qdrant.py
 env_vars
+fase-1-3-chunk_and_index.py

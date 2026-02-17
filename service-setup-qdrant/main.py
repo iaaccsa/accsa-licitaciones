@@ -118,6 +118,13 @@ def main():
         # 5. Create Payload Indexes
         logger.info("Creating payload indexes...")
         
+        # Index for analysis_id (CRITICAL for filters)
+        qdrant_client.create_payload_index(
+            collection_name=collection_name,
+            field_name="analysis_id",
+            field_schema=models.PayloadSchemaType.KEYWORD
+        )
+
         # Index for file_id
         qdrant_client.create_payload_index(
             collection_name=collection_name,
@@ -136,6 +143,13 @@ def main():
         qdrant_client.create_payload_index(
             collection_name=collection_name,
             field_name="proposal_id",
+            field_schema=models.PayloadSchemaType.KEYWORD
+        )
+
+        # Index for label (used for refined filtering)
+        qdrant_client.create_payload_index(
+            collection_name=collection_name,
+            field_name="label",
             field_schema=models.PayloadSchemaType.KEYWORD
         )
         

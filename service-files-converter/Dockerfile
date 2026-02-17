@@ -20,9 +20,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-files-converter/files_converter.py .
+COPY service-files-converter/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace
 
-CMD ["python", "files_converter.py"]
+CMD ["python", "main.py"]

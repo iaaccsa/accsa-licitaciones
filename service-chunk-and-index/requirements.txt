@@ -1,0 +1,5 @@
+supabase
+qdrant-client
+openai
+langchain-text-splitters
+requests

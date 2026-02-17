@@ -22,6 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-setup-qdrant/setup_qdrant.py .
+COPY service-setup-qdrant/main.py .
 
-CMD ["python", "setup_qdrant.py"]
+CMD ["python", "main.py"]

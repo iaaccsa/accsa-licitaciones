@@ -77,4 +77,24 @@ az containerapp job create \
   --replica-completion-count 1 \
   --cpu 0.5 --memory 1Gi
 
+JOB_NAME_CHUNK="chunk-and-index"
+IMAGE_CHUNK="accsalicitaciones.azurecr.io/licitaciones/service-chunk-and-index:latest"
+
+echo "Creating Container App Job '$JOB_NAME_CHUNK'..."
+az containerapp job create \
+  --name "$JOB_NAME_CHUNK" \
+  --resource-group "$RESOURCE_GROUP" \
+  --environment "$ACA_ENV" \
+  --subscription "$SUBSCRIPTION_ID" \
+  --image "$IMAGE_CHUNK" \
+  --registry-server "$ACR_NAME.azurecr.io" \
+  --registry-username "$ACR_NAME" \
+  --registry-password "$ACR_PASSWORD" \
+  --trigger-type "Manual" \
+  --replica-timeout 1800 \
+  --replica-retry-limit 0 \
+  --parallelism 1 \
+  --replica-completion-count 1 \
+  --cpu 1 --memory 2Gi
+
 echo "Infrastructure setup complete!"
