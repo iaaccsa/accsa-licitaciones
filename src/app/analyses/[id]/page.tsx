@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Cpu, ExternalLink, FileText } from "lucide-react";
+import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Cpu, ExternalLink, FileText, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Analysis {
@@ -112,6 +112,24 @@ export default function AnalysisDetailPage() {
                         </p>
                     </div>
                     <ExternalLink className="w-5 h-5 text-zinc-300 group-hover:text-blue-600 transition-colors" />
+                </a>
+
+                <a
+                    href={`/analyses/${id}/requirements`}
+                    className="flex items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-green-300 hover:shadow-md transition-all group"
+                >
+                    <div className="p-3 bg-green-50 text-green-600 rounded-lg group-hover:bg-green-600 group-hover:text-white transition-colors">
+                        <ClipboardList className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-green-600 transition-colors">
+                            Requerimientos
+                        </h3>
+                        <p className="text-sm text-zinc-500">
+                            Ver matriz de cumplimiento
+                        </p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-zinc-300 group-hover:text-green-600 transition-colors" />
                 </a>
 
                 <a
