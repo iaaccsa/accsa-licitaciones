@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, AlertCircle, FileText } from "lucide-react";
+import { ChevronLeft, Loader2, AlertCircle, FileText, CheckCircle, GitMerge, Box, Hash, Copy, Calendar, Database, Key } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Chunk {
@@ -143,6 +143,18 @@ export default function ChunksPage() {
         }
     }, [analysis, file, id, fileId]);
 
+    const observer = useRef<IntersectionObserver | null>(null);
+    const lastChunkElementRef = useCallback((node: HTMLDivElement) => {
+        if (isLoadingMore) return;
+        if (observer.current) observer.current.disconnect();
+        observer.current = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && offset) {
+                loadChunks(offset);
+            }
+        });
+        if (node) observer.current.observe(node);
+    }, [isLoadingMore, offset, loadChunks]);
+
     useEffect(() => {
         if (analysis && file && chunks.length === 0) {
             loadChunks("");
@@ -165,10 +177,11 @@ export default function ChunksPage() {
         );
     }
 
+
     return (
         <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Top Navigation Header */}
+            <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
@@ -176,100 +189,171 @@ export default function ChunksPage() {
                     >
                         <ChevronLeft className="w-5 h-5 text-zinc-600" />
                     </button>
-                    <div>
-                        <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
-                            Chunks del Archivo
-                        </h1>
-                        {file && (
-                            <p className="text-zinc-500 text-sm mt-1">{file.file_name} ({formatBytes(file.file_size)})</p>
-                        )}
-                    </div>
+                    <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
+                        <FileText className="w-6 h-6 text-blue-600" />
+                        Chunks del archivo <span className="text-blue-600">{file?.file_name}</span>
+                    </h1>
                 </div>
                 {analysis && (
-                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase self-start md:self-center">
+                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase">
                         {analysis.slug}
                     </span>
                 )}
             </div>
 
-            {/* File Details Box */}
+            {/* File Details Cards */}
             {file && (
-                <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                    <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-blue-600" />
-                        Detalles del Archivo
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-4 gap-x-8 text-sm">
-
-                        {/* Column 1: Basic Info */}
-                        <div className="space-y-2">
-                            <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Nombre del Archivo</span>
-                                <span className="text-zinc-900 font-medium break-all">{file.file_name}</span>
+                <div className="space-y-6">
+                    {/* Card 1: Main Info & Metrics */}
+                    <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6">
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                                <FileText className="w-8 h-8 text-blue-600" />
                             </div>
                             <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">ID del Archivo</span>
-                                <span className="font-mono text-zinc-700 text-xs">{file.id}</span>
-                            </div>
-                            <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Ruta de Almacenamiento</span>
-                                <span className="font-mono text-zinc-600 text-xs break-all">{file.storage_path}</span>
-                            </div>
-                        </div>
-
-                        {/* Column 2: Metadata */}
-                        <div className="space-y-2">
-                            <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Categoría</span>
-                                <span className="capitalize text-zinc-800 bg-zinc-100 px-2 py-0.5 rounded inline-block mt-0.5">{file.category}</span>
-                            </div>
-                            <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Tipo MIME</span>
-                                <span className="font-mono text-zinc-600 text-xs">{file.mime_type}</span>
-                            </div>
-                            <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Tamaño</span>
-                                <span className="text-zinc-900">{formatBytes(file.file_size)}</span>
-                            </div>
-                            <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Fecha de Creación</span>
-                                <span className="text-zinc-900">{new Date(file.created_at).toLocaleString()}</span>
-                            </div>
-                        </div>
-
-                        {/* Column 3: Processing Info */}
-                        <div className="space-y-2">
-                            <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Versión Procesada</span>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${file.is_processed_version ? 'bg-green-100 text-green-700' : 'bg-zinc-100 text-zinc-600'}`}>
-                                    {file.is_processed_version ? "Sí" : "No"}
-                                </span>
-                            </div>
-                            <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Fusionado (Merged)</span>
-                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${file.is_merged ? 'bg-purple-100 text-purple-700' : 'bg-zinc-100 text-zinc-600'}`}>
-                                    {file.is_merged ? "Sí" : "No"}
-                                </span>
-                            </div>
-                            <div>
-                                <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Total Chunks</span>
-                                <span className="font-mono text-zinc-900">{file.total_chunks || 0}</span>
-                            </div>
-                            {file.proposal_id && (
-                                <div>
-                                    <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">ID de Propuesta</span>
-                                    <span className="font-mono text-zinc-600 text-xs">{file.proposal_id}</span>
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <h1 className="text-xl font-bold text-zinc-900">{file.file_name}</h1>
+                                    <span className="capitalize px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                        {file.category}
+                                    </span>
                                 </div>
-                            )}
-                            {(file.proposal_label || file.proposal_provider_name) && (
-                                <div className="mt-1 pt-1 border-t border-zinc-100">
-                                    <span className="text-zinc-500 block text-xs uppercase tracking-wider font-semibold">Oferta</span>
-                                    <div className="flex flex-col">
-                                        {file.proposal_provider_name && <span className="text-zinc-900 font-medium">{file.proposal_provider_name}</span>}
-                                        {file.proposal_label && <span className="text-zinc-500 text-xs italic">{file.proposal_label}</span>}
+                                <div className="flex items-center gap-4 mt-2 text-sm text-zinc-500">
+                                    <span className="flex items-center gap-1">
+                                        <Database className="w-4 h-4" />
+                                        {formatBytes(file.file_size)}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <FileText className="w-4 h-4" />
+                                        {file.mime_type}
+                                    </span>
+                                    <span className="flex items-center gap-1">
+                                        <Calendar className="w-4 h-4" />
+                                        {new Date(file.created_at).toLocaleDateString()}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 bg-zinc-50 rounded-lg p-2 border border-zinc-100 self-start md:self-center">
+                            <div className="px-4 py-2 border-r border-zinc-200 text-center">
+                                <span className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">PROCESSED</span>
+                                <span className={`flex items-center justify-center gap-1 font-medium ${file.is_processed_version ? 'text-green-600' : 'text-zinc-500'}`}>
+                                    {file.is_processed_version ? <CheckCircle className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                                    {file.is_processed_version ? 'Yes' : 'No'}
+                                </span>
+                            </div>
+                            <div className="px-4 py-2 border-r border-zinc-200 text-center">
+                                <span className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">MERGED</span>
+                                <span className={`flex items-center justify-center gap-1 font-medium ${file.is_merged ? 'text-purple-600' : 'text-zinc-500'}`}>
+                                    {file.is_merged ? <GitMerge className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                                    {file.is_merged ? 'Yes' : 'No'}
+                                </span>
+                            </div>
+                            <div className="px-4 py-2 text-center min-w-[80px]">
+                                <span className="block text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">CHUNKS</span>
+                                <span className="text-lg font-bold text-zinc-900">{file.total_chunks || 0}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Card 2: Context */}
+                        <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
+                            <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <Box className="w-4 h-4" />
+                                Contexto de Negocio
+                            </h2>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <span className="text-zinc-500 text-sm block mb-1">Oferta Vinculada</span>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold ring-2 ring-indigo-100">
+                                            {file.proposal_provider_name ? file.proposal_provider_name.substring(0, 2).toUpperCase() : 'NA'}
+                                        </div>
+                                        <div>
+                                            <div className="font-medium text-zinc-900">
+                                                {file.proposal_provider_name || 'N/A'}
+                                            </div>
+                                            {(file.proposal_label) && (
+                                                <div className="text-xs text-zinc-500 font-mono mt-0.5">
+                                                    ref: {file.proposal_label}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            )}
+
+                                <div>
+                                    <span className="text-zinc-500 text-sm block mb-1">Proposal ID</span>
+                                    <div className="bg-zinc-50 border border-zinc-200 rounded-md p-2 flex items-center justify-between group">
+                                        <code className="text-xs text-zinc-600 truncate max-w-[200px]">
+                                            {file.proposal_id || 'N/A'}
+                                        </code>
+                                        {file.proposal_id && (
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(file.proposal_id!)}
+                                                className="p-1 hover:bg-zinc-200 rounded text-zinc-400 hover:text-zinc-600 opacity-0 group-hover:opacity-100 transition-all"
+                                                title="Copy ID"
+                                            >
+                                                <Copy className="w-3 h-3" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Card 3: System Metadata */}
+                        <div className="lg:col-span-2 bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
+                            <h2 className="text-sm font-bold text-zinc-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+                                <Hash className="w-4 h-4" />
+                                Metadatos de Sistema
+                            </h2>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <span className="text-zinc-500 text-sm block mb-2">Ruta de Almacenamiento (Storage Path)</span>
+                                    <div className="bg-zinc-900 rounded-lg p-3 font-mono text-xs text-zinc-100 overflow-x-auto">
+                                        {file.storage_path}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <span className="text-zinc-500 text-sm block mb-2">System File ID</span>
+                                    <div className="bg-zinc-50 border border-zinc-200 rounded-lg p-3 flex items-center gap-3 group">
+                                        <div className="p-1.5 bg-zinc-200 rounded text-zinc-500">
+                                            <Key className="w-4 h-4" />
+                                        </div>
+                                        <code className="text-sm text-zinc-700 font-mono flex-1">
+                                            {file.id}
+                                        </code>
+                                        <button
+                                            onClick={() => navigator.clipboard.writeText(file.id)}
+                                            className="p-2 hover:bg-zinc-200 rounded-md text-zinc-400 hover:text-zinc-600 opacity-0 group-hover:opacity-100 transition-all"
+                                            title="Copy ID"
+                                        >
+                                            <Copy className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-8 pt-2">
+                                    <div>
+                                        <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-1">CREADO</span>
+                                        <div className="text-zinc-900 font-medium">
+                                            {new Date(file.created_at).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-1">PROCESADO</span>
+                                        {/* Assuming same as created for now, or add processed_at if available */}
+                                        <div className="text-zinc-900 font-medium">
+                                            {new Date(file.created_at).toLocaleString()}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -284,28 +368,38 @@ export default function ChunksPage() {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {chunks.map(chunk => (
-                        <div key={chunk.id} className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm hover:border-blue-300 transition-colors">
-                            {/* Dynamic Headers */}
-                            <div className="flex flex-wrap gap-2 mb-3">
-                                {Object.keys(chunk.payload)
-                                    .filter(key => key.startsWith("Header"))
-                                    .sort()
-                                    .map(key => (
-                                        <span key={key} className="text-xs font-semibold text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
-                                            {chunk.payload[key]}
-                                        </span>
-                                    ))}
+                    {chunks.map((chunk, index) => {
+                        const isLast = chunks.length === index + 1;
+                        return (
+                            <div
+                                key={chunk.id}
+                                ref={isLast ? lastChunkElementRef : undefined}
+                                className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm hover:border-blue-300 transition-colors relative"
+                            >
+                                <div className="absolute top-4 right-4 bg-blue-100 text-blue-700 text-xs font-mono px-2 py-1 rounded">
+                                    #{index + 1}
+                                </div>
+                                {/* Dynamic Headers */}
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {Object.keys(chunk.payload)
+                                        .filter(key => key.startsWith("Header"))
+                                        .sort()
+                                        .map(key => (
+                                            <span key={key} className="text-xs font-semibold text-zinc-500 bg-zinc-100 px-2 py-1 rounded">
+                                                {chunk.payload[key]}
+                                            </span>
+                                        ))}
+                                </div>
+                                <p className="text-zinc-700 text-sm whitespace-pre-wrap leading-relaxed">
+                                    {chunk.payload.text}
+                                </p>
+                                <div className="mt-4 pt-4 border-t border-zinc-100 text-xs text-zinc-400 font-mono flex justify-between">
+                                    <span>ID: {chunk.id}</span>
+                                    <span>Page: {chunk.payload.page || 'N/A'}</span>
+                                </div>
                             </div>
-                            <p className="text-zinc-700 text-sm whitespace-pre-wrap leading-relaxed">
-                                {chunk.payload.text}
-                            </p>
-                            <div className="mt-4 pt-4 border-t border-zinc-100 text-xs text-zinc-400 font-mono flex justify-between">
-                                <span>ID: {chunk.id}</span>
-                                <span>Page: {chunk.payload.page || 'N/A'}</span>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
 
                     {chunks.length === 0 && !isLoading && (
                         <div className="text-center py-12 text-zinc-500">
@@ -313,16 +407,9 @@ export default function ChunksPage() {
                         </div>
                     )}
 
-                    {offset && (
-                        <div className="flex justify-center pt-6">
-                            <button
-                                onClick={() => loadChunks(offset)}
-                                disabled={isLoadingMore}
-                                className="px-6 py-2 bg-white border border-zinc-200 shadow-sm rounded-lg text-sm text-zinc-600 hover:text-blue-600 hover:border-blue-200 font-medium disabled:opacity-50 transition-all flex items-center gap-2"
-                            >
-                                {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                                {isLoadingMore ? "Cargando..." : "Cargar más chunks"}
-                            </button>
+                    {isLoadingMore && (
+                        <div className="flex justify-center py-4">
+                            <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
                         </div>
                     )}
                 </div>
