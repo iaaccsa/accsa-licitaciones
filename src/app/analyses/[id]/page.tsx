@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Cpu, ExternalLink, FileText, ClipboardList } from "lucide-react";
+import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Cpu, FileText, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowVisualization from "@/components/WorkflowVisualization";
+import ProposalsList from "@/components/ProposalsList";
 
 interface Analysis {
     id: string;
@@ -99,15 +100,15 @@ export default function AnalysisDetailPage() {
             <WorkflowVisualization analysisId={id} />
 
             {/* Navigation Buttons */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
                 <a
                     href={`/analyses/${id}/files`}
-                    className="flex items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all group"
+                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all group text-center"
                 >
                     <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         <FileText className="w-8 h-8" />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-1">
                         <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-blue-600 transition-colors">
                             Archivos
                         </h3>
@@ -115,17 +116,17 @@ export default function AnalysisDetailPage() {
                             Ver pliegos, normativas y ofertas
                         </p>
                     </div>
-                    <ExternalLink className="w-5 h-5 text-zinc-300 group-hover:text-blue-600 transition-colors" />
+                    {/* ExternalLink removed as it might clutter centered design, or can be kept absolute/small if needed. User asked for icon top, text below. */}
                 </a>
 
                 <a
                     href={`/analyses/${id}/requirements`}
-                    className="flex items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-green-300 hover:shadow-md transition-all group"
+                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-green-300 hover:shadow-md transition-all group text-center"
                 >
                     <div className="p-3 bg-green-50 text-green-600 rounded-lg group-hover:bg-green-600 group-hover:text-white transition-colors">
                         <ClipboardList className="w-8 h-8" />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-1">
                         <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-green-600 transition-colors">
                             Requerimientos
                         </h3>
@@ -133,17 +134,16 @@ export default function AnalysisDetailPage() {
                             Ver matriz de cumplimiento
                         </p>
                     </div>
-                    <ExternalLink className="w-5 h-5 text-zinc-300 group-hover:text-green-600 transition-colors" />
                 </a>
 
                 <a
                     href={`/analyses/${id}/events`}
-                    className="flex items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group"
+                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group text-center"
                 >
                     <div className="p-3 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
                         <Cpu className="w-8 h-8" />
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 space-y-1">
                         <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-purple-600 transition-colors">
                             Historial de Eventos
                         </h3>
@@ -151,9 +151,10 @@ export default function AnalysisDetailPage() {
                             Ver bitácora de ejecución
                         </p>
                     </div>
-                    <ExternalLink className="w-5 h-5 text-zinc-300 group-hover:text-purple-600 transition-colors" />
                 </a>
             </div>
+
+            <ProposalsList analysisId={id} />
         </div>
     );
 }
