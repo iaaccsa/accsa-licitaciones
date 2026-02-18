@@ -295,6 +295,7 @@ def main():
     logger.info("Removed source.zip after extraction")
 
     logger.info("File extraction complete ✓")
+    log_event(supabase, ANALYSIS_ID, "info", "Proceso de extracción de archivos finalizado exitosamente", EVENT_SOURCE)
 
 
 if __name__ == "__main__":

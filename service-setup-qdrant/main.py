@@ -54,6 +54,7 @@ def main():
     # 1. Connect to Supabase
     try:
         supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        log_event(supabase, ANALYSIS_ID, "info", "Iniciando configuración de Qdrant", EVENT_SOURCE)
     except Exception as e:
         logger.error(f"Failed to connect to Supabase: {e}")
         sys.exit(1)
