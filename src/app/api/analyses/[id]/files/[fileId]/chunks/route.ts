@@ -9,10 +9,10 @@ export async function POST(
     await params;
 
     try {
-        const webhookUrl = process.env.GET_CHUNKS_WEBHOOK_URL;
+        const webhookUrl = process.env.API_GET_CHUNKS_WEBHOOK_URL;
 
         if (!webhookUrl) {
-            console.error("GET_CHUNKS_WEBHOOK_URL not configured");
+            console.error("API_GET_CHUNKS_WEBHOOK_URL not configured");
             return NextResponse.json(
                 { error: "Webhook not configured" },
                 { status: 500 }

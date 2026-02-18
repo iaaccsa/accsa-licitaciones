@@ -6,11 +6,16 @@ export async function GET(
 ) {
     const { id } = await params;
 
+    interface Analysis {
+        id: string;
+        [key: string]: unknown;
+    }
+
     try {
-        const webhookUrl = process.env.GET_ANALYSES_WEBHOOK_URL;
+        const webhookUrl = process.env.API_GET_ANALYSES_WEBHOOK_URL;
 
         if (!webhookUrl) {
-            console.error("GET_ANALYSES_WEBHOOK_URL not configured");
+            console.error("API_GET_ANALYSES_WEBHOOK_URL not configured");
             return NextResponse.json(
                 { error: "Webhook not configured" },
                 { status: 500 }
@@ -28,9 +33,9 @@ export async function GET(
         if (response.ok) {
             const data = await response.json();
             // Handle single object or array
-            const list = Array.isArray(data) ? data : [data];
+            const list: Analysis[] = Array.isArray(data) ? data : [data];
 
-            const analysis = list.find((item: any) => item.id === id);
+            const analysis = list.find((item) => item.id === id);
 
             if (analysis) {
                 return NextResponse.json(analysis);

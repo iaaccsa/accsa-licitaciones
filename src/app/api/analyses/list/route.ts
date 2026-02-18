@@ -2,10 +2,10 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
     try {
-        const webhookUrl = process.env.GET_ANALYSES_WEBHOOK_URL;
+        const webhookUrl = process.env.API_GET_ANALYSES_WEBHOOK_URL;
 
         if (!webhookUrl) {
-            console.error("GET_ANALYSES_WEBHOOK_URL not configured");
+            console.error("API_GET_ANALYSES_WEBHOOK_URL not configured");
             return NextResponse.json(
                 { error: "Webhook not configured" },
                 { status: 500 }

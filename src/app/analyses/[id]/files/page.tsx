@@ -22,6 +22,8 @@ interface AnalysisFile {
     is_merged?: boolean;
 }
 
+const SUPABASE_STORAGE_URL = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
+
 function formatBytes(bytes: number, decimals = 2) {
     if (!+bytes) return '0 Bytes';
     const k = 1024;
@@ -157,12 +159,16 @@ export default function AnalysisFilesPage() {
                                                 </a>
                                             )}
                                         </div>
-                                        <button
+                                        <a
+                                            href={`${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
                                             className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
                                             title="Descargar documento"
+                                            download={file.file_name}
                                         >
                                             <Download className="w-4 h-4" />
-                                        </button>
+                                        </a>
                                     </li>
                                 ))}
                             </ul>
@@ -214,12 +220,16 @@ export default function AnalysisFilesPage() {
                                                         </a>
                                                     )}
                                                 </div>
-                                                <button
+                                                <a
+                                                    href={`${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
                                                     className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
                                                     title="Descargar documento"
+                                                    download={file.file_name}
                                                 >
                                                     <Download className="w-4 h-4" />
-                                                </button>
+                                                </a>
                                             </li>
                                         ))}
                                     </ul>

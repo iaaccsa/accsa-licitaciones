@@ -12,10 +12,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const webhookUrl = process.env.CREATE_ANALYSIS_WEBHOOK_URL;
+        const webhookUrl = process.env.API_CREATE_JOB_WEBHOOK_URL;
 
         if (!webhookUrl) {
-            console.error("CREATE_ANALYSIS_WEBHOOK_URL not configured");
+            console.error("API_CREATE_JOB_WEBHOOK_URL not configured");
             return NextResponse.json(
                 { error: "Webhook not configured" },
                 { status: 500 }
