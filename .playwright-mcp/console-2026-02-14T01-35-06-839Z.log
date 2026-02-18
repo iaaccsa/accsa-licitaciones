@@ -1,4 +1,0 @@
-[   48077ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/api/analyses/c922ec7b-9fba-4a83-bb00-3bdff3a35f4f/files:0
-[   48288ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/api/analyses/c922ec7b-9fba-4a83-bb00-3bdff3a35f4f/events:0
-[   48668ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/api/analyses/c922ec7b-9fba-4a83-bb00-3bdff3a35f4f/files:0
-[   48829ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3000/api/analyses/c922ec7b-9fba-4a83-bb00-3bdff3a35f4f/events:0

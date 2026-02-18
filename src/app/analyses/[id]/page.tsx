@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Cpu, ExternalLink, FileText, ClipboardList } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import WorkflowVisualization from "@/components/WorkflowVisualization";
 
 interface Analysis {
     id: string;
@@ -93,6 +94,9 @@ export default function AnalysisDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Workflow Visualization */}
+            <WorkflowVisualization analysisId={id} />
 
             {/* Navigation Buttons */}
             <div className="grid md:grid-cols-2 gap-6">
