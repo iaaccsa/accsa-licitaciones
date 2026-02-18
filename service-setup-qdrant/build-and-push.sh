@@ -6,12 +6,12 @@ APP_NAME="service-setup-qdrant"
 APP_TAG="latest"
 
 # Load environment variables
-if [ -f ../env_vars ]; then
+if [ -f ../.env.local ]; then
   set -a
-  source ../env_vars
+  source ../.env.local
   set +a
 else
-  echo "Warning: ../env_vars file not found"
+  echo "Warning: ../.env.local file not found"
 fi
 
 # Build and push
