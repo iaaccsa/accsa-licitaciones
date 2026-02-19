@@ -209,7 +209,7 @@ export function UploadSection() {
                                 </p>
                             ) : null}
                             <Link
-                                href="/status"
+                                href={`/analyses/${analysisResult.id}`}
                                 className="text-sm text-blue-600 hover:text-blue-700 underline underline-offset-2"
                             >
                                 Ver estado del análisis →

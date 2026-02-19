@@ -12,29 +12,41 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const webhookUrl = process.env.API_CREATE_JOB_WEBHOOK_URL;
+        const baseUrl = process.env.API_BASE_URL;
+        const analysesPath = process.env.API_ANALYSES_PATH;
 
-        if (!webhookUrl) {
-            console.error("API_CREATE_JOB_WEBHOOK_URL not configured");
+        if (!baseUrl || !analysesPath) {
+            console.error("API_BASE_URL or API_ANALYSES_PATH not configured");
             return NextResponse.json(
-                { error: "Webhook not configured" },
+                { error: "API not configured" },
                 { status: 500 }
             );
         }
 
-        // Forward the file to the webhook
-        const webhookFormData = new FormData();
-        webhookFormData.append("file", file, "licitacion_documentos.zip");
+        // Ensure trailing slash — FastAPI/uvicorn returns 307 redirect without it,
+        // and Node.js fetch drops the POST body on redirect
+        const url = `${baseUrl}${analysesPath}${analysesPath.endsWith("/") ? "" : "/"}`;
 
-        const response = await fetch(webhookUrl, {
+        // Forward the file to the backend
+        const backendFormData = new FormData();
+        backendFormData.append("file", file, "licitacion_documentos.zip");
+
+        const response = await fetch(url, {
             method: "POST",
-            body: webhookFormData,
+            body: backendFormData,
         });
 
-        const data = await response.json();
-
-        // Proxy the response as-is (200 with analysis object, or 400 with error)
-        return NextResponse.json(data, { status: response.status });
+        if (response.ok) {
+            const data = await response.json();
+            return NextResponse.json(data);
+        } else {
+            const errorText = await response.text();
+            console.error("Backend error:", response.status, errorText);
+            return NextResponse.json(
+                { error: "Failed to create analysis" },
+                { status: response.status }
+            );
+        }
     } catch (error) {
         console.error("Error processing upload:", error);
         return NextResponse.json(
