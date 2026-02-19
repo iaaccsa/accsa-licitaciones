@@ -1,6 +1,12 @@
 from app.repositories.analysis_repository import analysis_repository
 from app.schemas.analysis import Analysis
+from app.schemas.event import EventBase
+from app.services.event_service import event_service
+from app.services.workflow_step_service import workflow_step_service
+from app.core.supabase import supabase
+from fastapi import UploadFile
 from typing import List
+import uuid
 
 class AnalysisService:
     def __init__(self):
@@ -10,5 +16,42 @@ class AnalysisService:
         data = self.repository.get_all()
         # Pydantic validation handles the conversion
         return [Analysis(**item) for item in data]
+
+    async def create_analysis(self, file: UploadFile) -> Analysis:
+        # 1. Generate UUID for filename
+        file_uuid = str(uuid.uuid4())
+        file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'zip'
+        file_path = f"{file_uuid}.{file_extension}"
+        
+        # 2. Upload file to Supabase Storage
+        file_content = await file.read()
+        supabase.storage.from_("artifacts").upload(
+            path=file_path,
+            file=file_content,
+            file_options={"content-type": "application/zip"}
+        )
+        
+        # 3. Create Analysis record
+        analysis_data = {
+            "status": "pending",
+            "artifact_path": file_path
+        }
+        analysis_record = self.repository.create(analysis_data)
+        analysis = Analysis(**analysis_record)
+        
+        # 4. Log Event
+        event_data = EventBase(
+            analysis_id=analysis.id,
+            level="info",
+            message="Archivo ZIP recibido con todos los documentos.",
+            source="api",
+            details={"original_filename": file.filename}
+        )
+        event_service.create_event(event_data)
+        
+        # 5. Initialize Workflow Steps
+        workflow_step_service.initialize_steps(analysis.id)
+        
+        return analysis
 
 analysis_service = AnalysisService()
