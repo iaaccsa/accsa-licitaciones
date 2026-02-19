@@ -13,10 +13,10 @@ export async function GET(
 
     try {
         const baseUrl = process.env.API_BASE_URL;
-        const analysesPath = process.env.API_GET_ANALYSES_PATH;
+        const analysesPath = process.env.API_ANALYSES_PATH;
 
         if (!baseUrl || !analysesPath) {
-            console.error("API_BASE_URL or API_GET_ANALYSES_PATH not configured");
+            console.error("API_BASE_URL or API_ANALYSES_PATH not configured");
             return NextResponse.json(
                 { error: "API not configured" },
                 { status: 500 }
