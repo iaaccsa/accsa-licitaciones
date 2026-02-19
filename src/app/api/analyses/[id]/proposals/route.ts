@@ -8,10 +8,11 @@ export async function GET(
 
     const baseUrl = process.env.API_BASE_URL;
     const proposalsPath = process.env.API_GET_PROPOSALS_PATH;
+    const apiKey = process.env.BACKEND_API_KEY;
 
-    if (!baseUrl || !proposalsPath) {
+    if (!baseUrl || !proposalsPath || !apiKey) {
         return NextResponse.json(
-            { error: "API_BASE_URL or API_GET_PROPOSALS_PATH not configured" },
+            { error: "API_BASE_URL, API_GET_PROPOSALS_PATH, or BACKEND_API_KEY not configured" },
             { status: 500 }
         );
     }
@@ -22,6 +23,7 @@ export async function GET(
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "X-API-Key": apiKey,
             },
             body: JSON.stringify({ analysis_id: id }),
         });

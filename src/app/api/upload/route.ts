@@ -23,9 +23,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Ensure trailing slash — FastAPI/uvicorn returns 307 redirect without it,
-        // and Node.js fetch drops the POST body on redirect
         const url = `${baseUrl}${analysesPath}${analysesPath.endsWith("/") ? "" : "/"}`;
+        const apiKey = process.env.BACKEND_API_KEY;
+
+        if (!apiKey) {
+            console.error("BACKEND_API_KEY not configured");
+            return NextResponse.json(
+                { error: "API Key Configuration Error" },
+                { status: 500 }
+            );
+        }
 
         // Forward the file to the backend
         const backendFormData = new FormData();
@@ -33,6 +40,9 @@ export async function POST(request: NextRequest) {
 
         const response = await fetch(url, {
             method: "POST",
+            headers: {
+                "X-API-Key": apiKey,
+            },
             body: backendFormData,
         });
 

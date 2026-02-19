@@ -10,10 +10,11 @@ export async function POST(
 
     const baseUrl = process.env.API_BASE_URL;
     const qdrantPointsPath = process.env.API_GET_QDRANT_POINTS;
+    const apiKey = process.env.BACKEND_API_KEY;
 
-    if (!baseUrl || !qdrantPointsPath) {
+    if (!baseUrl || !qdrantPointsPath || !apiKey) {
         return NextResponse.json(
-            { error: "API_BASE_URL or API_GET_QDRANT_POINTS not configured" },
+            { error: "API_BASE_URL, API_GET_QDRANT_POINTS, or BACKEND_API_KEY not configured" },
             { status: 500 }
         );
     }
@@ -38,6 +39,7 @@ export async function POST(
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "X-API-Key": apiKey,
             },
             body: JSON.stringify(body),
         });

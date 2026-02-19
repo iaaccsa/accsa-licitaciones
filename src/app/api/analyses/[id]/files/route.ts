@@ -9,9 +9,10 @@ export async function POST(
     try {
         const baseUrl = process.env.API_BASE_URL;
         const filesPath = process.env.API_GET_FILES_PATH;
+        const apiKey = process.env.BACKEND_API_KEY;
 
-        if (!baseUrl || !filesPath) {
-            console.error("API_BASE_URL or API_GET_FILES_PATH not configured");
+        if (!baseUrl || !filesPath || !apiKey) {
+            console.error("API_BASE_URL, API_GET_FILES_PATH, or BACKEND_API_KEY not configured");
             return NextResponse.json(
                 { error: "API not configured" },
                 { status: 500 }
@@ -24,6 +25,7 @@ export async function POST(
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "X-API-Key": apiKey,
             },
             body: JSON.stringify({ analysis_id: id }),
         });

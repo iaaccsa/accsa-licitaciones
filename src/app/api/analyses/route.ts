@@ -14,9 +14,10 @@ export async function GET(request: NextRequest) {
 
         const baseUrl = process.env.API_BASE_URL;
         const analysesPath = process.env.API_ANALYSES_PATH;
+        const apiKey = process.env.BACKEND_API_KEY;
 
-        if (!baseUrl || !analysesPath) {
-            console.error("API_BASE_URL or API_ANALYSES_PATH not configured");
+        if (!baseUrl || !analysesPath || !apiKey) {
+            console.error("API_BASE_URL, API_ANALYSES_PATH, or BACKEND_API_KEY not configured");
             return NextResponse.json(
                 { error: "API not configured" },
                 { status: 500 }
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "X-API-Key": apiKey,
             },
             body: JSON.stringify({ job_id: jobId }),
         });
@@ -58,9 +60,10 @@ export async function POST(request: NextRequest) {
 
         const baseUrl = process.env.API_BASE_URL;
         const analysesPath = process.env.API_ANALYSES_PATH;
+        const apiKey = process.env.BACKEND_API_KEY;
 
-        if (!baseUrl || !analysesPath) {
-            console.error("API_BASE_URL or API_ANALYSES_PATH not configured");
+        if (!baseUrl || !analysesPath || !apiKey) {
+            console.error("API_BASE_URL, API_ANALYSES_PATH, or BACKEND_API_KEY not configured");
             return NextResponse.json(
                 { error: "API not configured" },
                 { status: 500 }
@@ -74,6 +77,7 @@ export async function POST(request: NextRequest) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
+                "X-API-Key": apiKey,
             },
             body: JSON.stringify(body),
         });
