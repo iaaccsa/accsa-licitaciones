@@ -12,18 +12,21 @@ export async function GET(
     }
 
     try {
-        const webhookUrl = process.env.API_GET_ANALYSES_WEBHOOK_URL;
+        const baseUrl = process.env.API_BASE_URL;
+        const analysesPath = process.env.API_GET_ANALYSES_PATH;
 
-        if (!webhookUrl) {
-            console.error("API_GET_ANALYSES_WEBHOOK_URL not configured");
+        if (!baseUrl || !analysesPath) {
+            console.error("API_BASE_URL or API_GET_ANALYSES_PATH not configured");
             return NextResponse.json(
-                { error: "Webhook not configured" },
+                { error: "API not configured" },
                 { status: 500 }
             );
         }
 
+        const url = `${baseUrl}${analysesPath}`;
+
         // Fetch list and filter
-        const response = await fetch(webhookUrl, {
+        const response = await fetch(url, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",

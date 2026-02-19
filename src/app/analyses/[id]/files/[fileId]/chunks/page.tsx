@@ -21,12 +21,8 @@ interface Chunk {
 }
 
 interface ChunkResponse {
-    result: {
-        points: Chunk[];
-        next_page_offset: string | null;
-    };
-    status: string;
-    time: number;
+    points: Chunk[];
+    next_page_offset: string | null;
 }
 
 interface AnalysisFile {
@@ -44,6 +40,13 @@ interface AnalysisFile {
     analysis_id: string;
     proposal_id?: string;
     is_merged?: boolean;
+}
+
+interface ChunksPayload {
+    slug: string;
+    category: string;
+    label: string;
+    offset?: string;
 }
 
 function formatBytes(bytes: number, decimals = 2) {
@@ -115,12 +118,15 @@ export default function ChunksPage() {
 
         setIsLoadingMore(true);
         try {
-            const payload = {
+            const payload: ChunksPayload = {
                 slug: analysis.slug,
                 category: file.category,
                 label: file.proposal_label || "tender",
-                offset: currentOffset
             };
+
+            if (currentOffset) {
+                payload.offset = currentOffset;
+            }
 
             const res = await fetch(`/api/analyses/${id}/files/${fileId}/chunks`, {
                 method: "POST",
@@ -129,11 +135,10 @@ export default function ChunksPage() {
             });
 
             if (res.ok) {
-                const data: ChunkResponse[] = await res.json();
-                if (data && data.length > 0) {
-                    const result = data[0].result;
-                    setChunks(prev => currentOffset === "" ? result.points : [...prev, ...result.points]);
-                    setOffset(result.next_page_offset);
+                const data: ChunkResponse = await res.json();
+                if (data && data.points) {
+                    setChunks(prev => currentOffset === "" ? data.points : [...prev, ...data.points]);
+                    setOffset(data.next_page_offset);
                 }
             }
         } catch (err) {

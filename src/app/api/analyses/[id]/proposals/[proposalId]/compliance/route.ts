@@ -6,9 +6,12 @@ export async function POST(
 ) {
     const { proposalId } = await params;
 
-    if (!process.env.API_GET_COMPLIANCE_RESULTS_WEBHOOK_URL) {
+    const baseUrl = process.env.API_BASE_URL;
+    const compliancePath = process.env.API_GET_COMPLIANCE_RESULTS_PATH;
+
+    if (!baseUrl || !compliancePath) {
         return NextResponse.json(
-            { error: "API_GET_COMPLIANCE_RESULTS_WEBHOOK_URL not configured" },
+            { error: "API_BASE_URL or API_GET_COMPLIANCE_RESULTS_PATH not configured" },
             { status: 500 }
         );
     }
@@ -23,7 +26,9 @@ export async function POST(
             limit,
         };
 
-        const res = await fetch(process.env.API_GET_COMPLIANCE_RESULTS_WEBHOOK_URL, {
+        const url = `${baseUrl}${compliancePath}`;
+
+        const res = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

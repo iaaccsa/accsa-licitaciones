@@ -6,20 +6,24 @@ export async function GET(
 ) {
     const id = (await params).id;
 
-    if (!process.env.API_GET_PROPOSALS_WEBHOOK_URL) {
+    const baseUrl = process.env.API_BASE_URL;
+    const proposalsPath = process.env.API_GET_PROPOSALS_PATH;
+
+    if (!baseUrl || !proposalsPath) {
         return NextResponse.json(
-            { error: "API_GET_PROPOSALS_WEBHOOK_URL not configured" },
+            { error: "API_BASE_URL or API_GET_PROPOSALS_PATH not configured" },
             { status: 500 }
         );
     }
 
     try {
-        const res = await fetch(process.env.API_GET_PROPOSALS_WEBHOOK_URL, {
+        const url = `${baseUrl}${proposalsPath}`;
+        const res = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ uuid: id }),
+            body: JSON.stringify({ analysis_id: id }),
         });
 
         if (!res.ok) {

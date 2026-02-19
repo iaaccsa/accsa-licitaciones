@@ -8,18 +8,20 @@ export async function POST(
     // but they are part of the route. The payload comes from the request body.
     await params;
 
+    const baseUrl = process.env.API_BASE_URL;
+    const qdrantPointsPath = process.env.API_GET_QDRANT_POINTS;
+
+    if (!baseUrl || !qdrantPointsPath) {
+        return NextResponse.json(
+            { error: "API_BASE_URL or API_GET_QDRANT_POINTS not configured" },
+            { status: 500 }
+        );
+    }
+
     try {
-        const webhookUrl = process.env.API_GET_CHUNKS_WEBHOOK_URL;
-
-        if (!webhookUrl) {
-            console.error("API_GET_CHUNKS_WEBHOOK_URL not configured");
-            return NextResponse.json(
-                { error: "Webhook not configured" },
-                { status: 500 }
-            );
-        }
-
         const body = await request.json();
+
+        // console.log("Chunks webhook body:", body);
 
         // The webhook expects:
         // {
@@ -30,7 +32,9 @@ export async function POST(
         // }
         // We will receive this from the client.
 
-        const response = await fetch(webhookUrl, {
+        const url = `${baseUrl}${qdrantPointsPath}`;
+
+        const response = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -40,6 +44,7 @@ export async function POST(
 
         if (response.ok) {
             const data = await response.json();
+            // console.log("Chunks webhook response:", data);
             return NextResponse.json(data);
         } else {
             console.error("Chunks webhook error:", response.status, await response.text());

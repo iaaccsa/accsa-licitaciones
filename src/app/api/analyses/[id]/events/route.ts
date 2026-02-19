@@ -7,25 +7,28 @@ export async function POST(
     const { id } = await params;
 
     try {
-        const webhookUrl = process.env.API_GET_EVENTS_WEBHOOK_URL;
+        const baseUrl = process.env.API_BASE_URL;
+        const eventsPath = process.env.API_GET_EVENTS_PATH;
 
-        if (!webhookUrl) {
-            console.error("API_GET_EVENTS_WEBHOOK_URL not configured");
+        if (!baseUrl || !eventsPath) {
+            console.error("API_BASE_URL or API_GET_EVENTS_PATH not configured");
             return NextResponse.json(
-                { error: "Webhook not configured" },
+                { error: "API not configured" },
                 { status: 500 }
             );
         }
 
         const { limit, offset } = await request.json().catch(() => ({}));
 
-        const response = await fetch(webhookUrl, {
+        const url = `${baseUrl}${eventsPath}`;
+
+        const response = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                uuid: id,
+                analysis_id: id,
                 limit: limit || 10,
                 offset: offset || 0
             }),

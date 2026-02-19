@@ -7,22 +7,25 @@ export async function POST(
     const { id } = await params;
 
     try {
-        const webhookUrl = process.env.API_GET_FILES_WEBHOOK_URL;
+        const baseUrl = process.env.API_BASE_URL;
+        const filesPath = process.env.API_GET_FILES_PATH;
 
-        if (!webhookUrl) {
-            console.error("API_GET_FILES_WEBHOOK_URL not configured");
+        if (!baseUrl || !filesPath) {
+            console.error("API_BASE_URL or API_GET_FILES_PATH not configured");
             return NextResponse.json(
-                { error: "Webhook not configured" },
+                { error: "API not configured" },
                 { status: 500 }
             );
         }
 
-        const response = await fetch(webhookUrl, {
-            method: "POST", // Based on user instruction "payload ... is {uuid}"
+        const url = `${baseUrl}${filesPath}`;
+
+        const response = await fetch(url, {
+            method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ uuid: id }),
+            body: JSON.stringify({ analysis_id: id }),
         });
 
         if (response.ok) {

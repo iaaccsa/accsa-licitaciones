@@ -3,11 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Upload, ListChecks } from "lucide-react";
+import { Upload, ListChecks, ShieldCheck } from "lucide-react";
 
 const navItems = [
     { href: "/", label: "Cargar", icon: Upload },
     { href: "/analyses", label: "Análisis", icon: ListChecks },
+    { href: "/admin", label: "Admin", icon: ShieldCheck },
 ] as const;
 
 export function Navbar() {
