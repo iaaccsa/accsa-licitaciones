@@ -30,6 +30,7 @@ def scroll_points(scroll_params: QdrantScrollRequest):
     """
     Scroll points in a specific collection with filters.
     """
+    # print(f"Scroll Params: {scroll_params}")
     try:
         return qdrant_service.scroll_points(scroll_params)
     except Exception as e:
