@@ -1,0 +1,27 @@
+from pydantic import BaseModel, ConfigDict
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+class FileBase(BaseModel):
+    analysis_id: Optional[UUID] = None
+    file_name: Optional[str] = None
+    storage_path: Optional[str] = None
+    category: Optional[str] = None
+    proposal_id: Optional[UUID] = None
+    proposal_label: Optional[str] = None
+    proposal_provider_name: Optional[str] = None
+    is_merged: Optional[bool] = None
+    is_processed_version: Optional[bool] = None
+    total_chunks: Optional[int] = None
+    file_size: Optional[int] = None
+    mime_type: Optional[str] = None
+
+class File(FileBase):
+    id: Optional[UUID] = None
+    created_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+class FileFilter(BaseModel):
+    analysis_id: UUID
