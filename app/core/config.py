@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     QDRANT_URL: str
     QDRANT_API_KEY: str | None = None
 
+    BACKEND_API_KEY: str
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore"

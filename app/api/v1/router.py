@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from app.core.supabase import supabase
+from app.core.security import get_api_key
 from app.api.v1.endpoints import analyses, events, requirements, files, proposals, workflow_steps, compliance_results, qdrant
 
-api_router = APIRouter()
+api_router = APIRouter(dependencies=[Depends(get_api_key)])
 
 api_router.include_router(analyses.router, prefix="/analyses", tags=["analyses"])
 api_router.include_router(events.router, prefix="/events", tags=["events"])
