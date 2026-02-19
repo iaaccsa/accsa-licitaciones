@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 class Settings(BaseSettings):
@@ -8,9 +8,13 @@ class Settings(BaseSettings):
     SUPABASE_URL: str
     SUPABASE_KEY: str
 
-    class Config:
-        case_sensitive = True
-        env_file = ".env"
+    QDRANT_URL: str
+    QDRANT_API_KEY: str | None = None
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore"
+    )
 
 @lru_cache()
 def get_settings() -> Settings:
