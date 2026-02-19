@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from app.core.supabase import supabase
-from app.api.v1.endpoints import analyses, events, requirements, files
+from app.api.v1.endpoints import analyses, events, requirements, files, proposals
 
 api_router = APIRouter()
 
@@ -8,6 +8,7 @@ api_router.include_router(analyses.router, prefix="/analyses", tags=["analyses"]
 api_router.include_router(events.router, prefix="/events", tags=["events"])
 api_router.include_router(requirements.router, prefix="/requirements", tags=["requirements"])
 api_router.include_router(files.router, prefix="/files", tags=["files"])
+api_router.include_router(proposals.router, prefix="/proposals", tags=["proposals"])
 
 @api_router.get("/health", tags=["health"], summary="Perform a Health Check")
 async def health_check():
