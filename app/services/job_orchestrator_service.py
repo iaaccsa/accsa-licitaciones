@@ -8,6 +8,7 @@ from app.config.jobs_config import get_root_jobs, get_next_jobs, is_valid_job
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.repositories.analysis_repository import analysis_repository
+from app.repositories.job_repository import job_repository
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -108,7 +109,7 @@ class JobOrchestratorService:
         analysis_id: UUID,
         proposal_id: Optional[UUID] = None,
     ) -> dict:
-        """Launch a single Azure Container Apps Job. Returns Azure response dict."""
+        """Launch a single Azure Container Apps Job and create a record in the jobs table."""
         image = f"{self.registry}/{service_name}:latest"
 
         env_vars = [
@@ -135,7 +136,22 @@ class JobOrchestratorService:
         )
 
         result = poller.result()
-        return result.as_dict() if result else {"status": "accepted"}
+        azure_response = result.as_dict() if result else {}
+
+        # Create job record in the jobs table
+        job_record = {
+            "analysis_id": str(analysis_id),
+            "service_name": service_name,
+            "azure_execution_id": azure_response.get("id", ""),
+            "execution_name": azure_response.get("name", ""),
+            "input_payload": {
+                "ANALYSIS_ID": str(analysis_id),
+                "PROPOSAL_ID": str(proposal_id) if proposal_id else "",
+            },
+        }
+        job_repository.create(job_record)
+
+        return azure_response
 
     def _log_event(
         self,
