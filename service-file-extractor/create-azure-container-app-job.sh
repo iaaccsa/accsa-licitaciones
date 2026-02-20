@@ -8,7 +8,12 @@ ACR_NAME="accsalicitaciones"
 SUBSCRIPTION_ID="d3fbaef6-2413-47bf-be3d-2019470dc20e"
 
 JOB_NAME="file-extractor"
-IMAGE="accsalicitaciones.azurecr.io/licitaciones/service-file-extractor:latest"
+REGISTRY="$AZURE_REGISTRY_SERVER"
+APP_PATH="licitaciones"
+APP_NAME="service-file-extractor"
+APP_TAG="latest"
+
+IMAGE="$REGISTRY/$APP_PATH/$APP_NAME:$APP_TAG"
 
 echo "Getting ACR Password..."
 ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" -o tsv)
@@ -20,7 +25,7 @@ az containerapp job create \
   --environment "$ACA_ENV" \
   --subscription "$SUBSCRIPTION_ID" \
   --image "$IMAGE" \
-  --registry-server "$ACR_NAME.azurecr.io" \
+  --registry-server "$REGISTRY" \
   --registry-username "$ACR_NAME" \
   --registry-password "$ACR_PASSWORD" \
   --trigger-type "Manual" \
