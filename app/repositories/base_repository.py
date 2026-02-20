@@ -16,3 +16,7 @@ class BaseRepository:
     def create_batch(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         response = supabase.table(self.table_name).insert(data).execute()
         return response.data
+
+    def update_by_id(self, record_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        response = supabase.table(self.table_name).update(data).eq("id", record_id).execute()
+        return response.data[0]

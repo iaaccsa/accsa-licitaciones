@@ -3,10 +3,14 @@ from app.schemas.analysis import Analysis
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.services.workflow_step_service import workflow_step_service
+from app.services.job_orchestrator_service import job_orchestrator_service
 from app.core.supabase import supabase
 from fastapi import UploadFile
 from typing import List
+import logging
 import uuid
+
+logger = logging.getLogger(__name__)
 
 class AnalysisService:
     def __init__(self):
@@ -51,6 +55,12 @@ class AnalysisService:
         
         # 5. Initialize Workflow Steps
         workflow_step_service.initialize_steps(analysis.id)
+        
+        # 6. Start Jobs Pipeline
+        try:
+            job_orchestrator_service.start_pipeline(analysis_id=analysis.id)
+        except Exception as e:
+            logger.error(f"Error starting jobs pipeline for analysis {analysis.id}: {e}")
         
         return analysis
 

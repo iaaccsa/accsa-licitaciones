@@ -6,3 +6,5 @@ pydantic-settings>=2.0.0
 supabase>=2.0.0
 qdrant-client>=1.7.0
 python-multipart
+azure-identity
+azure-mgmt-appcontainers

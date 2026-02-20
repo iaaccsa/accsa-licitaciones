@@ -13,6 +13,14 @@ class Settings(BaseSettings):
 
     BACKEND_API_KEY: str
 
+    # Azure Container Apps
+    AZURE_TENANT_ID: str
+    AZURE_CLIENT_ID: str
+    AZURE_CLIENT_SECRET: str
+    AZURE_SUBSCRIPTION_ID: str
+    AZURE_RESOURCE_GROUP: str
+    AZURE_CONTAINER_REGISTRY: str
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore"
