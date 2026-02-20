@@ -4,29 +4,28 @@ set -e
 # Variables
 RESOURCE_GROUP="accsa-licitaciones"
 ACA_ENV="env-licitaciones"
-ACR_NAME="accsalicitaciones"
+ACR_USER_NAME="accsalicitaciones"
 SUBSCRIPTION_ID="d3fbaef6-2413-47bf-be3d-2019470dc20e"
+REGISTRY="accsalicitaciones.azurecr.io"
 
-JOB_NAME="file-extractor"
-REGISTRY="$AZURE_REGISTRY_SERVER"
-APP_PATH="licitaciones"
+APP_PATH="services"
 APP_NAME="service-file-extractor"
 APP_TAG="latest"
 
 IMAGE="$REGISTRY/$APP_PATH/$APP_NAME:$APP_TAG"
 
-echo "Getting ACR Password..."
-ACR_PASSWORD=$(az acr credential show --name $ACR_NAME --query "passwords[0].value" -o tsv)
+# Get ACR password
+ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query passwords[0].value -o tsv)
 
-echo "Creating Container App Job '$JOB_NAME'..."
+echo "Creating Container App Job '$APP_NAME'..."
 az containerapp job create \
-  --name "$JOB_NAME" \
+  --name "$APP_NAME" \
   --resource-group "$RESOURCE_GROUP" \
   --environment "$ACA_ENV" \
   --subscription "$SUBSCRIPTION_ID" \
   --image "$IMAGE" \
   --registry-server "$REGISTRY" \
-  --registry-username "$ACR_NAME" \
+  --registry-username "$ACR_USER_NAME" \
   --registry-password "$ACR_PASSWORD" \
   --trigger-type "Manual" \
   --replica-timeout 1800 \
@@ -35,4 +34,4 @@ az containerapp job create \
   --replica-completion-count 1 \
   --cpu 1 --memory 2Gi
 
-echo "Job '$JOB_NAME' created successfully!"
+echo "Job '$APP_NAME' created successfully!"

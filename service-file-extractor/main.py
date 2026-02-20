@@ -1,13 +1,20 @@
 """
 File Extractor Service
 ======================
-Queries Supabase for a specific analysis by ID, downloads the associated
-ZIP artifact from Supabase Storage, and extracts it locally.
+Queries the backend API for a specific analysis by ID, downloads the associated
+ZIP artifact, extracts it, and uploads files to Supabase Storage.
 
 Required environment variables:
-  - SUPABASE_URL           : Supabase project URL
-  - SUPABASE_SERVICE_ROLE_KEY : Service role key for authenticated access
-  - ANALYSIS_ID            : UUID of the analysis to process
+  - SUPABASE_URL               : Supabase project URL
+  - SUPABASE_SERVICE_ROLE_KEY  : Service role key for authenticated access
+  - SUPABASE_ARTIFACTS_BASE_URL: Base URL for artifact downloads
+  - API_BASE_URL               : Backend API base URL
+  - API_KEY                    : API key for backend authentication
+  - API_EVENTS_PATH            : Path for events endpoint
+  - API_PROPOSALS_PATH         : Path for proposals endpoint
+  - API_ANALYSES_PATH          : Path for analyses endpoint
+  - API_FILES_PATH             : Path for files endpoint
+  - ANALYSIS_ID                : UUID of the analysis to process
 """
 
 import os
@@ -18,6 +25,8 @@ import mimetypes
 from datetime import datetime, timezone
 from pathlib import Path
 
+import requests
+
 from supabase import create_client, Client
 from supabase_logger import setup_logger, log_event, mark_failed, log_workflow_step
 
@@ -26,7 +35,15 @@ from supabase_logger import setup_logger, log_event, mark_failed, log_workflow_s
 # ---------------------------------------------------------------------------
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_ARTIFACTS_BASE_URL = os.environ.get("SUPABASE_ARTIFACTS_BASE_URL")
+API_BASE_URL = os.environ.get("API_BASE_URL")
+API_KEY = os.environ.get("API_KEY")
+API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
+API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
+API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
+API_FILES_PATH = os.environ.get("API_FILES_PATH")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
+
 
 WORKSPACE_DIR = Path("/app/workspace")
 EVENT_SOURCE = "ACA: service-file-extractor"
@@ -44,6 +61,19 @@ WORKFLOW_PARENT_STEP_ID = "queued"
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+API_HEADERS = {
+    "Content-Type": "application/json",
+    "X-API-Key": API_KEY or "",
+}
+
+
+def api_request(method: str, path: str, json_data: dict | None = None) -> dict | list:
+    """Make an authenticated request to the backend API."""
+    url = f"{API_BASE_URL}{path}"
+    response = requests.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
+    response.raise_for_status()
+    return response.json()
 
 
 def determine_file_category(relative_path: Path) -> str:
@@ -84,18 +114,13 @@ def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_d
             if folder_name != "tender":
                 try:
                     logger.info(f"Creating proposal for folder: {item.name}")
-                    result = (
-                        supabase.table("proposals")
-                        .insert({
-                            "analysis_id": analysis_id,
-                            "label": item.name
-                        })
-                        .execute()
-                    )
-                    if result.data:
-                        proposal_id = result.data[0]["id"]
-                        proposal_map[item.name] = proposal_id
-                        logger.info(f"Created proposal '{item.name}' with id={proposal_id}")
+                    result = api_request("POST", API_PROPOSALS_PATH, {
+                        "analysis_id": analysis_id,
+                        "label": item.name
+                    })
+                    proposal_id = result["id"]
+                    proposal_map[item.name] = proposal_id
+                    logger.info(f"Created proposal '{item.name}' with id={proposal_id}")
                 except Exception as e:
                     logger.error(f"Failed to create proposal for folder {item.name}: {e}")
                     raise e
@@ -174,11 +199,12 @@ def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_d
 
             files_to_insert.append(file_record)
 
-    # 4. Batch insert into 'files' table
+    # 4. Insert file records via API
     if files_to_insert:
-        logger.info(f"Inserting {len(files_to_insert)} file records into DB")
+        logger.info(f"Inserting {len(files_to_insert)} file records via API")
         try:
-            supabase.table("files").insert(files_to_insert).execute()
+            for file_record in files_to_insert:
+                api_request("POST", API_FILES_PATH, file_record)
         except Exception as e:
             logger.error(f"Failed to insert file records: {e}")
             raise e
@@ -193,6 +219,8 @@ def validate_env():
         missing.append("SUPABASE_URL")
     if not SUPABASE_SERVICE_ROLE_KEY:
         missing.append("SUPABASE_SERVICE_ROLE_KEY")
+    if not SUPABASE_ARTIFACTS_BASE_URL:
+        missing.append("SUPABASE_ARTIFACTS_BASE_URL")
     if not ANALYSIS_ID:
         missing.append("ANALYSIS_ID")
     if missing:
@@ -222,51 +250,37 @@ def main():
         parent_step_id=WORKFLOW_PARENT_STEP_ID
     )
 
-    # 2. Fetch the analysis row
-    logger.info("Querying analyses table …")
-    logger.info("Querying analyses table …")
-    result = (
-        supabase.table("analyses")
-        .select("id, status, artifact_path, slug")
-        .eq("id", ANALYSIS_ID)
-        .single()
-        .execute()
-    )
-
-    analysis = result.data
-    if not analysis:
-        logger.error(f"Analysis {ANALYSIS_ID} not found.")
+    # 2. Fetch the analysis row via API
+    logger.info("Fetching analysis via API …")
+    try:
+        analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 404:
+            logger.error(f"Analysis {ANALYSIS_ID} not found.")
+        else:
+            logger.error(f"Failed to fetch analysis: {e}")
         sys.exit(1)
 
     artifact_path: str = analysis["artifact_path"]
     logger.info(f"Found analysis — status={analysis['status']}, artifact_path={artifact_path}")
 
-    # 3. Update status to 'processing'
+    # 3. Update status to 'processing' via API
     logger.info("Updating status to 'processing' …")
-    supabase.table("analyses").update({"status": "processing"}).eq("id", ANALYSIS_ID).execute()
-    log_event(supabase, ANALYSIS_ID, "info", "Inicio de descompresión de archivos", EVENT_SOURCE)
+    api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "processing"})
+    log_event(ANALYSIS_ID, "info", "Inicio de descompresión de archivos", EVENT_SOURCE)
 
-    # 4. Parse bucket and object path from artifact_path
-    #    artifact_path format: "artifacts/<uuid>.zip"  →  bucket = "artifacts", path = "<uuid>.zip"
-    #    or it could be "bucket_name/path/to/file.zip"
-    parts = artifact_path.split("/", 1)
-    if len(parts) != 2:
-        error_msg = f"Invalid artifact_path format: {artifact_path}"
-        logger.error(error_msg)
-        mark_failed(supabase, ANALYSIS_ID, error_msg, EVENT_SOURCE)
-        sys.exit(1)
-
-    bucket_name, object_path = parts[0], parts[1]
-    logger.info(f"Downloading from bucket='{bucket_name}', path='{object_path}'")
-
-    # 5. Download the ZIP from Supabase Storage
-    log_event(supabase, ANALYSIS_ID, "info", f"Downloading ZIP from {artifact_path}", EVENT_SOURCE)
+    # 4. Download the ZIP via HTTP from SUPABASE_ARTIFACTS_BASE_URL + artifact_path
+    download_url = f"{SUPABASE_ARTIFACTS_BASE_URL}/{artifact_path}"
+    logger.info(f"Downloading ZIP from {download_url}")
+    log_event(ANALYSIS_ID, "info", f"Downloading ZIP from {download_url}", EVENT_SOURCE)
     try:
-        file_bytes = supabase.storage.from_(bucket_name).download(object_path)
+        response = requests.get(download_url, timeout=300)
+        response.raise_for_status()
+        file_bytes = response.content
     except Exception as e:
         error_msg = f"Failed to download artifact: {e}"
         logger.error(error_msg)
-        mark_failed(supabase, ANALYSIS_ID, error_msg, EVENT_SOURCE)
+        mark_failed(ANALYSIS_ID, error_msg, EVENT_SOURCE)
         sys.exit(1)
 
     # 6. Save ZIP to workspace
@@ -278,14 +292,13 @@ def main():
     logger.info(f"ZIP saved to {zip_path} ({len(file_bytes)} bytes)")
 
     # 7. Extract the ZIP
-    log_event(supabase, ANALYSIS_ID, "info", "Extracting ZIP", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", "Extracting ZIP", EVENT_SOURCE)
     try:
         with zipfile.ZipFile(zip_path, "r") as zf:
             zf.extractall(output_dir)
             extracted_files = zf.namelist()
         logger.info(f"Extracted {len(extracted_files)} files to {output_dir}")
         log_event(
-            supabase,
             ANALYSIS_ID,
             "info",
             f"Extraction complete — {len(extracted_files)} files",
@@ -294,19 +307,19 @@ def main():
         )
 
         # 8. Upload and Index Files
-        log_event(supabase, ANALYSIS_ID, "info", "Uploading extracted files to storage", EVENT_SOURCE)
+        log_event(ANALYSIS_ID, "info", "Uploading extracted files to storage", EVENT_SOURCE)
         try:
             upload_and_index_files(supabase, ANALYSIS_ID, analysis["slug"], output_dir)
-            log_event(supabase, ANALYSIS_ID, "info", "Files uploaded and indexed successfully", EVENT_SOURCE)
+            log_event(ANALYSIS_ID, "info", "Files uploaded and indexed successfully", EVENT_SOURCE)
         except Exception as e:
             error_msg = f"Failed during file upload/indexing: {e}"
             logger.error(error_msg)
-            mark_failed(supabase, ANALYSIS_ID, error_msg, EVENT_SOURCE)
+            mark_failed(ANALYSIS_ID, error_msg, EVENT_SOURCE)
             sys.exit(1)
     except zipfile.BadZipFile as e:
         error_msg = f"Invalid ZIP file: {e}"
         logger.error(error_msg)
-        mark_failed(supabase, ANALYSIS_ID, error_msg, EVENT_SOURCE)
+        mark_failed(ANALYSIS_ID, error_msg, EVENT_SOURCE)
         sys.exit(1)
 
     # 9. Clean up the ZIP after extraction (optional, saves space)
@@ -314,7 +327,7 @@ def main():
     logger.info("Removed source.zip after extraction")
 
     logger.info("File extraction complete ✓")
-    log_event(supabase, ANALYSIS_ID, "info", "Proceso de extracción de archivos finalizado exitosamente", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", "Proceso de extracción de archivos finalizado exitosamente", EVENT_SOURCE)
 
 
 if __name__ == "__main__":

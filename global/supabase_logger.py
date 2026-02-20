@@ -2,12 +2,22 @@
 Supabase Logger
 ===============
 Shared logging and event-tracking utilities for all services.
-Provides a consistent way to log events to the Supabase `events` table
-and mark analyses as failed.
+Provides a consistent way to log events via the backend API
+and manage workflow steps in Supabase.
 """
 
+import os
 import logging
+
+import requests
 from supabase import Client
+
+# ---------------------------------------------------------------------------
+# API Configuration for events
+# ---------------------------------------------------------------------------
+API_BASE_URL = os.environ.get("API_BASE_URL", "")
+API_KEY = os.environ.get("API_KEY", "")
+API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH", "/api/v1/events/")
 
 
 def setup_logger(name: str) -> logging.Logger:
@@ -21,14 +31,13 @@ def setup_logger(name: str) -> logging.Logger:
 
 
 def log_event(
-    supabase: Client,
     analysis_id: str,
     level: str,
     message: str,
     source: str,
     details: dict | None = None,
 ):
-    """Insert an event row into the events table."""
+    """Post an event to the backend API."""
     logger = logging.getLogger(__name__)
     payload = {
         "analysis_id": analysis_id,
@@ -39,13 +48,18 @@ def log_event(
     if details:
         payload["details"] = details
     try:
-        supabase.table("events").insert(payload).execute()
+        url = f"{API_BASE_URL}{API_EVENTS_PATH}"
+        headers = {
+            "Content-Type": "application/json",
+            "X-API-Key": API_KEY,
+        }
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        response.raise_for_status()
     except Exception as e:
-        logger.warning(f"Failed to log event to Supabase: {e}")
+        logger.warning(f"Failed to log event via API: {e}")
 
 
 def mark_failed(
-    supabase: Client,
     analysis_id: str,
     error_msg: str,
     source: str,
@@ -53,7 +67,7 @@ def mark_failed(
     """Log an error event for the analysis."""
     logger = logging.getLogger(__name__)
     logger.error(error_msg)
-    log_event(supabase, analysis_id, "error", error_msg, source)
+    log_event(analysis_id, "error", error_msg, source)
 
 
 def log_workflow_step(
@@ -82,13 +96,7 @@ def log_workflow_step(
         "parent_step_id": parent_step_id,
     }
     
-    # Remove None values to let DB defaults handling them or to avoid issues if not nullable
-    # But user spec says ended_at: null, error_log: null explicitly.
-    # Supabase/Postgrest handles JSON nulls as SQL NULLs usually.
-    
     try:
-        # Upsert based on analysis_id and code (conflict resolution)
-        # Assuming the table has a unique constraint on (analysis_id, code)
         supabase.table("analysis_workflow_steps").upsert(
             payload, on_conflict="analysis_id, code"
         ).execute()
