@@ -19,6 +19,8 @@ steps:
       REGISTRY_PASS: $(AZURE_REGISTRY_PASS)
 
   - script: |
+      set -e
+
       SERVICES="service-file-extractor service-files-converter service-chunk-and-index service-setup-qdrant service-iterative-requirement-extractor service-verify-compliance"
 
       # Detectar carpetas con cambios respecto al commit anterior
@@ -59,3 +61,12 @@ steps:
 
       echo "Todos los servicios modificados fueron construidos y pusheados."
     displayName: "Build & Push changed services"
+    env:
+      AZURE_REGISTRY_SERVER: $(AZURE_REGISTRY_SERVER)
+      SUPABASE_URL: $(SUPABASE_URL)
+      SUPABASE_SERVICE_ROLE_KEY: $(SUPABASE_SERVICE_KEY)
+      OPENAI_API_KEY: $(OPENAI_API_KEY)
+      LLAMA_CLOUD_API_KEY: $(LLAMA_CLOUD_API_KEY)
+      QDRANT_URL: $(QDRANT_URL)
+      QDRANT_API_KEY: $(QDRANT_API_KEY)
+      COHERE_API_KEY: $(COHERE_API_KEY)
