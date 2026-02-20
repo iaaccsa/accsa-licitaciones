@@ -54,5 +54,3 @@ COPY service-file-extractor/main.py .
 RUN mkdir -p /app/workspace
 
 CMD ["python", "main.py"]
-
-
