@@ -7,21 +7,6 @@ pool:
 variables:
   - group: main-vars
 
-strategy:
-  matrix:
-    service-file-extractor:
-      SERVICE_NAME: "service-file-extractor"
-    service-files-converter:
-      SERVICE_NAME: "service-files-converter"
-    service-chunk-and-index:
-      SERVICE_NAME: "service-chunk-and-index"
-    service-setup-qdrant:
-      SERVICE_NAME: "service-setup-qdrant"
-    service-iterative-requirement-extractor:
-      SERVICE_NAME: "service-iterative-requirement-extractor"
-    service-verify-compliance:
-      SERVICE_NAME: "service-verify-compliance"
-
 steps:
   - script: |
       echo "$REGISTRY_PASS" | docker login "$REGISTRY_SERVER" \
@@ -34,7 +19,43 @@ steps:
       REGISTRY_PASS: $(AZURE_REGISTRY_PASS)
 
   - script: |
-      cd $(SERVICE_NAME)
-      chmod +x azure-build-and-push.sh
-      ./azure-build-and-push.sh
-    displayName: "Build & Push $(SERVICE_NAME)"
+      SERVICES="service-file-extractor service-files-converter service-chunk-and-index service-setup-qdrant service-iterative-requirement-extractor service-verify-compliance"
+
+      # Detectar carpetas con cambios respecto al commit anterior
+      CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+
+      # Si no hay diff (primer commit o error), construir todo
+      if [ -z "$CHANGED_FILES" ]; then
+        echo "No se pudo determinar los cambios. Construyendo todos los servicios..."
+        CHANGED_SERVICES="$SERVICES"
+      else
+        CHANGED_SERVICES=""
+        for SERVICE in $SERVICES; do
+          # Construir si cambiaron archivos del servicio o de global/
+          if echo "$CHANGED_FILES" | grep -qE "^($SERVICE/|global/)"; then
+            CHANGED_SERVICES="$CHANGED_SERVICES $SERVICE"
+          fi
+        done
+      fi
+
+      if [ -z "$CHANGED_SERVICES" ]; then
+        echo "No hay cambios en ningún servicio. Nada que construir."
+        exit 0
+      fi
+
+      echo "Servicios a construir:$CHANGED_SERVICES"
+      echo ""
+
+      for SERVICE in $CHANGED_SERVICES; do
+        echo "=========================================="
+        echo "Construyendo $SERVICE..."
+        echo "=========================================="
+        cd $SERVICE
+        chmod +x azure-build-and-push.sh
+        ./azure-build-and-push.sh
+        cd ..
+        echo ""
+      done
+
+      echo "Todos los servicios modificados fueron construidos y pusheados."
+    displayName: "Build & Push changed services"
