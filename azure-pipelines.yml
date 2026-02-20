@@ -11,16 +11,16 @@ strategy:
   matrix:
     service-file-extractor:
       SERVICE_NAME: "service-file-extractor"
-    service-files-converter:
-      SERVICE_NAME: "service-files-converter"
-    service-chunk-and-index:
-      SERVICE_NAME: "service-chunk-and-index"
-    service-setup-qdrant:
-      SERVICE_NAME: "service-setup-qdrant"
-    service-iterative-requirement-extractor:
-      SERVICE_NAME: "service-iterative-requirement-extractor"
-    service-verify-compliance:
-      SERVICE_NAME: "service-verify-compliance"
+    # service-files-converter:
+    #   SERVICE_NAME: "service-files-converter"
+    # service-chunk-and-index:
+    #   SERVICE_NAME: "service-chunk-and-index"
+    # service-setup-qdrant:
+    #   SERVICE_NAME: "service-setup-qdrant"
+    # service-iterative-requirement-extractor:
+    #   SERVICE_NAME: "service-iterative-requirement-extractor"
+    # service-verify-compliance:
+    #   SERVICE_NAME: "service-verify-compliance"
 
 steps:
   - script: |
@@ -29,19 +29,12 @@ steps:
         --password-stdin
     displayName: "Login to ACR"
     env:
-      REGISTRY_SERVER: $(AZURE_REGISTRY_LOGIN_SERVER)
+      REGISTRY_SERVER: $(AZURE_REGISTRY_SERVER)
       REGISTRY_USER: $(AZURE_REGISTRY_USER)
       REGISTRY_PASS: $(AZURE_REGISTRY_PASS)
 
-  # - script: |
-  #     docker build \
-  #       --platform linux/amd64 \
-  #       -t "$(AZURE_REGISTRY_LOGIN_SERVER)/licitaciones/$(SERVICE_NAME):$(Build.BuildId)" \
-  #       -t "$(AZURE_REGISTRY_LOGIN_SERVER)/licitaciones/$(SERVICE_NAME):latest" \
-  #       -f $(SERVICE_NAME)/Dockerfile .
-  #   displayName: "Build $(SERVICE_NAME)"
-
-  # - script: |
-  #     docker push "$(AZURE_REGISTRY_LOGIN_SERVER)/licitaciones/$(SERVICE_NAME):$(Build.BuildId)"
-  #     docker push "$(AZURE_REGISTRY_LOGIN_SERVER)/licitaciones/$(SERVICE_NAME):latest"
-  #   displayName: "Push $(SERVICE_NAME)"
+  - script: |
+      cd $(SERVICE_NAME)
+      chmod +x azure-build-and-push.sh
+      ./azure-build-and-push.sh
+    displayName: "Build & Push $(SERVICE_NAME)"
