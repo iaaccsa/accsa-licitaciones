@@ -2,10 +2,16 @@ import { ShieldCheck, Database, Server } from "lucide-react";
 
 async function getHealth(path: string) {
     const baseUrl = process.env.API_BASE_URL;
+    const apiKey = process.env.BACKEND_API_KEY;
     if (!baseUrl) return { status: "error", message: "API_BASE_URL not set" };
 
     try {
-        const res = await fetch(`${baseUrl}${path}`, { cache: "no-store" });
+        const res = await fetch(`${baseUrl}${path}`, {
+            cache: "no-store",
+            headers: {
+                "X-API-Key": apiKey || "",
+            },
+        });
         if (!res.ok) {
             return { status: "error", message: `HTTP error! status: ${res.status}` };
         }
