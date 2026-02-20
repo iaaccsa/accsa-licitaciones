@@ -15,12 +15,13 @@ Required environment variables:
 import os
 import sys
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 import nest_asyncio
 from llama_parse import LlamaParse
 from supabase import create_client, Client
-from supabase_logger import setup_logger, log_event, mark_failed
+from supabase_logger import setup_logger, log_event, mark_failed, log_workflow_step
 
 # Allow nested event loops (required by LlamaParse)
 nest_asyncio.apply()
@@ -38,6 +39,14 @@ EVENT_SOURCE = "ACA: service-files-converter"
 STORAGE_BUCKET = "files"
 
 logger = setup_logger("files-converter")
+
+# ---------------------------------------------------------------------------
+# Workflow Data
+# ---------------------------------------------------------------------------
+
+WORKFLOW_CODE = "extractor"
+WORKFLOW_DISPLAY_NAME = "Extracción de archivos"
+WORKFLOW_PARENT_STEP_ID = "queued"
 
 
 # ---------------------------------------------------------------------------
@@ -156,6 +165,19 @@ def main():
 
     # 1. Connect to Supabase
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+    log_workflow_step(
+        supabase=supabase,
+        analysis_id=ANALYSIS_ID,
+        proposal_id=None,
+        code=WORKFLOW_CODE,
+        display_name=WORKFLOW_DISPLAY_NAME,
+        status="running",
+        started_at=datetime.now(timezone.utc).isoformat(),
+        parent_step_id=WORKFLOW_PARENT_STEP_ID,
+        ended_at=None,
+        error_log=None
+    )
 
     # 2. Fetch the analysis to get the slug
     logger.info("Querying analyses table …")

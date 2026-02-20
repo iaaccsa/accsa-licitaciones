@@ -40,6 +40,14 @@ EVENT_SOURCE = "ACA: <SERVICE_NAME>"
 # Load env vars
 load_dotenv()
 
+# ---------------------------------------------------------------------------
+# Workflow Data
+# ---------------------------------------------------------------------------
+
+WORKFLOW_CODE = ""
+WORKFLOW_DISPLAY_NAME = ""
+WORKFLOW_PARENT_STEP_ID = ""
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")

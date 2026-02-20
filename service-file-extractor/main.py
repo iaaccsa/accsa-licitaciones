@@ -15,10 +15,11 @@ import sys
 import uuid
 import zipfile
 import mimetypes
+from datetime import datetime, timezone
 from pathlib import Path
 
 from supabase import create_client, Client
-from supabase_logger import setup_logger, log_event, mark_failed
+from supabase_logger import setup_logger, log_event, mark_failed, log_workflow_step
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -32,6 +33,13 @@ EVENT_SOURCE = "ACA: service-file-extractor"
 
 logger = setup_logger("file-extractor")
 
+# ---------------------------------------------------------------------------
+# Workflow Data
+# ---------------------------------------------------------------------------
+
+WORKFLOW_CODE = "extractor"
+WORKFLOW_DISPLAY_NAME = "Extracción de archivos"
+WORKFLOW_PARENT_STEP_ID = "queued"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -202,6 +210,17 @@ def main():
 
     # 1. Connect to Supabase
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+    log_workflow_step(
+        supabase=supabase,
+        analysis_id=ANALYSIS_ID,
+        proposal_id=None,
+        code=WORKFLOW_CODE,
+        display_name=WORKFLOW_DISPLAY_NAME,
+        status="running",
+        started_at=datetime.now(timezone.utc).isoformat(),
+        parent_step_id=WORKFLOW_PARENT_STEP_ID
+    )
 
     # 2. Fetch the analysis row
     logger.info("Querying analyses table …")
