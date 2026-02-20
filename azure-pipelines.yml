@@ -24,10 +24,14 @@ strategy:
 
 steps:
   - script: |
-      echo "$(AZURE_REGISTRY_PASS)" | docker login $(AZURE_REGISTRY_LOGIN_SERVER) \
-        -u "$(AZURE_REGISTRY_USER)" \
+      echo "$REGISTRY_PASS" | docker login "$REGISTRY_SERVER" \
+        -u "$REGISTRY_USER" \
         --password-stdin
     displayName: "Login to ACR"
+    env:
+      REGISTRY_SERVER: $(AZURE_REGISTRY_LOGIN_SERVER)
+      REGISTRY_USER: $(AZURE_REGISTRY_USER)
+      REGISTRY_PASS: $(AZURE_REGISTRY_PASS)
 
   # - script: |
   #     docker build \
