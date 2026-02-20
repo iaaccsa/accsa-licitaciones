@@ -1,0 +1,43 @@
+trigger:
+  - main
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  - group: main-vars
+
+strategy:
+  matrix:
+    service-file-extractor:
+      SERVICE_NAME: "service-file-extractor"
+    service-files-converter:
+      SERVICE_NAME: "service-files-converter"
+    service-chunk-and-index:
+      SERVICE_NAME: "service-chunk-and-index"
+    service-setup-qdrant:
+      SERVICE_NAME: "service-setup-qdrant"
+    service-iterative-requirement-extractor:
+      SERVICE_NAME: "service-iterative-requirement-extractor"
+    service-verify-compliance:
+      SERVICE_NAME: "service-verify-compliance"
+
+steps:
+  - script: |
+      echo "$(AZURE_REGISTRY_PASS)" | docker login $(AZURE_REGISTRY_LOGIN_SERVER) \
+        -u "$(AZURE_REGISTRY_USER)" \
+        --password-stdin
+    displayName: "Login to ACR"
+
+  # - script: |
+  #     docker build \
+  #       --platform linux/amd64 \
+  #       -t "$(AZURE_REGISTRY_LOGIN_SERVER)/licitaciones/$(SERVICE_NAME):$(Build.BuildId)" \
+  #       -t "$(AZURE_REGISTRY_LOGIN_SERVER)/licitaciones/$(SERVICE_NAME):latest" \
+  #       -f $(SERVICE_NAME)/Dockerfile .
+  #   displayName: "Build $(SERVICE_NAME)"
+
+  # - script: |
+  #     docker push "$(AZURE_REGISTRY_LOGIN_SERVER)/licitaciones/$(SERVICE_NAME):$(Build.BuildId)"
+  #     docker push "$(AZURE_REGISTRY_LOGIN_SERVER)/licitaciones/$(SERVICE_NAME):latest"
+  #   displayName: "Push $(SERVICE_NAME)"
