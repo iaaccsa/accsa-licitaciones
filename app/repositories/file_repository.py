@@ -16,4 +16,18 @@ class FileRepository(BaseRepository):
         )
         return response.data
 
+    def get_merged_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
+        response = (
+            supabase.table(self.table_name)
+            .select("*")
+            .eq("analysis_id", str(analysis_id))
+            .eq("is_merged", True)
+            .execute()
+        )
+        return response.data
+
+    def create_file(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        response = supabase.table("files").insert(data).execute()
+        return response.data[0]
+
 file_repository = FileRepository()

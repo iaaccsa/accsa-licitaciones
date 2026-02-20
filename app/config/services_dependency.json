@@ -1,38 +1,38 @@
 [
     {
-        "service": "file-extractor",
+        "service": "service-file-extractor",
         "next_services": [
-            "files-converter"
+            "service-files-converter"
         ]
     },
     {
-        "service": "files-converter",
+        "service": "service-files-converter",
         "next_services": [
-            "setup-qdrant"
+            "service-setup-qdrant"
         ]
     },
     {
-        "service": "setup-qdrant",
+        "service": "service-setup-qdrant",
         "next_services": [
-            "chunk-and-index"
+            "service-chunk-and-index"
         ]
     },
     {
-        "service": "chunk-and-index",
+        "service": "service-chunk-and-index",
         "next_services": [
-            "iterative-requirement-extractor"
+            "service-iterative-requirement-extractor"
         ]
     },
     {
-        "service": "iterative-requirement-extractor",
+        "service": "service-iterative-requirement-extractor",
         "next_services": [
-            "verify-compliance"
+            "service-verify-compliance"
         ]
     },
     {
-        "service": "verify-compliance",
+        "service": "service-verify-compliance",
         "next_services": [
-            "generate-summary"
+            "service-generate-summary"
         ]
     }
 ]

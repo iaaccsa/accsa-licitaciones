@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from typing import List
-from app.schemas.analysis import Analysis
+from uuid import UUID
+from app.schemas.analysis import Analysis, AnalysisStatusUpdate
 from app.services.analysis_service import analysis_service
 
 router = APIRouter()
@@ -15,6 +16,21 @@ def read_analyses():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/{analysis_id}", response_model=Analysis)
+def get_analysis(analysis_id: UUID):
+    """
+    Get an analysis by ID.
+    """
+    try:
+        analysis = analysis_service.get_analysis_by_id(analysis_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+        return analysis
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/", response_model=Analysis)
 async def create_analysis(file: UploadFile = File(...)):
     """
@@ -25,5 +41,15 @@ async def create_analysis(file: UploadFile = File(...)):
     
     try:
         return await analysis_service.create_analysis(file)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch("/{analysis_id}/status", response_model=Analysis)
+def update_analysis_status(analysis_id: UUID, status_update: AnalysisStatusUpdate):
+    """
+    Update the status of an analysis.
+    """
+    try:
+        return analysis_service.update_analysis_status(analysis_id, status_update)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

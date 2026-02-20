@@ -1,5 +1,5 @@
 from app.repositories.analysis_repository import analysis_repository
-from app.schemas.analysis import Analysis
+from app.schemas.analysis import Analysis, AnalysisStatusUpdate
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.services.workflow_step_service import workflow_step_service
@@ -63,5 +63,15 @@ class AnalysisService:
             logger.error(f"Error starting jobs pipeline for analysis {analysis.id}: {e}")
         
         return analysis
+
+    def get_analysis_by_id(self, analysis_id) -> Analysis:
+        data = self.repository.get_by_id(analysis_id)
+        if not data:
+            return None
+        return Analysis(**data)
+
+    def update_analysis_status(self, analysis_id, status_update: AnalysisStatusUpdate) -> Analysis:
+        data = self.repository.update_status(analysis_id, status_update.status)
+        return Analysis(**data)
 
 analysis_service = AnalysisService()

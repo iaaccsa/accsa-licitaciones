@@ -15,3 +15,6 @@ class Analysis(AnalysisBase):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class AnalysisStatusUpdate(BaseModel):
+    status: str

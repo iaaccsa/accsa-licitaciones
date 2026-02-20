@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
-from app.schemas.proposal import Proposal, ProposalFilter
+from app.schemas.proposal import Proposal, ProposalBase, ProposalFilter
 from app.services.proposal_service import proposal_service
 
 router = APIRouter()
@@ -12,5 +12,15 @@ def search_proposals(filter_params: ProposalFilter):
     """
     try:
         return proposal_service.search_proposals(filter_params)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/", response_model=Proposal)
+def create_proposal(proposal_data: ProposalBase):
+    """
+    Create a new proposal.
+    """
+    try:
+        return proposal_service.create_proposal(proposal_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,0 +1,30 @@
+[
+    {
+        "service": "service-file-extractor",
+        "info": "Extracts files from the input data."
+    },
+    {
+        "service": "service-files-converter",
+        "info": "Converts files to the desired format."
+    },
+    {
+        "service": "service-setup-qdrant",
+        "info": "Sets up the Qdrant vector database."
+    },
+    {
+        "service": "service-chunk-and-index",
+        "info": "Chunks the data and indexes it in Qdrant."
+    },
+    {
+        "service": "service-iterative-requirement-extractor",
+        "info": "Extracts requirements iteratively."
+    },
+    {
+        "service": "service-verify-compliance",
+        "info": "Verifies compliance with the requirements."
+    },
+    {
+        "service": "service-generate-summary",
+        "info": "Generates a summary of the analysis."
+    }
+]
