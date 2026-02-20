@@ -1,5 +1,5 @@
 from app.repositories.workflow_step_repository import workflow_step_repository
-from app.schemas.workflow_step import WorkflowStep, WorkflowStepFilter
+from app.schemas.workflow_step import WorkflowStep, WorkflowStepBase, WorkflowStepFilter
 from datetime import datetime
 from typing import List
 
@@ -12,6 +12,17 @@ class WorkflowStepService:
             analysis_id=filter_params.analysis_id
         )
         return [WorkflowStep(**item) for item in data]
+
+    def upsert_step(self, step_data: WorkflowStepBase) -> WorkflowStep:
+        data = self.repository.upsert(step_data.model_dump(mode="json", exclude_none=True))
+        # Mark parent step as completed
+        if step_data.parent_code:
+            self.repository.update_status_by_code(
+                analysis_id=step_data.analysis_id,
+                code=step_data.parent_code,
+                status="completed"
+            )
+        return WorkflowStep(**data)
 
     def initialize_steps(self, analysis_id: str) -> List[WorkflowStep]:
         now = datetime.now()

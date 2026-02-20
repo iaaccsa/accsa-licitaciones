@@ -250,3 +250,58 @@ Campos disponibles (todos opcionales, enviar solo los necesarios):
   "mime_type": "application/pdf"
 }
 ```
+
+---
+
+## 7. Upsert Workflow Step
+
+**`PUT /api/v1/workflow-steps/`**
+
+Crea o actualiza un workflow step. Si ya existe un step con la misma combinación de `analysis_id` + `code`, lo actualiza. Si no existe, lo crea.
+
+**Request Body** (JSON):
+```json
+{
+  "analysis_id": "uuid-del-analysis",
+  "code": "extractor",
+  "display_name": "Extractor",
+  "status": "running",
+  "started_at": "2026-02-20T18:00:00Z",
+  "ended_at": null,
+  "error_log": null,
+  "ui_metadata": null,
+  "parent_code": "queued",
+  "proposal_id": null
+}
+```
+
+Campos:
+- `analysis_id` (UUID, **requerido**) — ID del analysis
+- `code` (string, **requerido**) — código identificador del step (clave de conflicto junto con analysis_id)
+- `display_name` (string, **requerido**) — nombre para mostrar en la UI
+- `status` (string, **requerido**) — estado del step (`pending`, `running`, `completed`, `error`)
+- `started_at` (datetime, opcional) — timestamp de inicio
+- `ended_at` (datetime, opcional) — timestamp de finalización
+- `error_log` (string, opcional) — log de error si falló
+- `ui_metadata` (object, opcional) — metadatos adicionales para la UI (JSON libre)
+- `parent_code` (string, opcional) — código del step padre (dependencia)
+- `proposal_id` (UUID, opcional) — ID de la proposal asociada
+
+**Response** (200): El objeto `WorkflowStep` creado o actualizado:
+
+```json
+{
+  "id": "generated-uuid",
+  "created_at": "2026-02-20T18:00:00Z",
+  "analysis_id": "uuid-del-analysis",
+  "code": "extractor",
+  "display_name": "Extractor",
+  "status": "running",
+  "started_at": "2026-02-20T18:00:00Z",
+  "ended_at": null,
+  "error_log": null,
+  "ui_metadata": null,
+  "parent_code": "queued",
+  "proposal_id": null
+}
+```
