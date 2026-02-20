@@ -25,6 +25,15 @@ ENV QDRANT_API_KEY=$QDRANT_API_KEY
 
 ENV COHERE_API_KEY=$COHERE_API_KEY
 
+# Validate required build arguments
+RUN test -n "$SUPABASE_URL" || (echo "ERROR: SUPABASE_URL is required" && exit 1) && \
+    test -n "$SUPABASE_SERVICE_ROLE_KEY" || (echo "ERROR: SUPABASE_SERVICE_ROLE_KEY is required" && exit 1) && \
+    test -n "$LLAMA_CLOUD_API_KEY" || (echo "ERROR: LLAMA_CLOUD_API_KEY is required" && exit 1) && \
+    test -n "$OPENAI_API_KEY" || (echo "ERROR: OPENAI_API_KEY is required" && exit 1) && \
+    test -n "$QDRANT_URL" || (echo "ERROR: QDRANT_URL is required" && exit 1) && \
+    test -n "$QDRANT_API_KEY" || (echo "ERROR: QDRANT_API_KEY is required" && exit 1) && \
+    test -n "$COHERE_API_KEY" || (echo "ERROR: COHERE_API_KEY is required" && exit 1)
+
 # Install Python dependencies
 COPY ${SERVICE_NAME}/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
