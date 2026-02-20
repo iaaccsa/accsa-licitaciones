@@ -15,10 +15,10 @@ ENV QDRANT_URL=$QDRANT_URL
 ENV QDRANT_API_KEY=$QDRANT_API_KEY
 
 # Validate required build arguments
-RUN test -n "$SUPABASE_URL" || (echo "ERROR: SUPABASE_URL is required" && exit 1) && \
-    test -n "$SUPABASE_SERVICE_ROLE_KEY" || (echo "ERROR: SUPABASE_SERVICE_ROLE_KEY is required" && exit 1) && \
-    test -n "$QDRANT_URL" || (echo "ERROR: QDRANT_URL is required" && exit 1) && \
-    test -n "$QDRANT_API_KEY" || (echo "ERROR: QDRANT_API_KEY is required" && exit 1)
+RUN test -n "$SUPABASE_URL" || (echo "ERROR: SUPABASE_URL is required" && exit 1)
+RUN test -n "$SUPABASE_SERVICE_ROLE_KEY" || (echo "ERROR: SUPABASE_SERVICE_ROLE_KEY is required" && exit 1)
+RUN test -n "$QDRANT_URL" || (echo "ERROR: QDRANT_URL is required" && exit 1)
+RUN test -n "$QDRANT_API_KEY" || (echo "ERROR: QDRANT_API_KEY is required" && exit 1)
 
 # Install Python dependencies
 COPY service-setup-qdrant/requirements.txt .
