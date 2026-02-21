@@ -24,8 +24,8 @@ async def health_check():
     """
     return {"status": "ok", "message": "Service is healthy"}
 
-@api_router.get("/health/db", tags=["health"], summary="Check Database Connection")
-async def db_health_check():
+@api_router.get("/health/supabase", tags=["health"], summary="Check Supabase Connection")
+async def supabase_health_check():
     """
     Attempt to connect to Supabase to verify connectivity.
     """
@@ -47,7 +47,7 @@ async def db_health_check():
         if not supabase:
              raise HTTPException(status_code=503, detail="Supabase client not initialized")
 
-        return {"status": "ok", "database": "configured"}
+        return {"status": "ok", "supabase": "configured"}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
