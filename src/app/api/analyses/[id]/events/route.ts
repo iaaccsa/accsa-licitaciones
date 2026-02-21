@@ -8,11 +8,11 @@ export async function POST(
 
     try {
         const baseUrl = process.env.API_BASE_URL;
-        const eventsPath = process.env.API_GET_EVENTS_PATH;
+        const eventsPath = process.env.API_EVENTS_PATH;
         const apiKey = process.env.BACKEND_API_KEY;
 
         if (!baseUrl || !eventsPath || !apiKey) {
-            console.error("API_BASE_URL, API_GET_EVENTS_PATH, or BACKEND_API_KEY not configured");
+            console.error("API_BASE_URL, API_EVENTS_PATH, or BACKEND_API_KEY not configured");
             return NextResponse.json(
                 { error: "API not configured" },
                 { status: 500 }

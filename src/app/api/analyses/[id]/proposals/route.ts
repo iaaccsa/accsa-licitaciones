@@ -7,12 +7,12 @@ export async function GET(
     const id = (await params).id;
 
     const baseUrl = process.env.API_BASE_URL;
-    const proposalsPath = process.env.API_GET_PROPOSALS_PATH;
+    const proposalsPath = process.env.API_PROPOSALS_PATH;
     const apiKey = process.env.BACKEND_API_KEY;
 
     if (!baseUrl || !proposalsPath || !apiKey) {
         return NextResponse.json(
-            { error: "API_BASE_URL, API_GET_PROPOSALS_PATH, or BACKEND_API_KEY not configured" },
+            { error: "API_BASE_URL, API_PROPOSALS_PATH, or BACKEND_API_KEY not configured" },
             { status: 500 }
         );
     }

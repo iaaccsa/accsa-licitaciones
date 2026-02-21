@@ -8,11 +8,11 @@ export async function POST(
 
     try {
         const baseUrl = process.env.API_BASE_URL;
-        const requirementsPath = process.env.API_GET_REQUIREMENTS_PATH;
+        const requirementsPath = process.env.API_REQUIREMENTS_PATH;
         const apiKey = process.env.BACKEND_API_KEY;
 
         if (!baseUrl || !requirementsPath || !apiKey) {
-            console.error("API_BASE_URL, API_GET_REQUIREMENTS_PATH, or BACKEND_API_KEY not configured");
+            console.error("API_BASE_URL, API_REQUIREMENTS_PATH, or BACKEND_API_KEY not configured");
             return NextResponse.json(
                 { error: "API not configured" },
                 { status: 500 }

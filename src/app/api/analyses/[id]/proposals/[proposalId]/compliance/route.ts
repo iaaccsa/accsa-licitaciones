@@ -7,12 +7,12 @@ export async function POST(
     const { proposalId } = await params;
 
     const baseUrl = process.env.API_BASE_URL;
-    const compliancePath = process.env.API_GET_COMPLIANCE_RESULTS_PATH;
+    const compliancePath = process.env.API_COMPLIANCE_RESULTS_PATH;
     const apiKey = process.env.BACKEND_API_KEY;
 
     if (!baseUrl || !compliancePath || !apiKey) {
         return NextResponse.json(
-            { error: "API_BASE_URL, API_GET_COMPLIANCE_RESULTS_PATH, or BACKEND_API_KEY not configured" },
+            { error: "API_BASE_URL, API_COMPLIANCE_RESULTS_PATH, or BACKEND_API_KEY not configured" },
             { status: 500 }
         );
     }
