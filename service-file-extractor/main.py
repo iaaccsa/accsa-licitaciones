@@ -14,6 +14,7 @@ Required environment variables:
   - API_PROPOSALS_PATH         : Path for proposals endpoint
   - API_ANALYSES_PATH          : Path for analyses endpoint
   - API_FILES_PATH             : Path for files endpoint
+  - API_WORKFLOW_STEPS_PATH    : Path for workflow steps endpoint
   - ANALYSIS_ID                : UUID of the analysis to process
 """
 
@@ -42,6 +43,7 @@ API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_FILES_PATH = os.environ.get("API_FILES_PATH")
+API_WORKFLOW_STEPS_PATH = os.environ.get("API_WORKFLOW_STEPS_PATH")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 
@@ -51,12 +53,12 @@ EVENT_SOURCE = "ACA: service-file-extractor"
 logger = setup_logger("file-extractor")
 
 # ---------------------------------------------------------------------------
-# Workflow Data
+# Workflow Steps Data
 # ---------------------------------------------------------------------------
 
 WORKFLOW_CODE = "extractor"
 WORKFLOW_DISPLAY_NAME = "Extracción de archivos"
-WORKFLOW_PARENT_STEP_ID = "queued"
+WORKFLOW_PARENT_CODE = "queued"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -221,6 +223,20 @@ def validate_env():
         missing.append("SUPABASE_SERVICE_ROLE_KEY")
     if not SUPABASE_ARTIFACTS_BASE_URL:
         missing.append("SUPABASE_ARTIFACTS_BASE_URL")
+    if not API_BASE_URL:
+        missing.append("API_BASE_URL")
+    if not API_KEY:
+        missing.append("API_KEY")
+    if not API_EVENTS_PATH:
+        missing.append("API_EVENTS_PATH")
+    if not API_PROPOSALS_PATH:
+        missing.append("API_PROPOSALS_PATH")
+    if not API_ANALYSES_PATH:
+        missing.append("API_ANALYSES_PATH")
+    if not API_FILES_PATH:
+        missing.append("API_FILES_PATH")
+    if not API_WORKFLOW_STEPS_PATH:
+        missing.append("API_WORKFLOW_STEPS_PATH")
     if not ANALYSIS_ID:
         missing.append("ANALYSIS_ID")
     if missing:
@@ -240,14 +256,13 @@ def main():
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     log_workflow_step(
-        supabase=supabase,
         analysis_id=ANALYSIS_ID,
         proposal_id=None,
         code=WORKFLOW_CODE,
         display_name=WORKFLOW_DISPLAY_NAME,
         status="running",
         started_at=datetime.now(timezone.utc).isoformat(),
-        parent_step_id=WORKFLOW_PARENT_STEP_ID
+        parent_code=WORKFLOW_PARENT_CODE
     )
 
     # 2. Fetch the analysis row via API

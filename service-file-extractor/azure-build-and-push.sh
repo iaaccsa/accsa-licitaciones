@@ -20,6 +20,7 @@ docker build --platform linux/amd64 \
   --build-arg API_PROPOSALS_PATH="$API_PROPOSALS_PATH" \
   --build-arg API_ANALYSES_PATH="$API_ANALYSES_PATH" \
   --build-arg API_FILES_PATH="$API_FILES_PATH" \
+  --build-arg API_WORKFLOW_STEPS_PATH="$API_WORKFLOW_STEPS_PATH" \
   -t "$IMAGE" -f Dockerfile ..
 
 echo "Pushing image to ACR..."

@@ -65,3 +65,4 @@ fase-3-2-verify.py
 service-creator.skill
 .agent/skills/skill-creator/service-creator.skill
 backend-credentials
+api-doc.md
