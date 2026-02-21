@@ -6,7 +6,7 @@ ZIP artifact, extracts it, and uploads files to Supabase Storage.
 
 Required environment variables:
   - SUPABASE_URL               : Supabase project URL
-  - SUPABASE_SERVICE_ROLE_KEY  : Service role key for authenticated access
+  - SUPABASE_SERVICE_KEY  : Service role key for authenticated access
   - SUPABASE_ARTIFACTS_BASE_URL: Base URL for artifact downloads
   - API_BASE_URL               : Backend API base URL
   - API_KEY                    : API key for backend authentication
@@ -34,7 +34,7 @@ from supabase_logger import setup_logger, log_event
 # Configuration
 # ---------------------------------------------------------------------------
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 SUPABASE_ARTIFACTS_BASE_URL = os.environ.get("SUPABASE_ARTIFACTS_BASE_URL")
 API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
@@ -215,8 +215,8 @@ def validate_env():
     missing = []
     if not SUPABASE_URL:
         missing.append("SUPABASE_URL")
-    if not SUPABASE_SERVICE_ROLE_KEY:
-        missing.append("SUPABASE_SERVICE_ROLE_KEY")
+    if not SUPABASE_SERVICE_KEY:
+        missing.append("SUPABASE_SERVICE_KEY")
     if not SUPABASE_ARTIFACTS_BASE_URL:
         missing.append("SUPABASE_ARTIFACTS_BASE_URL")
     if not API_BASE_URL:
@@ -271,7 +271,7 @@ def process_analysis():
     logger.info(f"Starting file extractor for analysis_id={ANALYSIS_ID}")
 
     # 1. Connect to Supabase
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
     # 2. Fetch the analysis row via API
     logger.info("Fetching analysis via API …")

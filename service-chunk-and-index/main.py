@@ -8,7 +8,7 @@ and indexes the chunks into the Qdrant collection for the analysis.
 
 Required environment variables:
   - SUPABASE_URL
-  - SUPABASE_SERVICE_ROLE_KEY
+  - SUPABASE_SERVICE_KEY
   - OPENAI_API_KEY
   - QDRANT_URL
   - QDRANT_API_KEY
@@ -54,7 +54,7 @@ EVENT_SOURCE = "ACA: service-chunk-and-index"
 EMBEDDING_MODEL = "text-embedding-3-small"
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 QDRANT_URL = os.environ.get("QDRANT_URL")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY")
@@ -72,7 +72,7 @@ def validate_env():
     """Ensure all required environment variables are set."""
     missing = []
     if not SUPABASE_URL: missing.append("SUPABASE_URL")
-    if not SUPABASE_SERVICE_ROLE_KEY: missing.append("SUPABASE_SERVICE_ROLE_KEY")
+    if not SUPABASE_SERVICE_KEY: missing.append("SUPABASE_SERVICE_KEY")
     if not OPENAI_API_KEY: missing.append("OPENAI_API_KEY")
     if not QDRANT_URL: missing.append("QDRANT_URL")
     if not QDRANT_API_KEY: missing.append("QDRANT_API_KEY")
@@ -87,7 +87,7 @@ def validate_env():
 # Clients
 # ---------------------------------------------------------------------------
 def get_supabase_client() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 def get_qdrant_client() -> QdrantClient:
     return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)

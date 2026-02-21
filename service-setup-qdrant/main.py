@@ -6,7 +6,7 @@ The collection name is the analysis 'slug'.
 
 Required environment variables:
   - SUPABASE_URL
-  - SUPABASE_SERVICE_ROLE_KEY
+  - SUPABASE_SERVICE_KEY
   - ANALYSIS_ID
   - QDRANT_URL
   - QDRANT_API_KEY
@@ -23,7 +23,7 @@ from supabase_logger import setup_logger, log_event, mark_failed
 # Configuration
 # ---------------------------------------------------------------------------
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 QDRANT_URL = os.environ.get("QDRANT_URL")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY")
@@ -38,7 +38,7 @@ def validate_env():
     """Ensure all required environment variables are set."""
     missing = []
     if not SUPABASE_URL: missing.append("SUPABASE_URL")
-    if not SUPABASE_SERVICE_ROLE_KEY: missing.append("SUPABASE_SERVICE_ROLE_KEY")
+    if not SUPABASE_SERVICE_KEY: missing.append("SUPABASE_SERVICE_KEY")
     if not ANALYSIS_ID: missing.append("ANALYSIS_ID")
     if not QDRANT_URL: missing.append("QDRANT_URL")
     if not QDRANT_API_KEY: missing.append("QDRANT_API_KEY")
@@ -54,7 +54,7 @@ def main():
 
     # 1. Connect to Supabase
     try:
-        supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
         log_event(supabase, ANALYSIS_ID, "info", "Iniciando configuración de Qdrant", EVENT_SOURCE)
     except Exception as e:
         logger.error(f"Failed to connect to Supabase: {e}")

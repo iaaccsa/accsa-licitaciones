@@ -5,7 +5,7 @@ Description of the service.
 
 Required environment variables:
   - SUPABASE_URL
-  - SUPABASE_SERVICE_ROLE_KEY
+  - SUPABASE_SERVICE_KEY
   - ANALYSIS_ID
 """
 
@@ -49,7 +49,7 @@ WORKFLOW_DISPLAY_NAME = ""
 WORKFLOW_PARENT_STEP_ID = ""
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 logger = setup_logger("<SERVICE_NAME_SLUG>")
@@ -62,7 +62,7 @@ def validate_env():
     """Ensure all required environment variables are set."""
     missing = []
     if not SUPABASE_URL: missing.append("SUPABASE_URL")
-    if not SUPABASE_SERVICE_ROLE_KEY: missing.append("SUPABASE_SERVICE_ROLE_KEY")
+    if not SUPABASE_SERVICE_KEY: missing.append("SUPABASE_SERVICE_KEY")
     if not ANALYSIS_ID: missing.append("ANALYSIS_ID")
 
     if missing:
@@ -70,7 +70,7 @@ def validate_env():
         sys.exit(1)
 
 def get_supabase_client() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 # ---------------------------------------------------------------------------
 # Main

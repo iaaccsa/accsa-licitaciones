@@ -33,7 +33,7 @@ echo "Building Docker image for $APP_NAME targeting $ENV_TYPE..."
 
 docker build $BUILD_ARGS --platform linux/amd64 \
   --build-arg SUPABASE_URL="$SUPABASE_URL" \
-  --build-arg SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  --build-arg SUPABASE_SERVICE_KEY="$SUPABASE_SERVICE_KEY" \
   --build-arg SUPABASE_ARTIFACTS_BASE_URL="$SUPABASE_ARTIFACTS_BASE_URL" \
   --build-arg API_BASE_URL="$API_BASE_URL" \
   --build-arg API_KEY="$API_KEY" \

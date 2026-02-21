@@ -6,7 +6,7 @@ Uses vector search in Qdrant + reranking with Cohere + verification with GPT-4.
 
 Required environment variables:
   - SUPABASE_URL
-  - SUPABASE_SERVICE_ROLE_KEY
+  - SUPABASE_SERVICE_KEY
   - ANALYSIS_ID
   - PROPOSAL_ID
   - OPENAI_API_KEY
@@ -58,7 +58,7 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 load_dotenv()
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 PROPOSAL_ID = os.environ.get("PROPOSAL_ID")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
@@ -90,7 +90,7 @@ def validate_env():
     """Ensure all required environment variables are set."""
     missing = []
     if not SUPABASE_URL: missing.append("SUPABASE_URL")
-    if not SUPABASE_SERVICE_ROLE_KEY: missing.append("SUPABASE_SERVICE_ROLE_KEY")
+    if not SUPABASE_SERVICE_KEY: missing.append("SUPABASE_SERVICE_KEY")
     # ANALYSIS_ID is now optional, can be derived from PROPOSAL_ID
     if not PROPOSAL_ID: missing.append("PROPOSAL_ID")
     if not OPENAI_API_KEY: missing.append("OPENAI_API_KEY")
@@ -103,7 +103,7 @@ def validate_env():
         sys.exit(1)
 
 def get_supabase_client() -> Client:
-    return create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    return create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
 def get_qdrant_client() -> QdrantClient:
     return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)

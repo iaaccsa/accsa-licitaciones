@@ -19,7 +19,7 @@ echo "Building Docker image for $APP_NAME..."
 # Build from the parent directory to include global logger
 docker build --platform linux/amd64 \
   --build-arg SUPABASE_URL="$SUPABASE_URL" \
-  --build-arg SUPABASE_SERVICE_ROLE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+  --build-arg SUPABASE_SERVICE_KEY="$SUPABASE_SERVICE_KEY" \
   --build-arg OPENAI_API_KEY="$OPENAI_API_KEY" \
   --build-arg QDRANT_URL="$QDRANT_URL" \
   --build-arg QDRANT_API_KEY="$QDRANT_API_KEY" \

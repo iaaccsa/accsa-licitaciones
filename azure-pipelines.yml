@@ -5,7 +5,9 @@ pool:
   vmImage: "ubuntu-latest"
 
 variables:
-  - group: main-vars
+  - group: othes-vars
+  - group: api-vars
+  - group: supabase-vars
 
 strategy:
   matrix:
@@ -41,7 +43,7 @@ steps:
     env:
       AZURE_REGISTRY_SERVER: $(AZURE_REGISTRY_SERVER)
       SUPABASE_URL: $(SUPABASE_URL)
-      SUPABASE_SERVICE_ROLE_KEY: $(SUPABASE_SERVICE_KEY)
+      SUPABASE_SERVICE_KEY: $(SUPABASE_SERVICE_KEY)
       SUPABASE_ARTIFACTS_BASE_URL: $(SUPABASE_ARTIFACTS_BASE_URL)
       SUPABASE_FILES_BASE_URL: $(SUPABASE_FILES_BASE_URL)
       OPENAI_API_KEY: $(OPENAI_API_KEY)

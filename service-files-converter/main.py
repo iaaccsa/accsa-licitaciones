@@ -7,7 +7,7 @@ and a combined tender.md back to Supabase Storage.
 
 Required environment variables:
   - SUPABASE_URL              : Supabase project URL
-  - SUPABASE_SERVICE_ROLE_KEY : Service role key for authenticated access
+  - SUPABASE_SERVICE_KEY : Service role key for authenticated access
   - LLAMA_CLOUD_API_KEY       : LlamaCloud API key for LlamaParse
   - API_BASE_URL              : Backend API base URL
   - API_KEY                   : API key for backend authentication
@@ -34,7 +34,7 @@ nest_asyncio.apply()
 # Configuration
 # ---------------------------------------------------------------------------
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 LLAMA_CLOUD_API_KEY = os.environ.get("LLAMA_CLOUD_API_KEY")
 API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
@@ -76,8 +76,8 @@ def validate_env():
     missing = []
     if not SUPABASE_URL:
         missing.append("SUPABASE_URL")
-    if not SUPABASE_SERVICE_ROLE_KEY:
-        missing.append("SUPABASE_SERVICE_ROLE_KEY")
+    if not SUPABASE_SERVICE_KEY:
+        missing.append("SUPABASE_SERVICE_KEY")
     if not LLAMA_CLOUD_API_KEY:
         missing.append("LLAMA_CLOUD_API_KEY")
     if not API_BASE_URL:
@@ -185,7 +185,7 @@ def main():
     logger.info(f"Starting tender ingestor for analysis_id={ANALYSIS_ID}")
 
     # 1. Connect to Supabase (only for Storage operations)
-    supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
     # 2. Fetch the analysis to get the slug via API
     logger.info("Fetching analysis via API …")

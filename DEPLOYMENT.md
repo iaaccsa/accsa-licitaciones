@@ -266,7 +266,7 @@ Para el servicio de files-converter, cambiás el nombre del job y agregás `LLAM
       "env": [
         { "name": "FILE_ID", "value": "{{FILE_ID}}" },
         { "name": "SUPABASE_URL", "value": "{{SUPABASE_URL}}" },
-        { "name": "SUPABASE_SERVICE_ROLE_KEY", "value": "{{SUPABASE_SERVICE_ROLE_KEY}}" },
+        { "name": "SUPABASE_SERVICE_KEY", "value": "{{SUPABASE_SERVICE_KEY}}" },
         { "name": "OPENAI_API_KEY", "value": "{{OPENAI_API_KEY}}" },
         { "name": "QDRANT_URL", "value": "{{QDRANT_URL}}" },
         { "name": "QDRANT_API_KEY", "value": "{{QDRANT_API_KEY}}" }
@@ -296,7 +296,7 @@ Para el servicio de files-converter, cambiás el nombre del job y agregás `LLAM
 | `CLIENT_ID`                 | Service Principal app ID              |
 | `CLIENT_SECRET`             | Service Principal password            |
 | `SUPABASE_URL`              | URL del proyecto Supabase             |
-| `SUPABASE_SERVICE_ROLE_KEY` | Clave de servicio de Supabase         |
+| `SUPABASE_SERVICE_KEY` | Clave de servicio de Supabase         |
 | `QDRANT_API_KEY`            | (futuro) API key de Qdrant            |
 
 ---

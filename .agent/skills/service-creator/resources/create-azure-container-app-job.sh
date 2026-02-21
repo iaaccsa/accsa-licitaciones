@@ -32,8 +32,8 @@ az containerapp job create \
   --registry-server "$ACR_NAME.azurecr.io" \
   --registry-username "$ACR_NAME" \
   --registry-password "$ACR_PASSWORD" \
-  --secrets "supabase-url=$SUPABASE_URL" "supabase-key=$SUPABASE_SERVICE_ROLE_KEY" \
-  --env-vars "ANALYSIS_ID=manual-trigger" "SUPABASE_URL=secretref:supabase-url" "SUPABASE_SERVICE_ROLE_KEY=secretref:supabase-key" \
+  --secrets "supabase-url=$SUPABASE_URL" "supabase-key=$SUPABASE_SERVICE_KEY" \
+  --env-vars "ANALYSIS_ID=manual-trigger" "SUPABASE_URL=secretref:supabase-url" "SUPABASE_SERVICE_KEY=secretref:supabase-key" \
   --trigger-type "Manual" \
   --replica-timeout 1800 \
   --replica-retry-limit 0 \
