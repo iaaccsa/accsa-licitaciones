@@ -35,7 +35,7 @@ warnings.filterwarnings("ignore", message=".*PydanticSerializationUnexpectedValu
 
 # Try to import shared logger
 try:
-    from supabase_logger import setup_logger, log_event, mark_failed, log_workflow_step
+    from supabase_logger import setup_logger, log_event, mark_failed
 except ImportError:
     # Fallback for local testing
     def setup_logger(name):
@@ -49,8 +49,6 @@ except ImportError:
         print(f"[{level.upper()}] {source}: {message}")
     def mark_failed(supabase, analysis_id, message, source):
         print(f"[FAILED] {source}: {message}")
-    def log_workflow_step(supabase, analysis_id, proposal_id, code, display_name, status, started_at, parent_step_id, ended_at=None, error_log=None):
-        print(f"[WORKFLOW] {code}: {status} (started: {started_at})")
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -69,13 +67,6 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 logger = setup_logger("requirement-extractor")
 
-# ---------------------------------------------------------------------------
-# Workflow Data
-# ---------------------------------------------------------------------------
-
-WORKFLOW_CODE = "extractor"
-WORKFLOW_DISPLAY_NAME = "Extracción de archivos"
-WORKFLOW_PARENT_STEP_ID = "queued"
 
 # ---------------------------------------------------------------------------
 # Data Models
@@ -294,18 +285,6 @@ def main():
     logger.info(f"Starting Requirement Extractor for ANALYSIS_ID={ANALYSIS_ID}")
     
     supabase = get_supabase_client()
-    log_workflow_step(
-        supabase=supabase,
-        analysis_id=ANALYSIS_ID,
-        proposal_id=None,
-        code=WORKFLOW_CODE,
-        display_name=WORKFLOW_DISPLAY_NAME,
-        status="running",
-        started_at=datetime.now(timezone.utc).isoformat(),
-        parent_step_id=WORKFLOW_PARENT_STEP_ID,
-        ended_at=None,
-        error_log=None
-    )
     qdrant = get_qdrant_client()
     
     try:

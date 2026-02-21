@@ -41,7 +41,6 @@ docker build $BUILD_ARGS --platform linux/amd64 \
   --build-arg API_PROPOSALS_PATH="$API_PROPOSALS_PATH" \
   --build-arg API_ANALYSES_PATH="$API_ANALYSES_PATH" \
   --build-arg API_FILES_PATH="$API_FILES_PATH" \
-  --build-arg API_WORKFLOW_STEPS_PATH="$API_WORKFLOW_STEPS_PATH" \
   --build-arg API_JOBS_CALLBACK="$API_JOBS_CALLBACK" \
   -t "$IMAGE" -f Dockerfile ..
 

@@ -14,7 +14,6 @@ Required environment variables:
   - API_PROPOSALS_PATH         : Path for proposals endpoint
   - API_ANALYSES_PATH          : Path for analyses endpoint
   - API_FILES_PATH             : Path for files endpoint
-  - API_WORKFLOW_STEPS_PATH    : Path for workflow steps endpoint
   - ANALYSIS_ID                : UUID of the analysis to process
 """
 
@@ -29,7 +28,7 @@ from pathlib import Path
 import requests
 
 from supabase import create_client, Client
-from supabase_logger import setup_logger, log_event, log_workflow_step
+from supabase_logger import setup_logger, log_event
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -43,7 +42,6 @@ API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_FILES_PATH = os.environ.get("API_FILES_PATH")
-API_WORKFLOW_STEPS_PATH = os.environ.get("API_WORKFLOW_STEPS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
@@ -53,13 +51,7 @@ EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 
 logger = setup_logger(SERVICE_NAME)
 
-# ---------------------------------------------------------------------------
-# Workflow Steps Data
-# ---------------------------------------------------------------------------
 
-WORKFLOW_CODE = "extractor"
-WORKFLOW_DISPLAY_NAME = "Extracción de archivos"
-WORKFLOW_PARENT_CODE = "queued"
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -239,8 +231,6 @@ def validate_env():
         missing.append("API_ANALYSES_PATH")
     if not API_FILES_PATH:
         missing.append("API_FILES_PATH")
-    if not API_WORKFLOW_STEPS_PATH:
-        missing.append("API_WORKFLOW_STEPS_PATH")
     if not API_JOBS_CALLBACK:
         missing.append("API_JOBS_CALLBACK")
     if not ANALYSIS_ID:
@@ -265,21 +255,6 @@ def notify_failure(error_msg: str):
     except Exception as e:
         logger.error(f"Failed to update analysis status: {e}")
 
-    # 3. Mark workflow step as failed
-    try:
-        log_workflow_step(
-            analysis_id=ANALYSIS_ID,
-            proposal_id=None,
-            code=WORKFLOW_CODE,
-            display_name=WORKFLOW_DISPLAY_NAME,
-            status="failed",
-            started_at=datetime.now(timezone.utc).isoformat(),
-            parent_code=WORKFLOW_PARENT_CODE,
-            error_log=error_msg
-        )
-    except Exception as e:
-        logger.error(f"Failed to update workflow step status: {e}")
-
     # 4. Notify API callback
     try:
         api_request("POST", API_JOBS_CALLBACK, {
@@ -297,16 +272,6 @@ def process_analysis():
 
     # 1. Connect to Supabase
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-    log_workflow_step(
-        analysis_id=ANALYSIS_ID,
-        proposal_id=None,
-        code=WORKFLOW_CODE,
-        display_name=WORKFLOW_DISPLAY_NAME,
-        status="running",
-        started_at=datetime.now(timezone.utc).isoformat(),
-        parent_code=WORKFLOW_PARENT_CODE
-    )
 
     # 2. Fetch the analysis row via API
     logger.info("Fetching analysis via API …")

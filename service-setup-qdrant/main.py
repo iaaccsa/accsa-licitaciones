@@ -17,8 +17,7 @@ import sys
 from datetime import datetime, timezone
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from supabase import create_client, Client
-from supabase_logger import setup_logger, log_event, mark_failed, log_workflow_step
+from supabase_logger import setup_logger, log_event, mark_failed
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -34,13 +33,6 @@ VECTOR_SIZE = 1536  # text-embedding-3-small
 
 logger = setup_logger("setup-qdrant")
 
-# ---------------------------------------------------------------------------
-# Workflow Data
-# ---------------------------------------------------------------------------
-
-WORKFLOW_CODE = "extractor"
-WORKFLOW_DISPLAY_NAME = "Extracción de archivos"
-WORKFLOW_PARENT_STEP_ID = "queued"
 
 def validate_env():
     """Ensure all required environment variables are set."""
@@ -63,18 +55,6 @@ def main():
     # 1. Connect to Supabase
     try:
         supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-        log_workflow_step(
-            supabase=supabase,
-            analysis_id=ANALYSIS_ID,
-            proposal_id=None,
-            code=WORKFLOW_CODE,
-            display_name=WORKFLOW_DISPLAY_NAME,
-            status="running",
-            started_at=datetime.now(timezone.utc).isoformat(),
-            parent_step_id=WORKFLOW_PARENT_STEP_ID,
-            ended_at=None,
-            error_log=None
-        )
         log_event(supabase, ANALYSIS_ID, "info", "Iniciando configuración de Qdrant", EVENT_SOURCE)
     except Exception as e:
         logger.error(f"Failed to connect to Supabase: {e}")

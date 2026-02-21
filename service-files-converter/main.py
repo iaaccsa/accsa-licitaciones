@@ -12,7 +12,6 @@ Required environment variables:
   - API_BASE_URL              : Backend API base URL
   - API_KEY                   : API key for backend authentication
   - API_EVENTS_PATH           : Path for events endpoint
-  - API_WORKFLOW_STEPS_PATH   : Path for workflow steps endpoint
   - ANALYSIS_ID               : UUID of the analysis to process
 """
 
@@ -26,7 +25,7 @@ import requests
 import nest_asyncio
 from llama_parse import LlamaParse
 from supabase import create_client, Client
-from supabase_logger import setup_logger, log_event, mark_failed, log_workflow_step
+from supabase_logger import setup_logger, log_event, mark_failed
 
 # Allow nested event loops (required by LlamaParse)
 nest_asyncio.apply()
@@ -43,7 +42,6 @@ API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_FILES_PATH = os.environ.get("API_FILES_PATH", "/api/v1/files/")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH", "/api/v1/analyses/")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH", "/api/v1/proposals/")
-API_WORKFLOW_STEPS_PATH = os.environ.get("API_WORKFLOW_STEPS_PATH")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 WORKSPACE_DIR = Path("/app/workspace")
@@ -52,13 +50,7 @@ STORAGE_BUCKET = "files"
 
 logger = setup_logger("files-converter")
 
-# ---------------------------------------------------------------------------
-# Workflow Data
-# ---------------------------------------------------------------------------
 
-WORKFLOW_CODE = "converter"
-WORKFLOW_DISPLAY_NAME = "Conversión de archivos a Markdown"
-WORKFLOW_PARENT_CODE = "extractor"
 
 
 # ---------------------------------------------------------------------------
@@ -94,8 +86,6 @@ def validate_env():
         missing.append("API_KEY")
     if not API_EVENTS_PATH:
         missing.append("API_EVENTS_PATH")
-    if not API_WORKFLOW_STEPS_PATH:
-        missing.append("API_WORKFLOW_STEPS_PATH")
     if not ANALYSIS_ID:
         missing.append("ANALYSIS_ID")
     if missing:
@@ -196,16 +186,6 @@ def main():
 
     # 1. Connect to Supabase (only for Storage operations)
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
-
-    log_workflow_step(
-        analysis_id=ANALYSIS_ID,
-        proposal_id=None,
-        code=WORKFLOW_CODE,
-        display_name=WORKFLOW_DISPLAY_NAME,
-        status="running",
-        started_at=datetime.now(timezone.utc).isoformat(),
-        parent_code=WORKFLOW_PARENT_CODE
-    )
 
     # 2. Fetch the analysis to get the slug via API
     logger.info("Fetching analysis via API …")
