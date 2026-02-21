@@ -35,8 +35,8 @@ steps:
 
   - script: |
       cd $(SERVICE_NAME)
-      chmod +x azure-build-and-push.sh
-      ./azure-build-and-push.sh
+      chmod +x build-and-push.sh
+      ./build-and-push.sh azure
     displayName: "Build & Push $(SERVICE_NAME)"
     env:
       AZURE_REGISTRY_SERVER: $(AZURE_REGISTRY_SERVER)
@@ -56,4 +56,6 @@ steps:
       API_PROPOSALS_PATH: $(API_PROPOSALS_PATH)
       API_ANALYSES_PATH: $(API_ANALYSES_PATH)
       API_FILES_PATH: $(API_FILES_PATH)
+      API_WORKFLOW_STEPS_PATH: $(API_WORKFLOW_STEPS_PATH)
+      API_JOBS_CALLBACK: $(API_JOBS_CALLBACK)
       API_URL_GET_FILES_FOR_RAG: $(API_URL_GET_FILES_FOR_RAG)

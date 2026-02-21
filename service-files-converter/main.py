@@ -8,8 +8,12 @@ and a combined tender.md back to Supabase Storage.
 Required environment variables:
   - SUPABASE_URL              : Supabase project URL
   - SUPABASE_SERVICE_ROLE_KEY : Service role key for authenticated access
-  - ANALYSIS_ID               : UUID of the analysis to process
   - LLAMA_CLOUD_API_KEY       : LlamaCloud API key for LlamaParse
+  - API_BASE_URL              : Backend API base URL
+  - API_KEY                   : API key for backend authentication
+  - API_EVENTS_PATH           : Path for events endpoint
+  - API_WORKFLOW_STEPS_PATH   : Path for workflow steps endpoint
+  - ANALYSIS_ID               : UUID of the analysis to process
 """
 
 import os
@@ -18,6 +22,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+import requests
 import nest_asyncio
 from llama_parse import LlamaParse
 from supabase import create_client, Client
@@ -31,8 +36,15 @@ nest_asyncio.apply()
 # ---------------------------------------------------------------------------
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
-ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 LLAMA_CLOUD_API_KEY = os.environ.get("LLAMA_CLOUD_API_KEY")
+API_BASE_URL = os.environ.get("API_BASE_URL")
+API_KEY = os.environ.get("API_KEY")
+API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
+API_FILES_PATH = os.environ.get("API_FILES_PATH", "/api/v1/files/")
+API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH", "/api/v1/analyses/")
+API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH", "/api/v1/proposals/")
+API_WORKFLOW_STEPS_PATH = os.environ.get("API_WORKFLOW_STEPS_PATH")
+ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 WORKSPACE_DIR = Path("/app/workspace")
 EVENT_SOURCE = "ACA: service-files-converter"
@@ -44,14 +56,29 @@ logger = setup_logger("files-converter")
 # Workflow Data
 # ---------------------------------------------------------------------------
 
-WORKFLOW_CODE = "extractor"
-WORKFLOW_DISPLAY_NAME = "Extracción de archivos"
-WORKFLOW_PARENT_STEP_ID = "queued"
+WORKFLOW_CODE = "converter"
+WORKFLOW_DISPLAY_NAME = "Conversión de archivos a Markdown"
+WORKFLOW_PARENT_CODE = "extractor"
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+API_HEADERS = {
+    "Content-Type": "application/json",
+    "X-API-Key": API_KEY or "",
+}
+
+
+def api_request(method: str, path: str, json_data: dict | None = None) -> dict | list:
+    """Make an authenticated request to the backend API."""
+    url = f"{API_BASE_URL}{path}"
+    response = requests.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
+    response.raise_for_status()
+    return response.json()
+
+
 def validate_env():
     """Ensure all required environment variables are set."""
     missing = []
@@ -59,10 +86,18 @@ def validate_env():
         missing.append("SUPABASE_URL")
     if not SUPABASE_SERVICE_ROLE_KEY:
         missing.append("SUPABASE_SERVICE_ROLE_KEY")
-    if not ANALYSIS_ID:
-        missing.append("ANALYSIS_ID")
     if not LLAMA_CLOUD_API_KEY:
         missing.append("LLAMA_CLOUD_API_KEY")
+    if not API_BASE_URL:
+        missing.append("API_BASE_URL")
+    if not API_KEY:
+        missing.append("API_KEY")
+    if not API_EVENTS_PATH:
+        missing.append("API_EVENTS_PATH")
+    if not API_WORKFLOW_STEPS_PATH:
+        missing.append("API_WORKFLOW_STEPS_PATH")
+    if not ANALYSIS_ID:
+        missing.append("ANALYSIS_ID")
     if missing:
         logger.error(f"Missing required environment variables: {', '.join(missing)}")
         sys.exit(1)
@@ -104,7 +139,7 @@ def upload_markdown(
 ) -> dict:
     """
     Upload a Markdown string to Supabase Storage and insert a record
-    into the files table.
+    via the backend API.
 
     Returns the inserted file record dict.
     """
@@ -113,19 +148,15 @@ def upload_markdown(
     if custom_storage_path:
         storage_path = custom_storage_path
     elif folder_path:
-        # Preserve folder structure: <folder_path>/<file_id>.md
-        # folder_path already includes slug if derived from storage_path
         storage_path = f"{folder_path}/{file_id}.md"
     elif is_combined:
-        # Combined file goes at: <slug>/tender/tender_full.md
         storage_path = f"{slug}/tender/tender_full.md"
     else:
-        # Fallback (shouldn't be reached if logic is correct): <slug>/<file_id>.md
         storage_path = f"{slug}/{file_id}.md"
 
     content_bytes = content.encode("utf-8")
 
-    # Upload to storage
+    # Upload to Supabase Storage (direct)
     supabase.storage.from_(STORAGE_BUCKET).upload(
         path=storage_path,
         file=content_bytes,
@@ -133,7 +164,7 @@ def upload_markdown(
     )
     logger.info(f"Uploaded {storage_path} ({len(content_bytes)} bytes)")
 
-    # Insert DB record
+    # Insert file record via API
     record = {
         "id": file_id,
         "analysis_id": analysis_id,
@@ -145,12 +176,12 @@ def upload_markdown(
         "is_processed_version": True,
         "is_merged": is_merged,
     }
-    
+
     if proposal_id:
         record["proposal_id"] = proposal_id
 
-    supabase.table("files").insert(record).execute()
-    logger.info(f"Inserted file record: {file_name} (id={file_id})")
+    api_request("POST", API_FILES_PATH, record)
+    logger.info(f"Inserted file record via API: {file_name} (id={file_id})")
 
     return record
 
@@ -163,60 +194,47 @@ def main():
 
     logger.info(f"Starting tender ingestor for analysis_id={ANALYSIS_ID}")
 
-    # 1. Connect to Supabase
+    # 1. Connect to Supabase (only for Storage operations)
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     log_workflow_step(
-        supabase=supabase,
         analysis_id=ANALYSIS_ID,
         proposal_id=None,
         code=WORKFLOW_CODE,
         display_name=WORKFLOW_DISPLAY_NAME,
         status="running",
         started_at=datetime.now(timezone.utc).isoformat(),
-        parent_step_id=WORKFLOW_PARENT_STEP_ID,
-        ended_at=None,
-        error_log=None
+        parent_code=WORKFLOW_PARENT_CODE
     )
 
-    # 2. Fetch the analysis to get the slug
-    logger.info("Querying analyses table …")
-    result = (
-        supabase.table("analyses")
-        .select("id, slug")
-        .eq("id", ANALYSIS_ID)
-        .single()
-        .execute()
-    )
-
-    analysis = result.data
-    if not analysis:
-        logger.error(f"Analysis {ANALYSIS_ID} not found.")
+    # 2. Fetch the analysis to get the slug via API
+    logger.info("Fetching analysis via API …")
+    try:
+        analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 404:
+            logger.error(f"Analysis {ANALYSIS_ID} not found.")
+        else:
+            logger.error(f"Failed to fetch analysis: {e}")
         sys.exit(1)
 
     slug = analysis["slug"].strip()
     logger.info(f"Found analysis — slug={slug}")
-    log_event(supabase, ANALYSIS_ID, "info", "Inicio de conversion de archivos", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", "Inicio de conversion de archivos", EVENT_SOURCE)
 
     # -----------------------------------------------------------------------
     # A. Process TENDER files
     # -----------------------------------------------------------------------
-    logger.info("Querying files table for tender documents …")
-    files_result = (
-        supabase.table("files")
-        .select("id, file_name, storage_path")
-        .eq("analysis_id", ANALYSIS_ID)
-        .eq("category", "tender")
-        .eq("is_processed_version", False)
-        .execute()
-    )
+    logger.info("Querying files via API for tender documents …")
+    all_files = api_request("POST", f"{API_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
+    tender_files = [
+        f for f in all_files
+        if f.get("category") == "tender" and not f.get("is_processed_version")
+    ]
 
-    tender_files = files_result.data or []
-    
     if tender_files:
         logger.info(f"Found {len(tender_files)} tender file(s) to process")
         log_event(
-            supabase,
             ANALYSIS_ID,
             "info",
             f"Encontrados {len(tender_files)} archivos tender",
@@ -302,47 +320,37 @@ def main():
     # -----------------------------------------------------------------------
     # B. Process PROPOSALS
     # -----------------------------------------------------------------------
-    logger.info("Querying proposals table …")
-    proposals_result = (
-        supabase.table("proposals")
-        .select("id, label")
-        .eq("analysis_id", ANALYSIS_ID)
-        .execute()
-    )
-    proposals = proposals_result.data or []
-    
+    logger.info("Querying proposals via API …")
+    proposals = api_request("POST", f"{API_PROPOSALS_PATH}search", {"analysis_id": ANALYSIS_ID})
+
     if proposals:
         logger.info(f"Found {len(proposals)} proposal(s) to process")
-        
-        parser = get_parser() # Reuse or create new instance
-        
+
+        parser = get_parser()
+
+        # Fetch all proposal files once and filter per proposal
+        proposal_files_all = [
+            f for f in all_files
+            if f.get("category") == "proposal" and not f.get("is_processed_version")
+        ]
+
         for p_idx, proposal in enumerate(proposals, 1):
             proposal_id = proposal["id"]
             proposal_label = proposal["label"]
-            
+
             logger.info(f"Processing proposal [{p_idx}/{len(proposals)}]: {proposal_label} ({proposal_id})")
-            
-            # Fetch files for this proposal
-            p_files_result = (
-                supabase.table("files")
-                .select("id, file_name, storage_path")
-                .eq("analysis_id", ANALYSIS_ID)
-                .eq("category", "proposal")
-                .eq("proposal_id", proposal_id)
-                .eq("is_processed_version", False)
-                .execute()
-            )
-            p_files = p_files_result.data or []
-            
+
+            # Filter files for this proposal
+            p_files = [f for f in proposal_files_all if f.get("proposal_id") == proposal_id]
+
             if not p_files:
                 logger.info(f"No files found for proposal {proposal_label}")
                 continue
-                
+
             log_event(
-                supabase, 
-                ANALYSIS_ID, 
-                "info", 
-                f"Procesando propuesta: {proposal_label}", 
+                ANALYSIS_ID,
+                "info",
+                f"Procesando propuesta: {proposal_label}",
                 EVENT_SOURCE,
                 {"files": [f["file_name"] for f in p_files]}
             )
@@ -425,13 +433,7 @@ def main():
                 except Exception as e:
                     logger.error(f"Failed to upload merged file for proposal {proposal_label}: {e}")
 
-    log_event(
-        supabase,
-        ANALYSIS_ID,
-        "info",
-        "Conversion de archivos completada",
-        EVENT_SOURCE
-    )
+    log_event(ANALYSIS_ID, "info", "Conversion de archivos completada", EVENT_SOURCE)
 
     logger.info("Files conversion service complete ✓")
 

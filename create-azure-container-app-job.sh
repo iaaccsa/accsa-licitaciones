@@ -1,6 +1,40 @@
 #!/bin/bash
 set -e
 
+# Usage: ./create-azure-container-app-job.sh <APP_NAME>
+# Example: ./create-azure-container-app-job.sh service-file-extractor
+
+VALID_SERVICES=(
+  "service-file-extractor"
+  "service-files-converter"
+  "service-chunk-and-index"
+  "service-setup-qdrant"
+  "service-iterative-requirement-extractor"
+  "service-verify-compliance"
+)
+
+if [ -z "$1" ]; then
+  echo "ERROR: APP_NAME is required"
+  echo "Usage: $0 <APP_NAME>"
+  echo "Valid services: ${VALID_SERVICES[*]}"
+  exit 1
+fi
+
+# Validate APP_NAME
+VALID=false
+for svc in "${VALID_SERVICES[@]}"; do
+  if [ "$1" == "$svc" ]; then
+    VALID=true
+    break
+  fi
+done
+
+if [ "$VALID" == false ]; then
+  echo "ERROR: Invalid APP_NAME '$1'"
+  echo "Valid services: ${VALID_SERVICES[*]}"
+  exit 1
+fi
+
 # Variables
 RESOURCE_GROUP="accsa-licitaciones"
 ACA_ENV="env-licitaciones"
@@ -10,7 +44,7 @@ REGISTRY="accsalicitaciones.azurecr.io"
 REGISTRY_NAME="accsalicitaciones"
 
 APP_PATH="services"
-APP_NAME="service-file-extractor"
+APP_NAME="$1"
 APP_TAG="latest"
 
 IMAGE="$REGISTRY/$APP_PATH/$APP_NAME:$APP_TAG"

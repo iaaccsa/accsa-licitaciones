@@ -29,7 +29,7 @@ from pathlib import Path
 import requests
 
 from supabase import create_client, Client
-from supabase_logger import setup_logger, log_event, mark_failed, log_workflow_step
+from supabase_logger import setup_logger, log_event, log_workflow_step
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -44,13 +44,14 @@ API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_FILES_PATH = os.environ.get("API_FILES_PATH")
 API_WORKFLOW_STEPS_PATH = os.environ.get("API_WORKFLOW_STEPS_PATH")
+API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
-
+SERVICE_NAME = 'service-file-extractor'
 WORKSPACE_DIR = Path("/app/workspace")
-EVENT_SOURCE = "ACA: service-file-extractor"
+EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 
-logger = setup_logger("file-extractor")
+logger = setup_logger(SERVICE_NAME)
 
 # ---------------------------------------------------------------------------
 # Workflow Steps Data
@@ -70,12 +71,15 @@ API_HEADERS = {
 }
 
 
-def api_request(method: str, path: str, json_data: dict | None = None) -> dict | list:
+def api_request(method: str, path: str, json_data: dict | None = None) -> dict | list | None:
     """Make an authenticated request to the backend API."""
     url = f"{API_BASE_URL}{path}"
     response = requests.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
     response.raise_for_status()
-    return response.json()
+    try:
+        return response.json()
+    except ValueError:
+        return None
 
 
 def determine_file_category(relative_path: Path) -> str:
@@ -237,6 +241,8 @@ def validate_env():
         missing.append("API_FILES_PATH")
     if not API_WORKFLOW_STEPS_PATH:
         missing.append("API_WORKFLOW_STEPS_PATH")
+    if not API_JOBS_CALLBACK:
+        missing.append("API_JOBS_CALLBACK")
     if not ANALYSIS_ID:
         missing.append("ANALYSIS_ID")
     if missing:
@@ -247,9 +253,46 @@ def validate_env():
 # ---------------------------------------------------------------------------
 # Main flow
 # ---------------------------------------------------------------------------
-def main():
-    validate_env()
+def notify_failure(error_msg: str):
+    logger.error(f"notify_failure called with: {error_msg}")
+    
+    # 1. Create an error event
+    log_event(ANALYSIS_ID, "error", error_msg, EVENT_SOURCE)
 
+    # 2. Mark analysis as failed
+    try:
+        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "failed"})
+    except Exception as e:
+        logger.error(f"Failed to update analysis status: {e}")
+
+    # 3. Mark workflow step as failed
+    try:
+        log_workflow_step(
+            analysis_id=ANALYSIS_ID,
+            proposal_id=None,
+            code=WORKFLOW_CODE,
+            display_name=WORKFLOW_DISPLAY_NAME,
+            status="failed",
+            started_at=datetime.now(timezone.utc).isoformat(),
+            parent_code=WORKFLOW_PARENT_CODE,
+            error_log=error_msg
+        )
+    except Exception as e:
+        logger.error(f"Failed to update workflow step status: {e}")
+
+    # 4. Notify API callback
+    try:
+        api_request("POST", API_JOBS_CALLBACK, {
+            "service_name": SERVICE_NAME,
+            "analysis_id": ANALYSIS_ID,
+            "status": "failed",
+            "error_message": error_msg
+        })
+    except Exception as e:
+        logger.error(f"Failed to notify job callback: {e}")
+
+
+def process_analysis():
     logger.info(f"Starting file extractor for analysis_id={ANALYSIS_ID}")
 
     # 1. Connect to Supabase
@@ -267,14 +310,7 @@ def main():
 
     # 2. Fetch the analysis row via API
     logger.info("Fetching analysis via API …")
-    try:
-        analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
-    except requests.exceptions.HTTPError as e:
-        if e.response is not None and e.response.status_code == 404:
-            logger.error(f"Analysis {ANALYSIS_ID} not found.")
-        else:
-            logger.error(f"Failed to fetch analysis: {e}")
-        sys.exit(1)
+    analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
 
     artifact_path: str = analysis["artifact_path"]
     logger.info(f"Found analysis — status={analysis['status']}, artifact_path={artifact_path}")
@@ -288,15 +324,10 @@ def main():
     download_url = f"{SUPABASE_ARTIFACTS_BASE_URL}/{artifact_path}"
     logger.info(f"Downloading ZIP from {download_url}")
     log_event(ANALYSIS_ID, "info", f"Downloading ZIP from {download_url}", EVENT_SOURCE)
-    try:
-        response = requests.get(download_url, timeout=300)
-        response.raise_for_status()
-        file_bytes = response.content
-    except Exception as e:
-        error_msg = f"Failed to download artifact: {e}"
-        logger.error(error_msg)
-        mark_failed(ANALYSIS_ID, error_msg, EVENT_SOURCE)
-        sys.exit(1)
+    
+    response = requests.get(download_url, timeout=300)
+    response.raise_for_status()
+    file_bytes = response.content
 
     # 6. Save ZIP to workspace
     output_dir = WORKSPACE_DIR / ANALYSIS_ID
@@ -308,34 +339,22 @@ def main():
 
     # 7. Extract the ZIP
     log_event(ANALYSIS_ID, "info", "Extracting ZIP", EVENT_SOURCE)
-    try:
-        with zipfile.ZipFile(zip_path, "r") as zf:
-            zf.extractall(output_dir)
-            extracted_files = zf.namelist()
-        logger.info(f"Extracted {len(extracted_files)} files to {output_dir}")
-        log_event(
-            ANALYSIS_ID,
-            "info",
-            f"Extraction complete — {len(extracted_files)} files",
-            EVENT_SOURCE,
-            {"files": extracted_files},
-        )
+    with zipfile.ZipFile(zip_path, "r") as zf:
+        zf.extractall(output_dir)
+        extracted_files = zf.namelist()
+    logger.info(f"Extracted {len(extracted_files)} files to {output_dir}")
+    log_event(
+        ANALYSIS_ID,
+        "info",
+        f"Extraction complete — {len(extracted_files)} files",
+        EVENT_SOURCE,
+        {"files": extracted_files},
+    )
 
-        # 8. Upload and Index Files
-        log_event(ANALYSIS_ID, "info", "Uploading extracted files to storage", EVENT_SOURCE)
-        try:
-            upload_and_index_files(supabase, ANALYSIS_ID, analysis["slug"], output_dir)
-            log_event(ANALYSIS_ID, "info", "Files uploaded and indexed successfully", EVENT_SOURCE)
-        except Exception as e:
-            error_msg = f"Failed during file upload/indexing: {e}"
-            logger.error(error_msg)
-            mark_failed(ANALYSIS_ID, error_msg, EVENT_SOURCE)
-            sys.exit(1)
-    except zipfile.BadZipFile as e:
-        error_msg = f"Invalid ZIP file: {e}"
-        logger.error(error_msg)
-        mark_failed(ANALYSIS_ID, error_msg, EVENT_SOURCE)
-        sys.exit(1)
+    # 8. Upload and Index Files
+    log_event(ANALYSIS_ID, "info", "Uploading extracted files to storage", EVENT_SOURCE)
+    upload_and_index_files(supabase, ANALYSIS_ID, analysis["slug"], output_dir)
+    log_event(ANALYSIS_ID, "info", "Files uploaded and indexed successfully", EVENT_SOURCE)
 
     # 9. Clean up the ZIP after extraction (optional, saves space)
     zip_path.unlink()
@@ -343,6 +362,36 @@ def main():
 
     logger.info("File extraction complete ✓")
     log_event(ANALYSIS_ID, "info", "Proceso de extracción de archivos finalizado exitosamente", EVENT_SOURCE)
+
+    # 10. Notify API callback on success
+    try:
+        api_request("POST", API_JOBS_CALLBACK, {
+            "service_name": SERVICE_NAME,
+            "analysis_id": ANALYSIS_ID,
+            "status": "success"
+        })
+    except Exception as e:
+        logger.error(f"Failed to notify job callback on success: {e}")
+
+
+def main():
+    validate_env()
+    try:
+        process_analysis()
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"HTTP Error during processing: {e}"
+        if hasattr(e, 'response') and e.response is not None:
+            error_msg += f" - Response: {e.response.text}"
+        notify_failure(error_msg)
+        sys.exit(0)
+    except zipfile.BadZipFile as e:
+        error_msg = f"Invalid ZIP file: {e}"
+        notify_failure(error_msg)
+        sys.exit(0)
+    except Exception as e:
+        error_msg = f"Failed during processing: {str(e)}"
+        notify_failure(error_msg)
+        sys.exit(0)
 
 
 if __name__ == "__main__":
