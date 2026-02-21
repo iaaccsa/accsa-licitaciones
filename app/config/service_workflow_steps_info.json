@@ -1,30 +1,82 @@
 [
     {
+        "service": "service-queue",
+        "code": "queue",
+        "display_name": "Encolado",
+        "parent": null,
+        "create_on_start": true,
+        "initial_status": "completed",
+        "is_initial": true
+    },
+    {
         "service": "service-file-extractor",
-        "info": "Extracts files from the input data."
+        "code": "extractor",
+        "display_name": "Extractor",
+        "parent": "queue",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false
     },
     {
         "service": "service-files-converter",
-        "info": "Converts files to the desired format."
+        "code": "converter",
+        "display_name": "Convertidor",
+        "parent": "extractor",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false
     },
     {
         "service": "service-setup-qdrant",
-        "info": "Sets up the Qdrant vector database."
+        "code": "rag-setup",
+        "display_name": "Configuración RAG",
+        "parent": "converter",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false
     },
     {
         "service": "service-chunk-and-index",
-        "info": "Chunks the data and indexes it in Qdrant."
+        "code": "chunk_and_index",
+        "display_name": "Chunking e Indexación",
+        "parent": "rag-setup",
+        "create_on_start": true,
+        "initial_status": "pending"
     },
     {
         "service": "service-iterative-requirement-extractor",
-        "info": "Extracts requirements iteratively."
+        "code": "requirement_extraction",
+        "display_name": "Extracción de Requisitos",
+        "parent": "chunk_and_index",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false
     },
     {
         "service": "service-verify-compliance",
-        "info": "Verifies compliance with the requirements."
+        "code": "compliance_verification",
+        "display_name": "Verificación de Cumplimiento",
+        "parent": "requirement_extraction",
+        "create_on_start": false,
+        "initial_status": "",
+        "is_initial": false
     },
     {
         "service": "service-generate-summary",
-        "info": "Generates a summary of the analysis."
+        "code": "summary_generation",
+        "display_name": "Generación de Resumen",
+        "parent": "compliance_verification",
+        "create_on_start": false,
+        "initial_status": "",
+        "is_initial": false
+    },
+    {
+        "service": "service-metadata-extractor",
+        "code": "metadata_extraction",
+        "display_name": "Extracción de Metadatos",
+        "parent": "summary_generation",
+        "create_on_start": false,
+        "initial_status": "",
+        "is_initial": false
     }
 ]

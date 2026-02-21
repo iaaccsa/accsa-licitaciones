@@ -1,7 +1,9 @@
 from app.repositories.workflow_step_repository import workflow_step_repository
 from app.schemas.workflow_step import WorkflowStep, WorkflowStepBase, WorkflowStepFilter
+import json
+import os
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 class WorkflowStepService:
     def __init__(self):
@@ -26,64 +28,70 @@ class WorkflowStepService:
 
     def initialize_steps(self, analysis_id: str) -> List[WorkflowStep]:
         now = datetime.now()
-        steps = [
-            {
-                "analysis_id": str(analysis_id),
-                "code": "queued",
-                "display_name": "Encolado",
-                "status": "completed",
-                "parent_code": None,
-                "started_at": now.isoformat(),
-                "ended_at": None
-            },
-            {
-                "analysis_id": str(analysis_id),
-                "code": "extractor",
-                "display_name": "Extractor",
-                "status": "pending",
-                "parent_code": "queued",
-                "started_at": None,
-                "ended_at": None
-            },
-            {
-                "analysis_id": str(analysis_id),
-                "code": "converter",
-                "display_name": "Convertidor",
-                "status": "pending",
-                "parent_code": "extractor",
-                "started_at": None,
-                "ended_at": None
-            },
-            {
-                "analysis_id": str(analysis_id),
-                "code": "rag_setup",
-                "display_name": "Configuración RAG",
-                "status": "pending",
-                "parent_code": "converter",
-                "started_at": None,
-                "ended_at": None
-            },
-            {
-                "analysis_id": str(analysis_id),
-                "code": "chunk_and_index",
-                "display_name": "Fragmentación e Indexación",
-                "status": "pending",
-                "parent_code": "rag_setup",
-                "started_at": None,
-                "ended_at": None
-            },
-            {
-                "analysis_id": str(analysis_id),
-                "code": "requirement_extraction",
-                "display_name": "Extracción de Requisitos",
-                "status": "pending",
-                "parent_code": "chunk_and_index",
-                "started_at": None,
-                "ended_at": None
-            }
-        ]
+        
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'service_workflow_steps_info.json')
+        with open(config_path, 'r', encoding='utf-8') as f:
+            steps_config = json.load(f)
+            
+        steps = []
+        for item in steps_config:
+            if item.get("create_on_start"):
+                step = {
+                    "analysis_id": str(analysis_id),
+                    "code": item["code"],
+                    "display_name": item["display_name"],
+                    "status": item["initial_status"],
+                    "parent_code": item.get("parent"),
+                    "started_at": now.isoformat() if item.get("is_initial") else None,
+                    "ended_at": None
+                }
+                steps.append(step)
         
         data = self.repository.create_batch(steps)
         return [WorkflowStep(**item) for item in data]
+
+    def _get_step_config_by_service(self, service_name: str) -> dict:
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'service_workflow_steps_info.json')
+        with open(config_path, 'r', encoding='utf-8') as f:
+            steps_config = json.load(f)
+        for item in steps_config:
+            if item.get("service") == service_name:
+                return item
+        return {}
+
+    def complete_step_by_service(self, analysis_id: str, service_name: str) -> Optional[WorkflowStep]:
+        config = self._get_step_config_by_service(service_name)
+        code = config.get("code")
+        if not code:
+            return None
+        
+        update_data = {
+            "analysis_id": analysis_id,
+            "code": code,
+            "display_name": config.get("display_name", ""),
+            "status": "completed",
+            "ended_at": datetime.now().isoformat()
+        }
+        
+        data = self.repository.upsert(update_data)
+        return WorkflowStep(**data) if data else None
+
+    def start_step_by_service(self, analysis_id: str, service_name: str) -> Optional[WorkflowStep]:
+        config = self._get_step_config_by_service(service_name)
+        code = config.get("code")
+        if not code:
+            return None
+            
+        update_data = {
+            "analysis_id": analysis_id,
+            "code": code,
+            "display_name": config.get("display_name", ""),
+            "status": "running",
+            "parent_code": config.get("parent"),
+            "started_at": datetime.now().isoformat()
+        }
+        
+        data = self.repository.upsert(update_data)
+        return WorkflowStep(**data) if data else None
 
 workflow_step_service = WorkflowStepService()
