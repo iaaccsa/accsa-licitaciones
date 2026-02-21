@@ -35,7 +35,7 @@ Recibe la notificación de que un job terminó (éxito o fallo). Si fue exitoso,
 
 ```json
 {
-    "job_name": "service-file-extractor",
+    "service_name": "service-file-extractor",
     "analysis_id": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
     "proposal_id": "f1e2d3c4-5678-90ab-cdef-1234567890ab",
     "status": "success"
@@ -58,7 +58,7 @@ Recibe la notificación de que un job terminó (éxito o fallo). Si fue exitoso,
 
 ```json
 {
-    "job_name": "service-file-extractor",
+    "service_name": "service-file-extractor",
     "analysis_id": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
     "status": "failed",
     "error_message": "Container ran out of memory"
@@ -81,7 +81,7 @@ Recibe la notificación de que un job terminó (éxito o fallo). Si fue exitoso,
 
 ```json
 {
-    "job_name": "service-generate-summary",
+    "service_name": "service-generate-summary",
     "analysis_id": "a1b2c3d4-5678-90ab-cdef-1234567890ab",
     "status": "success"
 }

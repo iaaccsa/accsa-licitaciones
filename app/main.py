@@ -28,6 +28,11 @@ async def root():
     """
     return {"message": "Hola desde el API del Asistente de Licitaciones!"}
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    from fastapi.responses import Response
+    return Response(content=b"", media_type="image/x-icon")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

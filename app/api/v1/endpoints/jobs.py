@@ -59,7 +59,7 @@ async def job_callback(request: JobCallbackRequest):
     """
     try:
         next_jobs = job_orchestrator_service.on_job_completed(
-            job_name=request.job_name,
+            service_name=request.service_name,
             analysis_id=request.analysis_id,
             proposal_id=request.proposal_id,
             status=request.status,
@@ -67,11 +67,11 @@ async def job_callback(request: JobCallbackRequest):
         )
 
         if request.status == "failed":
-            message = f"Job {request.job_name} falló. Pipeline detenido."
+            message = f"Job {request.service_name} falló. Pipeline detenido."
         elif next_jobs:
-            message = f"Job {request.job_name} completado. Siguientes jobs lanzados: {', '.join(next_jobs)}"
+            message = f"Job {request.service_name} completado. Siguientes jobs lanzados: {', '.join(next_jobs)}"
         else:
-            message = f"Job {request.job_name} completado. Pipeline finalizado."
+            message = f"Job {request.service_name} completado. Pipeline finalizado."
 
         return JobCallbackResponse(
             received=True,

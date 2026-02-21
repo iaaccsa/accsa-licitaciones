@@ -57,26 +57,31 @@ class JobOrchestratorService:
 
     def on_job_completed(
         self,
-        job_name: str,
+        service_name: str,
         analysis_id: UUID,
         proposal_id: Optional[UUID] = None,
         status: str = "success",
         error_message: Optional[str] = None,
     ) -> List[str]:
         """Handle job completion callback and launch next jobs if successful."""
-        if not is_valid_job(job_name):
-            logger.warning(f"Received callback for unknown job: {job_name}")
+        if not is_valid_job(service_name):
+            logger.warning(f"Received callback for unknown job: {service_name}")
             return []
+
+        # Siempre actualizamos a 'succeeded' porque si llegó el callback, el job de Azure se ejecutó correctamente
+        job_repository.update_job_status(str(analysis_id), service_name, "succeeded")
 
         if status == "failed":
             logger.error(
-                f"Job {job_name} failed for analysis_id={analysis_id}. "
+                f"Job {service_name} failed for analysis_id={analysis_id}. "
                 f"Error: {error_message}. Pipeline halted."
             )
+            analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+            self._log_event(analysis_id, "error", f"Job {service_name} failed with error: {error_message}", {"error": error_message})
             return []
 
         # Job succeeded — find and launch next jobs
-        next_jobs = get_next_jobs(job_name)
+        next_jobs = get_next_jobs(service_name)
         launched = []
 
         for next_job in next_jobs:
@@ -85,12 +90,12 @@ class JobOrchestratorService:
                 self._log_event(analysis_id, "info", f"Started job {next_job}", azure_response)
                 launched.append(next_job)
                 logger.info(
-                    f"Launched next job: {next_job} after {job_name} "
+                    f"Launched next job: {next_job} after {service_name} "
                     f"for analysis_id={analysis_id}"
                 )
             except Exception as e:
                 logger.error(
-                    f"Failed to launch job {next_job} after {job_name}: {e}"
+                    f"Failed to launch job {next_job} after {service_name}: {e}"
                 )
                 self._log_event(analysis_id, "error", f"Failed to start job {next_job}", {"error": str(e)})
                 analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
@@ -98,7 +103,7 @@ class JobOrchestratorService:
         if not next_jobs:
             logger.info(
                 f"Pipeline completed for analysis_id={analysis_id}. "
-                f"Last job was: {job_name}"
+                f"Last job was: {service_name}"
             )
 
         return launched

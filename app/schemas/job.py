@@ -15,7 +15,7 @@ class StartPipelineResponse(BaseModel):
 
 
 class JobCallbackRequest(BaseModel):
-    job_name: str
+    service_name: str
     analysis_id: UUID
     proposal_id: Optional[UUID] = None
     status: str  # "success" | "failed"
