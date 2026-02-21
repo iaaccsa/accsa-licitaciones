@@ -13,8 +13,8 @@ strategy:
   matrix:
     service-file-extractor:
       SERVICE_NAME: "service-file-extractor"
-    # service-files-converter:
-    #   SERVICE_NAME: "service-files-converter"
+    service-files-converter:
+      SERVICE_NAME: "service-files-converter"
     # service-chunk-and-index:
     #   SERVICE_NAME: "service-chunk-and-index"
     # service-setup-qdrant:
