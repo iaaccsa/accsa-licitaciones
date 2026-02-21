@@ -1,3 +1,4 @@
 supabase>=2.0.0
 llama-parse>=0.6.0
 nest-asyncio>=1.6.0
+requests>=2.31.0

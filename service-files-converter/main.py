@@ -7,11 +7,14 @@ and a combined tender.md back to Supabase Storage.
 
 Required environment variables:
   - SUPABASE_URL              : Supabase project URL
-  - SUPABASE_SERVICE_KEY : Service role key for authenticated access
+  - SUPABASE_SERVICE_KEY      : Service role key for authenticated access
   - LLAMA_CLOUD_API_KEY       : LlamaCloud API key for LlamaParse
   - API_BASE_URL              : Backend API base URL
   - API_KEY                   : API key for backend authentication
   - API_EVENTS_PATH           : Path for events endpoint
+  - API_FILES_PATH            : Path for files endpoint (optional, default: /api/v1/files/)
+  - API_ANALYSES_PATH         : Path for analyses endpoint (optional, default: /api/v1/analyses/)
+  - API_PROPOSALS_PATH        : Path for proposals endpoint (optional, default: /api/v1/proposals/)
   - ANALYSIS_ID               : UUID of the analysis to process
 """
 
