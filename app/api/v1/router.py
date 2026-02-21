@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from app.core.supabase import supabase
 from app.core.security import get_api_key
+from app.core.qdrant import verify_qdrant_connection
+from app.core.azure import verify_azure_connection
 from app.api.v1.endpoints import analyses, events, requirements, files, proposals, workflow_steps, compliance_results, qdrant, jobs
 
 api_router = APIRouter(dependencies=[Depends(get_api_key)])
@@ -51,3 +53,30 @@ async def db_health_check():
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Database connection failed: {str(e)}"
         )
+
+@api_router.get("/health/qdrant", tags=["health"], summary="Check Qdrant Connection")
+async def qdrant_health_check():
+    """
+    Attempt to connect to Qdrant to verify connectivity.
+    """
+    is_connected = verify_qdrant_connection()
+    if not is_connected:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Qdrant connection failed"
+        )
+    return {"status": "ok", "service": "qdrant"}
+
+@api_router.get("/health/azure", tags=["health"], summary="Check Azure Connection")
+async def azure_health_check():
+    """
+    Attempt to connect to Azure Container Apps and authenticate to verify connectivity.
+    """
+    is_connected = verify_azure_connection()
+    if not is_connected:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Azure connection failed"
+        )
+    return {"status": "ok", "service": "azure"}
+
