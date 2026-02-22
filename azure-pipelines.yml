@@ -19,8 +19,8 @@ strategy:
       SERVICE_NAME: "service-setup-qdrant"
     service-chunk-and-index:
       SERVICE_NAME: "service-chunk-and-index"
-    service-iterative-requirement-extractor:
-      SERVICE_NAME: "service-iterative-requirement-extractor"
+    service-requirement-extractor:
+      SERVICE_NAME: "service-requirement-extractor"
     service-verify-compliance:
       SERVICE_NAME: "service-verify-compliance"
 

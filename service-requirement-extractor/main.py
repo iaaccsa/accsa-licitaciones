@@ -51,7 +51,7 @@ API_REQUIREMENTS_PATH = os.environ.get("API_REQUIREMENTS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
-SERVICE_NAME = "service-iterative-requirement-extractor"
+SERVICE_NAME = "service-requirement-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 
 logger = setup_logger(SERVICE_NAME)

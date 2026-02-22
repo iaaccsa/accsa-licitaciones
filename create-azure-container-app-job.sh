@@ -9,7 +9,7 @@ VALID_SERVICES=(
   "service-files-converter"
   "service-chunk-and-index"
   "service-setup-qdrant"
-  "service-iterative-requirement-extractor"
+  "service-requirement-extractor"
   "service-verify-compliance"
 )
 

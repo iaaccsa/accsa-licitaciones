@@ -36,14 +36,14 @@ RUN test -n "$API_REQUIREMENTS_PATH" || (echo "ERROR: API_REQUIREMENTS_PATH is r
 RUN test -n "$API_JOBS_CALLBACK" || (echo "ERROR: API_JOBS_CALLBACK is required" && exit 1)
 
 # Install Python dependencies
-COPY service-iterative-requirement-extractor/requirements.txt .
+COPY service-requirement-extractor/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-iterative-requirement-extractor/main.py .
+COPY service-requirement-extractor/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace
