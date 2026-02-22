@@ -109,7 +109,7 @@ def notify_failure(error_msg: str):
 
     # 2. Mark analysis as failed
     try:
-        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "failed"})
+        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "ready", "is_success": False})
     except Exception as e:
         logger.error(f"Failed to update analysis status: {e}")
 

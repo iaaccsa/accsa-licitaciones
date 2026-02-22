@@ -190,7 +190,7 @@ def notify_failure(error_msg: str):
     logger.error(f"notify_failure called with: {error_msg}")
     log_event(ANALYSIS_ID, "error", error_msg, EVENT_SOURCE)
     try:
-        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "failed"})
+        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "ready", "is_success": False})
     except Exception as e:
         logger.error(f"Failed to update analysis status: {e}")
     try:
