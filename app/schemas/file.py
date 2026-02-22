@@ -25,3 +25,9 @@ class File(FileBase):
 
 class FileFilter(BaseModel):
     analysis_id: UUID
+
+class FileUpdate(BaseModel):
+    total_chunks: Optional[int] = None
+    is_processed_version: Optional[bool] = None
+    mime_type: Optional[str] = None
+    file_size: Optional[int] = None

@@ -18,4 +18,12 @@ class ComplianceResultRepository(BaseRepository):
         )
         return response.data
 
+    def upsert_batch(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        response = (
+            supabase.table("proposal_compliance_results")
+            .upsert(data, on_conflict="proposal_id,requirement_id")
+            .execute()
+        )
+        return response.data
+
 compliance_result_repository = ComplianceResultRepository()

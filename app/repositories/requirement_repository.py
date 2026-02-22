@@ -18,4 +18,12 @@ class RequirementRepository(BaseRepository):
         )
         return response.data
 
+    def upsert_batch(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        response = (
+            supabase.table(self.table_name)
+            .upsert(data, on_conflict="analysis_id,requirement_code")
+            .execute()
+        )
+        return response.data
+
 requirement_repository = RequirementRepository()

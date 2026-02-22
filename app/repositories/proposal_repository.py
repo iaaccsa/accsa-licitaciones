@@ -16,4 +16,14 @@ class ProposalRepository(BaseRepository):
         )
         return response.data
 
+    def get_by_id(self, proposal_id: str) -> Dict[str, Any]:
+        response = (
+            supabase.table(self.table_name)
+            .select("*")
+            .eq("id", proposal_id)
+            .single()
+            .execute()
+        )
+        return response.data if response.data else None
+
 proposal_repository = ProposalRepository()

@@ -30,4 +30,8 @@ class FileRepository(BaseRepository):
         response = supabase.table("files").insert(data).execute()
         return response.data[0]
 
+    def update_file_by_id(self, file_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        response = supabase.table("files").update(data).eq("id", file_id).execute()
+        return response.data[0] if response.data else None
+
 file_repository = FileRepository()

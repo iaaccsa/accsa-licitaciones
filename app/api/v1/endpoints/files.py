@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
-from app.schemas.file import File, FileBase, FileFilter
+from uuid import UUID
+from app.schemas.file import File, FileBase, FileFilter, FileUpdate
 from app.services.file_service import file_service
 
 router = APIRouter()
@@ -34,3 +35,10 @@ def get_merged_files(filter_params: FileFilter):
         return file_service.get_merged_files(filter_params)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch("/{file_id}", response_model=File)
+def update_file(file_id: UUID, update_data: FileUpdate):
+    result = file_service.update_file(str(file_id), update_data)
+    if not result:
+        raise HTTPException(status_code=404, detail="File not found")
+    return result

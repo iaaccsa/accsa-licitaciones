@@ -27,3 +27,11 @@ class ComplianceResultFilter(BaseModel):
     proposal_id: UUID
     limit: int = 20
     offset: int = 0
+
+class ComplianceResultCreate(BaseModel):
+    proposal_id: UUID
+    requirement_id: UUID
+    status: str
+    evidence_quote: Optional[str] = None
+    reasoning: Optional[str] = None
+    suggestion: Optional[str] = None

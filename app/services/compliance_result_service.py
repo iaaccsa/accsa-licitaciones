@@ -1,5 +1,5 @@
 from app.repositories.compliance_result_repository import compliance_result_repository
-from app.schemas.compliance_result import ComplianceResult, ComplianceResultFilter
+from app.schemas.compliance_result import ComplianceResult, ComplianceResultCreate, ComplianceResultFilter
 from typing import List
 
 class ComplianceResultService:
@@ -12,6 +12,11 @@ class ComplianceResultService:
             limit=filter_params.limit,
             offset=filter_params.offset
         )
+        return [ComplianceResult(**item) for item in data]
+
+    def upsert_results(self, items: List[ComplianceResultCreate]) -> List[ComplianceResult]:
+        rows = [item.model_dump(mode="json", exclude_none=True) for item in items]
+        data = self.repository.upsert_batch(rows)
         return [ComplianceResult(**item) for item in data]
 
 compliance_result_service = ComplianceResultService()
