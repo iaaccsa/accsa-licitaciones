@@ -15,6 +15,16 @@ interface Analysis {
     status: "pending" | "processing" | "ready" | "failed";
 }
 
+interface ProviderMetadata {
+    email: string | null;
+    phone: string | null;
+    tax_id: string | null;
+    address: string | null;
+    company_name: string | null;
+    representative_name: string | null;
+    additional: Record<string, string | number | boolean | null> | null;
+}
+
 interface Proposal {
     id: string;
     analysis_id: string;
@@ -23,6 +33,7 @@ interface Proposal {
     status: string;
     is_success: boolean | null;
     audit_results: Record<string, unknown> | null;
+    provider_metadata: ProviderMetadata | null;
     created_at: string;
 }
 
@@ -173,6 +184,41 @@ export default function ProposalDetailPage() {
             <Separator />
 
             <div className="grid gap-6">
+                {proposal.provider_metadata && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Información del Proveedor</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+                                {(Object.entries(proposal.provider_metadata) as [string, unknown][])
+                                    .filter(([key]) => key !== "additional")
+                                    .map(([key, value]) => (
+                                        <div key={key}>
+                                            <dt className="text-xs text-zinc-400 uppercase tracking-wide mb-0.5">
+                                                {key.replace(/_/g, " ")}
+                                            </dt>
+                                            <dd className={`text-zinc-800 ${key === "company_name" ? "font-bold" : "font-medium"}`}>
+                                                {value != null ? String(value) : <span className="text-zinc-400 font-normal">—</span>}
+                                            </dd>
+                                        </div>
+                                    ))}
+                                {proposal.provider_metadata.additional &&
+                                    Object.entries(proposal.provider_metadata.additional).map(([key, value]) => (
+                                        <div key={`additional_${key}`}>
+                                            <dt className="text-xs text-zinc-400 uppercase tracking-wide mb-0.5">
+                                                {key.replace(/_/g, " ")}
+                                            </dt>
+                                            <dd className="text-zinc-800 font-medium">
+                                                {value != null ? String(value) : <span className="text-zinc-400 font-normal">—</span>}
+                                            </dd>
+                                        </div>
+                                    ))}
+                            </dl>
+                        </CardContent>
+                    </Card>
+                )}
+
                 <Card>
                     <CardHeader>
                         <CardTitle>Resultados de Auditoría</CardTitle>

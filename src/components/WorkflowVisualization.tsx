@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
-import { Settings, FileText, Database, GitBranch, Search, CheckCircle2, AlertCircle, Clock, Cpu, PlayCircle, XCircle, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { Settings, GitBranch, CheckCircle2, AlertCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
 import { Loader2 } from "lucide-react";
+
+const REFRESH_INTERVAL = 5;
 
 interface WorkflowStep {
     code: string;
@@ -126,41 +128,59 @@ const Connection = ({ start, end, status }: { start: { x: number; y: number }; e
 export default function WorkflowVisualization({ analysisId }: { analysisId: string }) {
     const [steps, setSteps] = useState<WorkflowStep[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
+    const isFirstLoad = useRef(true);
 
-    useEffect(() => {
-        const fetchWorkflow = async () => {
-            try {
-                const res = await fetch(`/api/analyses/${analysisId}/workflow`, {
-                    method: 'POST',
-                    body: JSON.stringify({ uuid: analysisId })
-                });
+    const fetchWorkflow = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/analyses/${analysisId}/workflow`, {
+                method: 'POST',
+                body: JSON.stringify({ uuid: analysisId })
+            });
 
-                if (res.ok) {
-                    const data = await res.json();
-                    if (Array.isArray(data)) {
-                        setSteps(data);
-                    } else {
-                        // Handle case where data might be wrapped
-                        console.warn("Unexpected workflow data format", data);
-                        setSteps([]);
-                    }
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    setSteps(data);
                 } else {
-                    console.error("Failed to fetch workflow");
-                    // Don't show critical error to not break the page flow, just log
+                    console.warn("Unexpected workflow data format", data);
                     setSteps([]);
                 }
-            } catch (err) {
-                console.error("Error fetching workflow:", err);
-            } finally {
-                setLoading(false);
+            } else {
+                console.error("Failed to fetch workflow");
+                if (isFirstLoad.current) setSteps([]);
             }
-        };
-
-        if (analysisId) {
-            fetchWorkflow();
+        } catch (err) {
+            console.error("Error fetching workflow:", err);
+        } finally {
+            if (isFirstLoad.current) {
+                setLoading(false);
+                isFirstLoad.current = false;
+            }
         }
     }, [analysisId]);
+
+    // Initial fetch
+    useEffect(() => {
+        if (analysisId) fetchWorkflow();
+    }, [analysisId, fetchWorkflow]);
+
+    // Countdown + auto-refresh
+    useEffect(() => {
+        if (!analysisId) return;
+
+        const timer = setInterval(() => {
+            setCountdown(prev => {
+                if (prev <= 1) {
+                    fetchWorkflow();
+                    return REFRESH_INTERVAL;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [analysisId, fetchWorkflow]);
 
     // Layout Logic
     const layout = useMemo(() => {
@@ -269,12 +289,14 @@ export default function WorkflowVisualization({ analysisId }: { analysisId: stri
     return (
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50/50">
-                <div>
-                    <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-tight flex items-center gap-2">
-                        <GitBranch className="w-4 h-4 text-zinc-500" />
-                        Flujo de Proceso
-                    </h3>
-                </div>
+                <h3 className="text-sm font-semibold text-zinc-900 uppercase tracking-tight flex items-center gap-2">
+                    <GitBranch className="w-4 h-4 text-zinc-500" />
+                    Flujo de Proceso
+                </h3>
+                <span className="text-xs text-zinc-400 flex items-center gap-1.5">
+                    <RefreshCw className="w-3 h-3" />
+                    {countdown}s
+                </span>
             </div>
 
             <div className="relative overflow-x-auto overflow-y-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:20px_20px]">
