@@ -81,7 +81,7 @@ class WorkflowStepService:
         code = config.get("code")
         if not code:
             return None
-            
+
         update_data = {
             "analysis_id": analysis_id,
             "code": code,
@@ -90,7 +90,24 @@ class WorkflowStepService:
             "parent_code": config.get("parent"),
             "started_at": datetime.now().isoformat()
         }
-        
+
+        data = self.repository.upsert(update_data)
+        return WorkflowStep(**data) if data else None
+
+    def fail_step_by_service(self, analysis_id: str, service_name: str) -> Optional[WorkflowStep]:
+        config = self._get_step_config_by_service(service_name)
+        code = config.get("code")
+        if not code:
+            return None
+
+        update_data = {
+            "analysis_id": analysis_id,
+            "code": code,
+            "display_name": config.get("display_name", ""),
+            "status": "failed",
+            "ended_at": datetime.now().isoformat()
+        }
+
         data = self.repository.upsert(update_data)
         return WorkflowStep(**data) if data else None
 

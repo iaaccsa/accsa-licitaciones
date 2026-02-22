@@ -57,6 +57,12 @@ class JobOrchestratorService:
         except Exception as e:
             logger.error(f"Failed to start pipeline for analysis_id={analysis_id}: {e}")
 
+            # Mark the workflow step of the first job as failed
+            try:
+                workflow_step_service.fail_step_by_service(str(analysis_id), first_job)
+            except Exception as step_error:
+                logger.error(f"Failed to fail workflow step for {first_job}: {step_error}")
+
             # Log error event
             self._log_event(analysis_id, "error", f"Failed to start job {first_job}", {"error": str(e)})
 
@@ -127,6 +133,13 @@ class JobOrchestratorService:
                 logger.error(
                     f"Failed to launch job {next_job} after {service_name}: {e}"
                 )
+
+                # Mark the workflow step of the job that failed to launch as failed
+                try:
+                    workflow_step_service.fail_step_by_service(str(analysis_id), next_job)
+                except Exception as step_error:
+                    logger.error(f"Failed to fail workflow step for {next_job}: {step_error}")
+
                 self._log_event(analysis_id, "error", f"Failed to start job {next_job}", {"error": str(e)})
                 analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
 
