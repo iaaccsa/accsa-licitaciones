@@ -20,3 +20,5 @@ ENV/
 .idea/
 .vscode/
 *.swp
+CLAUDE.md
+implement.md
