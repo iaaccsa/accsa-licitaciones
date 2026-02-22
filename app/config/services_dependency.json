@@ -29,11 +29,5 @@
         "next_services": [
             "service-verify-compliance"
         ]
-    },
-    {
-        "service": "service-verify-compliance",
-        "next_services": [
-            "service-generate-summary"
-        ]
     }
 ]

@@ -66,25 +66,7 @@
         "code": "compliance_verification",
         "display_name": "Verificación de Cumplimiento",
         "parent": "requirement_extraction",
-        "create_on_start": false,
-        "initial_status": "",
-        "is_initial": false
-    },
-    {
-        "service": "service-generate-summary",
-        "code": "summary_generation",
-        "display_name": "Generación de Resumen",
-        "parent": "compliance_verification",
-        "create_on_start": false,
-        "initial_status": "",
-        "is_initial": false
-    },
-    {
-        "service": "service-metadata-extractor",
-        "code": "metadata_extraction",
-        "display_name": "Extracción de Metadatos",
-        "parent": "summary_generation",
-        "create_on_start": false,
+        "create_on_start": true,
         "initial_status": "",
         "is_initial": false
     }
