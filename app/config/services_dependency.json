@@ -29,5 +29,9 @@
         "next_services": [
             "service-verify-compliance"
         ]
+    },
+    {
+        "service": "service-metadata-extractor",
+        "next_services": []
     }
 ]
