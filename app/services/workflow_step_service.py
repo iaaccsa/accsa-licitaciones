@@ -29,7 +29,7 @@ class WorkflowStepService:
     def initialize_steps(self, analysis_id: str) -> List[WorkflowStep]:
         now = datetime.now()
         
-        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'service_workflow_steps_info.json')
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'pipeline_config.json')
         with open(config_path, 'r', encoding='utf-8') as f:
             steps_config = json.load(f)
             
@@ -51,7 +51,7 @@ class WorkflowStepService:
         return [WorkflowStep(**item) for item in data]
 
     def _get_step_config_by_service(self, service_name: str) -> dict:
-        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'service_workflow_steps_info.json')
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'config', 'pipeline_config.json')
         with open(config_path, 'r', encoding='utf-8') as f:
             steps_config = json.load(f)
         for item in steps_config:

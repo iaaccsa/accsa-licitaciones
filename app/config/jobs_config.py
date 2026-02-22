@@ -2,17 +2,20 @@ import json
 from pathlib import Path
 from typing import List, Dict, Optional
 
-_SERVICES_DEPENDENCY_PATH = Path(__file__).parent / "services_dependency.json"
+_PIPELINE_CONFIG_PATH = Path(__file__).parent / "pipeline_config.json"
 
-with open(_SERVICES_DEPENDENCY_PATH, "r") as f:
-    _services_dependency: List[Dict] = json.load(f)
+with open(_PIPELINE_CONFIG_PATH, "r") as f:
+    _pipeline_config: List[Dict] = json.load(f)
+
+# Exclude virtual steps (is_initial=True, e.g. service-queue) — not real Azure jobs
+_jobs_config = [entry for entry in _pipeline_config if not entry.get("is_initial", False)]
 
 # Build lookup: service_name -> list of next services
 _next_services_map: Dict[str, List[str]] = {}
 # Track all services that appear as "next_services" (i.e., they have a predecessor)
 _services_with_predecessors: set = set()
 
-for entry in _services_dependency:
+for entry in _jobs_config:
     service = entry["service"]
     next_services = entry.get("next_services", [])
     _next_services_map[service] = next_services
@@ -20,7 +23,7 @@ for entry in _services_dependency:
         _services_with_predecessors.add(ns)
 
 # All known service names
-_all_services: List[str] = [entry["service"] for entry in _services_dependency]
+_all_services: List[str] = [entry["service"] for entry in _jobs_config]
 
 
 def get_root_jobs() -> List[str]:
