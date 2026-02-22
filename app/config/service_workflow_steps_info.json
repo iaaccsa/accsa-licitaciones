@@ -53,6 +53,15 @@
         "is_initial": false
     },
     {
+        "service": "service-metadata-extractor",
+        "code": "metadata_extraction",
+        "display_name": "Extracción de Metadatos",
+        "parent": "chunk_and_index",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false
+    },
+    {
         "service": "service-verify-compliance",
         "code": "compliance_verification",
         "display_name": "Verificación de Cumplimiento",

@@ -20,7 +20,8 @@
     {
         "service": "service-chunk-and-index",
         "next_services": [
-            "service-requirement-extractor"
+            "service-requirement-extractor",
+            "service-metadata-extractor"
         ]
     },
     {
