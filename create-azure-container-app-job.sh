@@ -11,6 +11,7 @@ VALID_SERVICES=(
   "service-setup-qdrant"
   "service-requirement-extractor"
   "service-verify-compliance"
+  "service-metadata-extractor"
 )
 
 if [ -z "$1" ]; then
