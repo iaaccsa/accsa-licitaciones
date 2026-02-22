@@ -286,6 +286,14 @@ def process_extraction():
         msg = "No chunks found for this analysis with category='tender'."
         logger.warning(msg)
         log_event(ANALYSIS_ID, "warning", msg, EVENT_SOURCE)
+        try:
+            api_request("POST", API_JOBS_CALLBACK, {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "status": "success"
+            })
+        except Exception as e:
+            logger.error(f"Failed to notify job callback: {e}")
         return
 
     # 3. Extract requirements
