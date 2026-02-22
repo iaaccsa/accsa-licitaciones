@@ -2,10 +2,12 @@
 Verify Compliance Service
 =========================
 Verifies compliance of a proposal against extracted requirements.
-Uses vector search in Qdrant + reranking with Cohere + verification with GPT-4.
+Uses vector search in Qdrant + reranking with Cohere + verification with Gemini Pro.
+OpenAI is used only for embeddings (text-embedding-3-small).
 
 Required environment variables:
   - OPENAI_API_KEY
+  - GOOGLE_API_KEY
   - COHERE_API_KEY
   - QDRANT_URL
   - QDRANT_API_KEY
@@ -27,6 +29,8 @@ from typing import List, Optional, Literal, Dict, Any
 
 import requests
 from openai import OpenAI
+from google import genai
+from google.genai import types as genai_types
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 import cohere
@@ -38,6 +42,7 @@ from supabase_logger import setup_logger, log_event, make_session
 # Configuration
 # ---------------------------------------------------------------------------
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 COHERE_API_KEY = os.environ.get("COHERE_API_KEY")
 QDRANT_URL = os.environ.get("QDRANT_URL")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY")
@@ -98,6 +103,7 @@ def validate_env():
     missing = [
         var for var, val in [
             ("OPENAI_API_KEY", OPENAI_API_KEY),
+            ("GOOGLE_API_KEY", GOOGLE_API_KEY),
             ("COHERE_API_KEY", COHERE_API_KEY),
             ("QDRANT_URL", QDRANT_URL),
             ("QDRANT_API_KEY", QDRANT_API_KEY),
@@ -195,36 +201,32 @@ def retrieve_evidence(
         return documents[:top_n_rerank]
 
 
-def verify_compliance_llm(openai_client: OpenAI, requirement: dict, evidence_chunks: List[str]) -> ComplianceResult:
-    """Asks the LLM to judge compliance based ONLY on the provided evidence."""
+def verify_compliance_llm(gemini_client: genai.Client, requirement: dict, evidence_chunks: List[str]) -> ComplianceResult:
+    """Asks Gemini Pro to judge compliance based ONLY on the provided evidence."""
     evidence_text = "\n---\n".join(evidence_chunks)
-    system_prompt = """You are a strict Compliance Auditor.
-    Verify if the PROPOSAL meets the REQUIREMENT based ONLY on the provided EVIDENCE CONTEXT.
-
-    Rules:
-    1. If the evidence explicitly confirms the requirement, status is compliant.
-    2. If the evidence contradicts the requirement, status is non_compliant.
-    3. If the evidence mentions the topic but lacks specific details, status is non_compliant.
-    4. If completely absent, status is missing_info.
-    5. Quote the evidence text exactly in 'evidence_quote'.
-    6. PROVIDE 'reasoning' and 'suggestion' IN SPANISH.
-    """
-    user_prompt = f"""
-    REQUIREMENT (ID: {requirement.get('requirement_code') or requirement.get('id')}):
-    "{requirement.get('requirement_text') or requirement.get('text')}"
-
-    EVIDENCE CONTEXT FOUND IN PROPOSAL:
-    {evidence_text}
-    """
-    completion = openai_client.beta.chat.completions.parse(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        response_format=ComplianceResult
+    prompt = (
+        "You are a strict Compliance Auditor.\n"
+        "Verify if the PROPOSAL meets the REQUIREMENT based ONLY on the provided EVIDENCE CONTEXT.\n\n"
+        "Rules:\n"
+        "1. If the evidence explicitly confirms the requirement, status is compliant.\n"
+        "2. If the evidence contradicts the requirement, status is non_compliant.\n"
+        "3. If the evidence mentions the topic but lacks specific details, status is non_compliant.\n"
+        "4. If completely absent, status is missing_info.\n"
+        "5. Quote the evidence text exactly in 'evidence_quote'.\n"
+        "6. PROVIDE 'reasoning' and 'suggestion' IN SPANISH.\n\n"
+        f"REQUIREMENT (ID: {requirement.get('requirement_code') or requirement.get('id')}):\n"
+        f"\"{requirement.get('requirement_text') or requirement.get('text')}\"\n\n"
+        f"EVIDENCE CONTEXT FOUND IN PROPOSAL:\n{evidence_text}"
     )
-    return completion.choices[0].message.parsed
+    response = gemini_client.models.generate_content(
+        model="gemini-3-pro-preview",
+        contents=prompt,
+        config=genai_types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=ComplianceResult,
+        ),
+    )
+    return ComplianceResult.model_validate_json(response.text)
 
 
 def save_results(proposal_id: str, results: List[ComplianceResult]):
@@ -257,6 +259,7 @@ def process_compliance():
 
     qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
     co = cohere.Client(COHERE_API_KEY)
 
     log_event(ANALYSIS_ID, "info", "Iniciando verificación de cumplimiento...", EVENT_SOURCE)
@@ -298,7 +301,7 @@ def process_compliance():
             )
         else:
             req_for_llm = {"id": req_code, "text": req_text, "requirement_code": req_code}
-            res = verify_compliance_llm(openai_client, req_for_llm, evidence)
+            res = verify_compliance_llm(gemini_client, req_for_llm, evidence)
             res.requirement_id = req_id  # Link to the DB UUID
 
         logger.info(f"  -> Result: {res.status}")

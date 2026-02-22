@@ -3,10 +3,10 @@ Iterative Requirement Extractor
 ================================
 Extracts requirements from tender documents indexed in Qdrant.
 Fetches chunks for a given `ANALYSIS_ID`, filters by `category='tender'`,
-extracts requirements using OpenAI, and stores them via API.
+extracts requirements using Gemini, and stores them via API.
 
 Required environment variables:
-  - OPENAI_API_KEY
+  - GOOGLE_API_KEY
   - QDRANT_URL
   - QDRANT_API_KEY
   - API_BASE_URL
@@ -27,20 +27,16 @@ from typing import List, Optional, Dict, Any
 import requests
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
+from google import genai
+from google.genai import types as genai_types
 from pydantic import BaseModel, Field
-import warnings
 
 from supabase_logger import setup_logger, log_event, make_session
-
-# Suppress Pydantic internal serialization warnings (harmless noise from LangChain)
-warnings.filterwarnings("ignore", message=".*PydanticSerializationUnexpectedValue.*")
 
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
 QDRANT_URL = os.environ.get("QDRANT_URL")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY")
 API_BASE_URL = os.environ.get("API_BASE_URL")
@@ -70,6 +66,7 @@ class Requirement(BaseModel):
     mandatory: bool = Field(description="True if it uses 'must', 'shall', 'obligatorio'.")
     rag_chunk_id: Optional[str] = Field(description="ID of the source RAG chunk.", default=None)
 
+
 class RawRequirementsList(BaseModel):
     """Temporary list for raw extraction from chunks."""
     requirements: List[Requirement]
@@ -80,19 +77,26 @@ class RawRequirementsList(BaseModel):
 # ---------------------------------------------------------------------------
 
 class IterativeExtractor:
-    def __init__(self, model_name: str = "gpt-5-mini"):
-        self.map_llm = ChatOpenAI(model=model_name, temperature=0)
-        self.reduce_llm = ChatOpenAI(model="gpt-5.2-pro", temperature=0)
+    def __init__(self, client: genai.Client):
+        self.client = client
 
     def _extract_from_chunk(self, chunk_text: str) -> List[Requirement]:
-        """Extracts requirements from a single text block."""
-        structured_llm = self.map_llm.with_structured_output(RawRequirementsList)
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", "Extract all explicit obligations from this tender fragment. If no requirements are found, return an empty list. STRICTLY OUTPUT IN SPANISH."),
-            ("human", "{chunk}")
-        ])
-        chain = prompt | structured_llm
-        result = chain.invoke({"chunk": chunk_text})
+        """Extracts requirements from a single text block using Gemini Flash."""
+        prompt = (
+            "Extract all explicit obligations from this tender fragment. "
+            "If no requirements are found, return an empty list. "
+            "STRICTLY OUTPUT IN SPANISH.\n\n"
+            f"TENDER FRAGMENT:\n{chunk_text}"
+        )
+        response = self.client.models.generate_content(
+            model="gemini-3-flash-preview",
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=RawRequirementsList,
+            ),
+        )
+        result = RawRequirementsList.model_validate_json(response.text)
         return result.requirements
 
     def _consolidate_requirements(self, all_raw_reqs: List[Requirement]) -> List[dict]:
@@ -103,25 +107,28 @@ class IterativeExtractor:
         logger.info(f"Consolidating {len(all_raw_reqs)} raw findings...")
         raw_data = json.dumps([r.model_dump() for r in all_raw_reqs], ensure_ascii=False)
 
-        system_prompt = """You are a master auditor. You will receive a list of requirements extracted from different parts of a tender.
-        Tasks:
-        1. Remove exact duplicates.
-        2. Merge requirements that are split or overlapping.
-        3. Assign a unique, consistent ID (e.g., REQ-001, REQ-002...).
-        4. Ensure the text is complete and clear.
-        5. CRITICAL: Keep descriptions concise (max 50 words each).
-        6. CRITICAL: ALL OUTPUT MUST BE IN SPANISH (ESPAÑOL).
-        7. CRITICAL: Preserve the `rag_chunk_id` from the source. If merging, keep the ID of the most relevant source.
-        """
-
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            ("human", "Consolidate this raw list into a clean master list:\n\n{raw_list}")
-        ])
-
-        structured_llm = self.reduce_llm.with_structured_output(RawRequirementsList)
-        chain = prompt | structured_llm
-        result = chain.invoke({"raw_list": raw_data})
+        prompt = (
+            "You are a master auditor. Consolidate this raw list into a clean master list.\n\n"
+            "Tasks:\n"
+            "1. Remove exact duplicates.\n"
+            "2. Merge requirements that are split or overlapping.\n"
+            "3. Assign a unique, consistent ID (e.g., REQ-001, REQ-002...).\n"
+            "4. Ensure the text is complete and clear.\n"
+            "5. CRITICAL: Keep descriptions concise (max 50 words each).\n"
+            "6. CRITICAL: ALL OUTPUT MUST BE IN SPANISH (ESPAÑOL).\n"
+            "7. CRITICAL: Preserve the `rag_chunk_id` from the source. "
+            "If merging, keep the ID of the most relevant source.\n\n"
+            f"RAW LIST:\n{raw_data}"
+        )
+        response = self.client.models.generate_content(
+            model="gemini-3-pro-preview",
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=RawRequirementsList,
+            ),
+        )
+        result = RawRequirementsList.model_validate_json(response.text)
         return [r.model_dump() for r in result.requirements]
 
     def run(self, chunks: List[Dict[str, Any]]) -> List[dict]:
@@ -165,7 +172,7 @@ def validate_env():
     """Ensure all required environment variables are set."""
     missing = [
         var for var, val in [
-            ("OPENAI_API_KEY", OPENAI_API_KEY),
+            ("GOOGLE_API_KEY", GOOGLE_API_KEY),
             ("QDRANT_URL", QDRANT_URL),
             ("QDRANT_API_KEY", QDRANT_API_KEY),
             ("API_BASE_URL", API_BASE_URL),
@@ -264,6 +271,7 @@ def process_extraction():
     logger.info(f"Starting Requirement Extractor for ANALYSIS_ID={ANALYSIS_ID}")
 
     qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    gemini = genai.Client(api_key=GOOGLE_API_KEY)
 
     log_event(ANALYSIS_ID, "info", "Iniciando extracción de requerimientos...", EVENT_SOURCE)
 
@@ -281,7 +289,7 @@ def process_extraction():
         return
 
     # 3. Extract requirements
-    extractor = IterativeExtractor()
+    extractor = IterativeExtractor(gemini)
     requirements = extractor.run(chunks)
 
     # 4. Save via API
