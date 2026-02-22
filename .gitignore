@@ -66,3 +66,4 @@ service-creator.skill
 .agent/skills/skill-creator/service-creator.skill
 backend-credentials
 api-doc.md
+CLAUDE.md

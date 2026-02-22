@@ -15,6 +15,7 @@ Required environment variables:
   - API_FILES_PATH            : Path for files endpoint (optional, default: /api/v1/files/)
   - API_ANALYSES_PATH         : Path for analyses endpoint (optional, default: /api/v1/analyses/)
   - API_PROPOSALS_PATH        : Path for proposals endpoint (optional, default: /api/v1/proposals/)
+  - API_JOBS_CALLBACK         : Path for job completion callback endpoint
   - ANALYSIS_ID               : UUID of the analysis to process
 """
 
@@ -28,7 +29,7 @@ import requests
 import nest_asyncio
 from llama_parse import LlamaParse
 from supabase import create_client, Client
-from supabase_logger import setup_logger, log_event, mark_failed
+from supabase_logger import setup_logger, log_event
 
 # Allow nested event loops (required by LlamaParse)
 nest_asyncio.apply()
@@ -45,10 +46,12 @@ API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_FILES_PATH = os.environ.get("API_FILES_PATH", "/api/v1/files/")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH", "/api/v1/analyses/")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH", "/api/v1/proposals/")
+API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
+SERVICE_NAME = "service-files-converter"
 WORKSPACE_DIR = Path("/app/workspace")
-EVENT_SOURCE = "ACA: service-files-converter"
+EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 STORAGE_BUCKET = "files"
 
 logger = setup_logger("files-converter")
@@ -89,6 +92,8 @@ def validate_env():
         missing.append("API_KEY")
     if not API_EVENTS_PATH:
         missing.append("API_EVENTS_PATH")
+    if not API_JOBS_CALLBACK:
+        missing.append("API_JOBS_CALLBACK")
     if not ANALYSIS_ID:
         missing.append("ANALYSIS_ID")
     if missing:
@@ -182,9 +187,25 @@ def upload_markdown(
 # ---------------------------------------------------------------------------
 # Main flow
 # ---------------------------------------------------------------------------
-def main():
-    validate_env()
+def notify_failure(error_msg: str):
+    logger.error(f"notify_failure called with: {error_msg}")
+    log_event(ANALYSIS_ID, "error", error_msg, EVENT_SOURCE)
+    try:
+        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "failed"})
+    except Exception as e:
+        logger.error(f"Failed to update analysis status: {e}")
+    try:
+        api_request("POST", API_JOBS_CALLBACK, {
+            "service_name": SERVICE_NAME,
+            "analysis_id": ANALYSIS_ID,
+            "status": "failed",
+            "error_message": error_msg
+        })
+    except Exception as e:
+        logger.error(f"Failed to notify job callback: {e}")
 
+
+def process_conversion():
     logger.info(f"Starting tender ingestor for analysis_id={ANALYSIS_ID}")
 
     # 1. Connect to Supabase (only for Storage operations)
@@ -192,14 +213,7 @@ def main():
 
     # 2. Fetch the analysis to get the slug via API
     logger.info("Fetching analysis via API …")
-    try:
-        analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
-    except requests.exceptions.HTTPError as e:
-        if e.response is not None and e.response.status_code == 404:
-            logger.error(f"Analysis {ANALYSIS_ID} not found.")
-        else:
-            logger.error(f"Failed to fetch analysis: {e}")
-        sys.exit(1)
+    analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
 
     slug = analysis["slug"].strip()
     logger.info(f"Found analysis — slug={slug}")
@@ -418,7 +432,31 @@ def main():
 
     log_event(ANALYSIS_ID, "info", "Conversion de archivos completada", EVENT_SOURCE)
 
+    try:
+        api_request("POST", API_JOBS_CALLBACK, {
+            "service_name": SERVICE_NAME,
+            "analysis_id": ANALYSIS_ID,
+            "status": "success"
+        })
+    except Exception as e:
+        logger.error(f"Failed to notify job callback on success: {e}")
+
     logger.info("Files conversion service complete ✓")
+
+
+def main():
+    validate_env()
+    try:
+        process_conversion()
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"HTTP Error during processing: {e}"
+        if hasattr(e, 'response') and e.response is not None:
+            error_msg += f" - Response: {e.response.text}"
+        notify_failure(error_msg)
+        sys.exit(0)
+    except Exception as e:
+        notify_failure(f"Failed during processing: {str(e)}")
+        sys.exit(0)
 
 
 if __name__ == "__main__":
