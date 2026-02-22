@@ -10,13 +10,38 @@ import os
 import logging
 
 import requests
- 
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
+
 # ---------------------------------------------------------------------------
 # API Configuration for events
 # ---------------------------------------------------------------------------
 API_BASE_URL = os.environ.get("API_BASE_URL", "")
 API_KEY = os.environ.get("API_KEY", "")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH", "/api/v1/events/")
+
+
+def make_session() -> requests.Session:
+    """Create a requests.Session with automatic retry and exponential backoff.
+
+    Retries up to 3 times on HTTP 429/5xx responses, waiting 2s, 4s, 8s
+    between attempts (backoff_factor=2). Handles Vercel rate limiting gracefully.
+    """
+    session = requests.Session()
+    retry = Retry(
+        total=3,
+        backoff_factor=2,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"],
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+_session = make_session()
 
 
 def setup_logger(name: str) -> logging.Logger:
@@ -52,7 +77,7 @@ def log_event(
             "Content-Type": "application/json",
             "X-API-Key": API_KEY,
         }
-        response = requests.post(url, json=payload, headers=headers, timeout=10)
+        response = _session.post(url, json=payload, headers=headers, timeout=10)
         response.raise_for_status()
     except Exception as e:
         logger.warning(f"Failed to log event via API: {e}")

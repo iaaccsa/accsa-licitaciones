@@ -29,7 +29,7 @@ import requests
 import nest_asyncio
 from llama_parse import LlamaParse
 from supabase import create_client, Client
-from supabase_logger import setup_logger, log_event
+from supabase_logger import setup_logger, log_event, make_session
 
 # Allow nested event loops (required by LlamaParse)
 nest_asyncio.apply()
@@ -55,8 +55,7 @@ EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 STORAGE_BUCKET = "files"
 
 logger = setup_logger("files-converter")
-
-
+SESSION = make_session()
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +71,7 @@ API_HEADERS = {
 def api_request(method: str, path: str, json_data: dict | None = None) -> dict | list:
     """Make an authenticated request to the backend API."""
     url = f"{API_BASE_URL}{path}"
-    response = requests.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
+    response = SESSION.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
     response.raise_for_status()
     return response.json()
 

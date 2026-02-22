@@ -32,7 +32,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel, Field
 import warnings
 
-from supabase_logger import setup_logger, log_event
+from supabase_logger import setup_logger, log_event, make_session
 
 # Suppress Pydantic internal serialization warnings (harmless noise from LangChain)
 warnings.filterwarnings("ignore", message=".*PydanticSerializationUnexpectedValue.*")
@@ -55,6 +55,7 @@ SERVICE_NAME = "service-requirement-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 
 logger = setup_logger(SERVICE_NAME)
+SESSION = make_session()
 
 
 # ---------------------------------------------------------------------------
@@ -152,7 +153,7 @@ API_HEADERS = {
 def api_request(method: str, path: str, json_data: dict | list | None = None) -> dict | list | None:
     """Make an authenticated request to the backend API."""
     url = f"{API_BASE_URL}{path}"
-    response = requests.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
+    response = SESSION.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
     response.raise_for_status()
     try:
         return response.json()

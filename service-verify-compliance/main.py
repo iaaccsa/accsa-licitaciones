@@ -32,7 +32,7 @@ from qdrant_client.http import models
 import cohere
 from pydantic import BaseModel, Field
 
-from supabase_logger import setup_logger, log_event
+from supabase_logger import setup_logger, log_event, make_session
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -57,6 +57,7 @@ EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 EMBEDDING_MODEL = "text-embedding-3-small"
 
 logger = setup_logger(SERVICE_NAME)
+SESSION = make_session()
 
 
 # ---------------------------------------------------------------------------
@@ -84,7 +85,7 @@ API_HEADERS = {
 def api_request(method: str, path: str, json_data: dict | list | None = None) -> dict | list | None:
     """Make an authenticated request to the backend API."""
     url = f"{API_BASE_URL}{path}"
-    response = requests.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
+    response = SESSION.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
     response.raise_for_status()
     try:
         return response.json()
