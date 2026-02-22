@@ -44,7 +44,7 @@
         "initial_status": "pending"
     },
     {
-        "service": "service-iterative-requirement-extractor",
+        "service": "service-requirement-extractor",
         "code": "requirement_extraction",
         "display_name": "Extracción de Requisitos",
         "parent": "chunk_and_index",

@@ -20,11 +20,11 @@
     {
         "service": "service-chunk-and-index",
         "next_services": [
-            "service-iterative-requirement-extractor"
+            "service-requirement-extractor"
         ]
     },
     {
-        "service": "service-iterative-requirement-extractor",
+        "service": "service-requirement-extractor",
         "next_services": [
             "service-verify-compliance"
         ]
