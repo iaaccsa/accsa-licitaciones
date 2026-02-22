@@ -17,12 +17,12 @@ strategy:
       SERVICE_NAME: "service-files-converter"
     service-setup-qdrant:
       SERVICE_NAME: "service-setup-qdrant"
-    # service-chunk-and-index:
-    #   SERVICE_NAME: "service-chunk-and-index"
-    # service-iterative-requirement-extractor:
-    #   SERVICE_NAME: "service-iterative-requirement-extractor"
-    # service-verify-compliance:
-    #   SERVICE_NAME: "service-verify-compliance"
+    service-chunk-and-index:
+      SERVICE_NAME: "service-chunk-and-index"
+    service-iterative-requirement-extractor:
+      SERVICE_NAME: "service-iterative-requirement-extractor"
+    service-verify-compliance:
+      SERVICE_NAME: "service-verify-compliance"
 
 steps:
   - script: |
@@ -59,4 +59,5 @@ steps:
       API_ANALYSES_PATH: $(API_ANALYSES_PATH)
       API_FILES_PATH: $(API_FILES_PATH)
       API_JOBS_CALLBACK: $(API_JOBS_CALLBACK)
-      API_URL_GET_FILES_FOR_RAG: $(API_URL_GET_FILES_FOR_RAG)
+      API_REQUIREMENTS_PATH: $(API_REQUIREMENTS_PATH)
+      API_COMPLIANCE_RESULTS_PATH: $(API_COMPLIANCE_RESULTS_PATH)
