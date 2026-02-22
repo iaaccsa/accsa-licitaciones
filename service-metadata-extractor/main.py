@@ -272,15 +272,12 @@ def process_metadata_extraction():
     )
     logger.info(f"{SERVICE_NAME} complete ✓ ({processed} proposals processed)")
 
-    # 5. Notify success callback
-    try:
-        api_request("POST", API_JOBS_CALLBACK, {
-            "service_name": SERVICE_NAME,
-            "analysis_id": ANALYSIS_ID,
-            "status": "success",
-        })
-    except Exception as e:
-        logger.error(f"Failed to notify job callback on success: {e}")
+    # 5. Notify success callback (no try/except — failures must propagate to main())
+    api_request("POST", API_JOBS_CALLBACK, {
+        "service_name": SERVICE_NAME,
+        "analysis_id": ANALYSIS_ID,
+        "status": "success",
+    })
 
 
 def main():
