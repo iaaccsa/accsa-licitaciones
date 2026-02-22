@@ -6,10 +6,15 @@ from uuid import UUID
 class AnalysisRepository(BaseRepository):
     def __init__(self):
         super().__init__("analyses")
+        self.view_name = "analyses_view"
+
+    def get_all(self):
+        response = supabase.table(self.view_name).select("*").execute()
+        return response.data
 
     def get_by_id(self, analysis_id: UUID) -> Optional[Dict[str, Any]]:
         response = (
-            supabase.table(self.table_name)
+            supabase.table(self.view_name)
             .select("*")
             .eq("id", str(analysis_id))
             .execute()

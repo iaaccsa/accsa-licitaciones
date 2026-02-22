@@ -13,6 +13,10 @@ class Analysis(AnalysisBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
+    total_events: Optional[int] = None
+    total_files: Optional[int] = None
+    total_proposals: Optional[int] = None
+    total_requirements: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
