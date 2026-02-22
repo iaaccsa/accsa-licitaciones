@@ -67,7 +67,7 @@
         "display_name": "Verificación de Cumplimiento",
         "parent": "requirement_extraction",
         "create_on_start": true,
-        "initial_status": "",
+        "initial_status": "pending",
         "is_initial": false
     }
 ]
