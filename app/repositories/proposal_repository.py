@@ -26,4 +26,8 @@ class ProposalRepository(BaseRepository):
         )
         return response.data if response.data else None
 
+    def update_by_id(self, proposal_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
+        response = supabase.table(self.table_name).update(data).eq("id", proposal_id).execute()
+        return response.data[0] if response.data else None
+
 proposal_repository = ProposalRepository()

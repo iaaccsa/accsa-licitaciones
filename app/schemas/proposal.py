@@ -6,6 +6,7 @@ from uuid import UUID
 class ProposalBase(BaseModel):
     analysis_id: Optional[UUID] = None
     provider_name: Optional[str] = None
+    provider_metadata: Optional[Dict[str, Any]] = None
     label: Optional[str] = None
     is_success: Optional[bool] = None
     status: Optional[str] = None
@@ -19,3 +20,7 @@ class Proposal(ProposalBase):
 
 class ProposalFilter(BaseModel):
     analysis_id: UUID
+
+class ProposalUpdate(BaseModel):
+    provider_name: Optional[str] = None
+    provider_metadata: Optional[Dict[str, Any]] = None
