@@ -15,10 +15,10 @@ strategy:
       SERVICE_NAME: "service-file-extractor"
     service-files-converter:
       SERVICE_NAME: "service-files-converter"
+    service-setup-qdrant:
+      SERVICE_NAME: "service-setup-qdrant"
     # service-chunk-and-index:
     #   SERVICE_NAME: "service-chunk-and-index"
-    # service-setup-qdrant:
-    #   SERVICE_NAME: "service-setup-qdrant"
     # service-iterative-requirement-extractor:
     #   SERVICE_NAME: "service-iterative-requirement-extractor"
     # service-verify-compliance:
