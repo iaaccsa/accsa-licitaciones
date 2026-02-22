@@ -1,7 +1,7 @@
 """
 Verify Compliance Service
 =========================
-Verifies compliance of a proposal against extracted requirements.
+Verifies compliance of ALL proposals in an analysis against extracted requirements.
 Uses vector search in Qdrant + reranking with Cohere + verification with Gemini Pro.
 OpenAI is used only for embeddings (text-embedding-3-small).
 
@@ -19,8 +19,7 @@ Required environment variables:
   - API_REQUIREMENTS_PATH
   - API_COMPLIANCE_RESULTS_PATH
   - API_JOBS_CALLBACK
-  - PROPOSAL_ID
-  - ANALYSIS_ID  (optional — derived from PROPOSAL_ID if not provided)
+  - ANALYSIS_ID
 """
 
 import os
@@ -55,7 +54,6 @@ API_REQUIREMENTS_PATH = os.environ.get("API_REQUIREMENTS_PATH")
 API_COMPLIANCE_RESULTS_PATH = os.environ.get("API_COMPLIANCE_RESULTS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
-PROPOSAL_ID = os.environ.get("PROPOSAL_ID")
 
 SERVICE_NAME = "service-verify-compliance"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
@@ -115,7 +113,7 @@ def validate_env():
             ("API_REQUIREMENTS_PATH", API_REQUIREMENTS_PATH),
             ("API_COMPLIANCE_RESULTS_PATH", API_COMPLIANCE_RESULTS_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
-            ("PROPOSAL_ID", PROPOSAL_ID),
+            ("ANALYSIS_ID", ANALYSIS_ID),
         ]
         if not val
     ]
@@ -247,15 +245,7 @@ def save_results(proposal_id: str, results: List[ComplianceResult]):
 
 
 def process_compliance():
-    global ANALYSIS_ID
-
-    # Resolve ANALYSIS_ID if not provided
-    if not ANALYSIS_ID:
-        logger.info(f"ANALYSIS_ID not provided. Fetching from proposal {PROPOSAL_ID}...")
-        ANALYSIS_ID = api_request("GET", f"{API_PROPOSALS_PATH}{PROPOSAL_ID}")["analysis_id"]
-        logger.info(f"Resolved ANALYSIS_ID={ANALYSIS_ID}")
-
-    logger.info(f"Starting verify-compliance for ANALYSIS_ID={ANALYSIS_ID}, PROPOSAL_ID={PROPOSAL_ID}")
+    logger.info(f"Starting verify-compliance for ANALYSIS_ID={ANALYSIS_ID}")
 
     qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
@@ -269,7 +259,24 @@ def process_compliance():
     slug = analysis["slug"]
     logger.info(f"Target Qdrant collection: {slug}")
 
-    # 2. Fetch requirements via API
+    # 2. Fetch proposals via API
+    proposals = api_request("POST", f"{API_PROPOSALS_PATH}search", {"analysis_id": ANALYSIS_ID})
+    if not proposals:
+        logger.warning("No proposals found for this analysis.")
+        log_event(ANALYSIS_ID, "warning", "No proposals found for this analysis.", EVENT_SOURCE)
+        try:
+            api_request("POST", API_JOBS_CALLBACK, {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "status": "success"
+            })
+        except Exception as e:
+            logger.error(f"Failed to notify job callback: {e}")
+        return
+
+    logger.info(f"Loaded {len(proposals)} proposals")
+
+    # 3. Fetch requirements via API
     requirements = api_request("POST", f"{API_REQUIREMENTS_PATH}search", {"analysis_id": ANALYSIS_ID})
     if not requirements:
         logger.warning("No requirements found for this analysis.")
@@ -278,46 +285,58 @@ def process_compliance():
 
     logger.info(f"Loaded {len(requirements)} requirements")
 
-    # 3. Verify each requirement
-    results = []
-    stats = {"compliant": 0, "non_compliant": 0, "missing_info": 0}
+    # 4. Verify each proposal against all requirements
+    total_stats = {"compliant": 0, "non_compliant": 0, "missing_info": 0}
 
-    for i, req in enumerate(requirements):
-        req_text = req.get("requirement_text")
-        req_id = req.get("id")       # UUID in DB
-        req_code = req.get("requirement_code")
+    for p_idx, proposal in enumerate(proposals):
+        proposal_id = proposal["id"]
+        provider_name = proposal.get("provider_name") or proposal_id
 
-        logger.info(f"[{i+1}/{len(requirements)}] Checking {req_code}: {req_text[:60]}...")
+        logger.info(f"[{p_idx+1}/{len(proposals)}] Verificando propuesta: {provider_name}")
+        log_event(ANALYSIS_ID, "info", f"Verificando propuesta {p_idx+1}/{len(proposals)}: {provider_name}", EVENT_SOURCE)
 
-        evidence = retrieve_evidence(qdrant, openai_client, co, slug, req_text, ANALYSIS_ID, PROPOSAL_ID)
+        results = []
+        stats = {"compliant": 0, "non_compliant": 0, "missing_info": 0}
 
-        if not evidence:
-            res = ComplianceResult(
-                requirement_id=req_id,
-                status="missing_info",
-                evidence_quote="N/A",
-                reasoning="La búsqueda semántica no devolvió secciones relevantes en la propuesta.",
-                suggestion="Verificar si la propuesta incluye una sección para este tema."
-            )
-        else:
-            req_for_llm = {"id": req_code, "text": req_text, "requirement_code": req_code}
-            res = verify_compliance_llm(gemini_client, req_for_llm, evidence)
-            res.requirement_id = req_id  # Link to the DB UUID
+        for i, req in enumerate(requirements):
+            req_text = req.get("requirement_text")
+            req_id = req.get("id")
+            req_code = req.get("requirement_code")
 
-        logger.info(f"  -> Result: {res.status}")
-        if res.status in stats:
-            stats[res.status] += 1
-        results.append(res)
+            logger.info(f"  [{i+1}/{len(requirements)}] Checking {req_code}: {req_text[:60]}...")
 
-    # 4. Save results via API
-    save_results(PROPOSAL_ID, results)
+            evidence = retrieve_evidence(qdrant, openai_client, co, slug, req_text, ANALYSIS_ID, proposal_id)
 
-    summary = f"Verificación completada. {stats}"
+            if not evidence:
+                res = ComplianceResult(
+                    requirement_id=req_id,
+                    status="missing_info",
+                    evidence_quote="N/A",
+                    reasoning="La búsqueda semántica no devolvió secciones relevantes en la propuesta.",
+                    suggestion="Verificar si la propuesta incluye una sección para este tema."
+                )
+            else:
+                req_for_llm = {"id": req_code, "text": req_text, "requirement_code": req_code}
+                res = verify_compliance_llm(gemini_client, req_for_llm, evidence)
+                res.requirement_id = req_id
+
+            logger.info(f"    -> Result: {res.status}")
+            if res.status in stats:
+                stats[res.status] += 1
+            results.append(res)
+
+        save_results(proposal_id, results)
+        log_event(ANALYSIS_ID, "info", f"Propuesta {provider_name} verificada: {stats}", EVENT_SOURCE)
+
+        for key in total_stats:
+            total_stats[key] += stats[key]
+
+    # 5. Summary and success callback
+    summary = f"Verificación completada. {len(proposals)} propuestas. {total_stats}"
     logger.info(summary)
     log_event(ANALYSIS_ID, "info", summary, EVENT_SOURCE)
     logger.info("Verify Compliance Service complete ✓")
 
-    # 5. Notify success callback
     try:
         api_request("POST", API_JOBS_CALLBACK, {
             "service_name": SERVICE_NAME,
