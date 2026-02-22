@@ -35,6 +35,15 @@ RUN test -n "$API_JOBS_CALLBACK" || (echo "ERROR: API_JOBS_CALLBACK is required"
 RUN test -n "$QDRANT_URL" || (echo "ERROR: QDRANT_URL is required" && exit 1)
 RUN test -n "$QDRANT_API_KEY" || (echo "ERROR: QDRANT_API_KEY is required" && exit 1)
 
+# Validate API path formats (must start with /api/)
+RUN for entry in \
+      "API_EVENTS_PATH=$API_EVENTS_PATH" \
+      "API_ANALYSES_PATH=$API_ANALYSES_PATH" \
+      "API_JOBS_CALLBACK=$API_JOBS_CALLBACK"; do \
+    name="${entry%%=*}"; val="${entry#*=}"; \
+    case "$val" in /api/*) ;; *) echo "ERROR: $name must start with /api/ (got: $val)" && exit 1 ;; esac; \
+  done
+
 # Install Python dependencies
 COPY service-setup-qdrant/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

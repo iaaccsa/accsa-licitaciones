@@ -47,6 +47,18 @@ RUN test -n "$API_REQUIREMENTS_PATH" || (echo "ERROR: API_REQUIREMENTS_PATH is r
 RUN test -n "$API_COMPLIANCE_RESULTS_PATH" || (echo "ERROR: API_COMPLIANCE_RESULTS_PATH is required" && exit 1)
 RUN test -n "$API_JOBS_CALLBACK" || (echo "ERROR: API_JOBS_CALLBACK is required" && exit 1)
 
+# Validate API path formats (must start with /api/)
+RUN for entry in \
+      "API_EVENTS_PATH=$API_EVENTS_PATH" \
+      "API_ANALYSES_PATH=$API_ANALYSES_PATH" \
+      "API_PROPOSALS_PATH=$API_PROPOSALS_PATH" \
+      "API_REQUIREMENTS_PATH=$API_REQUIREMENTS_PATH" \
+      "API_COMPLIANCE_RESULTS_PATH=$API_COMPLIANCE_RESULTS_PATH" \
+      "API_JOBS_CALLBACK=$API_JOBS_CALLBACK"; do \
+    name="${entry%%=*}"; val="${entry#*=}"; \
+    case "$val" in /api/*) ;; *) echo "ERROR: $name must start with /api/ (got: $val)" && exit 1 ;; esac; \
+  done
+
 # Install Python dependencies
 COPY service-verify-compliance/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
