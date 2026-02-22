@@ -90,8 +90,8 @@ class JobOrchestratorService:
             logger.warning(f"Received callback for unknown job: {service_name}")
             return []
 
-        # Siempre actualizamos a 'succeeded' porque si llegó el callback, el job de Azure se ejecutó correctamente
-        job_repository.update_job_status(str(analysis_id), service_name, "succeeded")
+        job_status = "succeeded" if status == "success" else "failed"
+        job_repository.update_job_status(str(analysis_id), service_name, job_status)
 
         if status == "success":
             # Complete current workflow step
@@ -105,6 +105,10 @@ class JobOrchestratorService:
                 f"Job {service_name} failed for analysis_id={analysis_id}. "
                 f"Error: {error_message}. Pipeline halted."
             )
+            try:
+                workflow_step_service.fail_step_by_service(str(analysis_id), service_name)
+            except Exception as e:
+                logger.error(f"Failed to mark workflow step as failed for {service_name}: {e}")
             analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
             self._log_event(analysis_id, "error", f"Job {service_name} failed with error: {error_message}", {"error": error_message})
             return []
