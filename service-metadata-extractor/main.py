@@ -25,7 +25,8 @@ import os
 import sys
 from typing import Dict, List
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types as genai_types
 import requests
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
@@ -161,16 +162,16 @@ PROPOSAL TEXT:
 {text}"""
 
 
-def extract_metadata_with_gemini(text: str) -> dict:
+def extract_metadata_with_gemini(client: genai.Client, text: str) -> dict:
     """Call Gemini to extract structured metadata from proposal text."""
-    model = genai.GenerativeModel(
-        model_name="gemini-3-flash-preview",
-        generation_config=genai.GenerationConfig(
+    prompt = EXTRACTION_PROMPT.format(text=text)
+    response = client.models.generate_content(
+        model="gemini-3-flash-preview",
+        contents=prompt,
+        config=genai_types.GenerateContentConfig(
             response_mime_type="application/json",
         ),
     )
-    prompt = EXTRACTION_PROMPT.format(text=text)
-    response = model.generate_content(prompt)
     result = json.loads(response.text)
     return result
 
@@ -220,8 +221,8 @@ def process_metadata_extraction():
         })
         return
 
-    # 3. Configure Gemini
-    genai.configure(api_key=GOOGLE_API_KEY)
+    # 3. Configure Gemini client
+    gemini = genai.Client(api_key=GOOGLE_API_KEY)
 
     # 4. Connect to Supabase for direct table updates
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -241,7 +242,7 @@ def process_metadata_extraction():
         )
 
         try:
-            metadata = extract_metadata_with_gemini(combined)
+            metadata = extract_metadata_with_gemini(gemini, combined)
         except Exception as e:
             logger.error(f"Gemini extraction failed for proposal {proposal_id}: {e}")
             log_event(
