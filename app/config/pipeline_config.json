@@ -16,7 +16,7 @@
       "service-files-converter"
     ],
     "code": "extractor",
-    "display_name": "Extractor",
+    "display_name": "Preparando Documentos",
     "parent": "queue",
     "create_on_start": true,
     "initial_status": "pending",
