@@ -25,6 +25,8 @@ strategy:
       SERVICE_NAME: "service-verify-compliance"
     service-metadata-extractor:
       SERVICE_NAME: "service-metadata-extractor"
+    service-proposal-scorer:
+      SERVICE_NAME: "service-proposal-scorer"
 
 steps:
   - script: |
