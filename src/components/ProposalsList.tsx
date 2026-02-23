@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, FileText } from "lucide-react";
+import { AlertCircle, FileText, Trophy } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -106,9 +106,17 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
                     <Link key={proposal.id} href={`/analyses/${analysisId}/proposals/${proposal.id}`}>
                         <Card className={`hover:shadow-md transition-shadow h-full ${proposal.id === topId ? "border-emerald-400 shadow-emerald-100 shadow-md ring-1 ring-emerald-300" : ""}`}>
                             <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    {proposal.provider_name || "Proveedor sin nombre"}
-                                </CardTitle>
+                                <div className="flex items-center justify-between gap-2">
+                                    <CardTitle className="text-sm font-medium">
+                                        {proposal.provider_name || "Proveedor sin nombre"}
+                                    </CardTitle>
+                                    {proposal.id === topId && (
+                                        <span className="inline-flex flex-col items-center px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-100 text-emerald-700 shrink-0 leading-tight gap-0.5">
+                                            <Trophy className="w-4 h-4" />
+                                            Mejor puntuación
+                                        </span>
+                                    )}
+                                </div>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div>
