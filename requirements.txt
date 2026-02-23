@@ -8,3 +8,6 @@ qdrant-client>=1.7.0
 python-multipart
 azure-identity
 azure-mgmt-appcontainers
+openai
+google-genai
+redis

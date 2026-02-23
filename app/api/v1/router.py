@@ -3,7 +3,7 @@ from app.core.supabase import supabase
 from app.core.security import get_api_key
 from app.core.qdrant import verify_qdrant_connection
 from app.core.azure import verify_azure_connection
-from app.api.v1.endpoints import analyses, events, requirements, files, proposals, workflow_steps, compliance_results, qdrant, jobs
+from app.api.v1.endpoints import analyses, events, requirements, files, proposals, workflow_steps, compliance_results, qdrant, jobs, chat
 
 api_router = APIRouter(dependencies=[Depends(get_api_key)])
 
@@ -16,6 +16,7 @@ api_router.include_router(workflow_steps.router, prefix="/workflow-steps", tags=
 api_router.include_router(compliance_results.router, prefix="/compliance-results", tags=["compliance-results"])
 api_router.include_router(qdrant.router, prefix="/qdrant", tags=["qdrant"])
 api_router.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
+api_router.include_router(chat.router, prefix="/chat", tags=["chat"])
 
 @api_router.get("/health", tags=["health"], summary="Perform a Health Check")
 async def health_check():

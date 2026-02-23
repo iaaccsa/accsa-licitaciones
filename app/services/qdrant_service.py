@@ -7,21 +7,21 @@ class QdrantService:
         return qdrant_client.get_collections()
 
     def search_points(self, search_params: QdrantSearchRequest) -> QdrantSearchResponse:
-        points = qdrant_client.search(
+        results = qdrant_client.query_points(
             collection_name=search_params.collection_name,
-            query_vector=search_params.vector,
+            query=search_params.vector,
             query_filter=models.Filter(**search_params.filter) if search_params.filter else None,
             limit=search_params.limit,
             with_payload=search_params.with_payload
         )
-        
+
         return QdrantSearchResponse(
             points=[
                 QdrantPoint(
                     id=point.id,
                     score=point.score,
                     payload=point.payload
-                ) for point in points
+                ) for point in results.points
             ]
         )
 

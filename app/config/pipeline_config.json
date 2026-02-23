@@ -3,7 +3,7 @@
     "service": "service-queue",
     "next_services": [],
     "code": "queue",
-    "display_name": "Encolado",
+    "display_name": "En Espera",
     "parent": null,
     "create_on_start": true,
     "initial_status": "completed",

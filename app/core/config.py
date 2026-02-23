@@ -13,6 +13,10 @@ class Settings(BaseSettings):
 
     BACKEND_API_KEY: str
 
+    OPENAI_API_KEY: str
+    GEMINI_API_KEY: str
+    UPSTASH_REDIS_REST_URL: str
+
     # Azure Container Apps
     AZURE_TENANT_ID: str
     AZURE_CLIENT_ID: str
