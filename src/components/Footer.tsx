@@ -20,12 +20,20 @@ export function Footer() {
                         © {new Date().getFullYear()}
                     </span>
                 </div>
-                <Link
-                    href="/terms"
-                    className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
-                >
-                    Términos y Condiciones
-                </Link>
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/tech"
+                        className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+                    >
+                        Stack tecnológico
+                    </Link>
+                    <Link
+                        href="/terms"
+                        className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+                    >
+                        Términos y Condiciones
+                    </Link>
+                </div>
             </div>
         </footer>
     );
