@@ -104,7 +104,7 @@
     "service": "service-proposal-scorer",
     "next_services": [],
     "code": "proposal_scorer",
-    "display_name": "Scoring de Proposals",
+    "display_name": "Puntuación de Propuestas",
     "parent": "compliance_verification",
     "create_on_start": true,
     "initial_status": "pending",
