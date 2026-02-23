@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { FileText, Download, ChevronLeft, AlertCircle } from "lucide-react";
+import { FileText, Download, ChevronLeft, AlertCircle, MessageSquare } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface AnalysisFile {
@@ -159,16 +159,27 @@ export default function AnalysisFilesPage() {
                                                 </a>
                                             )}
                                         </div>
-                                        <a
-                                            href={`${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
-                                            title="Descargar documento"
-                                            download={file.file_name}
-                                        >
-                                            <Download className="w-4 h-4" />
-                                        </a>
+                                        <div className="flex items-center gap-1">
+                                            {file.is_merged && (
+                                                <a
+                                                    href={`/analyses/${id}/files/${file.id}/chat`}
+                                                    className="text-zinc-400 hover:text-violet-600 transition-colors p-1.5 hover:bg-violet-50 rounded-md"
+                                                    title="Chat con este documento"
+                                                >
+                                                    <MessageSquare className="w-4 h-4" />
+                                                </a>
+                                            )}
+                                            <a
+                                                href={`${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
+                                                title="Descargar documento"
+                                                download={file.file_name}
+                                            >
+                                                <Download className="w-4 h-4" />
+                                            </a>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>
@@ -220,16 +231,27 @@ export default function AnalysisFilesPage() {
                                                         </a>
                                                     )}
                                                 </div>
-                                                <a
-                                                    href={`${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
-                                                    title="Descargar documento"
-                                                    download={file.file_name}
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </a>
+                                                <div className="flex items-center gap-1">
+                                                    {file.is_merged && (
+                                                        <a
+                                                            href={`/analyses/${id}/files/${file.id}/chat`}
+                                                            className="text-zinc-400 hover:text-violet-600 transition-colors p-1.5 hover:bg-violet-50 rounded-md"
+                                                            title="Chat con este documento"
+                                                        >
+                                                            <MessageSquare className="w-4 h-4" />
+                                                        </a>
+                                                    )}
+                                                    <a
+                                                        href={`${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
+                                                        title="Descargar documento"
+                                                        download={file.file_name}
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                    </a>
+                                                </div>
                                             </li>
                                         ))}
                                     </ul>

@@ -169,13 +169,13 @@ export default function ProposalDetailPage() {
                             <p className="text-sm font-bold text-amber-500">{proposal.missing_info_count ?? "—"}</p>
                         </div>
                         <div className="px-5 text-center">
-                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">N/A</p>
+                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">No procesado</p>
                             <p className="text-sm font-bold text-zinc-400">{proposal.unprocessable_count ?? "—"}</p>
                         </div>
                         {proposal.compliance_score != null && (
                             <div className="px-5 text-center">
                                 <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Puntuación</p>
-                                <p className="text-base font-bold text-zinc-800">{proposal.compliance_score}</p>
+                                <p className="text-base font-bold text-zinc-800">{proposal.compliance_score}/<span className="text-zinc-400 text-sm">100</span></p>
                             </div>
                         )}
                     </div>

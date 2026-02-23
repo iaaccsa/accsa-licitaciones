@@ -140,7 +140,7 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
                                             <p className="text-sm font-bold text-amber-500">{proposal.missing_info_count ?? "—"}</p>
                                         </div>
                                         <div className="py-1.5 px-1">
-                                            <p className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wide leading-tight mb-0.5">N/A</p>
+                                            <p className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wide leading-tight mb-0.5">No procesado</p>
                                             <p className="text-sm font-bold text-zinc-400">{proposal.unprocessable_count ?? "—"}</p>
                                         </div>
                                     </div>
@@ -148,7 +148,7 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
                                 {proposal.compliance_score != null && (
                                     <div className="flex items-center justify-between px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-lg">
                                         <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">Puntuación</span>
-                                        <span className="text-base font-bold text-zinc-800">{proposal.compliance_score}</span>
+                                        <span className="text-base font-bold text-zinc-800">{proposal.compliance_score}/<span className="text-zinc-400 text-sm">100</span></span>
                                     </div>
                                 )}
                             </CardContent>

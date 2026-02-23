@@ -19,7 +19,7 @@ interface ChartEntry {
     Cumple: number;
     "No cumple": number;
     "Sin info": number;
-    "N/A": number;
+    "No procesado": number;
 }
 
 export default function ProposalsComplianceChart({ analysisId }: { analysisId: string }) {
@@ -41,11 +41,11 @@ export default function ProposalsComplianceChart({ analysisId }: { analysisId: s
                         Cumple: p.compliant_count ?? 0,
                         "No cumple": p.non_compliant_count ?? 0,
                         "Sin info": p.missing_info_count ?? 0,
-                        "N/A": p.unprocessable_count ?? 0,
+                        "No procesado": p.unprocessable_count ?? 0,
                     }));
                 setData(entries);
             })
-            .catch(() => {});
+            .catch(() => { });
     }, [analysisId]);
 
     if (data.length === 0) return null;
@@ -66,7 +66,7 @@ export default function ProposalsComplianceChart({ analysisId }: { analysisId: s
                         <Bar dataKey="Cumple" fill="#10b981" radius={[3, 3, 0, 0]} />
                         <Bar dataKey="No cumple" fill="#ef4444" radius={[3, 3, 0, 0]} />
                         <Bar dataKey="Sin info" fill="#f59e0b" radius={[3, 3, 0, 0]} />
-                        <Bar dataKey="N/A" fill="#a1a1aa" radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="No procesado" fill="#a1a1aa" radius={[3, 3, 0, 0]} />
                     </BarChart>
                 </ResponsiveContainer>
             </CardContent>

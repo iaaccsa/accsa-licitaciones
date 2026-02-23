@@ -400,7 +400,7 @@ export default function ChunksPage() {
                                 </p>
                                 <div className="mt-4 pt-4 border-t border-zinc-100 text-xs text-zinc-400 font-mono flex justify-between">
                                     <span>ID: {chunk.id}</span>
-                                    <span>Page: {chunk.payload.page || 'N/A'}</span>
+                                    <span>Página: {chunk.payload.page || 'No disponible'}</span>
                                 </div>
                             </div>
                         );
