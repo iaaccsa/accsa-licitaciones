@@ -4,7 +4,7 @@ from uuid import UUID
 
 from app.core.azure import azure_container_apps_client
 from app.core.config import get_settings
-from app.config.jobs_config import get_root_jobs, get_next_jobs, is_valid_job
+from app.config.jobs_config import get_root_jobs, get_next_jobs, is_valid_job, is_final_job
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.repositories.analysis_repository import analysis_repository
@@ -147,7 +147,8 @@ class JobOrchestratorService:
                 self._log_event(analysis_id, "error", f"Failed to start job {next_job}", {"error": str(e)})
                 analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
 
-        if not next_jobs:
+        if is_final_job(service_name):
+            analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": True})
             logger.info(
                 f"Pipeline completed for analysis_id={analysis_id}. "
                 f"Last job was: {service_name}"

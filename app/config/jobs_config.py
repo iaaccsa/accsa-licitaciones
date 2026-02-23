@@ -44,3 +44,8 @@ def get_all_jobs() -> List[str]:
 def is_valid_job(job_name: str) -> bool:
     """Check if a job name exists in the tree."""
     return job_name in _next_services_map
+
+
+def is_final_job(job_name: str) -> bool:
+    """Return True if the job is marked as is_final in the pipeline config."""
+    return any(entry["service"] == job_name and entry.get("is_final", False) for entry in _jobs_config)

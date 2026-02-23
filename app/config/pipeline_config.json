@@ -7,7 +7,8 @@
     "parent": null,
     "create_on_start": true,
     "initial_status": "completed",
-    "is_initial": true
+    "is_initial": true,
+    "is_final": false
   },
   {
     "service": "service-file-extractor",
@@ -19,7 +20,8 @@
     "parent": "queue",
     "create_on_start": true,
     "initial_status": "pending",
-    "is_initial": false
+    "is_initial": false,
+    "is_final": false
   },
   {
     "service": "service-files-converter",
@@ -31,7 +33,8 @@
     "parent": "extractor",
     "create_on_start": true,
     "initial_status": "pending",
-    "is_initial": false
+    "is_initial": false,
+    "is_final": false
   },
   {
     "service": "service-setup-qdrant",
@@ -43,7 +46,8 @@
     "parent": "converter",
     "create_on_start": true,
     "initial_status": "pending",
-    "is_initial": false
+    "is_initial": false,
+    "is_final": false
   },
   {
     "service": "service-chunk-and-index",
@@ -56,7 +60,8 @@
     "parent": "rag-setup",
     "create_on_start": true,
     "initial_status": "pending",
-    "is_initial": false
+    "is_initial": false,
+    "is_final": false
   },
   {
     "service": "service-requirement-extractor",
@@ -68,7 +73,8 @@
     "parent": "chunk_and_index",
     "create_on_start": true,
     "initial_status": "pending",
-    "is_initial": false
+    "is_initial": false,
+    "is_final": false
   },
   {
     "service": "service-metadata-extractor",
@@ -78,16 +84,31 @@
     "parent": "chunk_and_index",
     "create_on_start": true,
     "initial_status": "pending",
-    "is_initial": false
+    "is_initial": false,
+    "is_final": false
   },
   {
     "service": "service-verify-compliance",
-    "next_services": [],
+    "next_services": [
+      "service-proposal-scorer"
+    ],
     "code": "compliance_verification",
     "display_name": "Verificación de Cumplimiento",
     "parent": "requirement_extraction",
     "create_on_start": true,
     "initial_status": "pending",
-    "is_initial": false
+    "is_initial": false,
+    "is_final": false
+  },
+  {
+    "service": "service-proposal-scorer",
+    "next_services": [],
+    "code": "proposal_scorer",
+    "display_name": "Scoring de Proposals",
+    "parent": "compliance_verification",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": true
   }
 ]
