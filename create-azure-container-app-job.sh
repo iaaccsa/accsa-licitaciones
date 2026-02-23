@@ -12,6 +12,7 @@ VALID_SERVICES=(
   "service-requirement-extractor"
   "service-verify-compliance"
   "service-metadata-extractor"
+  "service-proposal-scorer"
 )
 
 if [ -z "$1" ]; then
