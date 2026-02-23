@@ -17,6 +17,7 @@ export default function FileChatPage() {
     const fileId = params.fileId as string;
 
     const [slug, setSlug] = useState<string | null>(null);
+    const [fileName, setFileName] = useState<string | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -26,8 +27,9 @@ export default function FileChatPage() {
 
     useEffect(() => {
         const fetchAnalysisAndHistory = async () => {
-            const [analysisRes, historyRes] = await Promise.all([
+            const [analysisRes, filesRes, historyRes] = await Promise.all([
                 fetch(`/api/analyses/${id}`),
+                fetch(`/api/analyses/${id}/files`, { method: "POST" }),
                 fetch("/api/chat/history", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -38,6 +40,12 @@ export default function FileChatPage() {
             if (analysisRes.ok) {
                 const data = await analysisRes.json();
                 setSlug(data.slug ?? null);
+            }
+
+            if (filesRes.ok) {
+                const data = await filesRes.json();
+                const file = Array.isArray(data) ? data.find((f: { id: string; file_name: string }) => f.id === fileId) : null;
+                setFileName(file?.file_name ?? null);
             }
 
             if (historyRes.ok) {
@@ -123,7 +131,7 @@ export default function FileChatPage() {
                                 <span className="text-zinc-300">|</span>
                             </>
                         )}
-                        <span className="font-mono text-zinc-400">{fileId}</span>
+                        {fileName && <span className="text-zinc-500 truncate">{fileName}</span>}
                     </div>
                 </div>
             </div>
