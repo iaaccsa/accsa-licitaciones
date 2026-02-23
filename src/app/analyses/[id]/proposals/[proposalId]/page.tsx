@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, ArrowLeft, Calendar, FileText, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Calendar, FileText, CheckCircle, XCircle, Clock, AlertCircle, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import ComplianceResultsList from "@/components/ComplianceResultsList";
 
 interface Analysis {
@@ -35,6 +34,10 @@ interface Proposal {
     audit_results: Record<string, unknown> | null;
     provider_metadata: ProviderMetadata | null;
     created_at: string;
+    compliant_count: number | null;
+    non_compliant_count: number | null;
+    missing_info_count: number | null;
+    unprocessable_count: number | null;
 }
 
 function ProposalStatusBadge({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {
@@ -149,7 +152,7 @@ export default function ProposalDetailPage() {
     return (
         <div className="container mx-auto max-w-5xl py-8 space-y-6">
             {/* Header */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-3">
                 <Button
                     variant="ghost"
                     className="w-fit -ml-2 text-zinc-500 hover:text-zinc-900"
@@ -159,29 +162,77 @@ export default function ProposalDetailPage() {
                     Volver al análisis
                 </Button>
 
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2 text-sm text-zinc-500">
-                        <FileText className="w-4 h-4" />
-                        <span>Análisis: {analysis.slug}</span>
+                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-5 py-4 flex items-center justify-between gap-6">
+                    {/* Left: icon + title + metadata */}
+                    <div className="flex items-center gap-4 min-w-0">
+                        <div className="p-2.5 bg-blue-50 rounded-lg text-blue-500 shrink-0">
+                            <FileText className="w-6 h-6" />
+                        </div>
+                        <div className="min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-zinc-900 truncate">
+                                    {proposal.label || "Propuesta"}
+                                </span>
+                                <ProposalStatusBadge status={proposal.status} isSuccess={proposal.is_success} />
+                            </div>
+                            <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                                <span className="flex items-center gap-1">
+                                    <Building2 className="w-3.5 h-3.5" />
+                                    {proposal.provider_name || "Proveedor desconocido"}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    {new Date(proposal.created_at).toLocaleDateString()}
+                                </span>
+                                <span className="flex items-center gap-1 font-mono">
+                                    <FileText className="w-3.5 h-3.5" />
+                                    {analysis.slug}
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-3xl font-bold bg-linear-to-r from-zinc-900 to-zinc-600 bg-clip-text text-transparent">
-                            {proposal.label || "Detalle de Propuesta"}
-                        </h1>
-                        <ProposalStatusBadge status={proposal.status} isSuccess={proposal.is_success} />
-                    </div>
-                    <div className="flex items-center gap-2 text-zinc-500">
-                        <span className="font-medium text-zinc-900">{proposal.provider_name || "Proveedor desconocido"}</span>
-                        <span>•</span>
-                        <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{new Date(proposal.created_at).toLocaleDateString()}</span>
+
+                    {/* Right: metrics */}
+                    <div className="flex items-center divide-x divide-zinc-100 shrink-0">
+                        <div className="px-5 text-center">
+                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Estado</p>
+                            <p className="text-sm font-semibold text-zinc-700">
+                                {{ pending: "Pendiente", processed: "En Ejecución", finished: "Finalizado" }[proposal.status] ?? proposal.status}
+                            </p>
+                        </div>
+                        <div className="px-5 text-center">
+                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Resultado</p>
+                            {proposal.is_success === null ? (
+                                <span className="text-sm font-semibold text-zinc-400">—</span>
+                            ) : proposal.is_success ? (
+                                <span className="flex items-center gap-1 text-sm font-semibold text-emerald-600">
+                                    <CheckCircle className="w-4 h-4" /> Exitoso
+                                </span>
+                            ) : (
+                                <span className="flex items-center gap-1 text-sm font-semibold text-red-500">
+                                    <XCircle className="w-4 h-4" /> Fallido
+                                </span>
+                            )}
+                        </div>
+                        <div className="px-5 text-center">
+                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Cumple</p>
+                            <p className="text-sm font-bold text-emerald-600">{proposal.compliant_count ?? "—"}</p>
+                        </div>
+                        <div className="px-5 text-center">
+                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">No cumple</p>
+                            <p className="text-sm font-bold text-red-500">{proposal.non_compliant_count ?? "—"}</p>
+                        </div>
+                        <div className="px-5 text-center">
+                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Sin info</p>
+                            <p className="text-sm font-bold text-amber-500">{proposal.missing_info_count ?? "—"}</p>
+                        </div>
+                        <div className="px-5 text-center">
+                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">N/A</p>
+                            <p className="text-sm font-bold text-zinc-400">{proposal.unprocessable_count ?? "—"}</p>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <Separator />
 
             <div className="grid gap-6">
                 {proposal.provider_metadata && (
@@ -190,31 +241,9 @@ export default function ProposalDetailPage() {
                             <CardTitle>Información del Proveedor</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                                {(Object.entries(proposal.provider_metadata) as [string, unknown][])
-                                    .filter(([key]) => key !== "additional")
-                                    .map(([key, value]) => (
-                                        <div key={key}>
-                                            <dt className="text-xs text-zinc-400 uppercase tracking-wide mb-0.5">
-                                                {key.replace(/_/g, " ")}
-                                            </dt>
-                                            <dd className={`text-zinc-800 ${key === "company_name" ? "font-bold" : "font-medium"}`}>
-                                                {value != null ? String(value) : <span className="text-zinc-400 font-normal">—</span>}
-                                            </dd>
-                                        </div>
-                                    ))}
-                                {proposal.provider_metadata.additional &&
-                                    Object.entries(proposal.provider_metadata.additional).map(([key, value]) => (
-                                        <div key={`additional_${key}`}>
-                                            <dt className="text-xs text-zinc-400 uppercase tracking-wide mb-0.5">
-                                                {key.replace(/_/g, " ")}
-                                            </dt>
-                                            <dd className="text-zinc-800 font-medium">
-                                                {value != null ? String(value) : <span className="text-zinc-400 font-normal">—</span>}
-                                            </dd>
-                                        </div>
-                                    ))}
-                            </dl>
+                            <pre className="text-xs font-mono text-zinc-800 bg-zinc-50 border border-zinc-100 rounded-lg p-4 overflow-y-auto max-h-[500px] whitespace-pre-wrap break-all">
+                                {JSON.stringify(proposal.provider_metadata, (_, v) => v === null ? undefined : v, 2)}
+                            </pre>
                         </CardContent>
                     </Card>
                 )}

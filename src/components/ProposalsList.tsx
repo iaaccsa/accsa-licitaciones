@@ -14,6 +14,10 @@ interface Proposal {
     is_success: boolean | null;
     audit_results: Record<string, unknown>;
     created_at: string;
+    compliant_count: number | null;
+    non_compliant_count: number | null;
+    missing_info_count: number | null;
+    unprocessable_count: number | null;
 }
 
 interface ProposalsListProps {
@@ -102,11 +106,33 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
                                 </CardTitle>
                                 <ProposalStatusBadge status={proposal.status} isSuccess={proposal.is_success} />
                             </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{proposal.label || "Sin etiqueta"}</div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                    {new Date(proposal.created_at).toLocaleDateString()}
-                                </p>
+                            <CardContent className="space-y-3">
+                                <div>
+                                    <div className="text-2xl font-bold">{proposal.label || "Sin etiqueta"}</div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {new Date(proposal.created_at).toLocaleDateString()}
+                                    </p>
+                                </div>
+                                {(proposal.compliant_count != null || proposal.non_compliant_count != null) && (
+                                    <div className="grid grid-cols-4 divide-x divide-zinc-100 border border-zinc-100 rounded-lg overflow-hidden bg-zinc-50 text-center">
+                                        <div className="py-1.5 px-1">
+                                            <p className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wide leading-tight mb-0.5">Cumple</p>
+                                            <p className="text-sm font-bold text-emerald-600">{proposal.compliant_count ?? "—"}</p>
+                                        </div>
+                                        <div className="py-1.5 px-1">
+                                            <p className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wide leading-tight mb-0.5">No cumple</p>
+                                            <p className="text-sm font-bold text-red-500">{proposal.non_compliant_count ?? "—"}</p>
+                                        </div>
+                                        <div className="py-1.5 px-1">
+                                            <p className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wide leading-tight mb-0.5">Sin info</p>
+                                            <p className="text-sm font-bold text-amber-500">{proposal.missing_info_count ?? "—"}</p>
+                                        </div>
+                                        <div className="py-1.5 px-1">
+                                            <p className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wide leading-tight mb-0.5">N/A</p>
+                                            <p className="text-sm font-bold text-zinc-400">{proposal.unprocessable_count ?? "—"}</p>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </Link>

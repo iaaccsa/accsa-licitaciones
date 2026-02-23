@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { Settings, GitBranch, CheckCircle2, AlertCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
 import { Loader2 } from "lucide-react";
 
-const REFRESH_INTERVAL = 5;
+const REFRESH_INTERVAL = 10;
 
 interface WorkflowStep {
     code: string;
