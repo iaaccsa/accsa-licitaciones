@@ -15,6 +15,10 @@ class ProposalBase(BaseModel):
 class Proposal(ProposalBase):
     id: UUID
     created_at: Optional[datetime] = None
+    compliant_count: Optional[int] = None
+    non_compliant_count: Optional[int] = None
+    missing_info_count: Optional[int] = None
+    unprocessable_count: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 

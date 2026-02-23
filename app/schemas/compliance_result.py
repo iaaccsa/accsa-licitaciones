@@ -1,7 +1,16 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
+from enum import Enum
+
+
+class ComplianceStatus(str, Enum):
+    compliant     = "compliant"
+    non_compliant = "non_compliant"
+    missing_info  = "missing_info"
+    unprocessable = "unprocessable"
+
 
 class ComplianceResultBase(BaseModel):
     analysis_id: Optional[UUID] = None
@@ -12,7 +21,7 @@ class ComplianceResultBase(BaseModel):
     requirement_category: Optional[str] = None
     requirement_is_mandatory: Optional[bool] = None
     requirement_page_reference: Optional[str] = None
-    status: Optional[str] = None
+    status: Optional[ComplianceStatus] = None
     evidence_quote: Optional[str] = None
     reasoning: Optional[str] = None
     suggestion: Optional[str] = None
@@ -35,3 +44,9 @@ class ComplianceResultCreate(BaseModel):
     evidence_quote: Optional[str] = None
     reasoning: Optional[str] = None
     suggestion: Optional[str] = None
+
+    @field_validator('status', mode='before')
+    @classmethod
+    def normalize_status(cls, v: str) -> str:
+        valid = {s.value for s in ComplianceStatus}
+        return v if v in valid else ComplianceStatus.unprocessable.value
