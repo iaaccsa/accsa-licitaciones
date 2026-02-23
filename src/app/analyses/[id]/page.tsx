@@ -6,6 +6,7 @@ import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Cpu, FileT
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowVisualization from "@/components/WorkflowVisualization";
 import ProposalsList from "@/components/ProposalsList";
+import ProposalsComplianceChart from "@/components/ProposalsComplianceChart";
 
 interface Analysis {
     id: string;
@@ -155,6 +156,7 @@ export default function AnalysisDetailPage() {
             </div>
 
             <ProposalsList analysisId={id} />
+            <ProposalsComplianceChart analysisId={id} />
         </div>
     );
 }

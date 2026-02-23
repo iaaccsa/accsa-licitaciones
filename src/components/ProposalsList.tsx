@@ -91,13 +91,20 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
         );
     }
 
+    const topId = proposals.reduce<string | null>((best, p) => {
+        if (p.compliance_score == null) return best;
+        if (best === null) return p.id;
+        const bestScore = proposals.find((x) => x.id === best)?.compliance_score ?? -Infinity;
+        return p.compliance_score > bestScore ? p.id : best;
+    }, null);
+
     return (
         <div className="space-y-4">
             <h2 className="text-xl font-semibold text-zinc-900">Propuestas ({proposals.length})</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {proposals.map((proposal) => (
                     <Link key={proposal.id} href={`/analyses/${analysisId}/proposals/${proposal.id}`}>
-                        <Card className="hover:shadow-md transition-shadow h-full">
+                        <Card className={`hover:shadow-md transition-shadow h-full ${proposal.id === topId ? "border-emerald-400 shadow-emerald-100 shadow-md ring-1 ring-emerald-300" : ""}`}>
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium">
                                     {proposal.provider_name || "Proveedor sin nombre"}
