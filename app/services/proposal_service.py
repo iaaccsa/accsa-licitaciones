@@ -1,5 +1,5 @@
 from app.repositories.proposal_repository import proposal_repository
-from app.schemas.proposal import Proposal, ProposalBase, ProposalFilter, ProposalUpdate
+from app.schemas.proposal import Proposal, ProposalBase, ProposalFilter, ProposalUpdate, ProposalScoreUpdate
 from typing import List, Optional
 
 class ProposalService:
@@ -25,6 +25,16 @@ class ProposalService:
             proposal_id,
             update_data.model_dump(mode="json", exclude_none=True)
         )
+        return Proposal(**data) if data else None
+
+    def update_score(self, proposal_id: str, score_data: ProposalScoreUpdate) -> Optional[Proposal]:
+        updated = self.repository.update_by_id(
+            proposal_id,
+            score_data.model_dump(mode="json")
+        )
+        if not updated:
+            return None
+        data = self.repository.get_by_id(proposal_id)
         return Proposal(**data) if data else None
 
 proposal_service = ProposalService()

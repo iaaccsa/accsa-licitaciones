@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List
 from uuid import UUID
-from app.schemas.proposal import Proposal, ProposalBase, ProposalFilter, ProposalUpdate
+from app.schemas.proposal import Proposal, ProposalBase, ProposalFilter, ProposalUpdate, ProposalScoreUpdate
 from app.services.proposal_service import proposal_service
 
 router = APIRouter()
@@ -40,9 +40,29 @@ def get_proposal(proposal_id: UUID):
         raise HTTPException(status_code=404, detail="Proposal not found")
     return result
 
+@router.post("/search-with-counts", response_model=List[Proposal])
+def search_proposals_with_counts(filter_params: ProposalFilter):
+    """
+    Returns proposals for an analysis with compliance result counts.
+    """
+    try:
+        return proposal_service.search_proposals(filter_params)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.patch("/{proposal_id}", response_model=Proposal)
 def update_proposal(proposal_id: UUID, update_data: ProposalUpdate):
     result = proposal_service.update_proposal(str(proposal_id), update_data)
+    if not result:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+    return result
+
+@router.patch("/{proposal_id}/score", response_model=Proposal)
+def update_proposal_score(proposal_id: UUID, score_data: ProposalScoreUpdate):
+    """
+    Updates compliance_score and compliance_summary for a proposal.
+    """
+    result = proposal_service.update_score(str(proposal_id), score_data)
     if not result:
         raise HTTPException(status_code=404, detail="Proposal not found")
     return result

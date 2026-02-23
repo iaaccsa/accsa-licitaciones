@@ -11,6 +11,8 @@ class ProposalBase(BaseModel):
     is_success: Optional[bool] = None
     status: Optional[str] = None
     audit_results: Optional[Dict[str, Any]] = None
+    compliance_score: Optional[float] = None
+    compliance_summary: Optional[str] = None
 
 class Proposal(ProposalBase):
     id: UUID
@@ -28,3 +30,7 @@ class ProposalFilter(BaseModel):
 class ProposalUpdate(BaseModel):
     provider_name: Optional[str] = None
     provider_metadata: Optional[Dict[str, Any]] = None
+
+class ProposalScoreUpdate(BaseModel):
+    compliance_score: float
+    compliance_summary: str
