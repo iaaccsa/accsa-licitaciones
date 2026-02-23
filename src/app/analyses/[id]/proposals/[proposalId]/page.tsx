@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, ArrowLeft, Calendar, FileText, CheckCircle, XCircle, Clock, AlertCircle, Building2 } from "lucide-react";
+import { Loader2, ArrowLeft, Calendar, FileText, AlertCircle, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import ComplianceResultsList from "@/components/ComplianceResultsList";
 
 interface Analysis {
@@ -29,52 +28,16 @@ interface Proposal {
     analysis_id: string;
     provider_name: string | null;
     label: string | null;
-    status: string;
-    is_success: boolean | null;
-    audit_results: Record<string, unknown> | null;
+    compliance_summary: string | null;
     provider_metadata: ProviderMetadata | null;
     created_at: string;
+    compliance_score: number | null;
     compliant_count: number | null;
     non_compliant_count: number | null;
     missing_info_count: number | null;
     unprocessable_count: number | null;
 }
 
-function ProposalStatusBadge({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {
-    if (status === "pending") {
-        return (
-            <Badge variant="outline" className="border-zinc-200 text-zinc-500 bg-zinc-50">
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                Pendiente
-            </Badge>
-        );
-    }
-
-    if (status === "processed" || status === "finished") {
-        if (isSuccess) {
-            return (
-                <Badge variant="default" className="bg-emerald-500 hover:bg-emerald-600 border-0">
-                    <CheckCircle className="w-3 h-3 mr-1" />
-                    Exitoso
-                </Badge>
-            );
-        } else {
-            return (
-                <Badge variant="destructive">
-                    <XCircle className="w-3 h-3 mr-1" />
-                    Fallido
-                </Badge>
-            );
-        }
-    }
-
-    return (
-        <Badge variant="secondary">
-            <Clock className="w-3 h-3 mr-1" />
-            {status}
-        </Badge>
-    );
-}
 
 export default function ProposalDetailPage() {
     const params = useParams();
@@ -173,7 +136,6 @@ export default function ProposalDetailPage() {
                                 <span className="font-bold text-zinc-900 truncate">
                                     {proposal.label || "Propuesta"}
                                 </span>
-                                <ProposalStatusBadge status={proposal.status} isSuccess={proposal.is_success} />
                             </div>
                             <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
                                 <span className="flex items-center gap-1">
@@ -195,26 +157,6 @@ export default function ProposalDetailPage() {
                     {/* Right: metrics */}
                     <div className="flex items-center divide-x divide-zinc-100 shrink-0">
                         <div className="px-5 text-center">
-                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Estado</p>
-                            <p className="text-sm font-semibold text-zinc-700">
-                                {{ pending: "Pendiente", processed: "En Ejecución", finished: "Finalizado" }[proposal.status] ?? proposal.status}
-                            </p>
-                        </div>
-                        <div className="px-5 text-center">
-                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Resultado</p>
-                            {proposal.is_success === null ? (
-                                <span className="text-sm font-semibold text-zinc-400">—</span>
-                            ) : proposal.is_success ? (
-                                <span className="flex items-center gap-1 text-sm font-semibold text-emerald-600">
-                                    <CheckCircle className="w-4 h-4" /> Exitoso
-                                </span>
-                            ) : (
-                                <span className="flex items-center gap-1 text-sm font-semibold text-red-500">
-                                    <XCircle className="w-4 h-4" /> Fallido
-                                </span>
-                            )}
-                        </div>
-                        <div className="px-5 text-center">
                             <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Cumple</p>
                             <p className="text-sm font-bold text-emerald-600">{proposal.compliant_count ?? "—"}</p>
                         </div>
@@ -230,6 +172,12 @@ export default function ProposalDetailPage() {
                             <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">N/A</p>
                             <p className="text-sm font-bold text-zinc-400">{proposal.unprocessable_count ?? "—"}</p>
                         </div>
+                        {proposal.compliance_score != null && (
+                            <div className="px-5 text-center">
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Puntuación</p>
+                                <p className="text-base font-bold text-zinc-800">{proposal.compliance_score}</p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -253,10 +201,8 @@ export default function ProposalDetailPage() {
                         <CardTitle>Resultados de Auditoría</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {proposal.audit_results ? (
-                            <pre className="bg-zinc-50 p-4 rounded-lg overflow-auto text-xs font-mono border text-zinc-800">
-                                {JSON.stringify(proposal.audit_results, null, 2)}
-                            </pre>
+                        {proposal.compliance_summary ? (
+                            <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{proposal.compliance_summary}</p>
                         ) : (
                             <div className="text-center py-8 text-zinc-500 italic">
                                 No hay resultados de auditoría reportados en la propuesta.

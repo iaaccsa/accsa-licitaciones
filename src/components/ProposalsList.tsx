@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, CheckCircle, XCircle, AlertCircle, FileText } from "lucide-react";
+import { AlertCircle, FileText } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -10,14 +10,12 @@ interface Proposal {
     id: string;
     provider_name: string;
     label: string;
-    status: string;
-    is_success: boolean | null;
-    audit_results: Record<string, unknown>;
     created_at: string;
     compliant_count: number | null;
     non_compliant_count: number | null;
     missing_info_count: number | null;
     unprocessable_count: number | null;
+    compliance_score: number | null;
 }
 
 interface ProposalsListProps {
@@ -100,11 +98,10 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
                 {proposals.map((proposal) => (
                     <Link key={proposal.id} href={`/analyses/${analysisId}/proposals/${proposal.id}`}>
                         <Card className="hover:shadow-md transition-shadow h-full">
-                            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                            <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium">
                                     {proposal.provider_name || "Proveedor sin nombre"}
                                 </CardTitle>
-                                <ProposalStatusBadge status={proposal.status} isSuccess={proposal.is_success} />
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div>
@@ -133,6 +130,12 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
                                         </div>
                                     </div>
                                 )}
+                                {proposal.compliance_score != null && (
+                                    <div className="flex items-center justify-between px-3 py-2 bg-zinc-50 border border-zinc-100 rounded-lg">
+                                        <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wide">Puntuación</span>
+                                        <span className="text-base font-bold text-zinc-800">{proposal.compliance_score}</span>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </Link>
@@ -142,32 +145,3 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
     );
 }
 
-function ProposalStatusBadge({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {
-    if (status === "pending") {
-        return (
-            <span className="flex items-center gap-1 text-xs text-zinc-500 font-medium">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Pendiente
-            </span>
-        );
-    }
-
-    if (status === "processed" || status === "Finished") {
-        return isSuccess ? (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 border border-green-100">
-                <CheckCircle className="w-3.5 h-3.5 text-green-600 shrink-0" />
-                <span className="text-xs font-medium text-green-700">Completado</span>
-            </div>
-        ) : (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-red-50 border border-red-100">
-                <XCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />
-                <span className="text-xs font-medium text-red-700">Fallido</span>
-            </div>
-        );
-    }
-
-    // Fallback
-    return (
-        <span className="text-xs text-zinc-400 font-medium capitalize">{status}</span>
-    );
-}
