@@ -70,7 +70,7 @@ SESSION = make_session()
 class ComplianceResult(BaseModel):
     """The result of an audit for a single requirement."""
     requirement_id: str
-    status: Literal["compliant", "non_compliant", "missing_info"]
+    status: Literal["compliant", "non_compliant", "missing_info", "unprocessable"]
     evidence_quote: str = Field(description="Verbatim quote from the proposal supporting the decision.")
     reasoning: str = Field(description="Explanation of why it meets or fails the requirement.")
     suggestion: Optional[str] = Field(description="Actionable advice if non-compliant.", default=None)
@@ -211,7 +211,8 @@ def verify_compliance_llm(gemini_client: genai.Client, requirement: dict, eviden
         "3. If the evidence mentions the topic but lacks specific details, status is non_compliant.\n"
         "4. If completely absent, status is missing_info.\n"
         "5. Quote the evidence text exactly in 'evidence_quote'.\n"
-        "6. PROVIDE 'reasoning' and 'suggestion' IN SPANISH.\n\n"
+        "6. PROVIDE 'reasoning' and 'suggestion' IN SPANISH.\n"
+        "7. ONLY use status values: compliant, non_compliant, missing_info. Never use unprocessable.\n\n"
         f"REQUIREMENT (ID: {requirement.get('requirement_code') or requirement.get('id')}):\n"
         f"\"{requirement.get('requirement_text') or requirement.get('text')}\"\n\n"
         f"EVIDENCE CONTEXT FOUND IN PROPOSAL:\n{evidence_text}"
@@ -286,7 +287,7 @@ def process_compliance():
     logger.info(f"Loaded {len(requirements)} requirements")
 
     # 4. Verify each proposal against all requirements
-    total_stats = {"compliant": 0, "non_compliant": 0, "missing_info": 0}
+    total_stats = {"compliant": 0, "non_compliant": 0, "missing_info": 0, "unprocessable": 0}
 
     for p_idx, proposal in enumerate(proposals):
         proposal_id = proposal["id"]
@@ -296,7 +297,7 @@ def process_compliance():
         log_event(ANALYSIS_ID, "info", f"Verificando propuesta {p_idx+1}/{len(proposals)}: {provider_name}", EVENT_SOURCE)
 
         results = []
-        stats = {"compliant": 0, "non_compliant": 0, "missing_info": 0}
+        stats = {"compliant": 0, "non_compliant": 0, "missing_info": 0, "unprocessable": 0}
 
         for i, req in enumerate(requirements):
             req_text = req.get("requirement_text")
@@ -317,8 +318,18 @@ def process_compliance():
                 )
             else:
                 req_for_llm = {"id": req_code, "text": req_text, "requirement_code": req_code}
-                res = verify_compliance_llm(gemini_client, req_for_llm, evidence)
-                res.requirement_id = req_id
+                try:
+                    res = verify_compliance_llm(gemini_client, req_for_llm, evidence)
+                    res.requirement_id = req_id
+                except Exception as llm_err:
+                    logger.warning(f"    LLM call failed for {req_code}: {llm_err}")
+                    res = ComplianceResult(
+                        requirement_id=req_id,
+                        status="unprocessable",
+                        evidence_quote="N/A",
+                        reasoning=f"El LLM no pudo procesar la verificación: {llm_err}",
+                        suggestion=None
+                    )
 
             logger.info(f"    -> Result: {res.status}")
             if res.status in stats:
