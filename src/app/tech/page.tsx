@@ -21,6 +21,7 @@ const sections = [
             { tech: "react-markdown 10", use: "Renderiza las respuestas del chat, que llegan en formato Markdown desde el backend, como HTML estilizado con clases prose." },
             { tech: "lucide-react", use: "Librería de iconos SVG como componentes React. Usada en toda la interfaz." },
             { tech: "tw-animate-css", use: "Animaciones CSS listas para usar, importadas como plugin de Tailwind." },
+            { tech: "Vercel", use: "Plataforma de despliegue del frontend. Build y deploy automático en cada push a main, con soporte nativo para Next.js (Edge Network, ISR, API Routes como funciones serverless)." },
         ],
     },
     {
@@ -37,6 +38,7 @@ const sections = [
             { tech: "pydantic-settings", use: "Carga y validación de variables de entorno desde el archivo .env." },
             { tech: "python-multipart", use: "Soporte para recibir archivos via multipart/form-data (upload de ZIPs de licitación)." },
             { tech: "python-dotenv", use: "Carga el archivo .env en las variables de entorno al iniciar la aplicación." },
+            { tech: "Vercel", use: "Plataforma de despliegue de la API FastAPI. Expone la aplicación ASGI como funciones serverless, con deploy automático en cada push a main." },
         ],
     },
     {
