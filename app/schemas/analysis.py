@@ -8,6 +8,8 @@ class AnalysisBase(BaseModel):
     slug: str
     artifact_path: str
     is_success: Optional[bool] = None
+    user_name: Optional[str] = None
+    generated_name: Optional[str] = None
 
 class Analysis(AnalysisBase):
     id: UUID
