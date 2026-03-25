@@ -26,7 +26,7 @@
   {
     "service": "service-files-converter",
     "next_services": [
-      "service-setup-qdrant"
+      "qdrant-by-file"
     ],
     "code": "converter",
     "display_name": "Convertidor",
@@ -34,7 +34,21 @@
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": true
+    "is_final": false
+  },
+  {
+    "service": "qdrant-by-file",
+    "next_services": [
+      "service-setup-qdrant"
+    ],
+    "code": "qdrant-by-file",
+    "display_name": "Qdrant by file",
+    "parent": "converter",
+    "create_on_start": false,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": true,
+    "fan_out_by": "file"
   },
   {
     "service": "service-setup-qdrant",

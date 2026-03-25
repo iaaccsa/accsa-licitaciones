@@ -62,6 +62,7 @@ async def job_callback(request: JobCallbackRequest):
             service_name=request.service_name,
             analysis_id=request.analysis_id,
             proposal_id=request.proposal_id,
+            file_id=request.file_id,
             status=request.status,
             error_message=request.error_message,
         )

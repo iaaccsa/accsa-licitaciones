@@ -6,6 +6,16 @@ from app.services.file_service import file_service
 
 router = APIRouter()
 
+@router.get("/{file_id}", response_model=File)
+def get_file(file_id: UUID):
+    """
+    Get a file by ID.
+    """
+    result = file_service.get_file_by_id(str(file_id))
+    if not result:
+        raise HTTPException(status_code=404, detail="File not found")
+    return result
+
 @router.post("/", response_model=File)
 def create_file(file_data: FileBase):
     """

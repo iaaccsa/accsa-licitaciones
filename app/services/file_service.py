@@ -6,6 +6,10 @@ class FileService:
     def __init__(self):
         self.repository = file_repository
 
+    def get_file_by_id(self, file_id: str) -> Optional[File]:
+        data = self.repository.get_by_id(file_id)
+        return File(**data) if data else None
+
     def search_files(self, filter_params: FileFilter) -> List[File]:
         data = self.repository.get_by_analysis_id(
             analysis_id=filter_params.analysis_id

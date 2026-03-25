@@ -33,3 +33,20 @@ class QdrantSearchResponse(BaseModel):
 class QdrantScrollResponse(BaseModel):
     points: List[QdrantPoint]
     next_page_offset: Optional[Any] = None
+
+class QdrantCreateCollectionRequest(BaseModel):
+    collection_name: str
+    vector_size: int
+    distance: str = "Cosine"
+
+    @field_validator('distance')
+    @classmethod
+    def validate_distance(cls, v: str) -> str:
+        allowed = {"Cosine", "Euclid", "Dot"}
+        if v not in allowed:
+            raise ValueError(f"distance must be one of {allowed}")
+        return v
+
+class QdrantCreateCollectionResponse(BaseModel):
+    collection_name: str
+    status: str

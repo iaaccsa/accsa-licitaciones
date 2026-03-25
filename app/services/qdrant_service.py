@@ -1,5 +1,5 @@
 from app.core.qdrant import qdrant_client
-from app.schemas.qdrant import QdrantSearchRequest, QdrantSearchResponse, QdrantPoint, QdrantScrollRequest, QdrantScrollResponse
+from app.schemas.qdrant import QdrantSearchRequest, QdrantSearchResponse, QdrantPoint, QdrantScrollRequest, QdrantScrollResponse, QdrantCreateCollectionRequest, QdrantCreateCollectionResponse
 from qdrant_client.http import models
 
 class QdrantService:
@@ -64,6 +64,26 @@ class QdrantService:
                 ) for point in points
             ],
             next_page_offset=next_page_offset
+        )
+
+    def create_collection(self, params: QdrantCreateCollectionRequest) -> QdrantCreateCollectionResponse:
+        distance_map = {
+            "Cosine": models.Distance.COSINE,
+            "Euclid": models.Distance.EUCLID,
+            "Dot": models.Distance.DOT,
+        }
+
+        qdrant_client.create_collection(
+            collection_name=params.collection_name,
+            vectors_config=models.VectorParams(
+                size=params.vector_size,
+                distance=distance_map[params.distance],
+            ),
+        )
+
+        return QdrantCreateCollectionResponse(
+            collection_name=params.collection_name,
+            status="created",
         )
 
 qdrant_service = QdrantService()

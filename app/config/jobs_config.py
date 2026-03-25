@@ -49,3 +49,16 @@ def is_valid_job(job_name: str) -> bool:
 def is_final_job(job_name: str) -> bool:
     """Return True if the job is marked as is_final in the pipeline config."""
     return any(entry["service"] == job_name and entry.get("is_final", False) for entry in _jobs_config)
+
+
+def is_fan_out_job(job_name: str) -> bool:
+    """Return True if the job has a fan_out_by field in the pipeline config."""
+    return any(entry["service"] == job_name and entry.get("fan_out_by") for entry in _jobs_config)
+
+
+def get_fan_out_type(job_name: str) -> Optional[str]:
+    """Return the fan_out_by value for the job, or None if not a fan-out job."""
+    for entry in _jobs_config:
+        if entry["service"] == job_name:
+            return entry.get("fan_out_by")
+    return None

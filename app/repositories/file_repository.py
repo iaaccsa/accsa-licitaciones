@@ -7,11 +7,31 @@ class FileRepository(BaseRepository):
     def __init__(self):
         super().__init__("files_view")
 
+    def get_by_id(self, file_id: str) -> Dict[str, Any] | None:
+        response = (
+            supabase.table(self.table_name)
+            .select("*")
+            .eq("id", file_id)
+            .maybe_single()
+            .execute()
+        )
+        return response.data
+
     def get_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
         response = (
             supabase.table(self.table_name)
             .select("*")
             .eq("analysis_id", str(analysis_id))
+            .execute()
+        )
+        return response.data
+
+    def get_processed_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
+        response = (
+            supabase.table(self.table_name)
+            .select("*")
+            .eq("analysis_id", str(analysis_id))
+            .eq("is_processed_version", True)
             .execute()
         )
         return response.data

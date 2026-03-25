@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.schemas.qdrant import QdrantSearchRequest, QdrantSearchResponse, QdrantScrollRequest, QdrantScrollResponse
+from app.schemas.qdrant import QdrantSearchRequest, QdrantSearchResponse, QdrantScrollRequest, QdrantScrollResponse, QdrantCreateCollectionRequest, QdrantCreateCollectionResponse
 from app.services.qdrant_service import qdrant_service
 from typing import Any
 
@@ -12,6 +12,16 @@ def list_collections():
     """
     try:
         return qdrant_service.list_collections()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/collections", response_model=QdrantCreateCollectionResponse)
+def create_collection(params: QdrantCreateCollectionRequest):
+    """
+    Create a new collection in Qdrant.
+    """
+    try:
+        return qdrant_service.create_collection(params)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

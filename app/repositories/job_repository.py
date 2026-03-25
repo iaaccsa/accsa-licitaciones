@@ -5,8 +5,37 @@ class JobRepository(BaseRepository):
     def __init__(self):
         super().__init__("jobs")
 
-    def update_job_status(self, analysis_id: str, service_name: str, status: str):
-        response = supabase.table(self.table_name).update({"status": status}).eq("analysis_id", analysis_id).eq("service_name", service_name).execute()
+    def update_job_status(self, analysis_id: str, service_name: str, status: str, file_id: str = None):
+        query = (
+            supabase.table(self.table_name)
+            .update({"status": status})
+            .eq("analysis_id", analysis_id)
+            .eq("service_name", service_name)
+        )
+        if file_id:
+            query = query.eq("file_id", file_id)
+        response = query.execute()
         return response.data[0] if response.data else None
+
+    def count_jobs_by_service(self, analysis_id: str, service_name: str) -> int:
+        response = (
+            supabase.table(self.table_name)
+            .select("id", count="exact")
+            .eq("analysis_id", analysis_id)
+            .eq("service_name", service_name)
+            .execute()
+        )
+        return response.count or 0
+
+    def count_completed_jobs(self, analysis_id: str, service_name: str) -> int:
+        response = (
+            supabase.table(self.table_name)
+            .select("id", count="exact")
+            .eq("analysis_id", analysis_id)
+            .eq("service_name", service_name)
+            .eq("status", "succeeded")
+            .execute()
+        )
+        return response.count or 0
 
 job_repository = JobRepository()

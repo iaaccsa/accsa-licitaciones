@@ -4,7 +4,8 @@ from uuid import UUID
 
 from app.core.azure import azure_container_apps_client
 from app.core.config import get_settings
-from app.config.jobs_config import get_root_jobs, get_next_jobs, is_valid_job, is_final_job
+from app.config.jobs_config import get_root_jobs, get_next_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type
+from app.repositories.file_repository import file_repository
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.repositories.analysis_repository import analysis_repository
@@ -82,6 +83,7 @@ class JobOrchestratorService:
         service_name: str,
         analysis_id: UUID,
         proposal_id: Optional[UUID] = None,
+        file_id: Optional[UUID] = None,
         status: str = "success",
         error_message: Optional[str] = None,
     ) -> List[str]:
@@ -91,59 +93,55 @@ class JobOrchestratorService:
             return []
 
         job_status = "succeeded" if status == "success" else "failed"
-        job_repository.update_job_status(str(analysis_id), service_name, job_status)
-
-        if status == "success":
-            # Complete current workflow step
-            try:
-                workflow_step_service.complete_step_by_service(str(analysis_id), service_name)
-            except Exception as e:
-                logger.error(f"Failed to complete workflow step for {service_name}: {e}")
+        file_id_str = str(file_id) if file_id else None
+        job_repository.update_job_status(str(analysis_id), service_name, job_status, file_id=file_id_str)
 
         if status == "failed":
             logger.error(
-                f"Job {service_name} failed for analysis_id={analysis_id}. "
-                f"Error: {error_message}. Pipeline halted."
+                f"Job {service_name} failed for analysis_id={analysis_id}"
+                f" file_id={file_id}. Error: {error_message}. Pipeline halted."
             )
             try:
                 workflow_step_service.fail_step_by_service(str(analysis_id), service_name)
             except Exception as e:
                 logger.error(f"Failed to mark workflow step as failed for {service_name}: {e}")
             analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
-            self._log_event(analysis_id, "error", f"Job {service_name} failed with error: {error_message}", {"error": error_message})
+            self._log_event(analysis_id, "error", f"Job {service_name} failed with error: {error_message}", {"error": error_message, "file_id": str(file_id) if file_id else None})
             return []
 
-        # Job succeeded — find and launch next jobs
+        # Job succeeded — check if fan-out job needs to wait for all instances
+        if is_fan_out_job(service_name):
+            total = job_repository.count_jobs_by_service(str(analysis_id), service_name)
+            completed = job_repository.count_completed_jobs(str(analysis_id), service_name)
+            logger.info(
+                f"Fan-out job {service_name}: {completed}/{total} completed "
+                f"for analysis_id={analysis_id}"
+            )
+            if completed < total:
+                # Not all instances done yet — wait
+                return []
+
+        # All instances done (or not a fan-out job) — complete workflow step
+        try:
+            workflow_step_service.complete_step_by_service(str(analysis_id), service_name)
+        except Exception as e:
+            logger.error(f"Failed to complete workflow step for {service_name}: {e}")
+
+        # Find and launch next jobs
         next_jobs = get_next_jobs(service_name)
         launched = []
 
         for next_job in next_jobs:
             try:
-                azure_response = self._launch_job(next_job, analysis_id, proposal_id)
-                self._log_event(analysis_id, "info", f"Started job {next_job}", azure_response)
-                
-                # Start workflow step
-                try:
-                    workflow_step_service.start_step_by_service(str(analysis_id), next_job)
-                except Exception as step_error:
-                    logger.error(f"Failed to start workflow step for {next_job}: {step_error}")
-
-                launched.append(next_job)
-                logger.info(
-                    f"Launched next job: {next_job} after {service_name} "
-                    f"for analysis_id={analysis_id}"
-                )
+                launched += self._launch_next_job(next_job, analysis_id, proposal_id, service_name)
             except Exception as e:
                 logger.error(
                     f"Failed to launch job {next_job} after {service_name}: {e}"
                 )
-
-                # Mark the workflow step of the job that failed to launch as failed
                 try:
                     workflow_step_service.fail_step_by_service(str(analysis_id), next_job)
                 except Exception as step_error:
                     logger.error(f"Failed to fail workflow step for {next_job}: {step_error}")
-
                 self._log_event(analysis_id, "error", f"Failed to start job {next_job}", {"error": str(e)})
                 analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
 
@@ -156,11 +154,55 @@ class JobOrchestratorService:
 
         return launched
 
+    def _launch_next_job(
+        self,
+        next_job: str,
+        analysis_id: UUID,
+        proposal_id: Optional[UUID],
+        previous_job: str,
+    ) -> List[str]:
+        """Launch the next job(s). If it's a fan-out job, launch one instance per file."""
+        launched = []
+        fan_out_type = get_fan_out_type(next_job)
+
+        if fan_out_type == "file":
+            files = file_repository.get_processed_by_analysis_id(analysis_id)
+            if not files:
+                logger.warning(f"No processed files found for analysis_id={analysis_id}, skipping fan-out job {next_job}")
+                return []
+
+            logger.info(f"Fan-out: launching {len(files)} instances of {next_job} for analysis_id={analysis_id}")
+
+            # Start workflow step once for the fan-out group
+            try:
+                workflow_step_service.start_step_by_service(str(analysis_id), next_job)
+            except Exception as step_error:
+                logger.error(f"Failed to start workflow step for {next_job}: {step_error}")
+
+            for file_data in files:
+                file_id = file_data["id"]
+                azure_response = self._launch_job(next_job, analysis_id, proposal_id, file_id=UUID(file_id))
+                self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for file {file_id}", azure_response)
+                launched.append(next_job)
+                logger.info(f"Launched fan-out job: {next_job} file_id={file_id} for analysis_id={analysis_id}")
+        else:
+            azure_response = self._launch_job(next_job, analysis_id, proposal_id)
+            self._log_event(analysis_id, "info", f"Started job {next_job}", azure_response)
+            try:
+                workflow_step_service.start_step_by_service(str(analysis_id), next_job)
+            except Exception as step_error:
+                logger.error(f"Failed to start workflow step for {next_job}: {step_error}")
+            launched.append(next_job)
+            logger.info(f"Launched next job: {next_job} after {previous_job} for analysis_id={analysis_id}")
+
+        return launched
+
     def _launch_job(
         self,
         service_name: str,
         analysis_id: UUID,
         proposal_id: Optional[UUID] = None,
+        file_id: Optional[UUID] = None,
     ) -> dict:
         """Launch a single Azure Container Apps Job and create a record in the jobs table."""
         image = f"{self.registry}/{service_name}:latest"
@@ -169,6 +211,9 @@ class JobOrchestratorService:
             {"name": "ANALYSIS_ID", "value": str(analysis_id)},
             {"name": "PROPOSAL_ID", "value": str(proposal_id) if proposal_id else ""},
         ]
+
+        if file_id:
+            env_vars.append({"name": "FILE_ID", "value": str(file_id)})
 
         template = {
             "containers": [
@@ -180,7 +225,7 @@ class JobOrchestratorService:
             ]
         }
 
-        logger.info(f"Launching Azure job: {service_name} with image: {image}")
+        logger.info(f"Launching Azure job: {service_name} with image: {image}" + (f" for file_id={file_id}" if file_id else ""))
 
         poller = self.client.jobs.begin_start(
             resource_group_name=self.resource_group,
@@ -192,16 +237,22 @@ class JobOrchestratorService:
         azure_response = result.as_dict() if result else {}
 
         # Create job record in the jobs table
+        input_payload = {
+            "ANALYSIS_ID": str(analysis_id),
+            "PROPOSAL_ID": str(proposal_id) if proposal_id else "",
+        }
+        if file_id:
+            input_payload["FILE_ID"] = str(file_id)
+
         job_record = {
             "analysis_id": str(analysis_id),
             "service_name": service_name,
             "azure_execution_id": azure_response.get("id", ""),
             "execution_name": azure_response.get("name", ""),
-            "input_payload": {
-                "ANALYSIS_ID": str(analysis_id),
-                "PROPOSAL_ID": str(proposal_id) if proposal_id else "",
-            },
+            "input_payload": input_payload,
         }
+        if file_id:
+            job_record["file_id"] = str(file_id)
         job_repository.create(job_record)
 
         return azure_response
