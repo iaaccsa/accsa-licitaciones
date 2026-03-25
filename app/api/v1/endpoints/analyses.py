@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
 from typing import List
 from uuid import UUID
 from app.schemas.analysis import Analysis, AnalysisStatusUpdate
+from app.schemas.job import CancelPipelineResponse
 from app.services.analysis_service import analysis_service
+from app.services.job_orchestrator_service import job_orchestrator_service
 
 router = APIRouter()
 
@@ -41,6 +43,21 @@ async def create_analysis(file: UploadFile = File(...), user_name: str | None = 
 
     try:
         return await analysis_service.create_analysis(file, user_name=user_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{analysis_id}/cancel", response_model=CancelPipelineResponse)
+def cancel_analysis(analysis_id: UUID):
+    """
+    Cancel an analysis and stop all running Azure jobs.
+    """
+    try:
+        cancelled_count = job_orchestrator_service.cancel_pipeline(analysis_id)
+        return CancelPipelineResponse(
+            analysis_id=analysis_id,
+            cancelled_jobs=cancelled_count,
+            message=f"Análisis cancelado. {cancelled_count} jobs detenidos.",
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

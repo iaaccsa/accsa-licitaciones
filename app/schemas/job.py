@@ -27,3 +27,9 @@ class JobCallbackResponse(BaseModel):
     received: bool
     next_jobs_started: List[str]
     message: str
+
+
+class CancelPipelineResponse(BaseModel):
+    analysis_id: UUID
+    cancelled_jobs: int
+    message: str

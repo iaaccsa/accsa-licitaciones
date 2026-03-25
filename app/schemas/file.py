@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 class FileBase(BaseModel):
@@ -16,6 +16,7 @@ class FileBase(BaseModel):
     total_chunks: Optional[int] = None
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 class File(FileBase):
     id: Optional[UUID] = None
@@ -31,3 +32,4 @@ class FileUpdate(BaseModel):
     is_processed_version: Optional[bool] = None
     mime_type: Optional[str] = None
     file_size: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None

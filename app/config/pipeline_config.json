@@ -29,7 +29,7 @@
       "service-qdrant-by-file"
     ],
     "code": "converter",
-    "display_name": "Convertidor",
+    "display_name": "Convirtiendo Documentos",
     "parent": "extractor",
     "create_on_start": true,
     "initial_status": "pending",
@@ -42,7 +42,7 @@
       "service-setup-qdrant"
     ],
     "code": "qdrant-by-file",
-    "display_name": "Qdrant by file",
+    "display_name": "Indexando Documentos",
     "parent": "converter",
     "create_on_start": false,
     "initial_status": "pending",

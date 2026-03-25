@@ -38,4 +38,26 @@ class JobRepository(BaseRepository):
         )
         return response.count or 0
 
+    def get_running_jobs(self, analysis_id: str):
+        """Get all jobs that are not in a terminal state (succeeded, failed, cancelled)."""
+        response = (
+            supabase.table(self.table_name)
+            .select("*")
+            .eq("analysis_id", analysis_id)
+            .not_.in_("status", ["succeeded", "failed", "cancelled"])
+            .execute()
+        )
+        return response.data
+
+    def cancel_all_jobs(self, analysis_id: str):
+        """Mark all non-terminal jobs as cancelled."""
+        response = (
+            supabase.table(self.table_name)
+            .update({"status": "cancelled"})
+            .eq("analysis_id", analysis_id)
+            .not_.in_("status", ["succeeded", "failed", "cancelled"])
+            .execute()
+        )
+        return response.data
+
 job_repository = JobRepository()

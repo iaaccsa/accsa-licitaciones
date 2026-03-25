@@ -257,6 +257,37 @@ class JobOrchestratorService:
 
         return azure_response
 
+    def cancel_pipeline(self, analysis_id: UUID) -> int:
+        """Cancel all running jobs for an analysis and stop their Azure executions."""
+        running_jobs = job_repository.get_running_jobs(str(analysis_id))
+
+        # Stop each running Azure execution (best-effort)
+        for job in running_jobs:
+            execution_name = job.get("execution_name")
+            service_name = job.get("service_name")
+            if execution_name and service_name:
+                try:
+                    self.client.jobs.begin_stop_execution(
+                        resource_group_name=self.resource_group,
+                        job_name=service_name,
+                        job_execution_name=execution_name,
+                    )
+                    logger.info(f"Stopped Azure execution {execution_name} for job {service_name}")
+                except Exception as e:
+                    logger.warning(f"Failed to stop Azure execution {execution_name} for job {service_name}: {e}")
+
+        # Cancel all non-terminal jobs in DB
+        cancelled = job_repository.cancel_all_jobs(str(analysis_id))
+        cancelled_count = len(cancelled) if cancelled else 0
+
+        # Update analysis status
+        analysis_repository.update_by_id(str(analysis_id), {"status": "cancelled"})
+
+        self._log_event(analysis_id, "info", f"Pipeline cancelled. {cancelled_count} jobs stopped.", {"cancelled_jobs": cancelled_count})
+        logger.info(f"Pipeline cancelled for analysis_id={analysis_id}. {cancelled_count} jobs cancelled.")
+
+        return cancelled_count
+
     def _log_event(
         self,
         analysis_id: UUID,
