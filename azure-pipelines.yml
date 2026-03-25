@@ -27,6 +27,8 @@ strategy:
       SERVICE_NAME: "service-metadata-extractor"
     service-proposal-scorer:
       SERVICE_NAME: "service-proposal-scorer"
+    service-qdrant-by-file:
+      SERVICE_NAME: "service-qdrant-by-file"
 
 steps:
   - script: |

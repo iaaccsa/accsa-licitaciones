@@ -13,6 +13,7 @@ VALID_SERVICES=(
   "service-verify-compliance"
   "service-metadata-extractor"
   "service-proposal-scorer"
+  "service-qdrant-by-file"
 )
 
 if [ -z "$1" ]; then

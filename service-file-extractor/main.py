@@ -74,54 +74,16 @@ def api_request(method: str, path: str, json_data: dict | None = None) -> dict |
         return None
 
 
-def determine_file_category(relative_path: Path) -> str:
-    """
-    Determine category based on folder structure.
-    Returns 'proposal' if path contains 'oferta'/'proposal',
-    otherwise defaults to 'tender'.
-    """
-    path_str = str(relative_path).lower()
-    if "oferta" in path_str or "propuesta" in path_str or "proposal" in path_str:
-        return "proposal"
-    return "tender"
-
-
 def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_dir: Path):
     """
     Walk through the extracted files, upload them to 'files' bucket,
     and insert records into 'files' table.
-    Target path: files/<slug>/<relative_path>
+    Target path: files/<slug>/<file_id><suffix>
     
-    Logic for proposals:
-    - Iterate through immediate subdirectories of root_dir.
-    - If folder name is NOT 'tender':
-      - Create a record in 'proposals' table with label=folder_name, analysis_id.
-      - Use the returned proposal_id for all files within this folder.
-    - If folder name IS 'tender' (or files in root), proposal_id is None.
+    Files are no longer organized in folders, so they are directly in the zip
+    and associated directly with the analysis_id under the 'tender' category.
     """
     logger.info(f"Starting file upload and indexing for slug={slug}")
-
-    # 1. Identify proposals (folders in root that are not 'tender')
-    # and create them in DB to get their IDs.
-    proposal_map = {}  # folder_name -> proposal_id
-
-    for item in root_dir.iterdir():
-        if item.is_dir():
-            folder_name = item.name.lower()
-            # If it's not the 'tender' folder, treat it as a proposal
-            if folder_name != "tender":
-                try:
-                    logger.info(f"Creating proposal for folder: {item.name}")
-                    result = api_request("POST", API_PROPOSALS_PATH, {
-                        "analysis_id": analysis_id,
-                        "label": item.name
-                    })
-                    proposal_id = result["id"]
-                    proposal_map[item.name] = proposal_id
-                    logger.info(f"Created proposal '{item.name}' with id={proposal_id}")
-                except Exception as e:
-                    logger.error(f"Failed to create proposal for folder {item.name}: {e}")
-                    raise e
 
     files_to_insert = []
 
@@ -132,30 +94,13 @@ def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_d
                 continue
 
             file_path = Path(current_root) / filename
-            relative_path = file_path.relative_to(root_dir)
-
-            # Determine if this file belongs to a proposal
-            # Check the first part of the relative path
-            parts = relative_path.parts
-            proposal_id = None
-            
-            if len(parts) > 1:
-                top_folder = parts[0]
-                # If this top folder matches one of our created proposals, assign ID
-                if top_folder in proposal_map:
-                    proposal_id = proposal_map[top_folder]
 
             # 1. Determine storage path
             # Generate UUID for the file storage keys
             file_id = str(uuid.uuid4())
 
-            # Preserve folder structure but use UUID filename
-            parent_dir = relative_path.parent
-            if str(parent_dir) == ".":
-                storage_object_name = f"{file_id}{file_path.suffix}"
-            else:
-                storage_object_name = f"{parent_dir}/{file_id}{file_path.suffix}"
-
+            # Since files are at root, no parent dir logic is required, just use root
+            storage_object_name = f"{file_id}{file_path.suffix}"
             storage_path = f"{slug}/{storage_object_name}"
 
             # 2. Upload to Supabase Storage ('files' bucket)
@@ -177,23 +122,17 @@ def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_d
 
             # 3. Prepare DB record
             file_stat = file_path.stat()
-            # If it has a proposal_id, it is a 'proposal', otherwise 'tender'
-            # (or use the existing helper logic if strictly needed, but proposal_id implies category='proposal')
-            category = "proposal" if proposal_id else "tender"
 
             file_record = {
                 "id": file_id,
                 "analysis_id": analysis_id,
                 "file_name": filename,
                 "storage_path": storage_path,
-                "category": category,
+                "category": None,
                 "file_size": file_stat.st_size,
                 "mime_type": mime_type,
                 "is_processed_version": False
             }
-            
-            if proposal_id:
-                file_record["proposal_id"] = proposal_id
 
             files_to_insert.append(file_record)
 
