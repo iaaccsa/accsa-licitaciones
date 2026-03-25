@@ -21,7 +21,7 @@ class AnalysisService:
         # Pydantic validation handles the conversion
         return [Analysis(**item) for item in data]
 
-    async def create_analysis(self, file: UploadFile) -> Analysis:
+    async def create_analysis(self, file: UploadFile, user_name: str | None = None) -> Analysis:
         # 1. Generate UUID for filename
         file_uuid = str(uuid.uuid4())
         file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'zip'
@@ -38,8 +38,10 @@ class AnalysisService:
         # 3. Create Analysis record
         analysis_data = {
             "status": "pending",
-            "artifact_path": file_path
+            "artifact_path": file_path,
         }
+        if user_name:
+            analysis_data["user_name"] = user_name
         analysis_record = self.repository.create(analysis_data)
         analysis = Analysis(**analysis_record)
         
