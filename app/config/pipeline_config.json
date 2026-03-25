@@ -37,7 +37,7 @@
     "is_final": true
   },
   {
-    "service": "qdrant-by-file",
+    "service": "service-qdrant-by-file",
     "next_services": [
       "service-setup-qdrant"
     ],
