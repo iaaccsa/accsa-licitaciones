@@ -4,22 +4,21 @@ import { useState, useCallback, useTransition } from "react";
 import Link from "next/link";
 import { FileUploadZone } from "@/components/FileUploadZone";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, XCircle, Plus, Trash2 } from "lucide-react";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 type UploadStatus = "idle" | "success" | "error";
 type AnalysisResult = Record<string, unknown> | null;
 
 export function UploadSection() {
-    const [tenderFiles, setTenderFiles] = useState<File[]>([]);
-    const [proposals, setProposals] = useState<File[][]>([[]]);
+    const [files, setFiles] = useState<File[]>([]);
+    const [analysisName, setAnalysisName] = useState("");
     const [isPending, startTransition] = useTransition();
     const [status, setStatus] = useState<UploadStatus>("idle");
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [uploadKey, setUploadKey] = useState(0);
 
-    const totalProposalFiles = proposals.reduce((sum, p) => p.length + sum, 0);
-    const hasFiles = tenderFiles.length > 0 || totalProposalFiles > 0;
+    const hasFiles = files.length > 0;
 
     const clearNotifications = useCallback(() => {
         if (status !== "idle") {
@@ -29,34 +28,13 @@ export function UploadSection() {
         }
     }, [status]);
 
-    const handleTenderFilesChange = useCallback(
-        (files: File[]) => {
-            setTenderFiles(files);
+    const handleFilesChange = useCallback(
+        (newFiles: File[]) => {
+            setFiles(newFiles);
             clearNotifications();
         },
         [clearNotifications]
     );
-
-    const handleProposalFilesChange = useCallback(
-        (index: number, files: File[]) => {
-            setProposals((prev) => {
-                const next = [...prev];
-                next[index] = files;
-                return next;
-            });
-            clearNotifications();
-        },
-        [clearNotifications]
-    );
-
-    const addProposal = useCallback(() => {
-        setProposals((prev) => [...prev, []]);
-    }, []);
-
-    const removeProposal = useCallback((index: number) => {
-        setProposals((prev) => prev.filter((_, i) => i !== index));
-        setUploadKey((prev) => prev + 1);
-    }, []);
 
     const handleAnalysis = useCallback(async () => {
         if (!hasFiles) return;
@@ -66,32 +44,21 @@ export function UploadSection() {
         setStatus("idle");
 
         try {
-            // Dynamic import: JSZip (~300KB) only loads when user clicks submit
             const JSZip = (await import("jszip")).default;
             const zip = new JSZip();
 
-            // Add tender files -> 'tender' folder
-            const tenderFolder = zip.folder("tender");
-            for (const file of tenderFiles) {
+            for (const file of files) {
                 const buffer = await file.arrayBuffer();
-                tenderFolder?.file(file.name, buffer);
+                zip.file(file.name, buffer);
             }
 
-            // Add each proposal group -> 'proposal1', 'proposal2', etc.
-            for (let i = 0; i < proposals.length; i++) {
-                const proposalFolder = zip.folder(`proposal${i + 1}`);
-                for (const file of proposals[i]) {
-                    const buffer = await file.arrayBuffer();
-                    proposalFolder?.file(file.name, buffer);
-                }
-            }
-
-            // Generate ZIP blob
             const zipBlob = await zip.generateAsync({ type: "blob" });
 
-            // Create FormData and send to API
             const formData = new FormData();
             formData.append("file", zipBlob, "analysis_documents.zip");
+            if (analysisName.trim()) {
+                formData.append("user_name", analysisName.trim());
+            }
 
             const response = await fetch("/api/upload", {
                 method: "POST",
@@ -104,9 +71,8 @@ export function UploadSection() {
                 setAnalysisResult(data);
                 setStatus("success");
 
-                // Clear all files by remounting components with new key
-                setTenderFiles([]);
-                setProposals([[]]);
+                setFiles([]);
+                setAnalysisName("");
                 setUploadKey((prev) => prev + 1);
             } else {
                 setErrorMessage(data.error || "No se pudo iniciar el análisis");
@@ -117,7 +83,7 @@ export function UploadSection() {
             setErrorMessage("Error de conexión. Inténtelo después.");
             setStatus("error");
         }
-    }, [tenderFiles, proposals, hasFiles]);
+    }, [files, hasFiles, analysisName]);
 
     const handleAnalysisWithTransition = useCallback(() => {
         startTransition(async () => {
@@ -131,64 +97,31 @@ export function UploadSection() {
                 Subir Documentos
             </h2>
 
-            <div key={uploadKey} className="space-y-6 mb-8">
-                {/* Tender documents — Full width */}
+            <div className="mb-6">
+                <label htmlFor="analysis-name" className="block text-sm font-medium text-zinc-600 mb-2">
+                    Nombre del análisis <span className="text-zinc-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                    id="analysis-name"
+                    type="text"
+                    value={analysisName}
+                    onChange={(e) => setAnalysisName(e.target.value)}
+                    placeholder="Ej: Licitación Obra Pública 2026"
+                    className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                />
+            </div>
+
+            <div key={uploadKey} className="mb-8">
                 <FileUploadZone
-                    title="Pliego de Condiciones y Normativas"
-                    description="Subir documentos base y normativas aplicables"
-                    subtitle="Hasta 15 archivos PDF (máx. 10 MB c/u)"
+                    title="Documentos"
+                    description="Subir pliegos, normativas y ofertas"
+                    subtitle="Hasta 25 archivos PDF (máx. 10 MB c/u)"
                     icon="document"
                     accept=".pdf"
-                    maxFiles={15}
+                    maxFiles={25}
                     maxSizeMB={10}
-                    onFilesChange={handleTenderFilesChange}
+                    onFilesChange={handleFilesChange}
                 />
-
-                {/* Proposals — Dynamic list */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-medium text-zinc-600">
-                            Ofertas ({proposals.length})
-                        </h3>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={addProposal}
-                            className="text-blue-600 border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-                        >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Agregar Oferta
-                        </Button>
-                    </div>
-
-                    {proposals.map((_, index) => (
-                        <div key={`proposal-${uploadKey}-${index}`} className="relative">
-                            {proposals.length > 1 ? (
-                                <button
-                                    type="button"
-                                    onClick={() => removeProposal(index)}
-                                    className="absolute top-3 right-3 z-10 p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                                    title="Eliminar oferta"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
-                            ) : null}
-                            <FileUploadZone
-                                title={`Oferta${proposals.length > 1 ? ` ${index + 1}` : ""}`}
-                                description="Subir oferta técnica"
-                                subtitle="Hasta 10 archivos PDF (máx. 10 MB c/u)"
-                                icon="ofertas"
-                                accept=".pdf"
-                                maxFiles={10}
-                                maxSizeMB={10}
-                                onFilesChange={(files) =>
-                                    handleProposalFilesChange(index, files)
-                                }
-                            />
-                        </div>
-                    ))}
-                </div>
             </div>
 
             {/* Status Messages */}

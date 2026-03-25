@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Upload, ListChecks, ShieldCheck } from "lucide-react";
 
 const navItems = [
-    { href: "/", label: "Cargar", icon: Upload },
+    { href: "/", label: "Iniciar", icon: Upload },
     { href: "/analyses", label: "Análisis", icon: ListChecks },
     { href: "/admin", label: "Admin", icon: ShieldCheck },
 ] as const;

@@ -38,6 +38,11 @@ export async function POST(request: NextRequest) {
         const backendFormData = new FormData();
         backendFormData.append("file", file, "licitacion_documentos.zip");
 
+        const userName = formData.get("user_name");
+        if (userName) {
+            backendFormData.append("user_name", userName);
+        }
+
         const response = await fetch(url, {
             method: "POST",
             headers: {
