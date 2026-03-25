@@ -251,7 +251,7 @@ def process_file_metadata_extraction():
                 f"company={metadata.get('company_name')}")
 
     # 6. Persist metadata via API
-    api_request("PATCH", f"{API_FILES_PATH}{FILE_ID}", {"file_metadata": metadata})
+    api_request("PATCH", f"{API_FILES_PATH}{FILE_ID}", {"metadata": metadata})
 
     log_event(
         ANALYSIS_ID, "info",
