@@ -8,13 +8,22 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Added
+- Agregar endpoint `POST /api/v1/analyses/{analysis_id}/cancel` para cancelar un análisis, deteniendo los Azure Container Apps Jobs en ejecución y marcando los jobs como cancelados en la base de datos.
+- Agregar campo `metadata` (jsonb) al schema de archivos (`FileBase`, `FileUpdate`) para almacenar y actualizar metadata arbitraria en archivos vía `PATCH /files/{file_id}`.
+- Agregar valor `cancelled` al enum `job_status` en la base de datos.
+- Agregar campo `user_name` como parámetro en `POST /api/v1/analyses/` para asociar un nombre de usuario al crear un análisis.
 - Agregar endpoint `POST /api/v1/qdrant/collections` para crear colecciones en Qdrant con configuración de nombre, tamaño de vector y distancia.
 - Agregar endpoint `GET /api/v1/files/{file_id}` para obtener un archivo por su ID.
 - Implementar patrón de orquestación fan-out para el servicio `qdrant-by-file`, lanzando N instancias de Azure Container App Job (una por archivo procesado) y esperando a que todas completen antes de continuar el pipeline.
 
 ### Changed
-- Actualizar DAG del pipeline para que `service-files-converter` enrute a `qdrant-by-file` (fan-out) antes de `service-setup-qdrant`. Agregar campo `fan_out_by` a la configuración del pipeline.
+- Renombrar servicio `qdrant-by-file` a `service-qdrant-by-file` en la configuración del pipeline para mantener consistencia de nomenclatura.
+- Actualizar DAG del pipeline para que `service-files-converter` enrute a `service-qdrant-by-file` (fan-out) antes de `service-setup-qdrant`. Agregar campo `fan_out_by` a la configuración del pipeline.
 - Actualizar callback de jobs (`POST /api/v1/jobs/callback`) para aceptar `file_id` opcional, identificando instancias de jobs fan-out.
+
+### Fixed
+- Corregir vista `analyses_view` que no incluía las columnas `user_name` y `generated_name`, recreando la vista con los campos faltantes.
+- Agregar columna `file_id` faltante a la tabla `jobs` en la base de datos.
 
 ## [1.0.0] - 2026-03-25
 

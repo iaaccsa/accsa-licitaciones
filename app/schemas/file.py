@@ -17,6 +17,7 @@ class FileBase(BaseModel):
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
+    file_metadata: Optional[Dict[str, Any]] = None
 
 class File(FileBase):
     id: Optional[UUID] = None
@@ -33,3 +34,4 @@ class FileUpdate(BaseModel):
     mime_type: Optional[str] = None
     file_size: Optional[int] = None
     metadata: Optional[Dict[str, Any]] = None
+    file_metadata: Optional[Dict[str, Any]] = None

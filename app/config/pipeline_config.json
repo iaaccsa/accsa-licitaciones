@@ -39,7 +39,7 @@
   {
     "service": "service-qdrant-by-file",
     "next_services": [
-      "service-setup-qdrant"
+      "service-file-metadata-extractor"
     ],
     "code": "qdrant-by-file",
     "display_name": "Indexando Documentos",
@@ -47,82 +47,19 @@
     "create_on_start": false,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": true,
+    "is_final": false,
     "fan_out_by": "file"
   },
   {
-    "service": "service-setup-qdrant",
-    "next_services": [
-      "service-chunk-and-index"
-    ],
-    "code": "rag-setup",
-    "display_name": "Configuración RAG",
-    "parent": "converter",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
-  },
-  {
-    "service": "service-chunk-and-index",
-    "next_services": [
-      "service-requirement-extractor",
-      "service-metadata-extractor"
-    ],
-    "code": "chunk_and_index",
-    "display_name": "Chunking e Indexación",
-    "parent": "rag-setup",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
-  },
-  {
-    "service": "service-requirement-extractor",
-    "next_services": [
-      "service-verify-compliance"
-    ],
-    "code": "requirement_extraction",
-    "display_name": "Extracción de Requisitos",
-    "parent": "chunk_and_index",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
-  },
-  {
-    "service": "service-metadata-extractor",
+    "service": "service-file-metadata-extractor",
     "next_services": [],
-    "code": "metadata_extraction",
-    "display_name": "Extracción de Metadatos",
-    "parent": "chunk_and_index",
-    "create_on_start": true,
+    "code": "file-metadata-extractor",
+    "display_name": "Extrayendo Metadatos de Archivos",
+    "parent": "qdrant-by-file",
+    "create_on_start": false,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": false
-  },
-  {
-    "service": "service-verify-compliance",
-    "next_services": [
-      "service-proposal-scorer"
-    ],
-    "code": "compliance_verification",
-    "display_name": "Verificación de Cumplimiento",
-    "parent": "requirement_extraction",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
-  },
-  {
-    "service": "service-proposal-scorer",
-    "next_services": [],
-    "code": "proposal_scorer",
-    "display_name": "Puntuación de Propuestas",
-    "parent": "compliance_verification",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": true
+    "is_final": false,
+    "fan_out_by": "file"
   }
 ]
