@@ -3,7 +3,7 @@ Qdrant By File Service
 ======================
 Fetches a specific file via API by FILE_ID,
 downloads its Markdown content from Supabase Storage,
-creates a dedicated Qdrant collection named FILE-[analisis_slug]-[file_id],
+creates a dedicated Qdrant collection named FILE_[analysis_slug]_[file_id],
 splits it into semantic chunks, generates OpenAI embeddings,
 and indexes the chunks into this new collection.
 
@@ -214,8 +214,8 @@ def process_qdrant_by_file():
     logger.info("Fetching analysis info...")
     analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
     analysis_slug = analysis["slug"]
-    
-    collection_name = f"FILE-{analysis_slug}-{FILE_ID}"
+
+    collection_name = f"FILE_{analysis_slug}_{FILE_ID}"
     logger.info(f"Target Qdrant collection: {collection_name}")
 
     log_event(ANALYSIS_ID, "info", f"Iniciando indexación por archivo para: {FILE_ID}", EVENT_SOURCE)

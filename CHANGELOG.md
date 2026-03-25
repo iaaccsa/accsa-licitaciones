@@ -8,7 +8,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [Unreleased]
 
 ### Added
+- Agregar `service-qdrant-by-file` para indexación dedicada por archivo individual en Qdrant, con integración en pipeline CI/CD y script de creación de Container App Job.
 - Agregar variables `API_JOBS_CALLBACK` y `API_REQUIREMENTS_PATH` al pipeline de Azure.
+
+### Changed
+- Simplificar `service-file-extractor` eliminando la lógica de carpetas de propuestas y categorización automática; los archivos se procesan de forma plana directamente asociados al análisis.
+- Simplificar `service-files-converter` eliminando lógica de propuestas, archivos combinados y merges; los archivos convertidos se asocian directamente al análisis sin categoría.
+- Migrar `service-files-converter` de `llama-parse` a SDK `llama_cloud`, utilizando el tier agentic de parsing con soporte OCR en español.
 
 ## [0.9.0] - 2026-02-23
 

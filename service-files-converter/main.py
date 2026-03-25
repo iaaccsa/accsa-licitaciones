@@ -26,13 +26,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
-import nest_asyncio
-from llama_parse import LlamaParse
+from llama_cloud import LlamaCloud
 from supabase import create_client, Client
 from supabase_logger import setup_logger, log_event, make_session
-
-# Allow nested event loops (required by LlamaParse)
-nest_asyncio.apply()
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -100,26 +96,41 @@ def validate_env():
         sys.exit(1)
 
 
-def get_parser() -> LlamaParse:
-    """Initialize and return the LlamaParse instance."""
-    return LlamaParse(
-        api_key=LLAMA_CLOUD_API_KEY,
-        result_type="markdown",
-        verbose=True,
-        language="es",
-        system_prompt=(
-            "This is a technical tender document or proposal. "
-            "Preserve all tables strictly in markdown format. "
-            "Extract headers and subheaders clearly."
-        ),
+def get_client() -> LlamaCloud:
+    """Initialize and return the LlamaCloud client."""
+    return LlamaCloud(api_key=LLAMA_CLOUD_API_KEY)
+
+
+def parse_file(client: LlamaCloud, file_path: str) -> str:
+    """Upload and parse a single file, returning its Markdown content."""
+    logger.info(f"Parsing file: {file_path} ...")
+
+    # Step 1: Upload file
+    file_obj = client.files.create(
+        file=Path(file_path),
+        purpose="parse",
+    )
+    logger.info(f"Uploaded to LlamaCloud, file_id={file_obj.id}")
+
+    # Step 2: Parse (synchronous — blocks until done)
+    result = client.parsing.parse(
+        file_id=file_obj.id,
+        tier="agentic",
+        version="latest",
+        output_options={
+            "markdown": {
+                "tables": {"output_tables_as_markdown": True},
+            },
+        },
+        processing_options={
+            "ocr_parameters": {"languages": ["es"]},
+        },
+        expand=["markdown"],
     )
 
-
-def parse_file(parser: LlamaParse, file_path: str) -> str:
-    """Parse a single file and return its Markdown content."""
-    logger.info(f"Parsing file: {file_path} ...")
-    documents = parser.load_data(file_path)
-    return "\n\n".join([doc.text for doc in documents])
+    # Combine all pages into a single markdown string
+    pages = result.markdown.pages if result.markdown else []
+    return "\n\n".join(page.markdown for page in pages if page.markdown)
 
 
 def upload_markdown(
@@ -225,8 +236,8 @@ def process_conversion():
             {"files": [f["file_name"] for f in files_to_process]},
         )
 
-        # Initialize LlamaParse
-        parser = get_parser()
+        # Initialize LlamaCloud client
+        client = get_client()
 
         work_dir = WORKSPACE_DIR / ANALYSIS_ID / "processing"
         work_dir.mkdir(parents=True, exist_ok=True)
@@ -250,7 +261,7 @@ def process_conversion():
 
             # Parse
             try:
-                md_content = parse_file(parser, str(local_path))
+                md_content = parse_file(client, str(local_path))
             except Exception as e:
                 logger.error(f"Failed to parse {file_name}: {e}")
                 continue
