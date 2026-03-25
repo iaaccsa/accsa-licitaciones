@@ -17,7 +17,6 @@ class FileBase(BaseModel):
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
     metadata: Optional[Dict[str, Any]] = None
-    file_metadata: Optional[Dict[str, Any]] = None
 
 class File(FileBase):
     id: Optional[UUID] = None
@@ -29,9 +28,9 @@ class FileFilter(BaseModel):
     analysis_id: UUID
 
 class FileUpdate(BaseModel):
+    category: Optional[str] = None
     total_chunks: Optional[int] = None
     is_processed_version: Optional[bool] = None
     mime_type: Optional[str] = None
     file_size: Optional[int] = None
     metadata: Optional[Dict[str, Any]] = None
-    file_metadata: Optional[Dict[str, Any]] = None

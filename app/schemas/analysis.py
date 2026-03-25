@@ -24,3 +24,4 @@ class Analysis(AnalysisBase):
 
 class AnalysisStatusUpdate(BaseModel):
     status: str
+    is_success: Optional[bool] = None

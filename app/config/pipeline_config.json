@@ -34,7 +34,7 @@
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": true
+    "is_final": false
   },
   {
     "service": "service-qdrant-by-file",
@@ -44,7 +44,7 @@
     "code": "qdrant-by-file",
     "display_name": "Indexando Documentos",
     "parent": "converter",
-    "create_on_start": false,
+    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
@@ -52,14 +52,27 @@
   },
   {
     "service": "service-file-metadata-extractor",
-    "next_services": [],
+    "next_services": [
+      "service-documents-clasification"
+    ],
     "code": "file-metadata-extractor",
     "display_name": "Extrayendo Metadatos de Archivos",
     "parent": "qdrant-by-file",
-    "create_on_start": false,
+    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "fan_out_by": "file"
+  },
+  {
+    "service": "service-documents-clasification",
+    "next_services": [],
+    "code": "documents-clasification",
+    "display_name": "Clasificando Documentos",
+    "parent": "file-metadata-extractor",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": true
   }
 ]

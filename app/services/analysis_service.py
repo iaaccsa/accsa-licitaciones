@@ -73,7 +73,8 @@ class AnalysisService:
         return Analysis(**data)
 
     def update_analysis_status(self, analysis_id, status_update: AnalysisStatusUpdate) -> Analysis:
-        data = self.repository.update_status(analysis_id, status_update.status)
+        update_data = status_update.model_dump(exclude_none=True)
+        data = self.repository.update_by_id(str(analysis_id), update_data)
         return Analysis(**data)
 
 analysis_service = AnalysisService()
