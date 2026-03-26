@@ -1,5 +1,5 @@
 from app.repositories.analysis_repository import analysis_repository
-from app.schemas.analysis import Analysis, AnalysisStatusUpdate
+from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.services.workflow_step_service import workflow_step_service
@@ -71,6 +71,11 @@ class AnalysisService:
         if not data:
             return None
         return Analysis(**data)
+
+    def update_analysis(self, analysis_id, update_data: AnalysisUpdate) -> Analysis:
+        data = update_data.model_dump(exclude_none=True)
+        result = self.repository.update_by_id(str(analysis_id), data)
+        return Analysis(**result)
 
     def update_analysis_status(self, analysis_id, status_update: AnalysisStatusUpdate) -> Analysis:
         update_data = status_update.model_dump(exclude_none=True)

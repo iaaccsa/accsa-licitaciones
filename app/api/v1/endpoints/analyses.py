@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
 from typing import List
 from uuid import UUID
-from app.schemas.analysis import Analysis, AnalysisStatusUpdate
+from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate
 from app.schemas.job import CancelPipelineResponse
 from app.services.analysis_service import analysis_service
 from app.services.job_orchestrator_service import job_orchestrator_service
@@ -58,6 +58,16 @@ def cancel_analysis(analysis_id: UUID):
             cancelled_jobs=cancelled_count,
             message=f"Análisis cancelado. {cancelled_count} jobs detenidos.",
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.patch("/{analysis_id}", response_model=Analysis)
+def update_analysis(analysis_id: UUID, update_data: AnalysisUpdate):
+    """
+    Update analysis fields (e.g. generated_name).
+    """
+    try:
+        return analysis_service.update_analysis(analysis_id, update_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

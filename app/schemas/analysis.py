@@ -22,6 +22,9 @@ class Analysis(AnalysisBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class AnalysisUpdate(BaseModel):
+    generated_name: Optional[str] = None
+
 class AnalysisStatusUpdate(BaseModel):
     status: str
     is_success: Optional[bool] = None
