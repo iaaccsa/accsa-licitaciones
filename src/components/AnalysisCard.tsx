@@ -27,10 +27,10 @@ function getRelativeTime(dateString: string) {
     return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export function AnalysisCard({ analysis }: { analysis: Analysis }) {
+export function AnalysisCard({ analysis, basePath = "/analyses" }: { analysis: Analysis; basePath?: string }) {
     return (
         <Link
-            href={`/analyses/${analysis.id}`}
+            href={`${basePath}/${analysis.id}`}
             className="block bg-white rounded-xl border border-zinc-200 p-4 shadow-sm hover:shadow-md transition-shadow"
         >
             <div className="flex justify-between items-start mb-3">

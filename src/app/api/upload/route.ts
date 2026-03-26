@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getEnv } from "@/lib/env";
+import { apiError, safeLogError, validateUploadFile, validateUserName } from "@/lib/api-utils";
 
 export async function POST(request: NextRequest) {
     try {
@@ -6,47 +8,30 @@ export async function POST(request: NextRequest) {
         const file = formData.get("file") as Blob | null;
 
         if (!file) {
-            return NextResponse.json(
-                { error: "No file provided" },
-                { status: 400 }
-            );
+            return apiError("No file provided", 400);
         }
 
-        const baseUrl = process.env.API_BASE_URL;
-        const analysesPath = process.env.API_ANALYSES_PATH;
-
-        if (!baseUrl || !analysesPath) {
-            console.error("API_BASE_URL or API_ANALYSES_PATH not configured");
-            return NextResponse.json(
-                { error: "API not configured" },
-                { status: 500 }
-            );
+        const fileError = validateUploadFile(file);
+        if (fileError) {
+            return apiError(fileError, 400);
         }
 
-        const url = `${baseUrl}${analysesPath}${analysesPath.endsWith("/") ? "" : "/"}`;
-        const apiKey = process.env.BACKEND_API_KEY;
+        const env = getEnv();
 
-        if (!apiKey) {
-            console.error("BACKEND_API_KEY not configured");
-            return NextResponse.json(
-                { error: "API Key Configuration Error" },
-                { status: 500 }
-            );
-        }
+        const url = `${env.API_BASE_URL}${env.API_ANALYSES_PATH}${env.API_ANALYSES_PATH.endsWith("/") ? "" : "/"}`;
 
-        // Forward the file to the backend
         const backendFormData = new FormData();
         backendFormData.append("file", file, "licitacion_documentos.zip");
 
-        const userName = formData.get("user_name");
-        if (userName) {
-            backendFormData.append("user_name", userName);
+        const validatedName = validateUserName(formData.get("user_name"));
+        if (validatedName) {
+            backendFormData.append("user_name", validatedName);
         }
 
         const response = await fetch(url, {
             method: "POST",
             headers: {
-                "X-API-Key": apiKey,
+                "X-API-Key": env.BACKEND_API_KEY,
             },
             body: backendFormData,
         });
@@ -55,18 +40,11 @@ export async function POST(request: NextRequest) {
             const data = await response.json();
             return NextResponse.json(data);
         } else {
-            const errorText = await response.text();
-            console.error("Backend error:", response.status, errorText);
-            return NextResponse.json(
-                { error: "Failed to create analysis" },
-                { status: response.status }
-            );
+            safeLogError("upload", response.status, await response.text());
+            return apiError("Failed to create analysis", response.status);
         }
     } catch (error) {
         console.error("Error processing upload:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
+        return apiError("Internal server error", 500);
     }
 }

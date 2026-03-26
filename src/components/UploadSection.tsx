@@ -106,6 +106,7 @@ export function UploadSection() {
                     type="text"
                     value={analysisName}
                     onChange={(e) => setAnalysisName(e.target.value)}
+                    maxLength={200}
                     placeholder="Ej: Licitación Obra Pública 2026"
                     className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
                 />

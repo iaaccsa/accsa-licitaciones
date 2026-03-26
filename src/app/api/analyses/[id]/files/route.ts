@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getEnv } from "@/lib/env";
+import { validateUUID, invalidIdResponse, apiError, safeLogError } from "@/lib/api-utils";
 
 export async function POST(
     request: Request,
@@ -6,26 +8,19 @@ export async function POST(
 ) {
     const { id } = await params;
 
+    if (!validateUUID(id)) {
+        return invalidIdResponse();
+    }
+
     try {
-        const baseUrl = process.env.API_BASE_URL;
-        const filesPath = process.env.API_FILES_PATH;
-        const apiKey = process.env.BACKEND_API_KEY;
-
-        if (!baseUrl || !filesPath || !apiKey) {
-            console.error("API_BASE_URL, API_FILES_PATH, or BACKEND_API_KEY not configured");
-            return NextResponse.json(
-                { error: "API not configured" },
-                { status: 500 }
-            );
-        }
-
-        const url = `${baseUrl}${filesPath}`;
+        const env = getEnv();
+        const url = `${env.API_BASE_URL}${env.API_FILES_PATH}`;
 
         const response = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-API-Key": apiKey,
+                "X-API-Key": env.BACKEND_API_KEY,
             },
             body: JSON.stringify({ analysis_id: id }),
         });
@@ -34,17 +29,11 @@ export async function POST(
             const data = await response.json();
             return NextResponse.json(data);
         } else {
-            console.error("Files webhook error:", response.status, await response.text());
-            return NextResponse.json(
-                { error: "Failed to fetch files" },
-                { status: response.status }
-            );
+            safeLogError("analyses/[id]/files", response.status, await response.text());
+            return apiError("Failed to fetch files", response.status);
         }
     } catch (error) {
         console.error("Error fetching files:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
+        return apiError("Internal server error", 500);
     }
 }

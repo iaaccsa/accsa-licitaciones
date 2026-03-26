@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getEnv } from "@/lib/env";
+import { validateUUID, invalidIdResponse, apiError, safeLogError, parsePaginationBody } from "@/lib/api-utils";
 
 export async function POST(
     request: Request,
@@ -6,28 +8,22 @@ export async function POST(
 ) {
     const { id } = await params;
 
+    if (!validateUUID(id)) {
+        return invalidIdResponse();
+    }
+
     try {
-        const baseUrl = process.env.API_BASE_URL;
-        const workflowStepsPath = process.env.API_WORKFLOW_STEPS_PATH;
-        const apiKey = process.env.BACKEND_API_KEY;
+        const env = getEnv();
+        const rawBody = await request.json().catch(() => null);
+        const { limit, offset } = parsePaginationBody(rawBody);
 
-        if (!baseUrl || !workflowStepsPath || !apiKey) {
-            console.error("API_BASE_URL, API_WORKFLOW_STEPS_PATH, or BACKEND_API_KEY not configured");
-            return NextResponse.json(
-                { error: "API not configured" },
-                { status: 500 }
-            );
-        }
-
-        const { limit, offset } = await request.json().catch(() => ({}));
-
-        const url = `${baseUrl}${workflowStepsPath}`;
+        const url = `${env.API_BASE_URL}${env.API_WORKFLOW_STEPS_PATH}`;
 
         const response = await fetch(url, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-API-Key": apiKey,
+                "X-API-Key": env.BACKEND_API_KEY,
             },
             body: JSON.stringify({
                 analysis_id: id,
@@ -40,17 +36,11 @@ export async function POST(
             const data = await response.json();
             return NextResponse.json(data);
         } else {
-            console.error("Workflow webhook error:", response.status, await response.text());
-            return NextResponse.json(
-                { error: "Failed to fetch workflow steps" },
-                { status: response.status }
-            );
+            safeLogError("analyses/[id]/workflow", response.status, await response.text());
+            return apiError("Failed to fetch workflow steps", response.status);
         }
     } catch (error) {
         console.error("Error fetching workflow steps:", error);
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
+        return apiError("Internal server error", 500);
     }
 }

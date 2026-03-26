@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, Cpu, FileText, ClipboardList } from "lucide-react";
+import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowVisualization from "@/components/WorkflowVisualization";
 import ProposalsList from "@/components/ProposalsList";
@@ -11,6 +12,8 @@ import ProposalsComplianceChart from "@/components/ProposalsComplianceChart";
 interface Analysis {
     id: string;
     slug: string;
+    user_name: string | null;
+    generated_name: string | null;
     status: "pending" | "processing" | "ready" | "failed";
     is_success: boolean | null;
     created_at: string;
@@ -34,6 +37,7 @@ export default function AnalysisDetailPage() {
     const [analysis, setAnalysis] = useState<Analysis | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -58,6 +62,21 @@ export default function AnalysisDetailPage() {
         }
     }, [id]);
 
+    const handleCancel = useCallback(async () => {
+        if (!analysis || isCancelling) return;
+        setIsCancelling(true);
+        try {
+            const res = await fetch(`/api/analyses/${id}/cancel`, { method: "POST" });
+            if (res.ok) {
+                setAnalysis((prev) => prev ? { ...prev, status: "failed" } : prev);
+            }
+        } catch (err) {
+            console.error("Error cancelling analysis:", err);
+        } finally {
+            setIsCancelling(false);
+        }
+    }, [id, analysis, isCancelling]);
+
     if (error) {
         return (
             <div className="max-w-5xl mx-auto py-12 px-4 text-center">
@@ -80,18 +99,36 @@ export default function AnalysisDetailPage() {
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
                 <div className="flex flex-col gap-2 mb-6">
                     <div className="flex items-center justify-between gap-3">
-                        <h1 className="text-2xl font-bold font-mono text-zinc-900 uppercase">
-                            {analysis.slug}
+                        <h1 className="text-2xl font-bold text-zinc-900">
+                            {analysis.user_name || analysis.generated_name || <span className="font-mono uppercase">{analysis.slug}</span>}
                         </h1>
-                        <StatusBadge status={analysis.status} isSuccess={analysis.is_success} />
+                        <div className="flex items-center gap-2">
+                            <StatusBadge status={analysis.status} isSuccess={analysis.is_success} />
+                            {(analysis.status === "pending" || analysis.status === "processing") && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCancel}
+                                    disabled={isCancelling}
+                                    className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                                >
+                                    {isCancelling ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        <Ban className="h-3.5 w-3.5" />
+                                    )}
+                                    Cancelar
+                                </Button>
+                            )}
+                        </div>
                     </div>
                     <div className="flex items-center justify-between text-sm text-zinc-500 gap-4">
                         <span className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
                             {formatDate(analysis.created_at)}
                         </span>
-                        <span className="flex items-center gap-1 font-mono text-xs bg-zinc-100 px-2 py-0.5 rounded">
-                            ID: {analysis.id}
+                        <span className="flex items-center gap-1 font-mono text-xs bg-zinc-100 px-2 py-0.5 rounded uppercase">
+                            {analysis.slug}
                         </span>
                     </div>
                 </div>
@@ -101,7 +138,7 @@ export default function AnalysisDetailPage() {
             <WorkflowVisualization analysisId={id} />
 
             {/* Navigation Buttons */}
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 gap-6">
                 <a
                     href={`/analyses/${id}/files`}
                     className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all group text-center"
@@ -117,7 +154,6 @@ export default function AnalysisDetailPage() {
                             Ver pliegos, normativas y ofertas
                         </p>
                     </div>
-                    {/* ExternalLink removed as it might clutter centered design, or can be kept absolute/small if needed. User asked for icon top, text below. */}
                 </a>
 
                 <a
@@ -133,23 +169,6 @@ export default function AnalysisDetailPage() {
                         </h3>
                         <p className="text-sm text-zinc-500">
                             Ver matriz de cumplimiento
-                        </p>
-                    </div>
-                </a>
-
-                <a
-                    href={`/analyses/${id}/events`}
-                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group text-center"
-                >
-                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                        <Cpu className="w-8 h-8" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-purple-600 transition-colors">
-                            Historial de Eventos
-                        </h3>
-                        <p className="text-sm text-zinc-500">
-                            Ver bitácora de ejecución
                         </p>
                     </div>
                 </a>

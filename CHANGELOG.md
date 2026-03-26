@@ -7,11 +7,19 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Added
+- Agregar área de carga unificada, consolidando las zonas separadas de "Pliego de Condiciones y Normativas" y "Ofertas" en una sola área de carga de documentos.
+- Agregar campo opcional de nombre de análisis (`user_name`), enviado al backend a través del proxy de carga.
+- Agregar página de análisis en el panel de administración (`/admin/analyses`) con botón "Ver Análisis".
+- Agregar botón de cancelar análisis en el detalle (`/analyses/[id]`), visible solo para análisis pendientes o en procesamiento, con nueva ruta de proxy `/api/analyses/[id]/cancel`.
+- Agregar título dinámico en el detalle de análisis: muestra `user_name`, luego `generated_name`, y `slug` como fallback.
+
+### Changed
+- Renombrar enlace de navegación de "Cargar" a "Iniciar" en el Navbar.
+
 ## [1.0.0] - 2026-03-25
 
 ### Added
-- Agregar área de carga unificada, consolidando las zonas separadas de "Pliego de Condiciones y Normativas" y "Ofertas" en una sola área de carga de documentos.
-- Agregar campo opcional de nombre de análisis, enviado como `user_name` al backend.
 - Agregar Vercel Web Analytics para monitoreo de uso de la aplicación.
 - Agregar página `/tech` con documentación completa del stack tecnológico y enlace en el footer.
 - Agregar componente Footer y página `/terms` con términos y condiciones.

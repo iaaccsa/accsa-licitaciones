@@ -24,6 +24,19 @@ interface AnalysisFile {
 
 const SUPABASE_STORAGE_URL = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
 
+const STORAGE_PATH_REGEX = /^[a-zA-Z0-9/_\-][a-zA-Z0-9/_\-.]*$/;
+
+function isValidStoragePath(path: string): boolean {
+    if (!path || path.length > 500) return false;
+    if (path.includes("..") || path.includes("//")) return false;
+    return STORAGE_PATH_REGEX.test(path);
+}
+
+function getDownloadUrl(file: { storage_path: string; file_name: string }): string | null {
+    if (!SUPABASE_STORAGE_URL || !isValidStoragePath(file.storage_path)) return null;
+    return `${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`;
+}
+
 function formatBytes(bytes: number, decimals = 2) {
     if (!+bytes) return '0 Bytes';
     const k = 1024;
@@ -169,16 +182,18 @@ export default function AnalysisFilesPage() {
                                                     <MessageSquare className="w-4 h-4" />
                                                 </a>
                                             )}
-                                            <a
-                                                href={`${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
-                                                title="Descargar documento"
-                                                download={file.file_name}
-                                            >
-                                                <Download className="w-4 h-4" />
-                                            </a>
+                                            {getDownloadUrl(file) && (
+                                                <a
+                                                    href={getDownloadUrl(file)!}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
+                                                    title="Descargar documento"
+                                                    download={file.file_name}
+                                                >
+                                                    <Download className="w-4 h-4" />
+                                                </a>
+                                            )}
                                         </div>
                                     </li>
                                 ))}

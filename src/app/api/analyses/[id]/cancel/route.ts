@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
-import { validateUUID, invalidIdResponse, apiError, safeLogError, parsePaginationBody } from "@/lib/api-utils";
+import { validateUUID, invalidIdResponse, apiError, safeLogError } from "@/lib/api-utils";
 
 export async function POST(
     request: Request,
@@ -14,33 +14,24 @@ export async function POST(
 
     try {
         const env = getEnv();
-        const rawBody = await request.json().catch(() => null);
-        const { limit, offset } = parsePaginationBody(rawBody);
-
-        const url = `${env.API_BASE_URL}${env.API_EVENTS_PATH}`;
+        const url = `${env.API_BASE_URL}${env.API_ANALYSES_PATH}/${id}/cancel`;
 
         const response = await fetch(url, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json",
                 "X-API-Key": env.BACKEND_API_KEY,
             },
-            body: JSON.stringify({
-                analysis_id: id,
-                limit: limit || 10,
-                offset: offset || 0
-            }),
         });
 
         if (response.ok) {
             const data = await response.json();
             return NextResponse.json(data);
         } else {
-            safeLogError("analyses/[id]/events", response.status, await response.text());
-            return apiError("Failed to fetch events", response.status);
+            safeLogError("analyses/[id]/cancel", response.status, await response.text());
+            return apiError("Failed to cancel analysis", response.status);
         }
     } catch (error) {
-        console.error("Error fetching events:", error);
+        console.error("Error cancelling analysis:", error);
         return apiError("Internal server error", 500);
     }
 }

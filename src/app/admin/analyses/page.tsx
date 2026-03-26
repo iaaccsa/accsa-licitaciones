@@ -8,7 +8,7 @@ export default function AdminAnalysesPage() {
             <h1 className="text-2xl font-semibold text-zinc-800 mb-6 font-serif italic">
                 Análisis
             </h1>
-            <AnalysisList />
+            <AnalysisList basePath="/admin/analyses" />
         </div>
     );
 }

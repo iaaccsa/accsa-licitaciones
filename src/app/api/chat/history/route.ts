@@ -1,38 +1,45 @@
 import { NextResponse } from "next/server";
+import { z } from "zod/v4";
+import { getEnv } from "@/lib/env";
+import { apiError, safeLogError } from "@/lib/api-utils";
+
+const historyRequestSchema = z.object({
+    analysis_id: z.string().uuid(),
+    session_id: z.string().uuid().optional(),
+    file_id: z.string().uuid().optional(),
+    limit: z.number().int().min(1).max(100).optional(),
+    offset: z.number().int().min(0).optional(),
+});
 
 export async function POST(request: Request) {
-    const baseUrl = process.env.API_BASE_URL;
-    const historyPath = process.env.API_CHAT_HISTORY_PATH;
-    const apiKey = process.env.BACKEND_API_KEY;
-
-    if (!baseUrl || !historyPath || !apiKey) {
-        return NextResponse.json(
-            { error: "API_BASE_URL, API_CHAT_HISTORY_PATH or BACKEND_API_KEY not configured" },
-            { status: 500 }
-        );
-    }
-
     try {
-        const body = await request.json();
+        const env = getEnv();
+        const rawBody = await request.json();
 
-        const response = await fetch(`${baseUrl}${historyPath}`, {
+        const parsed = historyRequestSchema.safeParse(rawBody);
+        if (!parsed.success) {
+            return apiError("Invalid request body", 400);
+        }
+
+        const response = await fetch(`${env.API_BASE_URL}${env.API_CHAT_HISTORY_PATH}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "X-API-Key": apiKey,
+                "X-API-Key": env.BACKEND_API_KEY,
             },
-            body: JSON.stringify(body),
+            body: JSON.stringify(parsed.data),
         });
 
         const data = await response.json();
 
         if (!response.ok) {
-            return NextResponse.json(data, { status: response.status });
+            safeLogError("chat-history", response.status, JSON.stringify(data));
+            return apiError("Failed to fetch chat history", response.status);
         }
 
         return NextResponse.json(data);
     } catch (error) {
         console.error("Error fetching chat history:", error);
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        return apiError("Internal server error", 500);
     }
 }

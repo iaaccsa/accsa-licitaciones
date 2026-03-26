@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { AnalysisCard, type Analysis } from "./AnalysisCard";
 
-export function AnalysisList() {
+export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } = {}) {
     const [analyses, setAnalyses] = useState<Analysis[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -76,7 +76,7 @@ export function AnalysisList() {
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {activeAnalyses.map((analysis) => (
-                            <AnalysisCard key={analysis.slug} analysis={analysis} />
+                            <AnalysisCard key={analysis.slug} analysis={analysis} basePath={basePath} />
                         ))}
                     </div>
                 </div>
@@ -95,7 +95,7 @@ export function AnalysisList() {
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                         {completedAnalyses.map((analysis) => (
-                            <AnalysisCard key={analysis.slug} analysis={analysis} />
+                            <AnalysisCard key={analysis.slug} analysis={analysis} basePath={basePath} />
                         ))}
                     </div>
                 </div>
