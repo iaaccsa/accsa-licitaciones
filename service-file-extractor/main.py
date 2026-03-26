@@ -225,7 +225,7 @@ def process_analysis():
     log_event(ANALYSIS_ID, "info", "Inicio de descompresión de archivos", EVENT_SOURCE)
 
     # 4. Download the ZIP via HTTP from SUPABASE_ARTIFACTS_BASE_URL + artifact_path
-    download_url = f"{SUPABASE_ARTIFACTS_BASE_URL}/{artifact_path}"
+    download_url = f"{SUPABASE_ARTIFACTS_BASE_URL.rstrip('/')}/{artifact_path.lstrip('/')}"
     logger.info(f"Downloading ZIP from {download_url}")
     log_event(ANALYSIS_ID, "info", f"Downloading ZIP from {download_url}", EVENT_SOURCE)
     
