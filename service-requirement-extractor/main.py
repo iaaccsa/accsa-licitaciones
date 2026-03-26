@@ -83,9 +83,18 @@ class IterativeExtractor:
     def _extract_from_chunk(self, chunk_text: str) -> List[Requirement]:
         """Extracts requirements from a single text block using Gemini Flash."""
         prompt = (
-            "Extract all explicit obligations from this tender fragment. "
-            "If no requirements are found, return an empty list. "
-            "STRICTLY OUTPUT IN SPANISH.\n\n"
+            "You are a requirements analyst for public procurement.\n"
+            "Extract all explicit obligations, conditions, and mandatory criteria from this tender fragment.\n\n"
+            "What counts as a requirement:\n"
+            "- Mandatory qualifications or certifications the bidder must have\n"
+            "- Documents that must be submitted\n"
+            "- Technical specifications that must be met\n"
+            "- Deadlines, formats, or procedures that must be followed\n"
+            "- Financial or legal conditions\n\n"
+            "What to exclude:\n"
+            "- General descriptions or background information\n"
+            "- Optional or recommended items (unless phrased as conditions)\n\n"
+            "Return empty list if no requirements are found. Output in SPANISH.\n\n"
             f"TENDER FRAGMENT:\n{chunk_text}"
         )
         response = self.client.models.generate_content(
@@ -108,16 +117,15 @@ class IterativeExtractor:
         raw_data = json.dumps([r.model_dump() for r in all_raw_reqs], ensure_ascii=False)
 
         prompt = (
-            "You are a master auditor. Consolidate this raw list into a clean master list.\n\n"
-            "Tasks:\n"
+            "You are a master auditor consolidating requirements extracted from a tender document.\n"
+            "Produce a clean, deduplicated master list from the raw extractions below.\n\n"
+            "Rules:\n"
             "1. Remove exact duplicates.\n"
-            "2. Merge requirements that are split or overlapping.\n"
-            "3. Assign a unique, consistent ID (e.g., REQ-001, REQ-002...).\n"
-            "4. Ensure the text is complete and clear.\n"
-            "5. CRITICAL: Keep descriptions concise (max 50 words each).\n"
-            "6. CRITICAL: ALL OUTPUT MUST BE IN SPANISH (ESPAÑOL).\n"
-            "7. CRITICAL: Preserve the `rag_chunk_id` from the source. "
-            "If merging, keep the ID of the most relevant source.\n\n"
+            "2. Merge requirements that overlap or are split across chunks into a single, complete entry.\n"
+            "3. Assign sequential IDs: REQ-001, REQ-002, etc.\n"
+            "4. Ensure each requirement text is self-contained, clear, and concise (max 50 words).\n"
+            "5. Preserve the `rag_chunk_id` from the source. If merging, keep the most relevant source ID.\n"
+            "6. ALL OUTPUT MUST BE IN SPANISH.\n\n"
             f"RAW LIST:\n{raw_data}"
         )
         response = self.client.models.generate_content(

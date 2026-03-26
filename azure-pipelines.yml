@@ -11,24 +11,24 @@ variables:
 
 strategy:
   matrix:
-    # service-file-extractor:
-    #   SERVICE_NAME: "service-file-extractor"
-    # service-files-converter:
-    #   SERVICE_NAME: "service-files-converter"
-    # service-setup-qdrant:
-    #   SERVICE_NAME: "service-setup-qdrant"
-    # service-chunk-and-index:
-    #   SERVICE_NAME: "service-chunk-and-index"
-    # service-requirement-extractor:
-    #   SERVICE_NAME: "service-requirement-extractor"
-    # service-verify-compliance:
-    #   SERVICE_NAME: "service-verify-compliance"
-    # service-metadata-extractor:
-    #   SERVICE_NAME: "service-metadata-extractor"
-    # service-proposal-scorer:
-    #   SERVICE_NAME: "service-proposal-scorer"
-    # service-qdrant-by-file:
-    #   SERVICE_NAME: "service-qdrant-by-file"
+    service-file-extractor:
+      SERVICE_NAME: "service-file-extractor"
+    service-files-converter:
+      SERVICE_NAME: "service-files-converter"
+    service-setup-qdrant:
+      SERVICE_NAME: "service-setup-qdrant"
+    service-chunk-and-index:
+      SERVICE_NAME: "service-chunk-and-index"
+    service-requirement-extractor:
+      SERVICE_NAME: "service-requirement-extractor"
+    service-verify-compliance:
+      SERVICE_NAME: "service-verify-compliance"
+    service-metadata-extractor:
+      SERVICE_NAME: "service-metadata-extractor"
+    service-proposal-scorer:
+      SERVICE_NAME: "service-proposal-scorer"
+    service-qdrant-by-file:
+      SERVICE_NAME: "service-qdrant-by-file"
     service-file-metadata-extractor:
       SERVICE_NAME: "service-file-metadata-extractor"
     service-documents-clasification:
@@ -71,4 +71,3 @@ steps:
       API_JOBS_CALLBACK: $(API_JOBS_CALLBACK)
       API_REQUIREMENTS_PATH: $(API_REQUIREMENTS_PATH)
       API_COMPLIANCE_RESULTS_PATH: $(API_COMPLIANCE_RESULTS_PATH)
-

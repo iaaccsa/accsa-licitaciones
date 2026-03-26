@@ -150,11 +150,12 @@ def generate_summary(
 
     prompt = (
         "You are an expert auditor specializing in public procurement compliance.\n"
-        "You will be provided with the detailed compliance verification results for a proposal.\n\n"
-        "Write exactly 2 paragraphs in Spanish using markdown format:\n"
-        "- Paragraph 1: General summary of the compliance level (score, strong areas).\n"
-        "- Paragraph 2: Main gaps identified and actionable recommendations.\n\n"
-        "Do not use headings or bullet lists. Only 2 continuous text paragraphs.\n\n"
+        "Write a professional assessment of this proposal's compliance in exactly 2 paragraphs "
+        "in Spanish, using markdown format. No headings, no bullet lists — only continuous prose.\n\n"
+        "Paragraph 1: Summarize the overall compliance level. Mention the score, highlight the strongest "
+        "areas, and reference specific requirement codes where the proposal excels.\n"
+        "Paragraph 2: Identify the most critical gaps (prioritize mandatory non-compliant items). "
+        "Provide concrete, actionable recommendations to address each gap.\n\n"
         f"PROPOSAL: {provider_name}\n"
         f"SCORE: {score}% ({compliant} compliant, {non_compliant} non-compliant, "
         f"{missing_info} missing info, {unprocessable} unprocessable)\n\n"

@@ -203,19 +203,22 @@ def verify_compliance_llm(gemini_client: genai.Client, requirement: dict, eviden
     """Asks Gemini Pro to judge compliance based ONLY on the provided evidence."""
     evidence_text = "\n---\n".join(evidence_chunks)
     prompt = (
-        "You are a strict Compliance Auditor.\n"
+        "You are a strict Compliance Auditor for public procurement processes.\n"
         "Verify if the PROPOSAL meets the REQUIREMENT based ONLY on the provided EVIDENCE CONTEXT.\n\n"
-        "Rules:\n"
-        "1. If the evidence explicitly confirms the requirement, status is compliant.\n"
-        "2. If the evidence contradicts the requirement, status is non_compliant.\n"
-        "3. If the evidence mentions the topic but lacks specific details, status is non_compliant.\n"
-        "4. If completely absent, status is missing_info.\n"
-        "5. Quote the evidence text exactly in 'evidence_quote'.\n"
-        "6. PROVIDE 'reasoning' and 'suggestion' IN SPANISH.\n"
-        "7. ONLY use status values: compliant, non_compliant, missing_info. Never use unprocessable.\n\n"
-        f"REQUIREMENT (ID: {requirement.get('requirement_code') or requirement.get('id')}):\n"
+        "Status classification:\n"
+        "- compliant: the evidence explicitly and fully confirms the requirement is met.\n"
+        "- non_compliant: the evidence contradicts the requirement, OR mentions the topic but lacks "
+        "the specific details needed to confirm compliance.\n"
+        "- missing_info: the evidence contains no relevant information about this requirement.\n"
+        "Never use 'unprocessable' as a status.\n\n"
+        "Output guidelines:\n"
+        "- evidence_quote: copy the most relevant excerpt from the evidence verbatim. "
+        "If multiple passages are relevant, quote the strongest one.\n"
+        "- reasoning: explain your judgment step by step, referencing specific evidence. IN SPANISH.\n"
+        "- suggestion: provide a concrete, actionable recommendation to achieve or improve compliance. IN SPANISH.\n\n"
+        f"REQUIREMENT ({requirement.get('requirement_code') or requirement.get('id')}):\n"
         f"\"{requirement.get('requirement_text') or requirement.get('text')}\"\n\n"
-        f"EVIDENCE CONTEXT FOUND IN PROPOSAL:\n{evidence_text}"
+        f"EVIDENCE CONTEXT:\n{evidence_text}"
     )
     response = gemini_client.models.generate_content(
         model="gemini-3-pro-preview",

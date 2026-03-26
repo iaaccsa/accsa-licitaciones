@@ -147,17 +147,18 @@ def fetch_proposal_chunks(qdrant: QdrantClient, collection: str) -> Dict[str, Li
 
 
 EXTRACTION_PROMPT = """You are a data extractor specialized in public procurement documents.
-Analyze the following text from a bid/proposal and extract identifying information about the bidding company.
-Return a JSON object with these fields (use null if not found):
-- company_name: official company name
-- email: contact email address
-- address: company address
-- phone: phone number
-- tax_id: RUT, CUIT, NIT, or any fiscal/tax identifier
-- representative_name: name of the legal representative or signatory
-- additional: object with any other relevant identifying data found
+Extract identifying information about the BIDDING COMPANY from this proposal text.
+If multiple entities are mentioned, focus on the company submitting the bid, not the contracting entity.
+Return a JSON object with these fields (null if not found):
+- company_name: official registered company name (not abbreviations or trade names)
+- email: primary contact email address
+- address: registered or contact address
+- phone: contact phone number
+- tax_id: fiscal/tax identifier (RUT, CUIT, NIT, RFC, or equivalent)
+- representative_name: legal representative or authorized signatory
+- additional: object with any other relevant identifying data found (e.g., registration numbers, consortium members, certifications)
 
-The values in the JSON should be in the language they appear in the document.
+Preserve all values in their original language as they appear in the document.
 
 PROPOSAL TEXT:
 {text}"""

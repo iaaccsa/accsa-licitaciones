@@ -87,15 +87,17 @@ def validate_env():
 # ---------------------------------------------------------------------------
 # Gemini classification
 # ---------------------------------------------------------------------------
-CLASSIFICATION_PROMPT = """You are a document classifier specialized in public procurement (licitaciones).
+CLASSIFICATION_PROMPT = """You are a document classifier specialized in public procurement processes.
+Classify this document into exactly one category based on its metadata.
 
-Given the metadata of a file, classify it into one of these categories:
-- "tender": documents from the contracting entity that define the tender (pliegos de condiciones, bases de licitación, términos de referencia, especificaciones técnicas, adendas, aclaraciones oficiales, cronogramas del proceso).
-- "proposal": documents submitted by a bidder/vendor as part of their offer (propuestas técnicas, propuestas económicas, ofertas, cartas de presentación, garantías de seriedad, documentos legales del oferente).
-- "normative": regulatory or legal documents referenced in the process (leyes, decretos, resoluciones, reglamentos, normas técnicas, certificaciones requeridas por ley).
+Categories:
+- "tender": documents issued by the contracting entity that define the procurement process. Examples: pliegos de condiciones, bases de licitación, términos de referencia, especificaciones técnicas, adendas, aclaraciones oficiales, cronogramas del proceso.
+- "proposal": documents submitted by a bidder/vendor as part of their offer. Examples: propuestas técnicas, propuestas económicas, ofertas, cartas de presentación, garantías de seriedad, documentos legales del oferente, estados financieros del oferente.
+- "normative": regulatory or legal documents referenced in the process. Examples: leyes, decretos, resoluciones, reglamentos, normas técnicas, certificaciones requeridas por ley.
 
-Respond ONLY with a JSON object:
-{{"category": "<tender|proposal|normative>"}}
+If the metadata is ambiguous, classify based on the primary purpose of the document.
+
+Return: {{"category": "<tender|proposal|normative>"}}
 
 FILE METADATA:
 - File name: {file_name}
@@ -190,6 +192,13 @@ def process_documents_classification():
 
             # 3. Update file category via API
             api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"category": category})
+
+            # 4. Propagate category to the linked source file (if any)
+            link_id = file_record.get("link")
+            if link_id:
+                api_request("PATCH", f"{API_FILES_PATH}{link_id}", {"category": category})
+                logger.info(f"Propagated '{category}' to linked file {link_id}")
+
             classified += 1
 
         except Exception as e:

@@ -140,6 +140,7 @@ def upload_markdown(
     file_name: str,
     content: str,
     folder_path: str | None = None,
+    source_file_id: str | None = None,
 ) -> dict:
     """
     Upload a Markdown string to Supabase Storage and insert a record
@@ -175,6 +176,7 @@ def upload_markdown(
         "mime_type": "text/markdown",
         "is_processed_version": True,
         "is_merged": False,
+        "link": source_file_id,
     }
 
     api_request("POST", API_FILES_PATH, record)
@@ -278,7 +280,8 @@ def process_conversion():
                     slug,
                     md_file_name,
                     md_content,
-                    folder_path=original_folder
+                    folder_path=original_folder,
+                    source_file_id=file_record["id"],
                 )
             except Exception as e:
                 logger.error(f"Failed to upload {md_file_name}: {e}")

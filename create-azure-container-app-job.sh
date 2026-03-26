@@ -15,6 +15,7 @@ VALID_SERVICES=(
   "service-proposal-scorer"
   "service-qdrant-by-file"
   "service-file-metadata-extractor"
+  "service-documents-clasification"
 )
 
 if [ -z "$1" ]; then
