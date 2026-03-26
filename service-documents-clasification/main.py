@@ -12,6 +12,7 @@ Required environment variables:
   - API_EVENTS_PATH        : Path for events endpoint
   - API_ANALYSES_PATH      : Path for analyses endpoint
   - API_FILES_PATH         : Path for files endpoint
+  - API_PROPOSALS_PATH     : Path for proposals endpoint
   - API_JOBS_CALLBACK      : Path for job status callback
   - ANALYSIS_ID            : UUID of the analysis to process (runtime)
 """
@@ -34,6 +35,7 @@ API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_FILES_PATH = os.environ.get("API_FILES_PATH")
+API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
@@ -74,6 +76,7 @@ def validate_env():
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
             ("API_FILES_PATH", API_FILES_PATH),
+            ("API_PROPOSALS_PATH", API_PROPOSALS_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
         ]
@@ -108,6 +111,27 @@ FILE METADATA:
 - Summary: {summary}"""
 
 
+GROUPING_PROMPT = """You are a document analyst for public procurement processes.
+You will receive a list of file metadata entries for documents classified as proposals.
+NOTE: You are receiving ONLY metadata (not file contents).
+
+Task: group these files by the entity (company/bidder) they belong to.
+
+Grouping rules:
+- Match by company_name (exact or fuzzy match)
+- Use tax_id or representative_name as secondary signals
+- If metadata is insufficient, place the file in its own group
+- Generate a descriptive label for each group (use the company or consortium name when possible)
+
+Return JSON:
+{{"groups": [
+  {{"label": "Descriptive label", "provider_name": "Company name or null", "file_ids": ["id1", "id2"]}}
+]}}
+
+FILE METADATA ENTRIES:
+{files_json}"""
+
+
 def classify_file_with_gemini(client: genai.Client, file_record: dict) -> str:
     """Call Gemini to classify a file based on its metadata. Returns category string."""
     metadata = file_record.get("metadata") or {}
@@ -130,6 +154,103 @@ def classify_file_with_gemini(client: genai.Client, file_record: dict) -> str:
     )
     result = json.loads(response.text)
     return result["category"]
+
+
+def group_proposal_files_with_gemini(client: genai.Client, proposal_files: list[dict]) -> list[dict]:
+    """Send only metadata of proposal files to Gemini to group them by company/domain."""
+    files_for_prompt = []
+    for f in proposal_files:
+        metadata = f.get("metadata") or {}
+        files_for_prompt.append({
+            "id": f["id"],
+            "file_name": f.get("file_name", "unknown"),
+            "company_name": metadata.get("company_name"),
+            "company_role": metadata.get("company_role"),
+            "document_purpose": metadata.get("document_purpose"),
+            "key_identifiers": metadata.get("key_identifiers"),
+            "summary": metadata.get("summary"),
+        })
+
+    prompt = GROUPING_PROMPT.format(files_json=json.dumps(files_for_prompt, ensure_ascii=False, indent=2))
+
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=prompt,
+        config=genai_types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
+    )
+    result = json.loads(response.text)
+
+    # Validate file_ids against known set
+    valid_ids = {f["id"] for f in proposal_files}
+    groups = result.get("groups", [])
+    for group in groups:
+        original_ids = group.get("file_ids", [])
+        group["file_ids"] = [fid for fid in original_ids if fid in valid_ids]
+        invalid = set(original_ids) - valid_ids
+        if invalid:
+            logger.warning(f"Gemini returned unknown file_ids: {invalid}")
+
+    return groups
+
+
+def create_proposals_and_update_files(client: genai.Client, files: list[dict]):
+    """Group proposal files, create proposal records, and update file proposal_id."""
+    proposal_files = [f for f in files if f.get("category") == "proposal" and f.get("metadata")]
+
+    if not proposal_files:
+        logger.info("No proposal files to group.")
+        return
+
+    logger.info(f"Grouping {len(proposal_files)} proposal files...")
+    log_event(ANALYSIS_ID, "info", f"Agrupando {len(proposal_files)} archivos de propuesta.", EVENT_SOURCE)
+
+    groups = group_proposal_files_with_gemini(client, proposal_files)
+    logger.info(f"Gemini identified {len(groups)} proposal groups.")
+
+    # Build lookup for link propagation
+    file_lookup = {f["id"]: f for f in files}
+
+    proposals_created = 0
+    for group in groups:
+        label = group.get("label", "Propuesta sin nombre")
+        provider_name = group.get("provider_name")
+        file_ids = group.get("file_ids", [])
+
+        if not file_ids:
+            logger.warning(f"Skipping empty group '{label}'")
+            continue
+
+        # Create proposal via API
+        proposal = api_request("POST", f"{API_PROPOSALS_PATH}", {
+            "analysis_id": ANALYSIS_ID,
+            "label": label,
+            "provider_name": provider_name,
+        })
+        proposal_id = proposal["id"]
+        logger.info(f"Created proposal '{label}' (id={proposal_id}) with {len(file_ids)} files.")
+
+        # Update each file with proposal_id
+        for file_id in file_ids:
+            api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"proposal_id": proposal_id})
+
+            # Propagate to linked source file
+            file_record = file_lookup.get(file_id)
+            link_id = file_record.get("link") if file_record else None
+            if link_id:
+                api_request("PATCH", f"{API_FILES_PATH}{link_id}", {"proposal_id": proposal_id})
+                logger.info(f"Propagated proposal_id to linked file {link_id}")
+
+        log_event(ANALYSIS_ID, "info", f"Propuesta '{label}' creada con {len(file_ids)} archivos.", EVENT_SOURCE)
+        proposals_created += 1
+
+    log_event(
+        ANALYSIS_ID, "info",
+        f"Se crearon {proposals_created} propuestas a partir de {len(proposal_files)} archivos de propuesta.",
+        EVENT_SOURCE,
+    )
+    logger.info(f"Proposal grouping complete — {proposals_created} proposals created.")
 
 
 # ---------------------------------------------------------------------------
@@ -190,6 +311,9 @@ def process_documents_classification():
             category = classify_file_with_gemini(gemini, file_record)
             logger.info(f"Classified '{file_name}' as '{category}'")
 
+            # Track category locally for the grouping phase
+            file_record["category"] = category
+
             # 3. Update file category via API
             api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"category": category})
             log_event(ANALYSIS_ID, "info", f"Archivo '{file_name}' clasificado como '{category}'.", EVENT_SOURCE)
@@ -215,7 +339,10 @@ def process_documents_classification():
     )
     logger.info(f"{SERVICE_NAME} complete — {classified} classified, {skipped} skipped.")
 
-    # 4. Notify success callback
+    # 5. Group proposal files and create proposal records
+    create_proposals_and_update_files(gemini, files)
+
+    # 6. Notify success callback
     api_request("POST", API_JOBS_CALLBACK, {
         "service_name": SERVICE_NAME,
         "analysis_id": ANALYSIS_ID,

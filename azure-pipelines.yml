@@ -11,8 +11,8 @@ variables:
 
 strategy:
   matrix:
-    service-file-extractor:
-      SERVICE_NAME: "service-file-extractor"
+    # service-file-extractor:
+    #   SERVICE_NAME: "service-file-extractor"
     # service-files-converter:
     #   SERVICE_NAME: "service-files-converter"
     # service-setup-qdrant:
@@ -31,8 +31,8 @@ strategy:
     #   SERVICE_NAME: "service-qdrant-by-file"
     # service-file-metadata-extractor:
     #   SERVICE_NAME: "service-file-metadata-extractor"
-    # service-documents-clasification:
-    #   SERVICE_NAME: "service-documents-clasification"
+    service-documents-clasification:
+      SERVICE_NAME: "service-documents-clasification"
 
 steps:
   - script: |
