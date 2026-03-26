@@ -53,7 +53,8 @@
   {
     "service": "service-file-metadata-extractor",
     "next_services": [
-      "service-documents-clasification"
+      "service-documents-clasification",
+      "service-setup-qdrant"
     ],
     "code": "file-metadata-extractor",
     "display_name": "Extrayendo Metadatos de Archivos",
@@ -66,10 +67,34 @@
   },
   {
     "service": "service-documents-clasification",
-    "next_services": [],
+    "next_services": [
+      "service-joiner"
+    ],
     "code": "documents-clasification",
     "display_name": "Clasificando Documentos",
     "parent": "file-metadata-extractor",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false
+  },
+  {
+    "service": "service-setup-qdrant",
+    "next_services": [],
+    "code": "rag-setup",
+    "display_name": "Configuración RAG",
+    "parent": "file-metadata-extractor",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false
+  },
+  {
+    "service": "service-joiner",
+    "next_services": [],
+    "code": "joiner",
+    "display_name": "Uniendo Documentos",
+    "parent": "documents-clasification",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
