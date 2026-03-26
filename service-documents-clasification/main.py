@@ -132,6 +132,25 @@ FILE METADATA ENTRIES:
 {files_json}"""
 
 
+NAMING_PROMPT = """You are a document analyst for public procurement processes.
+You will receive metadata from tender documents of a procurement process.
+NOTE: You are receiving ONLY metadata (not file contents).
+
+Task: generate a short, descriptive name for this procurement process.
+
+Rules:
+- The name should identify the procurement process clearly (what is being procured and by whom)
+- Keep it concise: 5-15 words maximum
+- Use the original language of the documents
+- Focus on the contracting entity and the object of the procurement
+
+Return JSON:
+{{"generated_name": "Short descriptive name"}}
+
+TENDER FILE METADATA:
+{files_json}"""
+
+
 def classify_file_with_gemini(client: genai.Client, file_record: dict) -> str:
     """Call Gemini to classify a file based on its metadata. Returns category string."""
     metadata = file_record.get("metadata") or {}
@@ -253,6 +272,53 @@ def create_proposals_and_update_files(client: genai.Client, files: list[dict]):
     logger.info(f"Proposal grouping complete — {proposals_created} proposals created.")
 
 
+def generate_analysis_name(client: genai.Client, files: list[dict]):
+    """Generate a descriptive name for the analysis using tender file metadata."""
+    tender_files = [
+        f for f in files
+        if f.get("category") == "tender" and f.get("is_processed_version") is True and f.get("metadata")
+    ]
+
+    if not tender_files:
+        logger.info("No processed tender files available — skipping analysis name generation.")
+        return
+
+    logger.info(f"Generating analysis name from {len(tender_files)} tender files...")
+
+    files_for_prompt = []
+    for f in tender_files:
+        metadata = f.get("metadata") or {}
+        files_for_prompt.append({
+            "file_name": f.get("file_name", "unknown"),
+            "document_type": metadata.get("document_type"),
+            "company_name": metadata.get("company_name"),
+            "company_role": metadata.get("company_role"),
+            "document_purpose": metadata.get("document_purpose"),
+            "key_identifiers": metadata.get("key_identifiers"),
+            "summary": metadata.get("summary"),
+        })
+
+    prompt = NAMING_PROMPT.format(files_json=json.dumps(files_for_prompt, ensure_ascii=False, indent=2))
+
+    response = client.models.generate_content(
+        model=GEMINI_MODEL,
+        contents=prompt,
+        config=genai_types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
+    )
+    result = json.loads(response.text)
+    generated_name = result.get("generated_name", "").strip()
+
+    if not generated_name:
+        logger.warning("Gemini returned empty generated_name.")
+        return
+
+    api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}", {"generated_name": generated_name})
+    logger.info(f"Analysis name set to: '{generated_name}'")
+    log_event(ANALYSIS_ID, "info", f"Nombre del análisis generado: '{generated_name}'.", EVENT_SOURCE)
+
+
 # ---------------------------------------------------------------------------
 # Main flow
 # ---------------------------------------------------------------------------
@@ -342,7 +408,10 @@ def process_documents_classification():
     # 5. Group proposal files and create proposal records
     create_proposals_and_update_files(gemini, files)
 
-    # 6. Notify success callback
+    # 6. Generate analysis name from tender metadata
+    generate_analysis_name(gemini, files)
+
+    # 7. Notify success callback
     api_request("POST", API_JOBS_CALLBACK, {
         "service_name": SERVICE_NAME,
         "analysis_id": ANALYSIS_ID,

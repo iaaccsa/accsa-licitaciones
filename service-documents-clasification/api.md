@@ -19,6 +19,10 @@ Crea un nuevo proposal.
 ### POST /api/v1/events/
 Registra un evento de log.
 
+### PATCH /api/v1/analyses/{analysis_id} *(PENDIENTE)*
+Actualiza campos del análisis.
+- **Campos usados:** `generated_name`
+
 ### PATCH /api/v1/analyses/{analysis_id}/status
 Actualiza el estado del análisis (usado en caso de fallo).
 
