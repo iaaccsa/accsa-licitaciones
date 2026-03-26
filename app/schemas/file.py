@@ -11,6 +11,7 @@ class FileBase(BaseModel):
     proposal_id: Optional[UUID] = None
     proposal_label: Optional[str] = None
     proposal_provider_name: Optional[str] = None
+    link: Optional[UUID] = None
     is_merged: Optional[bool] = None
     is_processed_version: Optional[bool] = None
     total_chunks: Optional[int] = None
@@ -29,6 +30,7 @@ class FileFilter(BaseModel):
 
 class FileUpdate(BaseModel):
     category: Optional[str] = None
+    link: Optional[UUID] = None
     total_chunks: Optional[int] = None
     is_processed_version: Optional[bool] = None
     mime_type: Optional[str] = None
