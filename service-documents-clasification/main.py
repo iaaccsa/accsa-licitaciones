@@ -192,12 +192,14 @@ def process_documents_classification():
 
             # 3. Update file category via API
             api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"category": category})
+            log_event(ANALYSIS_ID, "info", f"Archivo '{file_name}' clasificado como '{category}'.", EVENT_SOURCE)
 
             # 4. Propagate category to the linked source file (if any)
             link_id = file_record.get("link")
             if link_id:
                 api_request("PATCH", f"{API_FILES_PATH}{link_id}", {"category": category})
                 logger.info(f"Propagated '{category}' to linked file {link_id}")
+                log_event(ANALYSIS_ID, "info", f"Categoria '{category}' propagada al archivo original (link={link_id}).", EVENT_SOURCE)
 
             classified += 1
 
