@@ -16,6 +16,7 @@ VALID_SERVICES=(
   "service-qdrant-by-file"
   "service-file-metadata-extractor"
   "service-documents-clasification"
+  "service-joiner"
 )
 
 if [ -z "$1" ]; then
