@@ -30,6 +30,7 @@ class FileFilter(BaseModel):
 
 class FileUpdate(BaseModel):
     category: Optional[str] = None
+    proposal_id: Optional[UUID] = None
     link: Optional[UUID] = None
     total_chunks: Optional[int] = None
     is_processed_version: Optional[bool] = None
