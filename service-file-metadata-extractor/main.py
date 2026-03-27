@@ -164,7 +164,10 @@ def extract_metadata_with_gemini(client: genai.Client, text: str) -> dict:
             response_mime_type="application/json",
         ),
     )
-    return json.loads(response.text)
+    result = json.loads(response.text)
+    if isinstance(result, list):
+        result = result[0]
+    return result
 
 
 # ---------------------------------------------------------------------------
