@@ -1,5 +1,12 @@
 # API Endpoints — service-chunk-and-index
 
+## Variables de runtime
+
+| Variable | Descripción |
+|----------|-------------|
+| `ANALYSIS_ID` | UUID del análisis en curso |
+| `FILE_ID` | UUID del archivo a procesar |
+
 ## Endpoints consumidos
 
 ### GET /api/v1/analyses/{analysis_id}
@@ -7,7 +14,7 @@ Obtiene el registro del análisis.
 - **Response:** `{slug, ...}`
 
 ### POST /api/v1/files/merged
-Obtiene archivos con metadata combinada (incluye datos de proposal).
+Obtiene archivos con metadata combinada (incluye datos de proposal). Se filtra localmente por `FILE_ID`.
 - **Request:** `{"analysis_id": "uuid"}`
 - **Response:** `[{file_record}, ...]`
 

@@ -17,8 +17,8 @@ strategy:
     #   SERVICE_NAME: "service-files-converter"
     # service-setup-qdrant:
     #   SERVICE_NAME: "service-setup-qdrant"
-    # service-chunk-and-index:
-    #   SERVICE_NAME: "service-chunk-and-index"
+    service-chunk-and-index:
+      SERVICE_NAME: "service-chunk-and-index"
     # service-requirement-extractor:
     #   SERVICE_NAME: "service-requirement-extractor"
     # service-verify-compliance:
@@ -33,8 +33,8 @@ strategy:
     #   SERVICE_NAME: "service-file-metadata-extractor"
     # service-documents-clasification:
     #   SERVICE_NAME: "service-documents-clasification"
-    service-joiner:
-      SERVICE_NAME: "service-joiner"
+    # service-joiner:
+    #   SERVICE_NAME: "service-joiner"
 
 steps:
   - script: |

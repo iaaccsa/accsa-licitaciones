@@ -1,8 +1,8 @@
 """
 Chunk and Index Service
 =======================
-Fetches the list of RAG-ready files for an analysis via API,
-downloads each Markdown file from Supabase Storage,
+Fetches a single file record for an analysis via API,
+downloads the Markdown file from Supabase Storage,
 splits it into semantic chunks, generates OpenAI embeddings,
 and indexes the chunks into the Qdrant collection for the analysis.
 
@@ -19,6 +19,7 @@ Required environment variables:
   - API_FILES_PATH
   - API_JOBS_CALLBACK
   - ANALYSIS_ID
+  - FILE_ID
 """
 
 import os
@@ -50,6 +51,7 @@ API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_FILES_PATH = os.environ.get("API_FILES_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
+FILE_ID = os.environ.get("FILE_ID")
 
 SERVICE_NAME = "service-chunk-and-index"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
@@ -95,6 +97,7 @@ def validate_env():
             ("API_FILES_PATH", API_FILES_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
+            ("FILE_ID", FILE_ID),
         ]
         if not val
     ]
@@ -198,7 +201,7 @@ def upload_to_qdrant(
 
 
 def process_indexing():
-    logger.info(f"Starting Chunk and Index Service for ANALYSIS_ID={ANALYSIS_ID}")
+    logger.info(f"Starting Chunk and Index Service for ANALYSIS_ID={ANALYSIS_ID}, FILE_ID={FILE_ID}")
 
     # Clients (Supabase only for storage.download)
     supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -211,75 +214,54 @@ def process_indexing():
     collection_name = analysis["slug"]
     logger.info(f"Target Qdrant collection: {collection_name}")
 
-    log_event(ANALYSIS_ID, "info", f"Iniciando indexación para análisis: {ANALYSIS_ID}", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", f"Iniciando indexación de archivo {FILE_ID}", EVENT_SOURCE)
 
-    # 2. Fetch file list via API
+    # 2. Fetch file record via merged endpoint and filter by FILE_ID
     all_files = api_request("POST", f"{API_FILES_PATH}merged", {"analysis_id": ANALYSIS_ID})
-    if not all_files:
-        logger.warning("No files returned from API. Nothing to index.")
-        log_event(ANALYSIS_ID, "warning", "No se encontraron archivos para indexar.", EVENT_SOURCE)
+    file_record = next((f for f in (all_files or []) if f["id"] == FILE_ID), None)
+    if not file_record:
+        raise ValueError(f"File {FILE_ID} not found in merged files for analysis {ANALYSIS_ID}")
+
+    file_name = file_record["file_name"]
+    storage_path = file_record["storage_path"]
+
+    logger.info(f"Processing file: {file_name} (id={FILE_ID})")
+
+    # 3a. Download file content from Supabase Storage
+    logger.info(f"Downloading from {storage_path}...")
+    content = download_file_content(supabase, storage_path)
+    logger.info(f"Downloaded. Size: {len(content)} chars.")
+
+    # 3b. Chunk content
+    logger.info("Chunking content...")
+    chunks = split_text_semantically(content)
+    logger.info(f"Generated {len(chunks)} chunks.")
+
+    if not chunks:
+        logger.warning(f"No chunks generated for {file_name}.")
+        log_event(ANALYSIS_ID, "warning", f"Archivo {file_name} no generó chunks.", EVENT_SOURCE)
         return
 
-    total_chunks_indexed = 0
-    files_processed = 0
-    files_skipped = 0
+    # 3c. Generate embeddings
+    texts = [c["text"] for c in chunks]
+    embeddings = get_embeddings(openai_client, texts)
 
-    # 3. Process each file
-    for file_record in all_files:
-        file_name = file_record["file_name"]
-        storage_path = file_record["storage_path"]
-        file_id = file_record["id"]
+    # 3d. Upload to Qdrant
+    upload_to_qdrant(qdrant_client, collection_name, chunks, embeddings, file_record)
 
-        logger.info(f"--- Processing file: {file_name} (id={file_id}) ---")
+    # 3e. Update total_chunks via API
+    logger.info(f"Updating file record with total_chunks={len(chunks)}...")
+    try:
+        api_request("PATCH", f"{API_FILES_PATH}{FILE_ID}", {"total_chunks": len(chunks)})
+    except Exception as e:
+        logger.error(f"Error updating total_chunks for file {FILE_ID}: {e}")
 
-        try:
-            # 3a. Download file content from Supabase Storage
-            logger.info(f"Downloading from {storage_path}...")
-            content = download_file_content(supabase, storage_path)
-            logger.info(f"Downloaded. Size: {len(content)} chars.")
-
-            # 3b. Chunk content
-            logger.info("Chunking content...")
-            chunks = split_text_semantically(content)
-            logger.info(f"Generated {len(chunks)} chunks.")
-
-            if not chunks:
-                logger.warning(f"No chunks generated for {file_name}. Skipping.")
-                files_skipped += 1
-                continue
-
-            # 3c. Generate embeddings
-            texts = [c["text"] for c in chunks]
-            embeddings = get_embeddings(openai_client, texts)
-
-            # 3d. Upload to Qdrant
-            upload_to_qdrant(qdrant_client, collection_name, chunks, embeddings, file_record)
-
-            # 3e. Update total_chunks via API
-            logger.info(f"Updating file record with total_chunks={len(chunks)}...")
-            try:
-                api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"total_chunks": len(chunks)})
-            except Exception as e:
-                logger.error(f"Error updating total_chunks for file {file_id}: {e}")
-
-            total_chunks_indexed += len(chunks)
-            files_processed += 1
-            log_event(ANALYSIS_ID, "info", f"Archivo indexado: {file_name} ({len(chunks)} chunks)", EVENT_SOURCE)
-
-        except Exception as e:
-            logger.error(f"Error processing file {file_name}: {e}")
-            log_event(ANALYSIS_ID, "error", f"Error indexando archivo {file_name}: {str(e)}", EVENT_SOURCE)
-            continue
-
-    # 4. Final summary
-    summary = f"Indexación completada: {files_processed} archivos, {total_chunks_indexed} chunks totales."
-    if files_skipped:
-        summary += f" {files_skipped} archivos omitidos (sin chunks)."
+    summary = f"Archivo indexado: {file_name} ({len(chunks)} chunks)"
     logger.info(summary)
     log_event(ANALYSIS_ID, "info", summary, EVENT_SOURCE)
     logger.info("Chunk and Index Service complete ✓")
 
-    # 5. Notify success callback
+    # 4. Notify success callback
     try:
         api_request("POST", API_JOBS_CALLBACK, {
             "service_name": SERVICE_NAME,
