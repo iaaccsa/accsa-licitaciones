@@ -165,10 +165,13 @@ class JobOrchestratorService:
         launched = []
         fan_out_type = get_fan_out_type(next_job)
 
-        if fan_out_type == "file":
-            files = file_repository.get_processed_by_analysis_id(analysis_id)
+        if fan_out_type in ("file", "merged_file"):
+            if fan_out_type == "merged_file":
+                files = file_repository.get_merged_by_analysis_id(analysis_id)
+            else:
+                files = file_repository.get_processed_by_analysis_id(analysis_id)
             if not files:
-                logger.warning(f"No processed files found for analysis_id={analysis_id}, skipping fan-out job {next_job}")
+                logger.warning(f"No {fan_out_type} files found for analysis_id={analysis_id}, skipping fan-out job {next_job}")
                 return []
 
             logger.info(f"Fan-out: launching {len(files)} instances of {next_job} for analysis_id={analysis_id}")
