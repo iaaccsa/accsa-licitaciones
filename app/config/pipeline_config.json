@@ -76,7 +76,8 @@
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": false
+    "is_final": false,
+    "pause_after": true
   },
   {
     "service": "service-setup-qdrant",

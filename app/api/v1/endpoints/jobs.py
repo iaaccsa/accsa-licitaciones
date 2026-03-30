@@ -8,6 +8,7 @@ from app.schemas.job import (
     JobCallbackResponse,
 )
 from app.services.job_orchestrator_service import job_orchestrator_service
+from app.repositories.analysis_repository import analysis_repository
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,11 @@ async def job_callback(request: JobCallbackRequest):
         elif next_jobs:
             message = f"Job {request.service_name} completado. Siguientes jobs lanzados: {', '.join(next_jobs)}"
         else:
-            message = f"Job {request.service_name} completado. Pipeline finalizado."
+            analysis = analysis_repository.get_by_id(str(request.analysis_id))
+            if analysis and analysis.get("status") == "awaiting_approval":
+                message = f"Job {request.service_name} completado. Pipeline pausado, esperando aprobación."
+            else:
+                message = f"Job {request.service_name} completado. Pipeline finalizado."
 
         return JobCallbackResponse(
             received=True,

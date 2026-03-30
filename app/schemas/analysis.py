@@ -10,6 +10,7 @@ class AnalysisBase(BaseModel):
     is_success: Optional[bool] = None
     user_name: Optional[str] = None
     generated_name: Optional[str] = None
+    paused_at_service: Optional[str] = None
 
 class Analysis(AnalysisBase):
     id: UUID

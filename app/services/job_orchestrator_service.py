@@ -4,7 +4,7 @@ from uuid import UUID
 
 from app.core.azure import azure_container_apps_client
 from app.core.config import get_settings
-from app.config.jobs_config import get_root_jobs, get_next_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type
+from app.config.jobs_config import get_root_jobs, get_next_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type, is_pause_after_job
 from app.repositories.file_repository import file_repository
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
@@ -126,6 +126,23 @@ class JobOrchestratorService:
             workflow_step_service.complete_step_by_service(str(analysis_id), service_name)
         except Exception as e:
             logger.error(f"Failed to complete workflow step for {service_name}: {e}")
+
+        # Check if pipeline should pause for user approval
+        if is_pause_after_job(service_name):
+            analysis_repository.update_by_id(
+                str(analysis_id),
+                {"status": "awaiting_approval", "paused_at_service": service_name}
+            )
+            self._log_event(
+                analysis_id, "info",
+                f"Pipeline pausado después de {service_name}. Esperando aprobación del usuario.",
+                {"paused_at_service": service_name}
+            )
+            logger.info(
+                f"Pipeline paused after {service_name} for analysis_id={analysis_id}. "
+                f"Awaiting approval."
+            )
+            return []
 
         # Find and launch next jobs
         next_jobs = get_next_jobs(service_name)
@@ -259,6 +276,52 @@ class JobOrchestratorService:
         job_repository.create(job_record)
 
         return azure_response
+
+    def resume_pipeline(self, analysis_id: UUID) -> List[str]:
+        """Resume a paused pipeline after user approval."""
+        analysis = analysis_repository.get_by_id(str(analysis_id))
+        if not analysis:
+            raise ValueError(f"Analysis {analysis_id} not found")
+        if analysis["status"] != "awaiting_approval":
+            raise ValueError(
+                f"Analysis {analysis_id} is not awaiting approval "
+                f"(current status: {analysis['status']})"
+            )
+
+        paused_at_service = analysis.get("paused_at_service")
+        if not paused_at_service:
+            raise ValueError(f"Analysis {analysis_id} has no paused_at_service recorded")
+
+        # Clear paused state, return to processing
+        analysis_repository.update_by_id(
+            str(analysis_id),
+            {"status": "processing", "paused_at_service": None}
+        )
+
+        # Launch next jobs from where we paused
+        next_jobs = get_next_jobs(paused_at_service)
+        launched = []
+
+        for next_job in next_jobs:
+            try:
+                launched += self._launch_next_job(next_job, analysis_id, None, paused_at_service)
+            except Exception as e:
+                logger.error(f"Failed to launch job {next_job} during resume: {e}")
+                try:
+                    workflow_step_service.fail_step_by_service(str(analysis_id), next_job)
+                except Exception as step_error:
+                    logger.error(f"Failed to fail workflow step for {next_job}: {step_error}")
+                self._log_event(analysis_id, "error", f"Failed to start job {next_job}", {"error": str(e)})
+                analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+
+        self._log_event(
+            analysis_id, "info",
+            f"Pipeline reanudado. Jobs lanzados: {', '.join(launched)}",
+            {"launched_jobs": launched}
+        )
+        logger.info(f"Pipeline resumed for analysis_id={analysis_id}. Launched: {launched}")
+
+        return launched
 
     def cancel_pipeline(self, analysis_id: UUID) -> int:
         """Cancel all running jobs for an analysis and stop their Azure executions."""

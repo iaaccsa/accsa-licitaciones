@@ -56,6 +56,14 @@ def is_fan_out_job(job_name: str) -> bool:
     return any(entry["service"] == job_name and entry.get("fan_out_by") for entry in _jobs_config)
 
 
+def is_pause_after_job(job_name: str) -> bool:
+    """Return True if the pipeline should pause after this job completes."""
+    return any(
+        entry["service"] == job_name and entry.get("pause_after", False)
+        for entry in _jobs_config
+    )
+
+
 def get_fan_out_type(job_name: str) -> Optional[str]:
     """Return the fan_out_by value for the job, or None if not a fan-out job."""
     for entry in _jobs_config:

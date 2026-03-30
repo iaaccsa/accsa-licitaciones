@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
 from typing import List
 from uuid import UUID
 from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate
-from app.schemas.job import CancelPipelineResponse
+from app.schemas.job import CancelPipelineResponse, ResumePipelineResponse
 from app.services.analysis_service import analysis_service
 from app.services.job_orchestrator_service import job_orchestrator_service
 
@@ -58,6 +58,23 @@ def cancel_analysis(analysis_id: UUID):
             cancelled_jobs=cancelled_count,
             message=f"Análisis cancelado. {cancelled_count} jobs detenidos.",
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{analysis_id}/resume", response_model=ResumePipelineResponse)
+def resume_analysis(analysis_id: UUID):
+    """
+    Resume a paused pipeline after user approval.
+    """
+    try:
+        launched_jobs = job_orchestrator_service.resume_pipeline(analysis_id)
+        return ResumePipelineResponse(
+            analysis_id=analysis_id,
+            launched_jobs=launched_jobs,
+            message=f"Pipeline reanudado. Jobs lanzados: {', '.join(launched_jobs)}",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

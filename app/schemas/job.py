@@ -33,3 +33,9 @@ class CancelPipelineResponse(BaseModel):
     analysis_id: UUID
     cancelled_jobs: int
     message: str
+
+
+class ResumePipelineResponse(BaseModel):
+    analysis_id: UUID
+    launched_jobs: List[str]
+    message: str
