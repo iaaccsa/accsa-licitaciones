@@ -97,10 +97,11 @@ Categories:
 - "tender": documents issued by the contracting entity that define the procurement process. Examples: pliegos de condiciones, bases de licitación, términos de referencia, especificaciones técnicas, adendas, aclaraciones oficiales, cronogramas del proceso.
 - "proposal": documents submitted by a bidder/vendor as part of their offer. Examples: propuestas técnicas, propuestas económicas, ofertas, cartas de presentación, garantías de seriedad, documentos legales del oferente, estados financieros del oferente.
 - "normative": regulatory or legal documents referenced in the process. Examples: leyes, decretos, resoluciones, reglamentos, normas técnicas, certificaciones requeridas por ley.
+- "unclassified": use this when the metadata does not contain enough information to determine the document's category with reasonable confidence.
 
-If the metadata is ambiguous, classify based on the primary purpose of the document.
+If the metadata is ambiguous but leans toward a category, classify based on the primary purpose of the document. Use "unclassified" only when no reasonable classification can be made.
 
-Return: {{"category": "<tender|proposal|normative>"}}
+Return: {{"category": "<tender|proposal|normative|unclassified>"}}
 
 FILE METADATA:
 - File name: {file_name}
@@ -375,7 +376,10 @@ def process_documents_classification():
 
         try:
             category = classify_file_with_gemini(gemini, file_record)
-            logger.info(f"Classified '{file_name}' as '{category}'")
+            if category == "unclassified":
+                logger.warning(f"Could not classify '{file_name}' — marked as 'unclassified'")
+            else:
+                logger.info(f"Classified '{file_name}' as '{category}'")
 
             # Track category locally for the grouping phase
             file_record["category"] = category

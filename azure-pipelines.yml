@@ -29,10 +29,10 @@ strategy:
     #   SERVICE_NAME: "service-proposal-scorer"
     # service-qdrant-by-file:
     #   SERVICE_NAME: "service-qdrant-by-file"
-    service-file-metadata-extractor:
-      SERVICE_NAME: "service-file-metadata-extractor"
-    # service-documents-clasification:
-    #   SERVICE_NAME: "service-documents-clasification"
+    # service-file-metadata-extractor:
+    #   SERVICE_NAME: "service-file-metadata-extractor"
+    service-documents-clasification:
+      SERVICE_NAME: "service-documents-clasification"
     # service-joiner:
     #   SERVICE_NAME: "service-joiner"
 
