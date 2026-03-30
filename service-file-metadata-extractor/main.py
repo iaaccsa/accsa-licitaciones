@@ -23,6 +23,7 @@ Required environment variables:
 import json
 import os
 import sys
+import time
 from typing import List
 
 from google import genai
@@ -154,20 +155,32 @@ DOCUMENT TEXT:
 {text}"""
 
 
-def extract_metadata_with_gemini(client: genai.Client, text: str) -> dict:
+def extract_metadata_with_gemini(client: genai.Client, text: str, max_retries: int = 3) -> dict:
     """Call Gemini to extract structured metadata from document text."""
     prompt = EXTRACTION_PROMPT.format(text=text)
-    response = client.models.generate_content(
-        model="gemini-3-flash-preview",
-        contents=prompt,
-        config=genai_types.GenerateContentConfig(
-            response_mime_type="application/json",
-        ),
-    )
-    result = json.loads(response.text)
-    if isinstance(result, list):
-        result = result[0]
-    return result
+
+    for attempt in range(max_retries):
+        try:
+            response = client.models.generate_content(
+                model="gemini-3-flash-preview",
+                contents=prompt,
+                config=genai_types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                ),
+            )
+            result = json.loads(response.text)
+            if isinstance(result, list):
+                result = result[0]
+            return result
+        except Exception as e:
+            error_str = str(e)
+            is_transient = any(code in error_str for code in ["503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED"])
+            if is_transient and attempt < max_retries - 1:
+                wait = 2 ** attempt * 5  # 5s, 10s, 20s
+                logger.warning(f"Gemini transient error (attempt {attempt + 1}/{max_retries}), retrying in {wait}s: {error_str}")
+                time.sleep(wait)
+            else:
+                raise
 
 
 # ---------------------------------------------------------------------------
