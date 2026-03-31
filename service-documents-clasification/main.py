@@ -36,6 +36,7 @@ API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_FILES_PATH = os.environ.get("API_FILES_PATH")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
+API_TENDERS_PATH = os.environ.get("API_TENDERS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
@@ -77,6 +78,7 @@ def validate_env():
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
             ("API_FILES_PATH", API_FILES_PATH),
             ("API_PROPOSALS_PATH", API_PROPOSALS_PATH),
+            ("API_TENDERS_PATH", API_TENDERS_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
         ]
@@ -140,16 +142,23 @@ NAMING_PROMPT = """You are a document analyst for public procurement processes.
 You will receive metadata from tender documents of a procurement process.
 NOTE: You are receiving ONLY metadata (not file contents).
 
-Task: generate a short, descriptive name for this procurement process.
+Tasks:
+1. Generate a short, descriptive name for this procurement process.
+2. Identify the contracting entity (the organization issuing the tender).
 
-Rules:
-- The name should identify the procurement process clearly (what is being procured and by whom)
+Rules for generated_name:
+- Identify the procurement process clearly (what is being procured and by whom)
 - Keep it concise: 5-15 words maximum
 - Use the original language of the documents
 - Focus on the contracting entity and the object of the procurement
 
+Rules for contracting_entity:
+- The specific name of the organization issuing the tender (government body, company, institution)
+- Use the official name as it appears in the documents
+- Return null if it cannot be determined with confidence
+
 Return JSON:
-{{"generated_name": "Short descriptive name"}}
+{{"generated_name": "Short descriptive name", "contracting_entity": "Name of the contracting entity or null"}}
 
 TENDER FILE METADATA:
 {files_json}"""
@@ -276,18 +285,62 @@ def create_proposals_and_update_files(client: genai.Client, files: list[dict]):
     logger.info(f"Proposal grouping complete — {proposals_created} proposals created.")
 
 
-def generate_analysis_name(client: genai.Client, files: list[dict]):
-    """Generate a descriptive name for the analysis using tender file metadata."""
+def create_tender_and_update_files(files: list[dict], generated_name: str | None, contracting_entity: str | None):
+    """Create one tender record for the analysis and link tender/normative files to it."""
+    tender_normative_files = [f for f in files if f.get("category") in ("tender", "normative")]
+
+    if not tender_normative_files:
+        logger.info("No tender/normative files to link — skipping tender creation.")
+        return
+
+    logger.info(f"Creating tender for analysis {ANALYSIS_ID}...")
+    log_event(ANALYSIS_ID, "info", "Creando registro de tender.", EVENT_SOURCE)
+
+    tender = api_request("POST", API_TENDERS_PATH, {
+        "analysis_id": ANALYSIS_ID,
+        "label": generated_name,
+        "provider_name": contracting_entity,
+    })
+    tender_id = tender["id"]
+    logger.info(f"Created tender (id={tender_id}, label='{generated_name}', provider='{contracting_entity}')")
+
+    file_lookup = {f["id"]: f for f in files}
+    linked = 0
+
+    for file_record in tender_normative_files:
+        file_id = file_record["id"]
+        file_name = file_record.get("file_name", "unknown")
+        api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"tender_id": tender_id})
+
+        link_id = file_record.get("link")
+        if link_id:
+            api_request("PATCH", f"{API_FILES_PATH}{link_id}", {"tender_id": tender_id})
+            logger.info(f"Propagated tender_id to linked file {link_id}")
+
+        logger.info(f"Linked '{file_name}' (category={file_record.get('category')}) to tender {tender_id}")
+        linked += 1
+
+    log_event(
+        ANALYSIS_ID, "info",
+        f"Tender creado con {linked} archivos (tender/normative) vinculados.",
+        EVENT_SOURCE,
+    )
+    logger.info(f"Tender creation complete — {linked} files linked.")
+
+
+def generate_tender_info(client: genai.Client, files: list[dict]) -> tuple[str | None, str | None]:
+    """Generate analysis name and contracting entity from tender file metadata.
+    Returns (generated_name, contracting_entity). Also PATCHes the analysis with generated_name."""
     tender_files = [
         f for f in files
         if f.get("category") == "tender" and f.get("is_processed_version") is True and f.get("metadata")
     ]
 
     if not tender_files:
-        logger.info("No processed tender files available — skipping analysis name generation.")
-        return
+        logger.info("No processed tender files available — skipping tender info generation.")
+        return None, None
 
-    logger.info(f"Generating analysis name from {len(tender_files)} tender files...")
+    logger.info(f"Generating tender info from {len(tender_files)} tender files...")
 
     files_for_prompt = []
     for f in tender_files:
@@ -312,15 +365,17 @@ def generate_analysis_name(client: genai.Client, files: list[dict]):
         ),
     )
     result = json.loads(response.text)
-    generated_name = result.get("generated_name", "").strip()
+    generated_name = (result.get("generated_name") or "").strip() or None
+    contracting_entity = (result.get("contracting_entity") or "").strip() or None
 
-    if not generated_name:
+    if generated_name:
+        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}", {"generated_name": generated_name})
+        logger.info(f"Analysis name set to: '{generated_name}'")
+        log_event(ANALYSIS_ID, "info", f"Nombre del análisis generado: '{generated_name}'.", EVENT_SOURCE)
+    else:
         logger.warning("Gemini returned empty generated_name.")
-        return
 
-    api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}", {"generated_name": generated_name})
-    logger.info(f"Analysis name set to: '{generated_name}'")
-    log_event(ANALYSIS_ID, "info", f"Nombre del análisis generado: '{generated_name}'.", EVENT_SOURCE)
+    return generated_name, contracting_entity
 
 
 # ---------------------------------------------------------------------------
@@ -415,10 +470,13 @@ def process_documents_classification():
     # 5. Group proposal files and create proposal records
     create_proposals_and_update_files(gemini, files)
 
-    # 6. Generate analysis name from tender metadata
-    generate_analysis_name(gemini, files)
+    # 6. Generate analysis name + contracting entity from tender metadata
+    generated_name, contracting_entity = generate_tender_info(gemini, files)
 
-    # 7. Notify success callback
+    # 7. Create tender record and link tender/normative files
+    create_tender_and_update_files(files, generated_name, contracting_entity)
+
+    # 8. Notify success callback
     api_request("POST", API_JOBS_CALLBACK, {
         "service_name": SERVICE_NAME,
         "analysis_id": ANALYSIS_ID,

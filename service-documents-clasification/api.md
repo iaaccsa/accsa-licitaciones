@@ -9,17 +9,22 @@ Busca archivos por `analysis_id`.
 
 ### PATCH /api/v1/files/{file_id}
 Actualiza campos de un archivo.
-- **Campos usados:** `category`, `proposal_id`
+- **Campos usados:** `category`, `proposal_id`, `tender_id`
 
-### POST /api/v1/proposals/ *(PENDIENTE)*
+### POST /api/v1/proposals/
 Crea un nuevo proposal.
 - **Request:** `{"analysis_id": "uuid", "label": "string", "provider_name": "string | null"}`
+- **Response:** `{"id": "uuid", ...}`
+
+### POST /api/v1/tenders/
+Crea un nuevo tender (uno por análisis).
+- **Request:** `{"analysis_id": "uuid", "label": "string | null", "provider_name": "string | null"}`
 - **Response:** `{"id": "uuid", ...}`
 
 ### POST /api/v1/events/
 Registra un evento de log.
 
-### PATCH /api/v1/analyses/{analysis_id} *(PENDIENTE)*
+### PATCH /api/v1/analyses/{analysis_id}
 Actualiza campos del análisis.
 - **Campos usados:** `generated_name`
 
