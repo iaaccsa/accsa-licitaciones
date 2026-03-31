@@ -7,14 +7,33 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-03-31
+
 ### Added
+- Agregar `service-documents-clasification` para clasificar archivos de licitación usando Gemini, con categorías de pliego, normativa, propuesta y no clasificado.
+- Agregar `service-file-metadata-extractor` para extracción de metadatos de archivos usando Gemini, incluyendo integración en pipeline CI/CD.
+- Agregar `service-joiner` para unificar archivos Markdown en `tender_full.md` y `proposal_full.md` por análisis.
 - Agregar `service-qdrant-by-file` para indexación dedicada por archivo individual en Qdrant, con integración en pipeline CI/CD y script de creación de Container App Job.
-- Agregar variables `API_JOBS_CALLBACK` y `API_REQUIREMENTS_PATH` al pipeline de Azure.
+- Agregar categoría `unclassified` como fallback cuando no se puede determinar la clasificación de un documento.
+- Agregar creación de registro de licitación (tender) y vinculación de archivos de pliego/normativa en `documents-clasification`.
+- Agregar generación automática del nombre de análisis a partir de metadatos de la licitación.
+- Agregar agrupación de archivos de propuesta por empresa con creación automática de propuestas.
+- Agregar propagación de clasificación a archivos vinculados y campo `link` en `files-converter`.
+- Agregar variables `API_JOBS_CALLBACK`, `API_REQUIREMENTS_PATH` y `API_TENDERS_PATH` al pipeline de Azure.
+- Agregar documentación `api.md` y `summary.md` por servicio.
 
 ### Changed
 - Simplificar `service-file-extractor` eliminando la lógica de carpetas de propuestas y categorización automática; los archivos se procesan de forma plana directamente asociados al análisis.
 - Simplificar `service-files-converter` eliminando lógica de propuestas, archivos combinados y merges; los archivos convertidos se asocian directamente al análisis sin categoría.
 - Migrar `service-files-converter` de `llama-parse` a SDK `llama_cloud`, utilizando el tier agentic de parsing con soporte OCR en español.
+- Modificar `chunk-and-index` para procesar un archivo individual por `FILE_ID` en lugar de todos los archivos del análisis.
+
+### Fixed
+- Corregir clasificación de documentos para requerir `company_name` explícito antes de clasificar como propuesta, con fallback a `unclassified`.
+- Corregir retry con backoff exponencial para errores transitorios de Gemini en `file-metadata-extractor`.
+- Corregir manejo de respuestas de Gemini en formato JSON array en `file-metadata-extractor`.
+- Corregir doble barra en URL de descarga de artifacts.
+- Corregir variable `API_TENDERS_PATH` faltante en script `build-and-push.sh`.
 
 ## [0.9.0] - 2026-02-23
 

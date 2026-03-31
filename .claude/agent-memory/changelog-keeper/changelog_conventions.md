@@ -4,11 +4,11 @@ description: Versioning pattern, language, and structure used in the project's C
 type: project
 ---
 
-Project has no git tags. Versions in CHANGELOG.md were assigned based on logical groupings of commits by date and feature scope, starting at 0.1.0.
+Project has git tag `v1.1.0` pointing to commit 224f16b. Versions in CHANGELOG.md were assigned based on logical groupings of commits by date and feature scope, starting at 0.1.0.
 
-**Current version:** 0.9.0 (2026-02-23). Next changes go in [Unreleased].
+**Current version:** 1.1.0 (2026-03-31). Next changes go in [Unreleased].
 
-**Why:** The project has never cut an official release; version numbers reflect the natural progression of features (initial service -> more services -> CI/CD -> refactors -> LLM migration).
+**Why:** Version 1.1.0 marks a major feature release with document classification pipeline, file metadata extraction, and file joining services. The jump from 0.9.0 to 1.1.0 reflects the project reaching production maturity.
 
 **How to apply:**
 - All entries are in Spanish, using infinitive verbs ("Agregar", "Corregir", "Migrar").
