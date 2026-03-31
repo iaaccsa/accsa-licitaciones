@@ -1,4 +1,4 @@
-# service-files-converter
+# service-files-converter-llama
 
 ## Propósito
 Convierte archivos PDF/documentos a Markdown usando LlamaParse, sube los archivos convertidos a Supabase Storage y registra la relación con el archivo original.

@@ -8,7 +8,7 @@ if [[ "$ENV_TYPE" != "local" && "$ENV_TYPE" != "azure" ]]; then
   exit 1
 fi
 
-APP_NAME="service-files-converter"
+APP_NAME="service-files-converter-llama"
 APP_TAG="latest"
 APP_PATH="services"
 REGISTRY="accsalicitaciones.azurecr.io"

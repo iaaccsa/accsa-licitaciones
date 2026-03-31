@@ -45,12 +45,12 @@ API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH", "/api/v1/proposals/")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
-SERVICE_NAME = "service-files-converter"
+SERVICE_NAME = "service-files-converter-llama"
 WORKSPACE_DIR = Path("/app/workspace")
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 STORAGE_BUCKET = "files"
 
-logger = setup_logger("files-converter")
+logger = setup_logger("files-converter-llama")
 SESSION = make_session()
 
 

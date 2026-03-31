@@ -2,7 +2,7 @@
 
 ## Propósito
 
-Convierte archivos de licitación (PDF, imágenes) a Markdown usando **Mistral OCR** (`mistral-ocr-latest`). Alternativa a `service-files-converter` que usa LlamaParse.
+Convierte archivos de licitación (PDF, imágenes) a Markdown usando **Mistral OCR** (`mistral-ocr-latest`). Alternativa a `service-files-converter-llama` que usa LlamaParse.
 
 ## Flujo
 
@@ -38,7 +38,7 @@ Convierte archivos de licitación (PDF, imágenes) a Markdown usando **Mistral O
 | `API_JOBS_CALLBACK` | Path de callback |
 | `ANALYSIS_ID` | UUID del análisis (runtime) |
 
-## Diferencias vs service-files-converter (LlamaParse)
+## Diferencias vs service-files-converter-llama (LlamaParse)
 
 - Usa `mistralai` SDK en lugar de `llama_cloud`
 - Requiere `MISTRAL_API_KEY` en lugar de `LLAMA_CLOUD_API_KEY`

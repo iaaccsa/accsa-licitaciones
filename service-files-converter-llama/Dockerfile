@@ -50,14 +50,14 @@ RUN for entry in \
   done
 
 # Install Python dependencies
-COPY service-files-converter/requirements.txt .
+COPY service-files-converter-llama/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-files-converter/main.py .
+COPY service-files-converter-llama/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

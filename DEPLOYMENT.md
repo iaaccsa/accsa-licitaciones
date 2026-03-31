@@ -108,7 +108,7 @@ az containerapp job create \
   --resource-group "accsa-licitaciones" \
   --environment "env-licitaciones" \
   --subscription "d3fbaef6-2413-47bf-be3d-2019470dc20e" \
-  --image "accsalicitaciones.azurecr.io/licitaciones/service-files-converter:latest" \
+  --image "accsalicitaciones.azurecr.io/licitaciones/service-files-converter-llama:latest" \
   --registry-server "accsalicitaciones.azurecr.io" \
   --registry-username "accsalicitaciones" \
   --registry-password "<ACR_PASSWORD>" \
@@ -234,7 +234,7 @@ Para el servicio de files-converter, cambiás el nombre del job y agregás `LLAM
   "containers": [
     {
       "name": "files-converter",
-      "image": "accsalicitaciones.azurecr.io/licitaciones/service-files-converter:latest",
+      "image": "accsalicitaciones.azurecr.io/licitaciones/service-files-converter-llama:latest",
       "env": [
         { "name": "ANALYSIS_ID", "value": "{{ANALYSIS_ID}}" }
       ]

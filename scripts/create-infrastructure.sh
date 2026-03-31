@@ -38,7 +38,7 @@ az containerapp job create \
   --cpu 1 --memory 2Gi
 
 JOB_NAME_CONVERTER="files-converter"
-IMAGE_CONVERTER="accsalicitaciones.azurecr.io/licitaciones/service-files-converter:latest"
+IMAGE_CONVERTER="accsalicitaciones.azurecr.io/licitaciones/service-files-converter-llama:latest"
 
 echo "Creating Container App Job '$JOB_NAME_CONVERTER'..."
 az containerapp job create \
