@@ -125,7 +125,7 @@ const Connection = ({ start, end, status }: { start: { x: number; y: number }; e
     );
 };
 
-export default function WorkflowVisualization({ analysisId }: { analysisId: string }) {
+export default function WorkflowVisualization({ analysisId, analysisStatus }: { analysisId: string; analysisStatus?: string }) {
     const [steps, setSteps] = useState<WorkflowStep[]>([]);
     const [loading, setLoading] = useState(true);
     const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
@@ -165,9 +165,11 @@ export default function WorkflowVisualization({ analysisId }: { analysisId: stri
         if (analysisId) fetchWorkflow();
     }, [analysisId, fetchWorkflow]);
 
-    // Countdown + auto-refresh
+    const isComplete = analysisStatus === 'ready' || analysisStatus === 'failed';
+
+    // Countdown + auto-refresh (only while analysis is in progress)
     useEffect(() => {
-        if (!analysisId) return;
+        if (!analysisId || isComplete) return;
 
         const timer = setInterval(() => {
             setCountdown(prev => {
@@ -180,7 +182,7 @@ export default function WorkflowVisualization({ analysisId }: { analysisId: stri
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [analysisId, fetchWorkflow]);
+    }, [analysisId, fetchWorkflow, isComplete]);
 
     // Layout Logic
     const layout = useMemo(() => {
@@ -293,10 +295,12 @@ export default function WorkflowVisualization({ analysisId }: { analysisId: stri
                     <GitBranch className="w-4 h-4 text-zinc-500" />
                     Flujo de Proceso
                 </h3>
-                <span className="text-xs text-zinc-400 flex items-center gap-1.5">
-                    <RefreshCw className="w-3 h-3" />
-                    {countdown}s
-                </span>
+                {!isComplete && (
+                    <span className="text-xs text-zinc-400 flex items-center gap-1.5">
+                        <RefreshCw className="w-3 h-3" />
+                        {countdown}s
+                    </span>
+                )}
             </div>
 
             <div className="relative overflow-x-auto overflow-y-hidden bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] [background-size:20px_20px]">

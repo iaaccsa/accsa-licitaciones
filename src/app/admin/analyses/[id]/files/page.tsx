@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { FileText, Download, ChevronLeft, AlertCircle, MessageSquare } from "lucide-react";
+import { FileText, Download, Eye, X, ChevronLeft, AlertCircle, MessageSquare } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import ReactMarkdown from "react-markdown";
 
 interface AnalysisFile {
     id: string;
@@ -33,14 +34,9 @@ function formatBytes(bytes: number, decimals = 2) {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 }
 
-function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleString("es-ES", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-    });
+function getFileUrl(file: { storage_path: string }): string | null {
+    if (!SUPABASE_STORAGE_URL) return null;
+    return `${SUPABASE_STORAGE_URL}/${file.storage_path}`;
 }
 
 export default function AdminAnalysisFilesPage() {
@@ -52,6 +48,8 @@ export default function AdminAnalysisFilesPage() {
     const [analysis, setAnalysis] = useState<{ slug: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [mdPreview, setMdPreview] = useState<{ name: string; content: string } | null>(null);
+    const [mdLoading, setMdLoading] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -83,6 +81,30 @@ export default function AdminAnalysisFilesPage() {
 
         if (id) fetchData();
     }, [id]);
+
+    const openMdPreview = async (file: AnalysisFile) => {
+        const url = getFileUrl(file);
+        if (!url) return;
+        setMdLoading(true);
+        try {
+            const res = await fetch(url);
+            const text = await res.text();
+            setMdPreview({ name: file.file_name, content: text });
+        } catch {
+            setMdPreview({ name: file.file_name, content: "Error al cargar el archivo." });
+        } finally {
+            setMdLoading(false);
+        }
+    };
+
+    const handlePreview = (file: AnalysisFile) => {
+        if (file.file_name.endsWith(".md")) {
+            openMdPreview(file);
+        } else {
+            const url = getFileUrl(file);
+            if (url) window.open(url, "_blank", "noopener,noreferrer");
+        }
+    };
 
     if (error) {
         return (
@@ -134,12 +156,10 @@ export default function AdminAnalysisFilesPage() {
                             <tr className="border-b border-zinc-100 bg-zinc-50 text-left">
                                 <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Nombre</th>
                                 <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Categoría</th>
-                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Proveedor</th>
                                 <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Tamaño</th>
                                 <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Chunks</th>
                                 <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Tipo</th>
-                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Fecha</th>
-                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide w-20"></th>
+                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide w-24"></th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-100">
@@ -161,17 +181,8 @@ export default function AdminAnalysisFilesPage() {
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3">
-                                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                            file.category === "tender"
-                                                ? "bg-amber-50 text-amber-700 border border-amber-200"
-                                                : "bg-green-50 text-green-700 border border-green-200"
-                                        }`}>
-                                            {file.category === "tender" ? "Pliego" : "Oferta"}
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-3 text-zinc-600">
-                                        {file.proposal_provider_name || file.proposal_label || "—"}
+                                    <td className="px-4 py-3 text-zinc-600 text-xs">
+                                        {file.category === "tender" ? "Pliego" : "Oferta"}
                                     </td>
                                     <td className="px-4 py-3 text-zinc-500 font-mono text-xs whitespace-nowrap">
                                         {formatBytes(file.file_size)}
@@ -181,9 +192,6 @@ export default function AdminAnalysisFilesPage() {
                                     </td>
                                     <td className="px-4 py-3 text-zinc-500 font-mono text-xs">
                                         {file.mime_type.split("/").pop()}
-                                    </td>
-                                    <td className="px-4 py-3 text-zinc-500 text-xs whitespace-nowrap">
-                                        {formatDate(file.created_at)}
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-1 justify-end">
@@ -195,6 +203,15 @@ export default function AdminAnalysisFilesPage() {
                                                 >
                                                     <MessageSquare className="w-4 h-4" />
                                                 </a>
+                                            )}
+                                            {getFileUrl(file) && (
+                                                <button
+                                                    onClick={() => handlePreview(file)}
+                                                    className="text-zinc-400 hover:text-emerald-600 transition-colors p-1.5 hover:bg-emerald-50 rounded-md"
+                                                    title="Ver documento"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
                                             )}
                                             <a
                                                 href={`${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`}
@@ -212,6 +229,39 @@ export default function AdminAnalysisFilesPage() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Markdown Preview Modal */}
+            {(mdPreview || mdLoading) && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col m-4">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
+                            <h3 className="font-semibold text-zinc-800 truncate">
+                                {mdPreview?.name ?? "Cargando..."}
+                            </h3>
+                            <button
+                                onClick={() => setMdPreview(null)}
+                                className="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-500 hover:text-zinc-800"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto px-6 py-6 flex-1">
+                            {mdLoading ? (
+                                <div className="space-y-3">
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-5/6" />
+                                    <Skeleton className="h-4 w-2/3" />
+                                </div>
+                            ) : (
+                                <div className="prose prose-sm prose-zinc max-w-none">
+                                    <ReactMarkdown>{mdPreview!.content}</ReactMarkdown>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

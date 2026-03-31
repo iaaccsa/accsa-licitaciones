@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Database, Server, Box, Cloud, ListChecks } from "lucide-react";
+import CleanupButton from "@/components/CleanupButton";
 
 async function getHealth(path: string) {
     const baseUrl = process.env.API_BASE_URL;
@@ -57,7 +58,7 @@ export default async function AdminPage() {
                 </p>
             </div>
 
-            <div className="mb-8">
+            <div className="mb-8 flex items-start gap-3">
                 <Link
                     href="/admin/analyses"
                     className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-colors shadow-sm"
@@ -65,6 +66,7 @@ export default async function AdminPage() {
                     <ListChecks className="w-4 h-4" />
                     Ver Análisis
                 </Link>
+                <CleanupButton />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

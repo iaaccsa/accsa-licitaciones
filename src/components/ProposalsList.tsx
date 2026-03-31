@@ -104,7 +104,7 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {proposals.map((proposal) => (
                     <Link key={proposal.id} href={`/analyses/${analysisId}/proposals/${proposal.id}`}>
-                        <Card className={`hover:shadow-md transition-shadow h-full ${proposal.id === topId ? "border-emerald-400 shadow-emerald-100 shadow-md ring-1 ring-emerald-300" : ""}`}>
+                        <Card className={`hover:shadow-md transition-shadow h-full flex flex-col ${proposal.id === topId ? "border-emerald-400 shadow-emerald-100 shadow-md ring-1 ring-emerald-300" : ""}`}>
                             <CardHeader className="pb-2">
                                 <div className="flex items-center justify-between gap-2">
                                     <CardTitle className="text-sm font-medium">
@@ -118,7 +118,7 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
                                     )}
                                 </div>
                             </CardHeader>
-                            <CardContent className="space-y-3">
+                            <CardContent className="space-y-3 flex flex-col flex-1 justify-end">
                                 <div>
                                     <div className="text-2xl font-bold">{proposal.label || "Sin etiqueta"}</div>
                                     <p className="text-xs text-muted-foreground mt-1">
