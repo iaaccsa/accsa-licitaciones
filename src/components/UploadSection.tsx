@@ -54,25 +54,36 @@ export function UploadSection() {
 
             const zipBlob = await zip.generateAsync({ type: "blob" });
 
-            const tokenResponse = await fetch("/api/upload-token", { method: "POST" });
-            if (!tokenResponse.ok) {
-                setErrorMessage("No se pudo obtener el token de subida. Inténtelo después.");
+            const uuid = crypto.randomUUID();
+            const fileName = `${uuid}.zip`;
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+            const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+            const storageResponse = await fetch(
+                `${supabaseUrl}/storage/v1/object/artifacts/${fileName}`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${supabaseAnonKey}`,
+                        "Content-Type": "application/zip",
+                    },
+                    body: zipBlob,
+                }
+            );
+
+            if (!storageResponse.ok) {
+                setErrorMessage("No se pudo subir los archivos. Inténtelo después.");
                 setStatus("error");
                 return;
             }
-            const { upload_token } = await tokenResponse.json();
 
-            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-            const formData = new FormData();
-            formData.append("file", zipBlob, "analysis_documents.zip");
-            if (analysisName.trim()) {
-                formData.append("user_name", analysisName.trim());
-            }
+            const body: Record<string, string> = { storage_path: fileName };
+            if (analysisName.trim()) body.user_name = analysisName.trim();
 
-            const response = await fetch(`${apiBaseUrl}/api/v1/analyses/`, {
+            const response = await fetch("/api/analyses", {
                 method: "POST",
-                headers: { "X-Upload-Token": upload_token },
-                body: formData,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
             });
 
             const data = await response.json();
