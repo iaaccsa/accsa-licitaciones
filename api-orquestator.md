@@ -47,8 +47,8 @@ Recibe la notificación de que un job terminó (éxito o fallo). Si fue exitoso,
 ```json
 {
     "received": true,
-    "next_jobs_started": ["service-files-converter"],
-    "message": "Job service-file-extractor completado. Siguientes jobs lanzados: service-files-converter"
+    "next_jobs_started": ["service-files-converter-mistral"],
+    "message": "Job service-file-extractor completado. Siguientes jobs lanzados: service-files-converter-mistral"
 }
 ```
 

@@ -35,7 +35,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ### Changed
 - Renombrar servicio `qdrant-by-file` a `service-qdrant-by-file` en la configuración del pipeline para mantener consistencia de nomenclatura.
-- Actualizar DAG del pipeline para que `service-files-converter` enrute a `service-qdrant-by-file` (fan-out) antes de `service-setup-qdrant`. Agregar campo `fan_out_by` a la configuración del pipeline.
+- Actualizar DAG del pipeline para que `service-files-converter-mistral` enrute a `service-qdrant-by-file` (fan-out) antes de `service-setup-qdrant`. Agregar campo `fan_out_by` a la configuración del pipeline.
 - Actualizar callback de jobs (`POST /api/v1/jobs/callback`) para aceptar `file_id` opcional, identificando instancias de jobs fan-out.
 - Hacer campos `analysis_id`, `is_reorderable`, `is_merged` y `created_at` obligatorios (NOT NULL) en el schema de archivos.
 
