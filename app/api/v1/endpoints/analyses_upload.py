@@ -1,12 +1,15 @@
 """
 Public router for POST /analyses/ — accepts either X-API-Key or X-Upload-Token.
 Mounted directly in main.py (outside the api_router that enforces X-API-Key globally)
-so that browser clients using a one-time upload token can reach this endpoint.
+so that browser clients can reach this endpoint without exposing the API key.
+
+The browser uploads the ZIP directly to Supabase Storage and then calls this endpoint
+with the resulting storage_path.
 """
-from fastapi import APIRouter, Form, HTTPException, Request, UploadFile, File, status
+from fastapi import APIRouter, HTTPException, Request, status
 from app.core.config import get_settings
 from app.core.upload_tokens import consume_upload_token
-from app.schemas.analysis import Analysis
+from app.schemas.analysis import Analysis, AnalysisFromStoragePath
 from app.services.analysis_service import analysis_service
 
 router = APIRouter()
@@ -28,14 +31,14 @@ def _verify_auth(request: Request):
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
 
-@router.post("/analyses/", response_model=Analysis, tags=["analyses"], summary="Create analysis (upload ZIP)")
+@router.post("/analyses/", response_model=Analysis, tags=["analyses"], summary="Create analysis from storage path")
 async def create_analysis(
     request: Request,
-    file: UploadFile = File(...),
-    user_name: str | None = Form(None),
+    body: AnalysisFromStoragePath,
 ):
     """
-    Create a new analysis by uploading a ZIP file.
+    Create a new analysis. The ZIP file must already be uploaded to Supabase Storage.
+    Provide the resulting `storage_path` (e.g. `"{uuid}.zip"`) in the request body.
 
     Auth (one of):
     - `X-API-Key` — standard server-to-server auth
@@ -43,10 +46,7 @@ async def create_analysis(
     """
     _verify_auth(request)
 
-    if not file.filename.endswith('.zip'):
-        raise HTTPException(status_code=400, detail="Only ZIP files are allowed")
-
     try:
-        return await analysis_service.create_analysis(file, user_name=user_name)
+        return await analysis_service.create_analysis_from_storage(body)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

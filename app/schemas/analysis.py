@@ -24,6 +24,10 @@ class Analysis(AnalysisBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+class AnalysisFromStoragePath(BaseModel):
+    storage_path: str
+    user_name: Optional[str] = None
+
 class AnalysisUpdate(BaseModel):
     generated_name: Optional[str] = None
 

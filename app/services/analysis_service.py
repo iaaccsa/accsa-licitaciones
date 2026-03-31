@@ -1,7 +1,7 @@
 from app.repositories.analysis_repository import analysis_repository
 from app.repositories.proposal_repository import proposal_repository
 from app.repositories.tender_repository import tender_repository
-from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
+from app.schemas.analysis import Analysis, AnalysisFromStoragePath, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.services.workflow_step_service import workflow_step_service
@@ -66,6 +66,38 @@ class AnalysisService:
         except Exception as e:
             logger.error(f"Error starting jobs pipeline for analysis {analysis.id}: {e}")
         
+        return analysis
+
+    async def create_analysis_from_storage(self, data: AnalysisFromStoragePath) -> Analysis:
+        # 1. Create Analysis record (file already in Supabase Storage)
+        analysis_data = {
+            "status": "pending",
+            "artifact_path": data.storage_path,
+        }
+        if data.user_name:
+            analysis_data["user_name"] = data.user_name
+        analysis_record = self.repository.create(analysis_data)
+        analysis = Analysis(**analysis_record)
+
+        # 2. Log Event
+        event_data = EventBase(
+            analysis_id=analysis.id,
+            level="info",
+            message="Archivo ZIP recibido con todos los documentos.",
+            source="api",
+            details={"storage_path": data.storage_path}
+        )
+        event_service.create_event(event_data)
+
+        # 3. Initialize Workflow Steps
+        workflow_step_service.initialize_steps(analysis.id)
+
+        # 4. Start Jobs Pipeline
+        try:
+            job_orchestrator_service.start_pipeline(analysis_id=analysis.id)
+        except Exception as e:
+            logger.error(f"Error starting jobs pipeline for analysis {analysis.id}: {e}")
+
         return analysis
 
     def get_analysis_by_id(self, analysis_id) -> Analysis:
