@@ -54,4 +54,8 @@ class FileRepository(BaseRepository):
         response = supabase.table("files").update(data).eq("id", file_id).execute()
         return response.data[0] if response.data else None
 
+    def update_files_by_link(self, link: str, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        response = supabase.table("files").update(data).eq("link", link).execute()
+        return response.data
+
 file_repository = FileRepository()
