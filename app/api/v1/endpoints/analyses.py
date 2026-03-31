@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException
 from typing import List
 from uuid import UUID
 from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
@@ -30,19 +30,6 @@ def get_analysis(analysis_id: UUID):
         return analysis
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/", response_model=Analysis)
-async def create_analysis(file: UploadFile = File(...), user_name: str | None = Form(None)):
-    """
-    Create a new analysis by uploading a ZIP file.
-    """
-    if not file.filename.endswith('.zip'):
-        raise HTTPException(status_code=400, detail="Only ZIP files are allowed")
-
-    try:
-        return await analysis_service.create_analysis(file, user_name=user_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

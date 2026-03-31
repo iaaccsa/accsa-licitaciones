@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.api.v1.router import api_router
+from app.api.v1.endpoints.analyses_upload import router as analyses_upload_router
 
 settings = get_settings()
 
@@ -19,6 +20,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount the analyses upload router first (handles POST /analyses/ with X-API-Key or X-Upload-Token)
+app.include_router(analyses_upload_router, prefix=settings.API_V1_STR)
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/", summary="Root endpoint")
