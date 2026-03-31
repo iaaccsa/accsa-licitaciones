@@ -11,9 +11,13 @@ class FileBase(BaseModel):
     proposal_id: Optional[UUID] = None
     proposal_label: Optional[str] = None
     proposal_provider_name: Optional[str] = None
+    tender_id: Optional[UUID] = None
+    tender_label: Optional[str] = None
+    tender_provider_name: Optional[str] = None
     link: Optional[UUID] = None
     is_merged: Optional[bool] = None
     is_processed_version: Optional[bool] = None
+    is_reorderable: Optional[bool] = None
     total_chunks: Optional[int] = None
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
@@ -31,9 +35,11 @@ class FileFilter(BaseModel):
 class FileUpdate(BaseModel):
     category: Optional[str] = None
     proposal_id: Optional[UUID] = None
+    tender_id: Optional[UUID] = None
     link: Optional[UUID] = None
     total_chunks: Optional[int] = None
     is_processed_version: Optional[bool] = None
+    is_reorderable: Optional[bool] = None
     mime_type: Optional[str] = None
     file_size: Optional[int] = None
     metadata: Optional[Dict[str, Any]] = None

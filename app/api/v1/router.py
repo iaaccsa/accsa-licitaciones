@@ -3,7 +3,7 @@ from app.core.supabase import supabase
 from app.core.security import get_api_key
 from app.core.qdrant import verify_qdrant_connection
 from app.core.azure import verify_azure_connection
-from app.api.v1.endpoints import analyses, events, requirements, files, proposals, workflow_steps, compliance_results, qdrant, jobs, chat, cleanup
+from app.api.v1.endpoints import analyses, events, requirements, files, proposals, tenders, workflow_steps, compliance_results, qdrant, jobs, chat, cleanup
 
 api_router = APIRouter(dependencies=[Depends(get_api_key)])
 
@@ -12,6 +12,7 @@ api_router.include_router(events.router, prefix="/events", tags=["events"])
 api_router.include_router(requirements.router, prefix="/requirements", tags=["requirements"])
 api_router.include_router(files.router, prefix="/files", tags=["files"])
 api_router.include_router(proposals.router, prefix="/proposals", tags=["proposals"])
+api_router.include_router(tenders.router, prefix="/tenders", tags=["tenders"])
 api_router.include_router(workflow_steps.router, prefix="/workflow-steps", tags=["workflow-steps"])
 api_router.include_router(compliance_results.router, prefix="/compliance-results", tags=["compliance-results"])
 api_router.include_router(qdrant.router, prefix="/qdrant", tags=["qdrant"])
