@@ -7,19 +7,37 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-03-31
+
 ### Added
-- Agregar endpoint `POST /api/v1/analyses/{analysis_id}/cancel` para cancelar un análisis, deteniendo los Azure Container Apps Jobs en ejecución y marcando los jobs como cancelados en la base de datos.
-- Agregar campo `metadata` (jsonb) al schema de archivos (`FileBase`, `FileUpdate`) para almacenar y actualizar metadata arbitraria en archivos vía `PATCH /files/{file_id}`.
-- Agregar valor `cancelled` al enum `job_status` en la base de datos.
+- Agregar tabla de licitaciones (`tenders`) con endpoints CRUD completos (listar, buscar, crear, obtener, actualizar) y campos `tender_id`, `tender_label`, `tender_provider_name` en la vista de archivos.
+- Agregar endpoint `GET /api/v1/analyses/{analysis_id}/sources` para obtener la lista combinada de propuestas y licitaciones de un análisis.
+- Agregar mecanismo de pausa y aprobación en el pipeline, con flag `pause_after` configurable y endpoint `POST /api/v1/analyses/{analysis_id}/resume` para continuar la ejecución.
+- Agregar endpoint `PATCH /api/v1/analyses/{analysis_id}` para actualizar el nombre generado de un análisis.
+- Agregar endpoint de limpieza para eliminar análisis, buckets de almacenamiento y colecciones de Qdrant.
+- Agregar etapa de clasificación de documentos (`service-documents-clasification`) como etapa final del pipeline, incluyendo campo `category` en el schema de archivos.
+- Agregar soporte de `file_metadata` (JSONB) y servicio `service-file-metadata-extractor` conectado al pipeline tras `service-qdrant-by-file`.
+- Agregar servicios `rag-setup` y `joiner` al pipeline, actualizando dependencias de `file-metadata-extractor` y `documents-clasification`.
+- Agregar campo `link` al schema de archivos para FK auto-referencial entre archivos relacionados.
+- Agregar campo `proposal_id` al schema `FileUpdate` para asignación de archivos a propuestas.
+- Agregar lógica de asignación de archivos a propuestas/licitaciones con sincronización de categoría, limpiando IDs mutuamente excluyentes y propagando cambios a archivos vinculados.
+- Agregar campo `is_reorderable` a archivos para controlar si se permite reasignar propuesta, licitación o categoría.
+- Agregar bloqueo de reordenamiento de archivos al reanudar desde `service-documents-clasification`, con validación HTTP 400 en `PATCH /files/{id}` cuando `is_reorderable` es falso.
+- Agregar valor `unclassified` al enum `file_type`.
+- Agregar endpoint `POST /api/v1/analyses/{analysis_id}/cancel` para cancelar un análisis, deteniendo los Azure Container Apps Jobs en ejecución y marcando los jobs como cancelados.
+- Agregar campo `metadata` (JSONB) al schema de archivos para almacenar metadata arbitraria vía `PATCH /files/{file_id}`.
+- Agregar valor `cancelled` al enum `job_status`.
 - Agregar campo `user_name` como parámetro en `POST /api/v1/analyses/` para asociar un nombre de usuario al crear un análisis.
 - Agregar endpoint `POST /api/v1/qdrant/collections` para crear colecciones en Qdrant con configuración de nombre, tamaño de vector y distancia.
 - Agregar endpoint `GET /api/v1/files/{file_id}` para obtener un archivo por su ID.
-- Implementar patrón de orquestación fan-out para el servicio `qdrant-by-file`, lanzando N instancias de Azure Container App Job (una por archivo procesado) y esperando a que todas completen antes de continuar el pipeline.
+- Implementar patrón de orquestación fan-out para `service-qdrant-by-file` y `service-chunk-and-index`, lanzando N instancias de Azure Container App Job (una por archivo) y esperando a que todas completen antes de continuar.
+- Agregar archivo `services.json` para definir servicios del flujo RAG incluyendo setup, chunking, indexing y extracción.
 
 ### Changed
 - Renombrar servicio `qdrant-by-file` a `service-qdrant-by-file` en la configuración del pipeline para mantener consistencia de nomenclatura.
 - Actualizar DAG del pipeline para que `service-files-converter` enrute a `service-qdrant-by-file` (fan-out) antes de `service-setup-qdrant`. Agregar campo `fan_out_by` a la configuración del pipeline.
 - Actualizar callback de jobs (`POST /api/v1/jobs/callback`) para aceptar `file_id` opcional, identificando instancias de jobs fan-out.
+- Hacer campos `analysis_id`, `is_reorderable`, `is_merged` y `created_at` obligatorios (NOT NULL) en el schema de archivos.
 
 ### Fixed
 - Corregir vista `analyses_view` que no incluía las columnas `user_name` y `generated_name`, recreando la vista con los campos faltantes.
@@ -62,5 +80,6 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Corregir marcado de workflow step como fallido y uso correcto del estado de job en callback de fallo.
 - Corregir marcado de análisis como listo (`is_success=true`) cuando el job final del pipeline completa exitosamente.
 
-[Unreleased]: https://github.com/iaaccsa/accsa-licitaciones-api/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/iaaccsa/accsa-licitaciones-api/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/iaaccsa/accsa-licitaciones-api/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/iaaccsa/accsa-licitaciones-api/releases/tag/v1.0.0

@@ -1,17 +1,4 @@
 {
-    "service": "service-setup-qdrant",
-    "next_services": [
-        "service-chunk-and-index"
-    ],
-    "code": "rag-setup",
-    "display_name": "Configuración RAG",
-    "parent": "converter",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
-},
-{
     "service": "service-chunk-and-index",
     "next_services": [
         "service-requirement-extractor",
@@ -23,7 +10,7 @@
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": false
+    "is_final": true
 },
 {
     "service": "service-requirement-extractor",
