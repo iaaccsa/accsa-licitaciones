@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+
 const securityHeaders = [
     {
         key: "Content-Security-Policy",
@@ -8,7 +10,7 @@ const securityHeaders = [
             "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com",
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: https:",
-            "connect-src 'self' https:",
+            `connect-src 'self' https: ${apiBaseUrl}`.trim(),
             "font-src 'self'",
             "frame-ancestors 'none'",
             "base-uri 'self'",

@@ -54,14 +54,24 @@ export function UploadSection() {
 
             const zipBlob = await zip.generateAsync({ type: "blob" });
 
+            const tokenResponse = await fetch("/api/upload-token", { method: "POST" });
+            if (!tokenResponse.ok) {
+                setErrorMessage("No se pudo obtener el token de subida. Inténtelo después.");
+                setStatus("error");
+                return;
+            }
+            const { upload_token } = await tokenResponse.json();
+
+            const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
             const formData = new FormData();
             formData.append("file", zipBlob, "analysis_documents.zip");
             if (analysisName.trim()) {
                 formData.append("user_name", analysisName.trim());
             }
 
-            const response = await fetch("/api/upload", {
+            const response = await fetch(`${apiBaseUrl}/api/v1/analyses/`, {
                 method: "POST",
+                headers: { "X-Upload-Token": upload_token },
                 body: formData,
             });
 

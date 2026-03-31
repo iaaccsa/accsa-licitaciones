@@ -11,6 +11,7 @@ const envSchema = z.object({
     API_WORKFLOW_STEPS_PATH: z.string().min(1),
     API_COMPLIANCE_RESULTS_PATH: z.string().min(1),
     API_QDRANT_POINTS: z.string().min(1),
+    API_UPLOAD_TOKEN_PATH: z.string().min(1),
     API_CHAT_PATH: z.string().min(1),
     API_CHAT_HISTORY_PATH: z.string().min(1),
     API_HEALTH_PATH: z.string().optional(),
