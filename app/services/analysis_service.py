@@ -1,5 +1,7 @@
 from app.repositories.analysis_repository import analysis_repository
-from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate
+from app.repositories.proposal_repository import proposal_repository
+from app.repositories.tender_repository import tender_repository
+from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.services.workflow_step_service import workflow_step_service
@@ -81,5 +83,15 @@ class AnalysisService:
         update_data = status_update.model_dump(exclude_none=True)
         data = self.repository.update_by_id(str(analysis_id), update_data)
         return Analysis(**data)
+
+    def get_sources(self, analysis_id) -> List[AnalysisSource]:
+        sources = []
+        proposals = proposal_repository.get_by_analysis_id(analysis_id)
+        for p in proposals:
+            sources.append(AnalysisSource(type="proposal", id=p["id"], label=p["label"]))
+        tenders = tender_repository.get_by_analysis_id(analysis_id)
+        for t in tenders:
+            sources.append(AnalysisSource(type="tender", id=t["id"], label=t["label"]))
+        return sources
 
 analysis_service = AnalysisService()

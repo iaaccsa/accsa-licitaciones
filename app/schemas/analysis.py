@@ -1,3 +1,4 @@
+from enum import Enum
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
@@ -29,3 +30,12 @@ class AnalysisUpdate(BaseModel):
 class AnalysisStatusUpdate(BaseModel):
     status: str
     is_success: Optional[bool] = None
+
+class SourceType(str, Enum):
+    proposal = "proposal"
+    tender = "tender"
+
+class AnalysisSource(BaseModel):
+    type: SourceType
+    id: UUID
+    label: str
