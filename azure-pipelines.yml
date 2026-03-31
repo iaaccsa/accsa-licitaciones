@@ -15,6 +15,8 @@ strategy:
     #   SERVICE_NAME: "service-file-extractor"
     # service-files-converter:
     #   SERVICE_NAME: "service-files-converter"
+    service-files-converter-mistral:
+      SERVICE_NAME: "service-files-converter-mistral"
     # service-setup-qdrant:
     #   SERVICE_NAME: "service-setup-qdrant"
     # service-chunk-and-index:
@@ -61,6 +63,7 @@ steps:
       OPENAI_API_KEY: $(OPENAI_API_KEY)
       GOOGLE_API_KEY: $(GOOGLE_API_KEY)
       LLAMA_CLOUD_API_KEY: $(LLAMA_CLOUD_API_KEY)
+      MISTRAL_API_KEY: $(MISTRAL_API_KEY)
       QDRANT_URL: $(QDRANT_URL)
       QDRANT_API_KEY: $(QDRANT_API_KEY)
       COHERE_API_KEY: $(COHERE_API_KEY)

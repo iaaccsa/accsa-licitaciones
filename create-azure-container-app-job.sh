@@ -7,6 +7,7 @@ set -e
 VALID_SERVICES=(
   "service-file-extractor"
   "service-files-converter"
+  "service-files-converter-mistral"
   "service-chunk-and-index"
   "service-setup-qdrant"
   "service-requirement-extractor"
