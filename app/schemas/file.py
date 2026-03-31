@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional
 from uuid import UUID
 
 class FileBase(BaseModel):
-    analysis_id: Optional[UUID] = None
+    analysis_id: UUID
     file_name: Optional[str] = None
     storage_path: Optional[str] = None
     category: Optional[str] = None
@@ -15,9 +15,9 @@ class FileBase(BaseModel):
     tender_label: Optional[str] = None
     tender_provider_name: Optional[str] = None
     link: Optional[UUID] = None
-    is_merged: Optional[bool] = None
+    is_merged: bool = False
     is_processed_version: Optional[bool] = None
-    is_reorderable: Optional[bool] = None
+    is_reorderable: bool = True
     total_chunks: Optional[int] = None
     file_size: Optional[int] = None
     mime_type: Optional[str] = None
@@ -25,7 +25,7 @@ class FileBase(BaseModel):
 
 class File(FileBase):
     id: Optional[UUID] = None
-    created_at: Optional[datetime] = None
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -27,15 +27,30 @@ class FileService:
         return File(**data)
 
     def update_file(self, file_id: str, update_data: FileUpdate) -> Optional[File]:
-        update_dict = update_data.model_dump(mode="json", exclude_none=True)
+        update_dict = update_data.model_dump(mode="json", exclude_unset=True)
+
+        # If setting proposal_id or tender_id, clear both first then set the one received
+        # Also update category accordingly
+        if "proposal_id" in update_dict:
+            update_dict.setdefault("tender_id", None)
+            update_dict["category"] = "proposal"
+        elif "tender_id" in update_dict:
+            update_dict.setdefault("proposal_id", None)
+            update_dict["category"] = "tender"
+
+        # If category is set to unclassified or null, clear proposal_id and tender_id
+        if "category" in update_dict and update_dict.get("category") in (None, "unclassified"):
+            update_dict["proposal_id"] = None
+            update_dict["tender_id"] = None
+
         data = self.repository.update_file_by_id(file_id, update_dict)
         if not data:
             return None
 
-        # Propagate proposal_id/tender_id to linked files
-        link_fields = {k: v for k, v in update_dict.items() if k in ("proposal_id", "tender_id")}
-        if link_fields and data.get("link"):
-            self.repository.update_files_by_link(str(data["link"]), link_fields)
+        # Propagate proposal_id/tender_id/category to files that link to this file
+        link_fields = {k: update_dict[k] for k in ("proposal_id", "tender_id", "category") if k in update_dict}
+        if link_fields:
+            self.repository.update_files_by_link(file_id, link_fields)
 
         return File(**data)
 
