@@ -60,7 +60,7 @@ export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } =
     );
 
     const activeAnalyses = sortedAnalyses.filter((a) =>
-        ["pending", "processing"].includes(a.status)
+        ["pending", "processing", "awaiting_approval"].includes(a.status)
     );
     const completedAnalyses = sortedAnalyses.filter((a) =>
         ["ready", "failed"].includes(a.status)

@@ -31,7 +31,7 @@ export function Navbar() {
                             className="rounded"
                         />
                         <span className="text-lg font-semibold text-zinc-800 font-serif italic">
-                            Asistente de Licitaciones
+                            Asistente de Compras Estatales
                         </span>
                     </Link>
 

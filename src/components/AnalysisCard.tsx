@@ -1,13 +1,13 @@
 "use client";
 
-import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, FileText, CalendarClock, FileStack } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, FileText, CalendarClock, FileStack, PauseCircle } from "lucide-react";
 import Link from "next/link";
 import { MetricBox } from "./MetricBox";
 
 export interface Analysis {
     id: string;
     slug: string;
-    status: "pending" | "processing" | "ready" | "failed";
+    status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
     is_success: boolean | null;
     created_at: string;
     total_events: number;
@@ -72,6 +72,7 @@ export function AnalysisCard({ analysis, basePath = "/analyses" }: { analysis: A
 function StatusIcon({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {
     if (status === "processing") return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
     if (status === "pending") return <Clock className="w-5 h-5 text-zinc-400" />;
+    if (status === "awaiting_approval") return <PauseCircle className="w-5 h-5 text-amber-500" />;
     if (status === "ready") {
         return isSuccess ? (
             <CheckCircle className="w-5 h-5 text-green-500" />
@@ -85,6 +86,7 @@ function StatusIcon({ status, isSuccess }: { status: string; isSuccess: boolean 
 function StatusBadge({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {
     if (status === "processing") return <span className="text-blue-600">Procesando</span>;
     if (status === "pending") return <span className="text-zinc-500">Pendiente</span>;
+    if (status === "awaiting_approval") return <span className="text-amber-600">Esperando Aprobación</span>;
     if (status === "ready") {
         return isSuccess ? (
             <span className="text-green-600">Completado</span>

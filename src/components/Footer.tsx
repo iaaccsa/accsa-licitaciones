@@ -14,7 +14,7 @@ export function Footer() {
                         className="rounded"
                     />
                     <span className="text-sm text-zinc-500 font-serif italic">
-                        Asistente de Licitaciones
+                        Asistente de Compras Estatales
                     </span>
                     <span className="text-sm text-zinc-400">
                         © {new Date().getFullYear()}

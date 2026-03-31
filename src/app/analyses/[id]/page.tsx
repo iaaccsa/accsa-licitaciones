@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban } from "lucide-react";
+import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowVisualization from "@/components/WorkflowVisualization";
@@ -14,8 +14,9 @@ interface Analysis {
     slug: string;
     user_name: string | null;
     generated_name: string | null;
-    status: "pending" | "processing" | "ready" | "failed";
+    status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
     is_success: boolean | null;
+    paused_at_service: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -38,29 +39,36 @@ export default function AnalysisDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [isResuming, setIsResuming] = useState(false);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                const analysisRes = await fetch(`/api/analyses/${id}`);
-
-                if (!analysisRes.ok) throw new Error("Error fetching analysis details");
-                const analysisData = await analysisRes.json();
-                setAnalysis(analysisData);
-
-            } catch (err) {
-                console.error(err);
-                setError("No se pudo cargar la información del análisis.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        if (id) {
-            fetchData();
+    const fetchData = useCallback(async (silent = false) => {
+        if (!silent) setIsLoading(true);
+        try {
+            const analysisRes = await fetch(`/api/analyses/${id}`);
+            if (!analysisRes.ok) throw new Error("Error fetching analysis details");
+            const analysisData = await analysisRes.json();
+            setAnalysis(analysisData);
+        } catch (err) {
+            console.error(err);
+            if (!silent) setError("No se pudo cargar la información del análisis.");
+        } finally {
+            if (!silent) setIsLoading(false);
         }
     }, [id]);
+
+    useEffect(() => {
+        if (id) fetchData();
+    }, [id, fetchData]);
+
+    // Poll while analysis is active
+    useEffect(() => {
+        if (!analysis) return;
+        const isActive = ["pending", "processing", "awaiting_approval"].includes(analysis.status);
+        if (!isActive) return;
+
+        const timer = setInterval(() => fetchData(true), 10000);
+        return () => clearInterval(timer);
+    }, [analysis?.status, fetchData]);
 
     const handleCancel = useCallback(async () => {
         if (!analysis || isCancelling) return;
@@ -76,6 +84,21 @@ export default function AnalysisDetailPage() {
             setIsCancelling(false);
         }
     }, [id, analysis, isCancelling]);
+
+    const handleResume = useCallback(async () => {
+        if (!analysis || isResuming) return;
+        setIsResuming(true);
+        try {
+            const res = await fetch(`/api/analyses/${id}/resume`, { method: "POST" });
+            if (res.ok) {
+                setAnalysis((prev) => prev ? { ...prev, status: "processing", paused_at_service: null } : prev);
+            }
+        } catch (err) {
+            console.error("Error resuming analysis:", err);
+        } finally {
+            setIsResuming(false);
+        }
+    }, [id, analysis, isResuming]);
 
     if (error) {
         return (
@@ -104,7 +127,22 @@ export default function AnalysisDetailPage() {
                         </h1>
                         <div className="flex items-center gap-2">
                             <StatusBadge status={analysis.status} isSuccess={analysis.is_success} />
-                            {(analysis.status === "pending" || analysis.status === "processing") && (
+                            {analysis.status === "awaiting_approval" && (
+                                <Button
+                                    size="sm"
+                                    onClick={handleResume}
+                                    disabled={isResuming}
+                                    className="bg-green-600 text-white hover:bg-green-700"
+                                >
+                                    {isResuming ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        <Play className="h-3.5 w-3.5" />
+                                    )}
+                                    Continuar
+                                </Button>
+                            )}
+                            {(analysis.status === "pending" || analysis.status === "processing" || analysis.status === "awaiting_approval") && (
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -135,7 +173,7 @@ export default function AnalysisDetailPage() {
             </div>
 
             {/* Workflow Visualization */}
-            <WorkflowVisualization analysisId={id} />
+            <WorkflowVisualization analysisId={id} analysisStatus={analysis.status} />
 
             {/* Navigation Buttons */}
             <div className="grid md:grid-cols-2 gap-6">
@@ -219,6 +257,11 @@ function StatusBadge({ status, isSuccess }: { status: string; isSuccess: boolean
     if (status === "pending") return (
         <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600 flex items-center gap-1">
             <Clock className="w-3 h-3" /> Pendiente
+        </span>
+    );
+    if (status === "awaiting_approval") return (
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 flex items-center gap-1">
+            <PauseCircle className="w-3 h-3" /> Esperando Aprobación
         </span>
     );
     if (status === "ready") {

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Asistente de Licitaciones",
+  title: "Asistente de Compras Estatales",
   description: "Sistema de análisis de licitaciones con IA",
 };
 
