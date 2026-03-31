@@ -48,7 +48,10 @@ def get_merged_files(filter_params: FileFilter):
 
 @router.patch("/{file_id}", response_model=File)
 def update_file(file_id: UUID, update_data: FileUpdate):
-    result = file_service.update_file(str(file_id), update_data)
+    try:
+        result = file_service.update_file(str(file_id), update_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not result:
         raise HTTPException(status_code=404, detail="File not found")
     return result

@@ -292,6 +292,13 @@ class JobOrchestratorService:
         if not paused_at_service:
             raise ValueError(f"Analysis {analysis_id} has no paused_at_service recorded")
 
+        # If resuming from documents classification, lock file reordering
+        if paused_at_service == "service-documents-clasification":
+            file_repository.update_files_by_analysis_id(
+                str(analysis_id), {"is_reorderable": False}
+            )
+            logger.info(f"Set is_reorderable=False for all files in analysis {analysis_id}")
+
         # Clear paused state, return to processing
         analysis_repository.update_by_id(
             str(analysis_id),

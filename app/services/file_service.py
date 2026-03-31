@@ -29,6 +29,15 @@ class FileService:
     def update_file(self, file_id: str, update_data: FileUpdate) -> Optional[File]:
         update_dict = update_data.model_dump(mode="json", exclude_unset=True)
 
+        # Validate is_reorderable before allowing classification changes
+        reorderable_fields = {"proposal_id", "tender_id", "category"}
+        if reorderable_fields & update_dict.keys():
+            existing = self.repository.get_by_id(file_id)
+            if not existing:
+                return None
+            if not existing.get("is_reorderable", False):
+                raise ValueError("Cannot update proposal_id, tender_id or category: file is not reorderable")
+
         # If setting proposal_id or tender_id, clear both first then set the one received
         # Also update category accordingly
         if "proposal_id" in update_dict:
