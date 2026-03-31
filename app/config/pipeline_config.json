@@ -13,7 +13,7 @@
   {
     "service": "service-file-extractor",
     "next_services": [
-      "service-files-converter"
+      "service-files-converter-mistral"
     ],
     "code": "extractor",
     "display_name": "Preparando Documentos",
@@ -24,7 +24,7 @@
     "is_final": false
   },
   {
-    "service": "service-files-converter",
+    "service": "service-files-converter-mistral",
     "next_services": [
       "service-qdrant-by-file"
     ],
