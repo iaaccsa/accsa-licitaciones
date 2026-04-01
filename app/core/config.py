@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     AZURE_RESOURCE_GROUP: str
     AZURE_CONTAINER_REGISTRY: str
 
+    API_TENDER_CLASSIFICATIONS_PATH: str = "/api/v1/tender-classifications/"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore"
