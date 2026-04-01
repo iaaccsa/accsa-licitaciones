@@ -74,7 +74,7 @@ export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } =
                     <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">
                         En Curso
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {activeAnalyses.map((analysis) => (
                             <AnalysisCard key={analysis.slug} analysis={analysis} basePath={basePath} />
                         ))}
@@ -93,7 +93,7 @@ export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } =
                     <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">
                         Completados
                     </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {completedAnalyses.map((analysis) => (
                             <AnalysisCard key={analysis.slug} analysis={analysis} basePath={basePath} />
                         ))}

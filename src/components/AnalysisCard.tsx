@@ -7,6 +7,8 @@ import { MetricBox } from "./MetricBox";
 export interface Analysis {
     id: string;
     slug: string;
+    user_name: string | null;
+    generated_name: string | null;
     status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
     is_success: boolean | null;
     created_at: string;
@@ -27,15 +29,23 @@ function getRelativeTime(dateString: string) {
     return date.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
+function getNameFontSize(name: string) {
+    if (name.length <= 12) return "text-lg";
+    if (name.length <= 20) return "text-base";
+    if (name.length <= 30) return "text-sm";
+    return "text-xs";
+}
+
 export function AnalysisCard({ analysis, basePath = "/analyses" }: { analysis: Analysis; basePath?: string }) {
+    const displayName = analysis.user_name ?? analysis.generated_name ?? analysis.slug;
     return (
         <Link
             href={`${basePath}/${analysis.id}`}
             className="block bg-white rounded-xl border border-zinc-200 p-4 shadow-sm hover:shadow-md transition-shadow"
         >
             <div className="flex justify-between items-start mb-3">
-                <span className="font-mono text-lg font-medium text-zinc-700 bg-zinc-100 px-2 py-0.5 rounded uppercase">
-                    {analysis.slug}
+                <span className={`font-mono font-medium text-zinc-700 uppercase ${getNameFontSize(displayName)}`}>
+                    {displayName}
                 </span>
                 <StatusIcon status={analysis.status} isSuccess={analysis.is_success} />
             </div>
