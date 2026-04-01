@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
-from mistralai import Mistral
+from mistralai.client import Mistral
 from supabase import create_client, Client
 from supabase_logger import setup_logger, log_event, make_session
 
