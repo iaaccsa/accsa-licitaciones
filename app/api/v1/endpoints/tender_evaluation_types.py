@@ -12,3 +12,11 @@ def get_tender_evaluation_types():
         return tender_evaluation_type_repository.get_all()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/by-label/{label}", response_model=TenderEvaluationType)
+def get_tender_evaluation_type_by_label(label: str):
+    result = tender_evaluation_type_repository.get_by_label(label)
+    if not result:
+        raise HTTPException(status_code=404, detail="Tender evaluation type not found")
+    return result

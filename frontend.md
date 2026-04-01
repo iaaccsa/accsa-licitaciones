@@ -1,79 +1,82 @@
 # Frontend API Reference
 
-## Tipos de Evaluación de Licitaciones
+## Tender Evaluation Types
 
-### `GET /api/v1/tender-evaluation-types/`
+### Obtener tipo de evaluación por label
 
-Devuelve el catálogo de sistemas de evaluación existentes. Esta tabla es estática (no se modifica desde el sistema). Útil para mostrar al usuario qué tipo de evaluación detectó el clasificador en una licitación.
+```
+GET /api/v1/tender-evaluation-types/by-label/{label}
+```
 
 **Headers requeridos:**
 ```
 X-API-Key: <BACKEND_API_KEY>
 ```
 
-**Respuesta exitosa — `200 OK`**
+**Path params:**
+| Param | Tipo | Descripción |
+|-------|------|-------------|
+| `label` | string | Label exacto del tipo de evaluación |
 
-Array de objetos con la siguiente estructura:
-
+**Respuesta exitosa `200 OK`:**
 ```json
-[
-  {
-    "id": 1,
-    "label": "puntos",
-    "title": "Sistema de Puntos",
-    "description": "Las ofertas se evalúan asignando puntos numéricos...",
-    "example": "ASSE — L.A. N.º 52/2024: \"FACTOR 1 (Precio): 60 puntos...\"",
-    "icon": "calculator",
-    "color_badge": "bg-blue-100 text-blue-800",
-    "background_color": "bg-blue-50",
-    "extraction_complexity": "high",
-    "requires_additional_document": false,
-    "typical_factors": ["Precio", "Antecedentes positivos", "Antigüedad de la empresa"],
-    "frequent_organizations": ["ASSE", "UDELAR"],
-    "observed_frequency": 6,
-    "main_formula": "Puntaje Total = Σ(factores) − antecedentes_negativos",
-    "key_signals": ["\"máximo X puntos\"", "\"FACTOR 1: 60 puntos\""],
-    "notes": ["Es el tipo más frecuente en los pliegos analizados."]
-  }
-]
+{
+  "id": 1,
+  "label": "string",
+  "title": "string",
+  "description": "string",
+  "example": "string",
+  "icon": "string",
+  "color_badge": "string",
+  "background_color": "string",
+  "extraction_complexity": "string",
+  "requires_additional_document": true,
+  "typical_factors": ["string"],
+  "frequent_organizations": ["string"],
+  "observed_frequency": 0,
+  "main_formula": "string | null",
+  "key_signals": ["string"],
+  "notes": ["string"]
+}
 ```
 
-**Campos del objeto:**
+**Respuesta de error `404`:** no existe ningún tipo de evaluación con ese `label`.
+
+---
+
+### Campos del modelo
 
 | Campo | Tipo | Descripción |
-|---|---|---|
-| `id` | `number` | ID incremental del registro |
-| `label` | `string` | Identificador corto del sistema (ej: `"puntos"`, `"porcentajes"`) |
-| `title` | `string` | Nombre legible para mostrar en UI |
-| `description` | `string` | Descripción completa del sistema de evaluación |
-| `example` | `string` | Ejemplo real extraído de un pliego de licitación |
-| `icon` | `string` | Nombre del ícono (referencia a librería de iconos, ej: Lucide) |
-| `color_badge` | `string` | Clases Tailwind CSS para el badge de tipo |
-| `background_color` | `string` | Clase Tailwind CSS para el fondo de la card |
-| `extraction_complexity` | `string` | Complejidad de extracción: `"low"`, `"medium"` o `"high"` |
-| `requires_additional_document` | `boolean` | Si el sistema requiere documentos adicionales al pliego |
-| `typical_factors` | `string[]` | Factores de evaluación típicos de este sistema |
-| `frequent_organizations` | `string[]` | Organismos que frecuentemente usan este sistema |
-| `observed_frequency` | `number` | Cantidad de licitaciones observadas con este sistema |
-| `main_formula` | `string \| null` | Fórmula principal de cálculo (puede ser `null`) |
-| `key_signals` | `string[]` | Frases o patrones textuales que identifican este sistema |
-| `notes` | `string[]` | Notas adicionales para el equipo o para el clasificador |
+|-------|------|-------------|
+| `id` | int | ID único del tipo de evaluación |
+| `label` | string | Identificador textual único (clave de búsqueda) |
+| `title` | string | Nombre legible del tipo |
+| `description` | string | Descripción del tipo de evaluación |
+| `example` | string | Ejemplo de licitación con este tipo |
+| `icon` | string | Nombre o código del ícono a mostrar |
+| `color_badge` | string | Color del badge (ej: `"#FF5733"` o nombre CSS) |
+| `background_color` | string | Color de fondo para la tarjeta/sección |
+| `extraction_complexity` | string | Complejidad de extracción (ej: `"low"`, `"medium"`, `"high"`) |
+| `requires_additional_document` | boolean | Si requiere documentación adicional |
+| `typical_factors` | string[] | Factores típicos asociados |
+| `frequent_organizations` | string[] | Organizaciones que suelen usar este tipo |
+| `observed_frequency` | int | Frecuencia observada (valor relativo) |
+| `main_formula` | string \| null | Fórmula principal si aplica |
+| `key_signals` | string[] | Señales clave para identificar este tipo |
+| `notes` | string[] | Notas adicionales |
 
-**Uso típico:**
+---
 
-Este endpoint se usa para:
-1. Mostrar la descripción detallada del tipo de evaluación detectado en una licitación (cruzando con `system_type` del endpoint `GET /api/v1/tender-classifications/{analysis_id}`).
-2. Construir un selector o panel explicativo de los distintos sistemas de evaluación.
+### Ejemplo de uso (fetch)
 
-**Relación con clasificaciones:**
+```js
+const res = await fetch(`/api/v1/tender-evaluation-types/by-label/${label}`, {
+  headers: { 'X-API-Key': API_KEY }
+});
 
-El campo `label` de `TenderEvaluationType` corresponde al campo `system_type` de `TenderClassification`. Para obtener los detalles de la clasificación de un análisis:
+if (res.status === 404) {
+  // tipo de evaluación no encontrado
+}
 
-```
-GET /api/v1/tender-classifications/{analysis_id}
-→ system_type: "puntos"
-
-GET /api/v1/tender-evaluation-types/
-→ buscar el objeto donde label === "puntos"
-→ usar title, description, icon, color_badge, etc.
+const data = await res.json();
 ```

@@ -16,5 +16,15 @@ class TenderEvaluationTypeRepository(BaseRepository):
         )
         return response.data or []
 
+    def get_by_label(self, label: str) -> Dict[str, Any] | None:
+        response = (
+            supabase.table(self.table_name)
+            .select("*")
+            .eq("label", label)
+            .single()
+            .execute()
+        )
+        return response.data if response.data else None
+
 
 tender_evaluation_type_repository = TenderEvaluationTypeRepository()
