@@ -33,12 +33,14 @@ strategy:
     #   SERVICE_NAME: "service-qdrant-by-file"
     # service-file-metadata-extractor:
     #   SERVICE_NAME: "service-file-metadata-extractor"
-    # service-documents-clasification:
-    #   SERVICE_NAME: "service-documents-clasification"
+    service-documents-classifier:
+      SERVICE_NAME: "service-documents-classifier"
+    service-documents-grouper:
+      SERVICE_NAME: "service-documents-grouper"
     # service-joiner:
     #   SERVICE_NAME: "service-joiner"
-    service-tender-classifier:
-      SERVICE_NAME: "service-tender-classifier"
+    # service-tender-classifier:
+    #   SERVICE_NAME: "service-tender-classifier"
 
 steps:
   - script: |
