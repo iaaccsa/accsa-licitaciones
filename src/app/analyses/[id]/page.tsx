@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play } from "lucide-react";
+import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowVisualization from "@/components/WorkflowVisualization";
@@ -176,7 +176,7 @@ export default function AnalysisDetailPage() {
             <WorkflowVisualization analysisId={id} analysisStatus={analysis.status} />
 
             {/* Navigation Buttons */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
                 <a
                     href={`/analyses/${id}/files`}
                     className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all group text-center"
@@ -190,6 +190,23 @@ export default function AnalysisDetailPage() {
                         </h3>
                         <p className="text-sm text-zinc-500">
                             Ver pliegos, normativas y ofertas
+                        </p>
+                    </div>
+                </a>
+
+                <a
+                    href={`/analyses/${id}/evaluation_system`}
+                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group text-center"
+                >
+                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <Scale className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-purple-600 transition-colors">
+                            Evaluación
+                        </h3>
+                        <p className="text-sm text-zinc-500">
+                            Sistema de evaluación
                         </p>
                     </div>
                 </a>
@@ -238,7 +255,8 @@ function AnalysisDetailSkeleton() {
             </div>
 
             {/* Files Grid Skeleton */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
+                <Skeleton className="h-64 rounded-xl" />
                 <Skeleton className="h-64 rounded-xl" />
                 <Skeleton className="h-64 rounded-xl" />
             </div>
