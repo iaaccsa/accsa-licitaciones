@@ -18,6 +18,7 @@ VALID_SERVICES=(
   "service-file-metadata-extractor"
   "service-documents-clasification"
   "service-joiner"
+  "service-tender-classifier"
 )
 
 if [ -z "$1" ]; then
