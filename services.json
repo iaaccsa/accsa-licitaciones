@@ -1,19 +1,5 @@
 [
     {
-        "service": "service-chunk-and-index",
-        "next_services": [
-            "service-requirement-extractor",
-            "service-metadata-extractor"
-        ],
-        "code": "chunk_and_index",
-        "display_name": "Chunking e Indexación",
-        "parent": "rag-setup",
-        "create_on_start": true,
-        "initial_status": "pending",
-        "is_initial": false,
-        "is_final": true
-    },
-    {
         "service": "service-requirement-extractor",
         "next_services": [
             "service-verify-compliance"
