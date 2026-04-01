@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { FileText, Download, Eye, X, ChevronLeft, AlertCircle, MessageSquare } from "lucide-react";
+import { FileText, Download, Eye, X, ChevronLeft, AlertCircle, MessageSquare, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import ReactMarkdown from "react-markdown";
 
@@ -21,6 +21,8 @@ interface AnalysisFile {
     analysis_id: string;
     proposal_id?: string;
     is_merged?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    metadata?: Record<string, any> | null;
 }
 
 const SUPABASE_STORAGE_URL = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
@@ -50,6 +52,8 @@ export default function AdminAnalysisFilesPage() {
     const [error, setError] = useState<string | null>(null);
     const [mdPreview, setMdPreview] = useState<{ name: string; content: string } | null>(null);
     const [mdLoading, setMdLoading] = useState(false);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [metadataModal, setMetadataModal] = useState<{ name: string; data: Record<string, any> } | null>(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -195,6 +199,15 @@ export default function AdminAnalysisFilesPage() {
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-1 justify-end">
+                                            {file.metadata != null && (
+                                                <button
+                                                    onClick={() => setMetadataModal({ name: file.file_name, data: file.metadata! })}
+                                                    className="text-zinc-400 hover:text-amber-600 transition-colors p-1.5 hover:bg-amber-50 rounded-md"
+                                                    title="Ver metadata"
+                                                >
+                                                    <Info className="w-4 h-4" />
+                                                </button>
+                                            )}
                                             {file.is_merged && (
                                                 <a
                                                     href={`/admin/analyses/${id}/files/${file.id}/chat`}
@@ -229,6 +242,31 @@ export default function AdminAnalysisFilesPage() {
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+
+            {/* Metadata Modal */}
+            {metadataModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col m-4">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
+                            <h3 className="font-semibold text-zinc-800 truncate flex items-center gap-2">
+                                <Info className="w-4 h-4 text-amber-500 shrink-0" />
+                                {metadataModal.name}
+                            </h3>
+                            <button
+                                onClick={() => setMetadataModal(null)}
+                                className="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-500 hover:text-zinc-800"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto px-6 py-6 flex-1">
+                            <pre className="text-xs text-zinc-700 bg-zinc-50 rounded-lg p-4 border border-zinc-200 whitespace-pre-wrap break-all font-mono">
+                                {JSON.stringify(metadataModal.data, null, 2)}
+                            </pre>
+                        </div>
+                    </div>
                 </div>
             )}
 
