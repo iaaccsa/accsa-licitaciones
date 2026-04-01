@@ -16,7 +16,8 @@ VALID_SERVICES=(
   "service-proposal-scorer"
   "service-qdrant-by-file"
   "service-file-metadata-extractor"
-  "service-documents-clasification"
+  "service-documents-classifier"
+  "service-documents-grouper"
   "service-joiner"
   "service-tender-classifier"
 )

@@ -10,7 +10,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [1.2.0] - 2026-03-31
 
 ### Added
-- Agregar `service-documents-clasification` para clasificar archivos de licitación usando Gemini, con categorías de pliego, normativa, propuesta y no clasificado.
+- Agregar `service-documents-classifier` para clasificar archivos de licitación usando Gemini, con categorías de pliego, normativa, propuesta y no clasificado.
 - Agregar `service-file-metadata-extractor` para extracción de metadatos de archivos usando Gemini, incluyendo integración en pipeline CI/CD.
 - Agregar `service-joiner` para unificar archivos Markdown en `tender_full.md` y `proposal_full.md` por análisis.
 - Agregar `service-qdrant-by-file` para indexación dedicada por archivo individual en Qdrant, con integración en pipeline CI/CD y script de creación de Container App Job.
