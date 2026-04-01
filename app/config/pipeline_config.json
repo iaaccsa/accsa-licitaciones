@@ -87,14 +87,53 @@
   },
   {
     "service": "service-documents-grouper",
-    "next_services": [],
+    "next_services": [
+      "service-setup-qdrant",
+      "service-joiner"
+    ],
     "code": "documents-grouper",
     "display_name": "Agrupación de Documentos",
     "parent": "documents-clasification",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": true,
+    "is_final": false,
     "pause_after": true
+  },
+  {
+    "service": "service-setup-qdrant",
+    "next_services": [],
+    "code": "rag-setup",
+    "display_name": "Configuración RAG",
+    "parent": "file-metadata-extractor",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false
+  },
+  {
+    "service": "service-joiner",
+    "next_services": [
+      "service-chunk-and-index"
+    ],
+    "code": "joiner",
+    "display_name": "Uniendo Documentos",
+    "parent": "documents-clasification",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false
+  },
+  {
+    "service": "service-chunk-and-index",
+    "next_services": [],
+    "code": "chunk_and_index",
+    "display_name": "Chunking e Indexación",
+    "parent": "joiner",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": true,
+    "fan_out_by": "merged_file"
   }
 ]
