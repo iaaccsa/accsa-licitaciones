@@ -51,7 +51,7 @@ RUN for entry in \
 
 # Install Python dependencies
 COPY service-files-converter-mistral/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
 COPY global/supabase_logger.py .
