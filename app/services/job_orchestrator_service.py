@@ -182,9 +182,11 @@ class JobOrchestratorService:
         launched = []
         fan_out_type = get_fan_out_type(next_job)
 
-        if fan_out_type in ("file", "merged_file"):
+        if fan_out_type in ("file", "merged_file", "file_with_metadata"):
             if fan_out_type == "merged_file":
                 files = file_repository.get_merged_by_analysis_id(analysis_id)
+            elif fan_out_type == "file_with_metadata":
+                files = file_repository.get_processed_with_metadata_by_analysis_id(analysis_id)
             else:
                 files = file_repository.get_processed_by_analysis_id(analysis_id)
             if not files:

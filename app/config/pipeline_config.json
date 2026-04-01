@@ -8,7 +8,8 @@
     "create_on_start": true,
     "initial_status": "completed",
     "is_initial": true,
-    "is_final": false
+    "is_final": false,
+    "pause_after": false
   },
   {
     "service": "service-file-extractor",
@@ -16,12 +17,13 @@
       "service-files-converter-mistral"
     ],
     "code": "extractor",
-    "display_name": "Preparando Documentos",
+    "display_name": "Extracción de Archivos",
     "parent": "queue",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": false
+    "is_final": false,
+    "pause_after": false
   },
   {
     "service": "service-files-converter-mistral",
@@ -29,12 +31,13 @@
       "service-qdrant-by-file"
     ],
     "code": "converter",
-    "display_name": "Convirtiendo Documentos",
+    "display_name": "Preparación de Documentos",
     "parent": "extractor",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": false
+    "is_final": false,
+    "pause_after": false
   },
   {
     "service": "service-qdrant-by-file",
@@ -42,77 +45,56 @@
       "service-file-metadata-extractor"
     ],
     "code": "qdrant-by-file",
-    "display_name": "Indexando Documentos",
+    "display_name": "Indexación de Documentos",
     "parent": "converter",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
+    "pause_after": false,
     "fan_out_by": "file"
   },
   {
     "service": "service-file-metadata-extractor",
     "next_services": [
-      "service-documents-clasification",
+      "service-documents-classifier",
       "service-setup-qdrant"
     ],
     "code": "file-metadata-extractor",
-    "display_name": "Extrayendo Metadatos de Archivos",
+    "display_name": "Extracción de Metadatos",
     "parent": "qdrant-by-file",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
+    "pause_after": false,
     "fan_out_by": "file"
   },
   {
-    "service": "service-documents-clasification",
+    "service": "service-documents-classifier",
     "next_services": [
-      "service-joiner"
+      "service-documents-grouper"
     ],
     "code": "documents-clasification",
-    "display_name": "Clasificando Documentos",
+    "display_name": "Clasificación de Documentos",
     "parent": "file-metadata-extractor",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
-    "pause_after": true
+    "pause_after": false,
+    "fan_out_by": "file_with_metadata"
   },
   {
-    "service": "service-setup-qdrant",
+    "service": "service-documents-grouper",
     "next_services": [],
-    "code": "rag-setup",
-    "display_name": "Configuración RAG",
-    "parent": "file-metadata-extractor",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
-  },
-  {
-    "service": "service-joiner",
-    "next_services": [
-      "service-chunk-and-index"
-    ],
-    "code": "joiner",
-    "display_name": "Uniendo Documentos",
+    "code": "documents-grouper",
+    "display_name": "Agrupación de Documentos",
     "parent": "documents-clasification",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": false
-  },
-  {
-    "service": "service-chunk-and-index",
-    "next_services": [],
-    "code": "chunk_and_index",
-    "display_name": "Chunking e Indexación",
-    "parent": "joiner",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
     "is_final": true,
-    "fan_out_by": "merged_file"
+    "pause_after": true
   }
 ]

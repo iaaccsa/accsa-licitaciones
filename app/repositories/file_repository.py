@@ -36,6 +36,17 @@ class FileRepository(BaseRepository):
         )
         return response.data
 
+    def get_processed_with_metadata_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
+        response = (
+            supabase.table(self.table_name)
+            .select("*")
+            .eq("analysis_id", str(analysis_id))
+            .eq("is_processed_version", True)
+            .not_.is_("metadata", None)
+            .execute()
+        )
+        return response.data
+
     def get_merged_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
         response = (
             supabase.table(self.table_name)
