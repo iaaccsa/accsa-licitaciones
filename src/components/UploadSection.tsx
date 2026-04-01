@@ -18,7 +18,7 @@ export function UploadSection() {
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [uploadKey, setUploadKey] = useState(0);
 
-    const hasFiles = files.length > 0;
+    const hasMinFiles = files.length >= 2;
 
     const clearNotifications = useCallback(() => {
         if (status !== "idle") {
@@ -37,7 +37,7 @@ export function UploadSection() {
     );
 
     const handleAnalysis = useCallback(async () => {
-        if (!hasFiles) return;
+        if (!hasMinFiles) return;
 
         setAnalysisResult(null);
         setErrorMessage(null);
@@ -104,7 +104,7 @@ export function UploadSection() {
             setErrorMessage("Error de conexión. Inténtelo después.");
             setStatus("error");
         }
-    }, [files, hasFiles, analysisName]);
+    }, [files, hasMinFiles, analysisName]);
 
     const handleAnalysisWithTransition = useCallback(() => {
         startTransition(async () => {
@@ -183,11 +183,18 @@ export function UploadSection() {
                 </div>
             ) : null}
 
+            {/* Min files warning */}
+            {files.length === 1 ? (
+                <p className="text-sm text-amber-600 mb-4 text-center">
+                    Se necesitan al menos 2 archivos para iniciar el análisis.
+                </p>
+            ) : null}
+
             {/* Action Button */}
             <Button
                 onClick={handleAnalysisWithTransition}
                 variant="outline"
-                disabled={!hasFiles || isPending}
+                disabled={!hasMinFiles || isPending}
                 className="w-full py-6 text-lg font-medium text-blue-600 border-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {isPending ? (
