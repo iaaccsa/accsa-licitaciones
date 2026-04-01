@@ -11,7 +11,8 @@ Required environment variables:
   - QDRANT_API_KEY         : Qdrant API key
   - SUPABASE_URL           : Supabase project URL
   - SUPABASE_SERVICE_KEY   : Supabase service role key
-  - GOOGLE_API_KEY         : Google Gemini API key
+  - GOOGLE_API_KEY         : Google Gemini API key (primary model)
+  - OPENAI_API_KEY         : OpenAI API key (fallback model)
   - API_BASE_URL           : Backend API base URL
   - API_KEY                : API key for backend authentication
   - API_EVENTS_PATH        : Path for events endpoint
@@ -27,6 +28,7 @@ from typing import Dict, List
 
 from google import genai
 from google.genai import types as genai_types
+from openai import OpenAI
 import requests
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qdrant_models
@@ -41,6 +43,7 @@ QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY")
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
@@ -50,6 +53,8 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 SERVICE_NAME = "service-metadata-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
+GEMINI_MODEL = "gemini-3.1-pro-preview"
+OPENAI_FALLBACK_MODEL = "gpt-5.4"
 MAX_CHARS_PER_PROPOSAL = 8000
 
 logger = setup_logger(SERVICE_NAME)
@@ -84,6 +89,7 @@ def validate_env():
             ("SUPABASE_URL", SUPABASE_URL),
             ("SUPABASE_SERVICE_KEY", SUPABASE_SERVICE_KEY),
             ("GOOGLE_API_KEY", GOOGLE_API_KEY),
+            ("OPENAI_API_KEY", OPENAI_API_KEY),
             ("API_BASE_URL", API_BASE_URL),
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
@@ -164,18 +170,26 @@ PROPOSAL TEXT:
 {text}"""
 
 
-def extract_metadata_with_gemini(client: genai.Client, text: str) -> dict:
-    """Call Gemini to extract structured metadata from proposal text."""
+def extract_metadata(gemini_client: genai.Client, openai_client: OpenAI, text: str) -> dict:
+    """Extract structured metadata from proposal text. Falls back to OpenAI on Gemini failure."""
     prompt = EXTRACTION_PROMPT.format(text=text)
-    response = client.models.generate_content(
-        model="gemini-3-flash-preview",
-        contents=prompt,
-        config=genai_types.GenerateContentConfig(
-            response_mime_type="application/json",
-        ),
-    )
-    result = json.loads(response.text)
-    return result
+    try:
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+            ),
+        )
+        return json.loads(response.text)
+    except Exception as e:
+        logger.warning(f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
+        response = openai_client.chat.completions.create(
+            model=OPENAI_FALLBACK_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        return json.loads(response.choices[0].message.content)
 
 
 # ---------------------------------------------------------------------------
@@ -223,8 +237,9 @@ def process_metadata_extraction():
         })
         return
 
-    # 3. Configure Gemini client
+    # 3. Configure LLM clients
     gemini = genai.Client(api_key=GOOGLE_API_KEY)
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
     # 4. Connect to Supabase for direct table updates
     supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
@@ -244,7 +259,7 @@ def process_metadata_extraction():
         )
 
         try:
-            metadata = extract_metadata_with_gemini(gemini, combined)
+            metadata = extract_metadata(gemini, openai_client, combined)
         except Exception as e:
             logger.error(f"Gemini extraction failed for proposal {proposal_id}: {e}")
             log_event(

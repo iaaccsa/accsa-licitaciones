@@ -4,6 +4,7 @@ WORKDIR /app
 
 # Build arguments
 ARG GOOGLE_API_KEY
+ARG OPENAI_API_KEY
 ARG QDRANT_URL
 ARG QDRANT_API_KEY
 ARG API_BASE_URL
@@ -15,6 +16,7 @@ ARG API_JOBS_CALLBACK
 
 # Environment variables
 ENV GOOGLE_API_KEY=$GOOGLE_API_KEY
+ENV OPENAI_API_KEY=$OPENAI_API_KEY
 ENV QDRANT_URL=$QDRANT_URL
 ENV QDRANT_API_KEY=$QDRANT_API_KEY
 ENV API_BASE_URL=$API_BASE_URL
@@ -26,6 +28,7 @@ ENV API_JOBS_CALLBACK=$API_JOBS_CALLBACK
 
 # Validate required build arguments
 RUN test -n "$GOOGLE_API_KEY" || (echo "ERROR: GOOGLE_API_KEY is required" && exit 1)
+RUN test -n "$OPENAI_API_KEY" || (echo "ERROR: OPENAI_API_KEY is required" && exit 1)
 RUN test -n "$QDRANT_URL" || (echo "ERROR: QDRANT_URL is required" && exit 1)
 RUN test -n "$QDRANT_API_KEY" || (echo "ERROR: QDRANT_API_KEY is required" && exit 1)
 RUN test -n "$API_BASE_URL" || (echo "ERROR: API_BASE_URL is required" && exit 1)

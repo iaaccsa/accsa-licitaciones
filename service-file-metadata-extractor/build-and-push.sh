@@ -34,6 +34,7 @@ docker build $BUILD_ARGS --platform linux/amd64 \
   --build-arg QDRANT_URL="$QDRANT_URL" \
   --build-arg QDRANT_API_KEY="$QDRANT_API_KEY" \
   --build-arg GOOGLE_API_KEY="$GOOGLE_API_KEY" \
+  --build-arg OPENAI_API_KEY="$OPENAI_API_KEY" \
   --build-arg API_BASE_URL="$API_BASE_URL" \
   --build-arg API_KEY="$API_KEY" \
   --build-arg API_EVENTS_PATH="$API_EVENTS_PATH" \

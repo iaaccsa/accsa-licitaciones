@@ -6,7 +6,8 @@ in an analysis, using compliance counts from proposals_view and detailed results
 from proposal_compliance_results_view.
 
 Required environment variables:
-  - GOOGLE_API_KEY
+  - GOOGLE_API_KEY         : Google Gemini API key (primary model)
+  - OPENAI_API_KEY         : OpenAI API key (fallback model)
   - API_BASE_URL
   - API_KEY
   - API_EVENTS_PATH
@@ -24,6 +25,7 @@ from typing import List, Dict, Any
 import requests
 from google import genai
 from google.genai import types as genai_types
+from openai import OpenAI
 
 from supabase_logger import setup_logger, log_event, make_session
 
@@ -31,6 +33,7 @@ from supabase_logger import setup_logger, log_event, make_session
 # Configuration
 # ---------------------------------------------------------------------------
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
@@ -42,7 +45,8 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 SERVICE_NAME = "service-proposal-scorer"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL = "gemini-2.5-pro"
+GEMINI_MODEL = "gemini-3.1-pro-preview"
+OPENAI_FALLBACK_MODEL = "gpt-5.4"
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -73,6 +77,7 @@ def validate_env():
     missing = [
         var for var, val in [
             ("GOOGLE_API_KEY", GOOGLE_API_KEY),
+            ("OPENAI_API_KEY", OPENAI_API_KEY),
             ("API_BASE_URL", API_BASE_URL),
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
@@ -128,11 +133,12 @@ def calc_score(proposal: Dict[str, Any]) -> float:
 
 def generate_summary(
     gemini_client: genai.Client,
+    openai_client: OpenAI,
     proposal: Dict[str, Any],
     score: float,
     results: List[Dict[str, Any]]
 ) -> str:
-    """Generate a 2-paragraph markdown compliance summary using Gemini."""
+    """Generate a 2-paragraph markdown compliance summary. Falls back to OpenAI on Gemini failure."""
     compliant = proposal.get("compliant_count", 0) or 0
     non_compliant = proposal.get("non_compliant_count", 0) or 0
     missing_info = proposal.get("missing_info_count", 0) or 0
@@ -164,20 +170,29 @@ def generate_summary(
         f"{rows}"
     )
 
-    response = gemini_client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-        config=genai_types.GenerateContentConfig(
-            response_mime_type="text/plain",
-        ),
-    )
-    return response.text.strip()
+    try:
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="text/plain",
+            ),
+        )
+        return response.text.strip()
+    except Exception as e:
+        logger.warning(f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
+        response = openai_client.chat.completions.create(
+            model=OPENAI_FALLBACK_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content.strip()
 
 
 def process_scoring():
     logger.info(f"Starting {SERVICE_NAME} for ANALYSIS_ID={ANALYSIS_ID}")
 
     gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
     log_event(ANALYSIS_ID, "info", "Iniciando cálculo de scores y resúmenes...", EVENT_SOURCE)
 
@@ -217,7 +232,7 @@ def process_scoring():
             results = []
 
         # c. Generate 2-paragraph markdown summary with Gemini
-        summary = generate_summary(gemini_client, proposal, score, results)
+        summary = generate_summary(gemini_client, openai_client, proposal, score, results)
         logger.info(f"  Summary generated ({len(summary)} chars)")
 
         # d. Persist score and summary

@@ -3,7 +3,7 @@ Verify Compliance Service
 =========================
 Verifies compliance of ALL proposals in an analysis against extracted requirements.
 Uses vector search in Qdrant + reranking with Cohere + verification with Gemini Pro.
-OpenAI is used only for embeddings (text-embedding-3-small).
+OpenAI is used for embeddings (text-embedding-3-small) and as LLM fallback.
 
 Required environment variables:
   - OPENAI_API_KEY
@@ -22,6 +22,7 @@ Required environment variables:
   - ANALYSIS_ID
 """
 
+import json
 import os
 import sys
 from typing import List, Optional, Literal, Dict, Any
@@ -58,6 +59,8 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 SERVICE_NAME = "service-verify-compliance"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 EMBEDDING_MODEL = "text-embedding-3-small"
+GEMINI_MODEL = "gemini-3.1-pro-preview"
+OPENAI_FALLBACK_MODEL = "gpt-5.4"
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -199,8 +202,8 @@ def retrieve_evidence(
         return documents[:top_n_rerank]
 
 
-def verify_compliance_llm(gemini_client: genai.Client, requirement: dict, evidence_chunks: List[str]) -> ComplianceResult:
-    """Asks Gemini Pro to judge compliance based ONLY on the provided evidence."""
+def verify_compliance_llm(gemini_client: genai.Client, openai_client: OpenAI, requirement: dict, evidence_chunks: List[str]) -> ComplianceResult:
+    """Asks Gemini to judge compliance based ONLY on the provided evidence. Falls back to OpenAI."""
     evidence_text = "\n---\n".join(evidence_chunks)
     prompt = (
         "You are a strict Compliance Auditor for public procurement processes.\n"
@@ -216,19 +219,34 @@ def verify_compliance_llm(gemini_client: genai.Client, requirement: dict, eviden
         "If multiple passages are relevant, quote the strongest one.\n"
         "- reasoning: explain your judgment step by step, referencing specific evidence. IN SPANISH.\n"
         "- suggestion: provide a concrete, actionable recommendation to achieve or improve compliance. IN SPANISH.\n\n"
+        "Return a JSON object with these exact fields:\n"
+        "- requirement_id (string): the requirement code\n"
+        "- status (string): one of 'compliant', 'non_compliant', 'missing_info'\n"
+        "- evidence_quote (string): verbatim quote from evidence\n"
+        "- reasoning (string): step-by-step explanation in Spanish\n"
+        "- suggestion (string or null): actionable recommendation in Spanish\n\n"
         f"REQUIREMENT ({requirement.get('requirement_code') or requirement.get('id')}):\n"
         f"\"{requirement.get('requirement_text') or requirement.get('text')}\"\n\n"
         f"EVIDENCE CONTEXT:\n{evidence_text}"
     )
-    response = gemini_client.models.generate_content(
-        model="gemini-3-pro-preview",
-        contents=prompt,
-        config=genai_types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=ComplianceResult,
-        ),
-    )
-    return ComplianceResult.model_validate_json(response.text)
+    try:
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=ComplianceResult,
+            ),
+        )
+        return ComplianceResult.model_validate_json(response.text)
+    except Exception as e:
+        logger.warning(f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
+        response = openai_client.chat.completions.create(
+            model=OPENAI_FALLBACK_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        return ComplianceResult.model_validate_json(response.choices[0].message.content)
 
 
 def save_results(proposal_id: str, results: List[ComplianceResult]):
@@ -322,7 +340,7 @@ def process_compliance():
             else:
                 req_for_llm = {"id": req_code, "text": req_text, "requirement_code": req_code}
                 try:
-                    res = verify_compliance_llm(gemini_client, req_for_llm, evidence)
+                    res = verify_compliance_llm(gemini_client, openai_client, req_for_llm, evidence)
                     res.requirement_id = req_id
                 except Exception as llm_err:
                     logger.warning(f"    LLM call failed for {req_code}: {llm_err}")

@@ -45,7 +45,7 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 SERVICE_NAME = "service-documents-clasification"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL = "gemini-3-flash-preview"
+GEMINI_MODEL = "gemini-3.1-pro-preview"
 OPENAI_FALLBACK_MODEL = "gpt-5.4"
 
 logger = setup_logger(SERVICE_NAME)

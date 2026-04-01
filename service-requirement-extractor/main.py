@@ -6,7 +6,8 @@ Fetches chunks for a given `ANALYSIS_ID`, filters by `category='tender'`,
 extracts requirements using Gemini, and stores them via API.
 
 Required environment variables:
-  - GOOGLE_API_KEY
+  - GOOGLE_API_KEY         : Google Gemini API key (primary model)
+  - OPENAI_API_KEY         : OpenAI API key (fallback model)
   - QDRANT_URL
   - QDRANT_API_KEY
   - API_BASE_URL
@@ -29,6 +30,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from google import genai
 from google.genai import types as genai_types
+from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from supabase_logger import setup_logger, log_event, make_session
@@ -37,6 +39,7 @@ from supabase_logger import setup_logger, log_event, make_session
 # Configuration
 # ---------------------------------------------------------------------------
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 QDRANT_URL = os.environ.get("QDRANT_URL")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY")
 API_BASE_URL = os.environ.get("API_BASE_URL")
@@ -49,6 +52,8 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 SERVICE_NAME = "service-requirement-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
+GEMINI_MODEL = "gemini-3.1-pro-preview"
+OPENAI_FALLBACK_MODEL = "gpt-5.4"
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -77,11 +82,35 @@ class RawRequirementsList(BaseModel):
 # ---------------------------------------------------------------------------
 
 class IterativeExtractor:
-    def __init__(self, client: genai.Client):
-        self.client = client
+    def __init__(self, gemini_client: genai.Client, openai_client: OpenAI):
+        self.gemini_client = gemini_client
+        self.openai_client = openai_client
+
+    def _call_llm_json(self, prompt: str, schema: type[BaseModel] = None) -> str:
+        """Call Gemini with structured output; fall back to OpenAI on failure. Returns raw JSON string."""
+        try:
+            config = genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+            )
+            if schema:
+                config.response_schema = schema
+            response = self.gemini_client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=config,
+            )
+            return response.text
+        except Exception as e:
+            logger.warning(f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
+            response = self.openai_client.chat.completions.create(
+                model=OPENAI_FALLBACK_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+            )
+            return response.choices[0].message.content
 
     def _extract_from_chunk(self, chunk_text: str) -> List[Requirement]:
-        """Extracts requirements from a single text block using Gemini Flash."""
+        """Extracts requirements from a single text block."""
         prompt = (
             "You are a requirements analyst for public procurement.\n"
             "Extract all explicit obligations, conditions, and mandatory criteria from this tender fragment.\n\n"
@@ -94,18 +123,14 @@ class IterativeExtractor:
             "What to exclude:\n"
             "- General descriptions or background information\n"
             "- Optional or recommended items (unless phrased as conditions)\n\n"
+            "Return a JSON object with a single key 'requirements' containing a list of objects.\n"
+            "Each object has: id (string or null), category (one of: 'Technical', 'Administrative', "
+            "'Legal', 'Financial', 'Other'), text (string), mandatory (boolean), rag_chunk_id (null).\n"
             "Return empty list if no requirements are found. Output in SPANISH.\n\n"
             f"TENDER FRAGMENT:\n{chunk_text}"
         )
-        response = self.client.models.generate_content(
-            model="gemini-3-flash-preview",
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=RawRequirementsList,
-            ),
-        )
-        result = RawRequirementsList.model_validate_json(response.text)
+        raw_json = self._call_llm_json(prompt, RawRequirementsList)
+        result = RawRequirementsList.model_validate_json(raw_json)
         return result.requirements
 
     def _consolidate_requirements(self, all_raw_reqs: List[Requirement]) -> List[dict]:
@@ -126,17 +151,12 @@ class IterativeExtractor:
             "4. Ensure each requirement text is self-contained, clear, and concise (max 50 words).\n"
             "5. Preserve the `rag_chunk_id` from the source. If merging, keep the most relevant source ID.\n"
             "6. ALL OUTPUT MUST BE IN SPANISH.\n\n"
+            "Return a JSON object with a single key 'requirements' containing a list of objects.\n"
+            "Each object has: id (string), category (string), text (string), mandatory (boolean), rag_chunk_id (string or null).\n\n"
             f"RAW LIST:\n{raw_data}"
         )
-        response = self.client.models.generate_content(
-            model="gemini-3-pro-preview",
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=RawRequirementsList,
-            ),
-        )
-        result = RawRequirementsList.model_validate_json(response.text)
+        raw_json = self._call_llm_json(prompt, RawRequirementsList)
+        result = RawRequirementsList.model_validate_json(raw_json)
         return [r.model_dump() for r in result.requirements]
 
     def run(self, chunks: List[Dict[str, Any]]) -> List[dict]:
@@ -181,6 +201,7 @@ def validate_env():
     missing = [
         var for var, val in [
             ("GOOGLE_API_KEY", GOOGLE_API_KEY),
+            ("OPENAI_API_KEY", OPENAI_API_KEY),
             ("QDRANT_URL", QDRANT_URL),
             ("QDRANT_API_KEY", QDRANT_API_KEY),
             ("API_BASE_URL", API_BASE_URL),
@@ -280,6 +301,7 @@ def process_extraction():
 
     qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
     gemini = genai.Client(api_key=GOOGLE_API_KEY)
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
     log_event(ANALYSIS_ID, "info", "Iniciando extracción de requerimientos...", EVENT_SOURCE)
 
@@ -305,7 +327,7 @@ def process_extraction():
         return
 
     # 3. Extract requirements
-    extractor = IterativeExtractor(gemini)
+    extractor = IterativeExtractor(gemini, openai_client)
     requirements = extractor.run(chunks)
 
     # 4. Save via API

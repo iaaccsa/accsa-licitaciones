@@ -9,7 +9,8 @@ backend API (PATCH /api/v1/files/{file_id}).
 Required environment variables:
   - QDRANT_URL             : Qdrant instance URL
   - QDRANT_API_KEY         : Qdrant API key
-  - GOOGLE_API_KEY         : Google Gemini API key
+  - GOOGLE_API_KEY         : Google Gemini API key (primary model)
+  - OPENAI_API_KEY         : OpenAI API key (fallback model)
   - API_BASE_URL           : Backend API base URL
   - API_KEY                : API key for backend authentication
   - API_EVENTS_PATH        : Path for events endpoint
@@ -28,6 +29,7 @@ from typing import List
 
 from google import genai
 from google.genai import types as genai_types
+from openai import OpenAI
 import requests
 from qdrant_client import QdrantClient
 from supabase_logger import setup_logger, log_event, make_session
@@ -38,6 +40,7 @@ from supabase_logger import setup_logger, log_event, make_session
 QDRANT_URL = os.environ.get("QDRANT_URL")
 QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY")
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
@@ -49,6 +52,8 @@ FILE_ID = os.environ.get("FILE_ID")
 
 SERVICE_NAME = "service-file-metadata-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
+GEMINI_MODEL = "gemini-3.1-pro-preview"
+OPENAI_FALLBACK_MODEL = "gpt-5.4"
 MAX_CHARS = 10000
 
 logger = setup_logger(SERVICE_NAME)
@@ -81,6 +86,7 @@ def validate_env():
             ("QDRANT_URL", QDRANT_URL),
             ("QDRANT_API_KEY", QDRANT_API_KEY),
             ("GOOGLE_API_KEY", GOOGLE_API_KEY),
+            ("OPENAI_API_KEY", OPENAI_API_KEY),
             ("API_BASE_URL", API_BASE_URL),
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
@@ -155,14 +161,14 @@ DOCUMENT TEXT:
 {text}"""
 
 
-def extract_metadata_with_gemini(client: genai.Client, text: str, max_retries: int = 3) -> dict:
-    """Call Gemini to extract structured metadata from document text."""
+def extract_metadata(gemini_client: genai.Client, openai_client: OpenAI, text: str, max_retries: int = 3) -> dict:
+    """Extract structured metadata from document text. Retries transient Gemini errors, then falls back to OpenAI."""
     prompt = EXTRACTION_PROMPT.format(text=text)
 
     for attempt in range(max_retries):
         try:
-            response = client.models.generate_content(
-                model="gemini-3-flash-preview",
+            response = gemini_client.models.generate_content(
+                model=GEMINI_MODEL,
                 contents=prompt,
                 config=genai_types.GenerateContentConfig(
                     response_mime_type="application/json",
@@ -180,7 +186,16 @@ def extract_metadata_with_gemini(client: genai.Client, text: str, max_retries: i
                 logger.warning(f"Gemini transient error (attempt {attempt + 1}/{max_retries}), retrying in {wait}s: {error_str}")
                 time.sleep(wait)
             else:
-                raise
+                logger.warning(f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
+                response = openai_client.chat.completions.create(
+                    model=OPENAI_FALLBACK_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"},
+                )
+                result = json.loads(response.choices[0].message.content)
+                if isinstance(result, list):
+                    result = result[0]
+                return result
 
 
 # ---------------------------------------------------------------------------
@@ -267,9 +282,10 @@ def process_file_metadata_extraction():
 
     logger.info(f"Extracting metadata for '{file_name}' ({len(texts)} chunks, {len(combined)} chars)")
 
-    # 5. Extract metadata with Gemini
+    # 5. Extract metadata with Gemini (fallback to OpenAI)
     gemini = genai.Client(api_key=GOOGLE_API_KEY)
-    metadata = extract_metadata_with_gemini(gemini, combined)
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    metadata = extract_metadata(gemini, openai_client, combined)
     logger.info(f"Metadata extracted: document_type={metadata.get('document_type')}, "
                 f"company={metadata.get('company_name')}")
 

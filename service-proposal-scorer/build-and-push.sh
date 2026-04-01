@@ -32,6 +32,7 @@ echo "Building Docker image for $APP_NAME targeting $ENV_TYPE..."
 
 docker build $BUILD_ARGS --platform linux/amd64 \
   --build-arg GOOGLE_API_KEY="$GOOGLE_API_KEY" \
+  --build-arg OPENAI_API_KEY="$OPENAI_API_KEY" \
   --build-arg API_BASE_URL="$API_BASE_URL" \
   --build-arg API_KEY="$API_KEY" \
   --build-arg API_EVENTS_PATH="$API_EVENTS_PATH" \
