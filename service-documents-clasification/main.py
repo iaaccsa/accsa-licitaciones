@@ -111,7 +111,7 @@ A document may only be classified as "proposal" if company_name is clearly and s
 
 For "tender" and "normative", company_name is not required — classify based on the document's purpose and content signals.
 
-Return: {{"category": "<tender|proposal|normative|unclassified>"}}
+Return JSON: {{"category": "<tender|proposal|normative|unclassified>"}}
 
 FILE METADATA:
 - File name: {file_name}
@@ -427,15 +427,16 @@ def process_documents_classification():
     gemini = genai.Client(api_key=GOOGLE_API_KEY)
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
     classified = 0
-    skipped = 0
 
     for file_record in files:
         file_id = file_record["id"]
         file_name = file_record.get("file_name", "unknown")
 
         if not file_record.get("metadata"):
-            logger.warning(f"Skipping '{file_name}' — no metadata available.")
-            skipped += 1
+            if file_record.get("link"):
+                logger.info(f"Skipping '{file_name}' — no metadata, category will be propagated from linked file.")
+            else:
+                logger.warning(f"Skipping '{file_name}' — no metadata and no linked file.")
             continue
 
         try:
@@ -444,34 +445,50 @@ def process_documents_classification():
                 logger.warning(f"Could not classify '{file_name}' — marked as 'unclassified'")
             else:
                 logger.info(f"Classified '{file_name}' as '{category}'")
-
-            # Track category locally for the grouping phase
-            file_record["category"] = category
-
-            # 3. Update file category via API
-            api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"category": category})
-            log_event(ANALYSIS_ID, "info", f"Archivo '{file_name}' clasificado como '{category}'.", EVENT_SOURCE)
-
-            # 4. Propagate category to the linked source file (if any)
-            link_id = file_record.get("link")
-            if link_id:
-                api_request("PATCH", f"{API_FILES_PATH}{link_id}", {"category": category})
-                logger.info(f"Propagated '{category}' to linked file {link_id}")
-                log_event(ANALYSIS_ID, "info", f"Categoria '{category}' propagada al archivo original (link={link_id}).", EVENT_SOURCE)
-
-            classified += 1
-
         except Exception as e:
             logger.error(f"Failed to classify '{file_name}': {e}")
             log_event(ANALYSIS_ID, "warning", f"Error al clasificar '{file_name}': {e}", EVENT_SOURCE)
-            skipped += 1
+            continue
+
+        # Track category locally for the grouping phase
+        file_record["category"] = category
+
+        # 3. Update file category via API
+        api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"category": category})
+        log_event(ANALYSIS_ID, "info", f"Archivo '{file_name}' clasificado como '{category}'.", EVENT_SOURCE)
+
+        # 4. Propagate category to the linked source file (if any)
+        link_id = file_record.get("link")
+        if link_id:
+            api_request("PATCH", f"{API_FILES_PATH}{link_id}", {"category": category})
+            logger.info(f"Propagated '{category}' to linked file {link_id}")
+            log_event(ANALYSIS_ID, "info", f"Categoria '{category}' propagada al archivo original (link={link_id}).", EVENT_SOURCE)
+
+        classified += 1
+
+    # Mark remaining processed files without category as 'unclassified'
+    unclassified_count = 0
+    for file_record in files:
+        if file_record.get("is_processed_version") and not file_record.get("category"):
+            file_id = file_record["id"]
+            file_name = file_record.get("file_name", "unknown")
+            file_record["category"] = "unclassified"
+            api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"category": "unclassified"})
+            link_id = file_record.get("link")
+            if link_id:
+                api_request("PATCH", f"{API_FILES_PATH}{link_id}", {"category": "unclassified"})
+            logger.warning(f"Marked '{file_name}' as 'unclassified' (no category after classification).")
+            unclassified_count += 1
+
+    if unclassified_count:
+        log_event(ANALYSIS_ID, "warning", f"{unclassified_count} archivos quedaron como 'unclassified'.", EVENT_SOURCE)
 
     log_event(
         ANALYSIS_ID, "info",
-        f"Clasificacion completada: {classified} clasificados, {skipped} omitidos.",
+        f"Clasificacion completada: {classified} clasificados, {unclassified_count} sin clasificar.",
         EVENT_SOURCE,
     )
-    logger.info(f"{SERVICE_NAME} complete — {classified} classified, {skipped} skipped.")
+    logger.info(f"{SERVICE_NAME} complete — {classified} classified, {unclassified_count} unclassified.")
 
     # 5. Group proposal files and create proposal records
     create_proposals_and_update_files(gemini, openai_client, files)
