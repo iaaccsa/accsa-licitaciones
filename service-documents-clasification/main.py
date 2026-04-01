@@ -6,7 +6,8 @@ using Google Gemini based on each file's previously extracted metadata.
 Updates the 'category' field via the backend API (PATCH /api/v1/files/{file_id}).
 
 Required environment variables:
-  - GOOGLE_API_KEY         : Google Gemini API key
+  - GOOGLE_API_KEY         : Google Gemini API key (primary model)
+  - OPENAI_API_KEY         : OpenAI API key (fallback model)
   - API_BASE_URL           : Backend API base URL
   - API_KEY                : API key for backend authentication
   - API_EVENTS_PATH        : Path for events endpoint
@@ -23,6 +24,7 @@ import sys
 
 from google import genai
 from google.genai import types as genai_types
+from openai import OpenAI
 import requests
 from supabase_logger import setup_logger, log_event, make_session
 
@@ -30,6 +32,7 @@ from supabase_logger import setup_logger, log_event, make_session
 # Configuration
 # ---------------------------------------------------------------------------
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
@@ -43,6 +46,7 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 SERVICE_NAME = "service-documents-clasification"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 GEMINI_MODEL = "gemini-3-flash-preview"
+OPENAI_FALLBACK_MODEL = "gpt-5.4"
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -72,6 +76,7 @@ def validate_env():
     missing = [
         var for var, val in [
             ("GOOGLE_API_KEY", GOOGLE_API_KEY),
+            ("OPENAI_API_KEY", OPENAI_API_KEY),
             ("API_BASE_URL", API_BASE_URL),
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
@@ -164,8 +169,29 @@ TENDER FILE METADATA:
 {files_json}"""
 
 
-def classify_file_with_gemini(client: genai.Client, file_record: dict) -> str:
-    """Call Gemini to classify a file based on its metadata. Returns category string."""
+def call_llm_json(gemini_client: genai.Client, openai_client: OpenAI, prompt: str) -> dict:
+    """Call Gemini for JSON generation; fall back to OpenAI on failure."""
+    try:
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+            ),
+        )
+        return json.loads(response.text)
+    except Exception as e:
+        logger.warning(f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
+        response = openai_client.chat.completions.create(
+            model=OPENAI_FALLBACK_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        return json.loads(response.choices[0].message.content)
+
+
+def classify_file(gemini_client: genai.Client, openai_client: OpenAI, file_record: dict) -> str:
+    """Classify a file based on its metadata. Returns category string."""
     metadata = file_record.get("metadata") or {}
 
     prompt = CLASSIFICATION_PROMPT.format(
@@ -177,19 +203,12 @@ def classify_file_with_gemini(client: genai.Client, file_record: dict) -> str:
         summary=metadata.get("summary", "unknown"),
     )
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-        config=genai_types.GenerateContentConfig(
-            response_mime_type="application/json",
-        ),
-    )
-    result = json.loads(response.text)
+    result = call_llm_json(gemini_client, openai_client, prompt)
     return result["category"]
 
 
-def group_proposal_files_with_gemini(client: genai.Client, proposal_files: list[dict]) -> list[dict]:
-    """Send only metadata of proposal files to Gemini to group them by company/domain."""
+def group_proposal_files(gemini_client: genai.Client, openai_client: OpenAI, proposal_files: list[dict]) -> list[dict]:
+    """Send only metadata of proposal files to LLM to group them by company/domain."""
     files_for_prompt = []
     for f in proposal_files:
         metadata = f.get("metadata") or {}
@@ -205,14 +224,7 @@ def group_proposal_files_with_gemini(client: genai.Client, proposal_files: list[
 
     prompt = GROUPING_PROMPT.format(files_json=json.dumps(files_for_prompt, ensure_ascii=False, indent=2))
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-        config=genai_types.GenerateContentConfig(
-            response_mime_type="application/json",
-        ),
-    )
-    result = json.loads(response.text)
+    result = call_llm_json(gemini_client, openai_client, prompt)
 
     # Validate file_ids against known set
     valid_ids = {f["id"] for f in proposal_files}
@@ -227,7 +239,7 @@ def group_proposal_files_with_gemini(client: genai.Client, proposal_files: list[
     return groups
 
 
-def create_proposals_and_update_files(client: genai.Client, files: list[dict]):
+def create_proposals_and_update_files(gemini_client: genai.Client, openai_client: OpenAI, files: list[dict]):
     """Group proposal files, create proposal records, and update file proposal_id."""
     proposal_files = [f for f in files if f.get("category") == "proposal" and f.get("metadata")]
 
@@ -238,7 +250,7 @@ def create_proposals_and_update_files(client: genai.Client, files: list[dict]):
     logger.info(f"Grouping {len(proposal_files)} proposal files...")
     log_event(ANALYSIS_ID, "info", f"Agrupando {len(proposal_files)} archivos de propuesta.", EVENT_SOURCE)
 
-    groups = group_proposal_files_with_gemini(client, proposal_files)
+    groups = group_proposal_files(gemini_client, openai_client, proposal_files)
     logger.info(f"Gemini identified {len(groups)} proposal groups.")
 
     # Build lookup for link propagation
@@ -328,7 +340,7 @@ def create_tender_and_update_files(files: list[dict], generated_name: str | None
     logger.info(f"Tender creation complete — {linked} files linked.")
 
 
-def generate_tender_info(client: genai.Client, files: list[dict]) -> tuple[str | None, str | None]:
+def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, files: list[dict]) -> tuple[str | None, str | None]:
     """Generate analysis name and contracting entity from tender file metadata.
     Returns (generated_name, contracting_entity). Also PATCHes the analysis with generated_name."""
     tender_files = [
@@ -357,14 +369,7 @@ def generate_tender_info(client: genai.Client, files: list[dict]) -> tuple[str |
 
     prompt = NAMING_PROMPT.format(files_json=json.dumps(files_for_prompt, ensure_ascii=False, indent=2))
 
-    response = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=prompt,
-        config=genai_types.GenerateContentConfig(
-            response_mime_type="application/json",
-        ),
-    )
-    result = json.loads(response.text)
+    result = call_llm_json(gemini_client, openai_client, prompt)
     generated_name = (result.get("generated_name") or "").strip() or None
     contracting_entity = (result.get("contracting_entity") or "").strip() or None
 
@@ -418,8 +423,9 @@ def process_documents_classification():
     logger.info(f"Found {len(files)} files to classify.")
     log_event(ANALYSIS_ID, "info", f"Clasificando {len(files)} archivos.", EVENT_SOURCE)
 
-    # 2. Classify each file using Gemini
+    # 2. Classify each file (Gemini primary, OpenAI fallback)
     gemini = genai.Client(api_key=GOOGLE_API_KEY)
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
     classified = 0
     skipped = 0
 
@@ -433,7 +439,7 @@ def process_documents_classification():
             continue
 
         try:
-            category = classify_file_with_gemini(gemini, file_record)
+            category = classify_file(gemini, openai_client, file_record)
             if category == "unclassified":
                 logger.warning(f"Could not classify '{file_name}' — marked as 'unclassified'")
             else:
@@ -468,10 +474,10 @@ def process_documents_classification():
     logger.info(f"{SERVICE_NAME} complete — {classified} classified, {skipped} skipped.")
 
     # 5. Group proposal files and create proposal records
-    create_proposals_and_update_files(gemini, files)
+    create_proposals_and_update_files(gemini, openai_client, files)
 
     # 6. Generate analysis name + contracting entity from tender metadata
-    generated_name, contracting_entity = generate_tender_info(gemini, files)
+    generated_name, contracting_entity = generate_tender_info(gemini, openai_client, files)
 
     # 7. Create tender record and link tender/normative files
     create_tender_and_update_files(files, generated_name, contracting_entity)
