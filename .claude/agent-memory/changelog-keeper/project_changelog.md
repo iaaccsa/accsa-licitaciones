@@ -9,8 +9,8 @@ CHANGELOG.md initialized on 2026-03-25 with version 1.0.0 covering all commits f
 **Why:** Project reached stable state with full pipeline orchestration, all endpoints, and integrations (Supabase, Qdrant, Azure).
 
 **How to apply:**
-- Current version: 1.0.0 (2026-03-25)
-- No git tags exist yet — links at bottom of CHANGELOG.md reference GitHub but tags need to be created
+- Current version: 1.1.0 (2026-03-31)
+- Tag v1.0.0 exists; v1.1.0 tag pending creation
 - Remote: git@github-accsa:iaaccsa/accsa-licitaciones-api.git
 - Categories used most: Added (bulk of features), Changed (refactors), Fixed (bug corrections)
 - Language: Spanish, verbs in infinitive ("Agregar", "Corregir", "Implementar")

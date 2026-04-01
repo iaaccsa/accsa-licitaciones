@@ -1,62 +1,64 @@
-{
-    "service": "service-chunk-and-index",
-    "next_services": [
-        "service-requirement-extractor",
-        "service-metadata-extractor"
-    ],
-    "code": "chunk_and_index",
-    "display_name": "Chunking e Indexación",
-    "parent": "rag-setup",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": true
-},
-{
-    "service": "service-requirement-extractor",
-    "next_services": [
-        "service-verify-compliance"
-    ],
-    "code": "requirement_extraction",
-    "display_name": "Extracción de Requisitos",
-    "parent": "chunk_and_index",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
-},
-{
-    "service": "service-metadata-extractor",
-    "next_services": [],
-    "code": "metadata_extraction",
-    "display_name": "Extracción de Metadatos",
-    "parent": "chunk_and_index",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
-},
-{
-    "service": "service-verify-compliance",
-    "next_services": [
-        "service-proposal-scorer"
-    ],
-    "code": "compliance_verification",
-    "display_name": "Verificación de Cumplimiento",
-    "parent": "requirement_extraction",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
-},
-{
-    "service": "service-proposal-scorer",
-    "next_services": [],
-    "code": "proposal_scorer",
-    "display_name": "Puntuación de Propuestas",
-    "parent": "compliance_verification",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": true
-}
+[
+    {
+        "service": "service-chunk-and-index",
+        "next_services": [
+            "service-requirement-extractor",
+            "service-metadata-extractor"
+        ],
+        "code": "chunk_and_index",
+        "display_name": "Chunking e Indexación",
+        "parent": "rag-setup",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false,
+        "is_final": true
+    },
+    {
+        "service": "service-requirement-extractor",
+        "next_services": [
+            "service-verify-compliance"
+        ],
+        "code": "requirement_extraction",
+        "display_name": "Extracción de Requisitos",
+        "parent": "chunk_and_index",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false,
+        "is_final": false
+    },
+    {
+        "service": "service-metadata-extractor",
+        "next_services": [],
+        "code": "metadata_extraction",
+        "display_name": "Extracción de Metadatos",
+        "parent": "chunk_and_index",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false,
+        "is_final": false
+    },
+    {
+        "service": "service-verify-compliance",
+        "next_services": [
+            "service-proposal-scorer"
+        ],
+        "code": "compliance_verification",
+        "display_name": "Verificación de Cumplimiento",
+        "parent": "requirement_extraction",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false,
+        "is_final": false
+    },
+    {
+        "service": "service-proposal-scorer",
+        "next_services": [],
+        "code": "proposal_scorer",
+        "display_name": "Puntuación de Propuestas",
+        "parent": "compliance_verification",
+        "create_on_start": true,
+        "initial_status": "pending",
+        "is_initial": false,
+        "is_final": true
+    }
+]

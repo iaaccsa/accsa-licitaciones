@@ -28,3 +28,5 @@ chat.md
 .DS_Store
 todo-api.md
 classifier.sql
+services.json
+.claude/agent-memory/changelog-keeper/project_changelog.md

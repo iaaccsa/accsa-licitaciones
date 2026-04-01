@@ -71,6 +71,17 @@
     "fan_out_by": "file"
   },
   {
+    "service": "service-setup-qdrant",
+    "next_services": [],
+    "code": "rag-setup",
+    "display_name": "Configuración RAG",
+    "parent": "file-metadata-extractor",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false
+  },
+  {
     "service": "service-documents-classifier",
     "next_services": [
       "service-documents-grouper"
@@ -88,7 +99,6 @@
   {
     "service": "service-documents-grouper",
     "next_services": [
-      "service-setup-qdrant",
       "service-joiner"
     ],
     "code": "documents-grouper",
@@ -99,17 +109,6 @@
     "is_initial": false,
     "is_final": false,
     "pause_after": true
-  },
-  {
-    "service": "service-setup-qdrant",
-    "next_services": [],
-    "code": "rag-setup",
-    "display_name": "Configuración RAG",
-    "parent": "file-metadata-extractor",
-    "create_on_start": true,
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false
   },
   {
     "service": "service-joiner",
