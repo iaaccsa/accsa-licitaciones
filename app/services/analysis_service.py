@@ -76,6 +76,8 @@ class AnalysisService:
         }
         if data.user_name:
             analysis_data["user_name"] = data.user_name
+        if data.user_email:
+            analysis_data["user_email"] = data.user_email
         analysis_record = self.repository.create(analysis_data)
         analysis = Analysis(**analysis_record)
 

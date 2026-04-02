@@ -10,6 +10,7 @@ class AnalysisBase(BaseModel):
     artifact_path: str
     is_success: Optional[bool] = None
     user_name: Optional[str] = None
+    user_email: Optional[str] = None
     generated_name: Optional[str] = None
     paused_at_service: Optional[str] = None
 
@@ -27,6 +28,7 @@ class Analysis(AnalysisBase):
 class AnalysisFromStoragePath(BaseModel):
     storage_path: str
     user_name: Optional[str] = None
+    user_email: Optional[str] = None
 
 class AnalysisUpdate(BaseModel):
     generated_name: Optional[str] = None
