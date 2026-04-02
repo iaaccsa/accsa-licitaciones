@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { AnalysisCard, type Analysis } from "./AnalysisCard";
+import { Skeleton } from "./ui/skeleton";
 
 export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } = {}) {
     const [analyses, setAnalyses] = useState<Analysis[]>([]);
@@ -32,8 +32,29 @@ export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } =
 
     if (isLoading) {
         return (
-            <div className="flex justify-center items-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <div className="space-y-8">
+                <div>
+                    <Skeleton className="h-4 w-20 mb-4" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                            <div key={i} className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+                                <div className="flex justify-between items-start mb-3">
+                                    <Skeleton className="h-5 w-28" />
+                                    <Skeleton className="h-5 w-5 rounded-full" />
+                                </div>
+                                <div className="grid grid-cols-3 gap-3 mb-4 mt-2">
+                                    <Skeleton className="h-14 rounded-lg" />
+                                    <Skeleton className="h-14 rounded-lg" />
+                                    <Skeleton className="h-14 rounded-lg" />
+                                </div>
+                                <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
+                                    <Skeleton className="h-3 w-24" />
+                                    <Skeleton className="h-3 w-16" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         );
     }
