@@ -13,6 +13,7 @@ interface Analysis {
     slug: string;
     user_name: string | null;
     generated_name: string | null;
+    user_email: string | null;
     status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
     is_success: boolean | null;
     paused_at_service: string | null;
@@ -173,6 +174,7 @@ export default function AdminAnalysisDetailPage() {
                     <DetailField label="Éxito" value={analysis.is_success === null ? "—" : analysis.is_success ? "Sí" : "No"} />
                     <DetailField label="Nombre (usuario)" value={analysis.user_name || "—"} />
                     <DetailField label="Nombre (generado)" value={analysis.generated_name || "—"} />
+                    <DetailField label="Correo" value={analysis.user_email || "—"} />
                     <DetailField label="Pausado en" value={analysis.paused_at_service || "—"} mono />
                     <DetailField label="Creado" value={formatDate(analysis.created_at)} />
                     <DetailField label="Actualizado" value={formatDate(analysis.updated_at)} />

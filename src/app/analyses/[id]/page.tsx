@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Calendar, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play, Scale } from "lucide-react";
+import { Loader2, Calendar, Mail, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowVisualization from "@/components/WorkflowVisualization";
@@ -14,6 +14,7 @@ interface Analysis {
     slug: string;
     user_name: string | null;
     generated_name: string | null;
+    user_email: string | null;
     status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
     is_success: boolean | null;
     paused_at_service: string | null;
@@ -169,6 +170,12 @@ export default function AnalysisDetailPage() {
                             {analysis.slug}
                         </span>
                     </div>
+                    {analysis.user_email && (
+                        <div className="flex items-center gap-1 text-sm text-zinc-500">
+                            <Mail className="w-4 h-4" />
+                            {analysis.user_email}
+                        </div>
+                    )}
                 </div>
             </div>
 

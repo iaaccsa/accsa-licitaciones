@@ -12,6 +12,7 @@ type AnalysisResult = Record<string, unknown> | null;
 export function UploadSection() {
     const [files, setFiles] = useState<File[]>([]);
     const [analysisName, setAnalysisName] = useState("");
+    const [userEmail, setUserEmail] = useState("");
     const [isPending, startTransition] = useTransition();
     const [status, setStatus] = useState<UploadStatus>("idle");
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult>(null);
@@ -79,6 +80,7 @@ export function UploadSection() {
 
             const body: Record<string, string> = { storage_path: fileName };
             if (analysisName.trim()) body.user_name = analysisName.trim();
+            if (userEmail.trim()) body.user_email = userEmail.trim();
 
             const response = await fetch("/api/analyses", {
                 method: "POST",
@@ -94,6 +96,7 @@ export function UploadSection() {
 
                 setFiles([]);
                 setAnalysisName("");
+                setUserEmail("");
                 setUploadKey((prev) => prev + 1);
             } else {
                 setErrorMessage(data.error || "No se pudo iniciar el análisis");
@@ -104,7 +107,7 @@ export function UploadSection() {
             setErrorMessage("Error de conexión. Inténtelo después.");
             setStatus("error");
         }
-    }, [files, hasMinFiles, analysisName]);
+    }, [files, hasMinFiles, analysisName, userEmail]);
 
     const handleAnalysisWithTransition = useCallback(() => {
         startTransition(async () => {
@@ -129,6 +132,21 @@ export function UploadSection() {
                     onChange={(e) => setAnalysisName(e.target.value)}
                     maxLength={200}
                     placeholder="Ej: Licitación Obra Pública 2026"
+                    className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+                />
+            </div>
+
+            <div className="mb-6">
+                <label htmlFor="user-email" className="block text-sm font-medium text-zinc-600 mb-2">
+                    Correo <span className="text-zinc-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                    id="user-email"
+                    type="email"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    maxLength={200}
+                    placeholder="Ej: contacto@empresa.cl"
                     className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
                 />
             </div>
