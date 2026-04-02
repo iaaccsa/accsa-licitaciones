@@ -1,14 +1,35 @@
+import asyncio
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.api.v1.router import api_router
 from app.api.v1.endpoints.analyses_upload import router as analyses_upload_router
+from app.services.job_monitor_service import job_monitor_service
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    monitor_task = asyncio.create_task(job_monitor_service.run_forever(), name="job_monitor")
+    yield
+    job_monitor_service.stop()
+    monitor_task.cancel()
+    try:
+        await monitor_task
+    except asyncio.CancelledError:
+        pass
+    logger.info("[Lifespan] Job monitor detenido.")
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan,
 )
 
 # CORS middleware

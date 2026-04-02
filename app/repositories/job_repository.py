@@ -49,6 +49,17 @@ class JobRepository(BaseRepository):
         )
         return response.data
 
+    def fail_all_running_jobs(self, analysis_id: str) -> list:
+        """Marca todos los jobs no-terminales como 'failed' (usado por timeout monitor)."""
+        response = (
+            supabase.table(self.table_name)
+            .update({"status": "failed"})
+            .eq("analysis_id", analysis_id)
+            .not_.in_("status", ["succeeded", "failed", "cancelled"])
+            .execute()
+        )
+        return response.data
+
     def cancel_all_jobs(self, analysis_id: str):
         """Mark all non-terminal jobs as cancelled."""
         response = (

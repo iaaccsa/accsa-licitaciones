@@ -27,6 +27,9 @@ class Settings(BaseSettings):
 
     API_TENDER_CLASSIFICATIONS_PATH: str = "/api/v1/tender-classifications/"
 
+    JOB_TIMEOUT_MINUTES: int = 35
+    JOB_MONITOR_INTERVAL_SECONDS: int = 60
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore"

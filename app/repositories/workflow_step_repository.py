@@ -32,6 +32,19 @@ class WorkflowStepRepository(BaseRepository):
             .eq("code", code) \
             .execute()
 
+    def get_timed_out_steps(self, timeout_minutes: int) -> list:
+        """Devuelve steps con status='running' cuyo started_at es más antiguo que timeout_minutes."""
+        from datetime import datetime, timezone, timedelta
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=timeout_minutes)
+        response = (
+            supabase.table(self.table_name)
+            .select("analysis_id, code, started_at, status")
+            .eq("status", "running")
+            .lt("started_at", cutoff.isoformat())
+            .execute()
+        )
+        return response.data
+
     def cancel_pending_by_analysis(self, analysis_id: str) -> int:
         """Cancel all workflow steps that are running or pending."""
         cancelled_count = 0

@@ -11,6 +11,7 @@ from app.services.event_service import event_service
 from app.repositories.analysis_repository import analysis_repository
 from app.repositories.job_repository import job_repository
 from app.services.workflow_step_service import workflow_step_service
+from app.repositories.workflow_step_repository import workflow_step_repository
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -294,8 +295,8 @@ class JobOrchestratorService:
         if not paused_at_service:
             raise ValueError(f"Analysis {analysis_id} has no paused_at_service recorded")
 
-        # If resuming from documents classification, lock file reordering
-        if paused_at_service == "service-documents-clasification":
+        # Lock file reordering before launching service-joiner
+        if paused_at_service == "service-documents-grouper":
             file_repository.update_files_by_analysis_id(
                 str(analysis_id), {"is_reorderable": False}
             )
@@ -362,6 +363,61 @@ class JobOrchestratorService:
         logger.info(f"Pipeline cancelled for analysis_id={analysis_id}. {cancelled_count} jobs cancelled.")
 
         return cancelled_count
+
+    def fail_timed_out_analysis(self, analysis_id: str, timed_out_step_codes: list) -> None:
+        """Marca un análisis como fallido por timeout. Llamado por el background monitor."""
+        from uuid import UUID
+        analysis_uuid = UUID(analysis_id)
+
+        logger.warning(
+            f"[JobMonitor] Timing out analysis_id={analysis_id}. "
+            f"Timed-out steps: {timed_out_step_codes}"
+        )
+
+        # Detener Azure executions — best-effort
+        running_jobs = job_repository.get_running_jobs(analysis_id)
+        for job in running_jobs:
+            execution_name = job.get("execution_name")
+            service_name = job.get("service_name")
+            if execution_name and service_name:
+                try:
+                    self.client.jobs.begin_stop_execution(
+                        resource_group_name=self.resource_group,
+                        job_name=service_name,
+                        job_execution_name=execution_name,
+                    )
+                    logger.info(
+                        f"[JobMonitor] Stopped Azure execution {execution_name} "
+                        f"for job {service_name} (analysis_id={analysis_id})"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"[JobMonitor] Failed to stop Azure execution {execution_name} "
+                        f"for job {service_name}: {e}"
+                    )
+
+        # Marcar todos los jobs no-terminales como failed
+        job_repository.fail_all_running_jobs(analysis_id)
+
+        # Marcar los workflow steps timed-out como failed
+        for code in timed_out_step_codes:
+            try:
+                workflow_step_repository.update_status_by_code(analysis_uuid, code, "failed")
+            except Exception as e:
+                logger.error(f"[JobMonitor] Failed to update workflow step {code} to failed: {e}")
+
+        # Marcar el análisis como fallido
+        analysis_repository.update_by_id(
+            analysis_id,
+            {"status": "ready", "is_success": False}
+        )
+
+        self._log_event(
+            analysis_uuid,
+            "error",
+            f"Análisis cancelado por timeout. Steps timed-out: {timed_out_step_codes}",
+            {"timed_out_steps": timed_out_step_codes, "source": "job_monitor"},
+        )
 
     def _log_event(
         self,
