@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, Cpu, FileText, ClipboardList, Ban, RefreshCw, PauseCircle, Play, GitBranch } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, Cpu, FileText, ClipboardList, Ban, RefreshCw, PauseCircle, Play, GitBranch, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProposalsList from "@/components/ProposalsList";
@@ -182,7 +182,7 @@ export default function AdminAnalysisDetailPage() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                 <a
                     href={`/admin/analyses/${id}/flow`}
                     className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-orange-300 hover:shadow-md transition-all group text-center"
@@ -247,6 +247,23 @@ export default function AdminAnalysisDetailPage() {
                         </h3>
                         <p className="text-sm text-zinc-500">
                             Ver bitácora de ejecución
+                        </p>
+                    </div>
+                </a>
+
+                <a
+                    href={`/admin/analyses/${id}/evaluation_system`}
+                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-violet-300 hover:shadow-md transition-all group text-center"
+                >
+                    <div className="p-3 bg-violet-50 text-violet-600 rounded-lg group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                        <Scale className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-violet-600 transition-colors">
+                            Sistema de Evaluación
+                        </h3>
+                        <p className="text-sm text-zinc-500">
+                            Clasificación y factores del pliego
                         </p>
                     </div>
                 </a>
