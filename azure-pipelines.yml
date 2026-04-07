@@ -39,8 +39,12 @@ strategy:
     #  SERVICE_NAME: "service-documents-grouper"
     # service-joiner:
     #   SERVICE_NAME: "service-joiner"
-    service-tender-classifier:
-      SERVICE_NAME: "service-tender-classifier"
+    # service-tender-classifier:
+    #   SERVICE_NAME: "service-tender-classifier"
+    service-chunk-and-index:
+      SERVICE_NAME: "service-chunk-and-index"
+    service-requirement-extractor:
+      SERVICE_NAME: "service-requirement-extractor"
 
 steps:
   - script: |
