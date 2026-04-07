@@ -142,10 +142,24 @@
   },
   {
     "service": "service-tender-classifier",
-    "next_services": [],
+    "next_services": [
+      "service-requirement-extractor"
+    ],
     "code": "tender_classifier",
     "display_name": "Determinación Sistema de Evaluación",
     "parent": "chunk_and_index",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false,
+    "pause_after": false
+  },
+  {
+    "service": "service-requirement-extractor",
+    "next_services": [],
+    "code": "requirement_extraction",
+    "display_name": "Extracción de Requisitos",
+    "parent": "tender_classifier",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
