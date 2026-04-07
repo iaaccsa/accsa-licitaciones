@@ -9,7 +9,7 @@ api_router = APIRouter(dependencies=[Depends(get_api_key)])
 
 api_router.include_router(analyses.router, prefix="/analyses", tags=["analyses"])
 api_router.include_router(events.router, prefix="/events", tags=["events"])
-api_router.include_router(requirements.router, prefix="/requirements", tags=["requirements"])
+api_router.include_router(requirements.router, prefix="/analysis-requirements", tags=["analysis-requirements"])
 api_router.include_router(files.router, prefix="/files", tags=["files"])
 api_router.include_router(proposals.router, prefix="/proposals", tags=["proposals"])
 api_router.include_router(tenders.router, prefix="/tenders", tags=["tenders"])
