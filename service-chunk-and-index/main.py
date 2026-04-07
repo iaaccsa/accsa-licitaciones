@@ -180,6 +180,7 @@ def upload_to_qdrant(
             vector=vector,
             payload={
                 "text": chunk["text"],
+                "chunk_index": i,
                 "file_id": file_record["id"],
                 "analysis_id": file_record["analysis_id"],
                 "category": file_record["category"],
@@ -190,7 +191,7 @@ def upload_to_qdrant(
                 **chunk["metadata"]
             }
         )
-        for chunk, vector in zip(chunks, embeddings)
+        for i, (chunk, vector) in enumerate(zip(chunks, embeddings))
     ]
     batch_size = 100
     logger.info(f"Uploading {len(points)} points to Qdrant collection '{collection_name}'...")

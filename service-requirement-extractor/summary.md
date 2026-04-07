@@ -1,38 +1,42 @@
 # service-requirement-extractor
 
-## Propósito
-Extrae requisitos del pliego de licitación desde los chunks de tender indexados en Qdrant, los consolida eliminando duplicados, y los almacena en la base de datos.
+## Proposito
+Extrae todos los requerimientos atomicos del pliego (ya indexado en Qdrant) y los clasifica con un esquema multi-eje (7 ejes), alineado al evaluation_profile detectado previamente por service-tender-classifier.
 
-## Tareas que realiza
+## Flujo
 
-1. Obtiene el slug del análisis via API
-2. Lee de Qdrant todos los chunks donde `category='tender'`
-3. Extrae requisitos iterativamente de cada chunk usando Gemini:
-   - Identifica obligaciones, calificaciones, procedimientos, condiciones
-   - Genera JSON con lista de requisitos (id, categoría, texto, obligatoriedad, chunk_id)
-4. Consolida todos los requisitos usando Gemini:
-   - Elimina duplicados
-   - Fusiona requisitos divididos entre chunks
-   - Asigna IDs: REQ-001, REQ-002, etc.
-   - Máximo 50 palabras por requisito, en español
-5. Guarda los requisitos via API (POST /requirements)
-6. Notifica finalización via callback
+1. Carga el evaluation_profile via `GET /api/v1/tender-classifications/{analysis_id}` (exige profile_version=2).
+2. Scrollea TODOS los chunks de Qdrant donde `category='tender'`, ordenados por `chunk_index`.
+3. Construye batches con ventana deslizante (`BATCH_SIZE=15`, `BATCH_OVERLAP=2`).
+4. Procesa batches en paralelo (`MAX_PARALLEL_BATCHES=3`) con Gemini (fallback: OpenAI).
+5. Deduplica por SHA1(normalize(texto)).
+6. Asigna codigos secuenciales: REQ-001, REQ-002, ...
+7. Valida roles y factores contra el evaluation_profile.
+8. Guarda via `POST /api/v1/analysis-requirements/bulk`.
+9. Notifica finalizacion via callback.
+
+## Clasificacion multi-eje por requerimiento
+
+| Eje | Campo | Descripcion |
+|-----|-------|-------------|
+| 1 | `roles` | admisibilidad_obligatoria, admisibilidad_subsanable, puntuable, penalizador, informativo, preferencia_legal |
+| 2 | `mapped_factors` | referencias a factores del evaluation_profile con peso/formula |
+| 3 | `domain` | tecnico, administrativo, legal, economico_financiero, rrhh, logistico, ambiental, calidad, seguridad, otro |
+| 4 | `weight` | tipo/valor/formula/bloque del peso cuantitativo |
+| 6 | `verification_method` | documento_adjunto, declaracion_jurada, certificado_externo, inspeccion, muestra, visita_tecnica, auto_verificable_desde_oferta, otro |
+| 7 | `temporal_scope` | al_momento_ofertar, previo_adjudicacion, durante_ejecucion, postventa, otro |
+| - | `citations` | referencias al chunk fuente (chunk_id, page, snippet) |
 
 ## Entrada
-- **ANALYSIS_ID** (runtime): UUID del análisis
-- Lee: chunks de Qdrant donde `category='tender'`
-
-## Salida
-- Registros de requisitos:
-  - analysis_id, requirement_code (REQ-XXX)
-  - category (Technical, Administrative, Legal, Financial, Other)
-  - requirement_text, is_mandatory
-  - rag_chunk_id (referencia al chunk fuente)
+- **ANALYSIS_ID** (runtime): UUID del analisis
+- Requiere: evaluation_profile en `tender_classifications` con `profile_version=2`
+- Requiere: chunks en Qdrant con `chunk_index` en el payload
 
 ## Servicios externos
 
 | Servicio | Uso |
 |----------|-----|
-| **Qdrant** | Lectura de chunks de tender con filtros |
-| **Gemini** | Extracción y consolidación de requisitos |
-| **Backend API** | Obtener análisis, guardar requisitos, callback |
+| **Qdrant** | Scroll de todos los chunks tender con filtros y orden por chunk_index |
+| **Gemini** | Extraccion y clasificacion multi-eje (primary) |
+| **OpenAI** | Fallback si Gemini falla |
+| **Backend API** | Obtener analisis, leer profile, guardar requerimientos, callback |
