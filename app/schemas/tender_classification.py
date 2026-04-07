@@ -58,12 +58,10 @@ class TenderClassificationCreate(BaseModel):
     sufficient_chunks: bool = True
     additional_chunks_recommendation: Optional[str] = None
 
-    # Campos nuevos (perfil de evaluación v2)
     factors: List[EvaluationFactor] = Field(default_factory=list)
     role_signals: Optional[DetectedRoleSignals] = None
     enabled_roles: Dict[str, EnabledRole] = Field(default_factory=dict)
     profile_warnings: List[str] = Field(default_factory=list)
-    profile_version: int = 1
 
 
 class TenderClassification(TenderClassificationCreate):
