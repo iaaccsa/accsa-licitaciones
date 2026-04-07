@@ -26,9 +26,12 @@ async def lifespan(app: FastAPI):
     logger.info("[Lifespan] Job monitor detenido.")
 
 
+_is_prod = settings.APP_ENV == "production"
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url=None if _is_prod else "/docs",
+    redoc_url=None if _is_prod else "/redoc",
+    openapi_url=None if _is_prod else f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan,
 )
 
