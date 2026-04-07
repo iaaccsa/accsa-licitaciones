@@ -70,6 +70,7 @@ class RequirementCitation(BaseModel):
 
 
 class AnalysisRequirementCreate(BaseModel):
+    analysis_id:         Optional[UUID] = None
     requirement_code:    str
     requirement_text:    str
     requirement_summary: Optional[str] = None

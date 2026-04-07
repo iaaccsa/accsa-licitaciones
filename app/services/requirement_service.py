@@ -18,7 +18,7 @@ class AnalysisRequirementService:
         analysis_id = str(payload.analysis_id)
         deleted = self.repository.delete_by_analysis_id(analysis_id)
         rows = [
-            {"analysis_id": analysis_id, **req.model_dump(mode="json")}
+            {"analysis_id": analysis_id, **req.model_dump(mode="json", exclude={"analysis_id"})}
             for req in payload.requirements
         ]
         inserted_data = self.repository.insert_batch(rows) if rows else []

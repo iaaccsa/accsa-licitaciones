@@ -3,6 +3,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.schemas.requirement import (
+    AnalysisRequirementCreate,
     AnalysisRequirementBulkCreate,
     AnalysisRequirementRead,
     AnalysisRequirementUpdate,
@@ -14,7 +15,16 @@ router = APIRouter()
 
 
 @router.post("/bulk", response_model=BulkReplaceResponse)
-def bulk_replace(payload: AnalysisRequirementBulkCreate):
+def bulk_replace(requirements: List[AnalysisRequirementCreate]):
+    if not requirements:
+        raise HTTPException(status_code=422, detail="requirements list is empty")
+    analysis_id = requirements[0].analysis_id
+    if analysis_id is None:
+        raise HTTPException(status_code=422, detail="Each requirement must include analysis_id")
+    payload = AnalysisRequirementBulkCreate(
+        analysis_id=analysis_id,
+        requirements=requirements,
+    )
     try:
         return analysis_requirement_service.bulk_replace(payload)
     except Exception as e:
