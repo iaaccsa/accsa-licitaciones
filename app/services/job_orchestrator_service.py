@@ -12,6 +12,7 @@ from app.repositories.analysis_repository import analysis_repository
 from app.repositories.job_repository import job_repository
 from app.services.workflow_step_service import workflow_step_service
 from app.repositories.workflow_step_repository import workflow_step_repository
+from app.services.email_service import email_service
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -108,6 +109,7 @@ class JobOrchestratorService:
                 logger.error(f"Failed to mark workflow step as failed for {service_name}: {e}")
             analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
             self._log_event(analysis_id, "error", f"Job {service_name} failed with error: {error_message}", {"error": error_message, "file_id": str(file_id) if file_id else None})
+            self._notify_by_email(analysis_id, "failed")
             return []
 
         # Job succeeded — check if fan-out job needs to wait for all instances
@@ -143,6 +145,7 @@ class JobOrchestratorService:
                 f"Pipeline paused after {service_name} for analysis_id={analysis_id}. "
                 f"Awaiting approval."
             )
+            self._notify_by_email(analysis_id, "awaiting_approval")
             return []
 
         # Find and launch next jobs
@@ -169,6 +172,7 @@ class JobOrchestratorService:
                 f"Pipeline completed for analysis_id={analysis_id}. "
                 f"Last job was: {service_name}"
             )
+            self._notify_by_email(analysis_id, "completed")
 
         return launched
 
@@ -418,6 +422,31 @@ class JobOrchestratorService:
             f"Análisis cancelado por timeout. Steps timed-out: {timed_out_step_codes}",
             {"timed_out_steps": timed_out_step_codes, "source": "job_monitor"},
         )
+
+    def _notify_by_email(self, analysis_id: UUID, reason: str) -> None:
+        """Send email notification if user_email is set and belongs to the allowed domain."""
+        analysis = analysis_repository.get_by_id(analysis_id)
+        if not analysis:
+            return
+        user_email = analysis.get("user_email")
+        if not user_email:
+            return
+        try:
+            if reason == "awaiting_approval":
+                email_service.send_awaiting_approval(str(analysis_id), user_email)
+            elif reason == "completed":
+                email_service.send_pipeline_completed(str(analysis_id), user_email)
+            elif reason == "failed":
+                email_service.send_pipeline_failed(str(analysis_id), user_email)
+            else:
+                return
+            self._log_event(
+                analysis_id, "info",
+                f"Notificacion por email enviada",
+                {"to": user_email, "reason": reason},
+            )
+        except Exception as e:
+            logger.error(f"Failed to send {reason} email for analysis_id={analysis_id}: {e}")
 
     def _log_event(
         self,

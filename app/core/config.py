@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     JOB_TIMEOUT_MINUTES: int = 35
     JOB_MONITOR_INTERVAL_SECONDS: int = 60
 
+    MAILGUN_API_KEY: str
+    FRONTEND_BASE_URL: str = "https://accsa-licitaciones-ui.vercel.app"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore"

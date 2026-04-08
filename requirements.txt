@@ -11,3 +11,4 @@ azure-mgmt-appcontainers
 openai
 google-genai
 redis
+requests>=2.31.0
