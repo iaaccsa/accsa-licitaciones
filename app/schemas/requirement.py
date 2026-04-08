@@ -141,3 +141,8 @@ class BulkReplaceResponse(BaseModel):
     analysis_id: UUID
     inserted:    int
     deleted:     int
+
+
+class BulkVerifyResponse(BaseModel):
+    analysis_id: UUID
+    updated:     int

@@ -5,6 +5,7 @@ from app.schemas.requirement import (
     AnalysisRequirementRead,
     AnalysisRequirementUpdate,
     BulkReplaceResponse,
+    BulkVerifyResponse,
 )
 from typing import List, Optional
 from uuid import UUID
@@ -48,6 +49,10 @@ class AnalysisRequirementService:
             offset=offset,
         )
         return [AnalysisRequirementRead(**item) for item in data]
+
+    def set_verified_bulk(self, analysis_id: UUID, is_verified: bool) -> BulkVerifyResponse:
+        updated = self.repository.set_verified_by_analysis_id(str(analysis_id), is_verified)
+        return BulkVerifyResponse(analysis_id=analysis_id, updated=updated)
 
     def update(self, requirement_id: str, patch: AnalysisRequirementUpdate) -> Optional[AnalysisRequirementRead]:
         data = patch.model_dump(mode="json", exclude_none=True)

@@ -8,6 +8,7 @@ from app.schemas.requirement import (
     AnalysisRequirementRead,
     AnalysisRequirementUpdate,
     BulkReplaceResponse,
+    BulkVerifyResponse,
 )
 from app.services.requirement_service import analysis_requirement_service
 
@@ -51,6 +52,14 @@ def list_requirements(
             limit=limit,
             offset=offset,
         )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/{analysis_id}/verify-all", response_model=BulkVerifyResponse)
+def bulk_set_verified(analysis_id: UUID, is_verified: bool = Query(...)):
+    try:
+        return analysis_requirement_service.set_verified_bulk(analysis_id, is_verified)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

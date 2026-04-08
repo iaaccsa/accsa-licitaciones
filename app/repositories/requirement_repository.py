@@ -51,6 +51,15 @@ class AnalysisRequirementRepository(BaseRepository):
         )
         return response.data
 
+    def set_verified_by_analysis_id(self, analysis_id: str, is_verified: bool) -> int:
+        response = (
+            supabase.table(self.table_name)
+            .update({"is_verified": is_verified})
+            .eq("analysis_id", analysis_id)
+            .execute()
+        )
+        return len(response.data)
+
     def update_by_id(self, requirement_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         response = (
             supabase.table(self.table_name)
