@@ -3,11 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Upload, ListChecks, ShieldCheck } from "lucide-react";
+import { Upload, ListChecks, ShieldCheck, BookOpen } from "lucide-react";
 
 const navItems = [
     { href: "/", label: "Iniciar", icon: Upload },
     { href: "/analyses", label: "Análisis", icon: ListChecks },
+    { href: "/docs", label: "Docs", icon: BookOpen },
     { href: "/admin", label: "Admin", icon: ShieldCheck },
 ] as const;
 

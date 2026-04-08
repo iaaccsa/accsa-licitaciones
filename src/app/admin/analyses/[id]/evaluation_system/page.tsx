@@ -51,12 +51,10 @@ interface TenderClassification {
     additional_chunks_recommendation: string | null;
     created_at: string;
     updated_at: string;
-    // v2 fields
-    profile_version: number;
     profile_warnings: string[];
     factors: Factor[];
     role_signals: Record<string, RoleSignal> | null;
-    enabled_roles: Record<string, EnabledRole> | null;
+    enabled_roles: Record<string, EnabledRole>;
 }
 
 interface TenderEvaluationType {
@@ -621,16 +619,6 @@ export default function AdminEvaluationSystemPage() {
                 </div>
             ) : classification ? (
                 <div className="space-y-6">
-                    {/* v1 notice — solo cuando realmente faltan datos */}
-                    {classification.profile_version === 1 && !classification.factors?.length && !classification.role_signals && (
-                        <div className="flex items-start gap-3 p-4 bg-zinc-50 border border-zinc-200 rounded-xl">
-                            <Info className="w-4 h-4 text-zinc-400 mt-0.5 shrink-0" />
-                            <p className="text-sm text-zinc-600">
-                                Registro generado con el clasificador <strong>v1</strong>. El perfil completo (factores, roles, señales) no está disponible.
-                            </p>
-                        </div>
-                    )}
-
                     {/* Profile warnings */}
                     {classification.profile_warnings?.length > 0 && (
                         <div className="space-y-2">
@@ -671,9 +659,6 @@ export default function AdminEvaluationSystemPage() {
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-x-6 gap-y-2 pt-4 mt-4 border-t border-zinc-100 text-xs text-zinc-400">
-                            <span>
-                                Perfil <strong className="text-zinc-600">v{classification.profile_version ?? 1}</strong>
-                            </span>
                             <span>
                                 Creado: <strong className="text-zinc-600">{new Date(classification.created_at).toLocaleString("es-ES")}</strong>
                             </span>

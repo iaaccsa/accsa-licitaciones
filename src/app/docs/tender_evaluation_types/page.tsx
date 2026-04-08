@@ -89,7 +89,6 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
             </div>
 
             <div className="p-5 space-y-4">
-                {/* Requires additional document */}
                 <div className="flex items-center gap-2 text-sm text-zinc-600">
                     {type.requires_additional_document ? (
                         <CheckCircle2 className="w-4 h-4 text-amber-500 shrink-0" />
@@ -101,7 +100,6 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
                         : "No requiere documentos adicionales"}
                 </div>
 
-                {/* Main formula */}
                 {type.main_formula && (
                     <div>
                         <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">Fórmula principal</p>
@@ -111,7 +109,6 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
                     </div>
                 )}
 
-                {/* Typical factors */}
                 {type.typical_factors.length > 0 && (
                     <div>
                         <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Factores típicos</p>
@@ -123,7 +120,6 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
                     </div>
                 )}
 
-                {/* Frequent organizations */}
                 {type.frequent_organizations.length > 0 && (
                     <div>
                         <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Organismos frecuentes</p>
@@ -135,7 +131,6 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
                     </div>
                 )}
 
-                {/* Expandable section */}
                 <button
                     onClick={() => setExpanded((v) => !v)}
                     className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 transition-colors"
@@ -146,7 +141,6 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
 
                 {expanded && (
                     <div className="space-y-4 pt-1 border-t border-zinc-100">
-                        {/* Key signals */}
                         {type.key_signals.length > 0 && (
                             <div>
                                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Señales clave</p>
@@ -160,7 +154,6 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
                             </div>
                         )}
 
-                        {/* Example */}
                         {type.example && (
                             <div>
                                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">Ejemplo real</p>
@@ -170,7 +163,6 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
                             </div>
                         )}
 
-                        {/* Notes */}
                         {type.notes.length > 0 && (
                             <div>
                                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Notas</p>
@@ -213,7 +205,7 @@ export default function TenderEvaluationTypesPage() {
         <div className="max-w-5xl mx-auto py-8 px-4">
             <div className="flex items-center gap-3 mb-6">
                 <Link
-                    href="/admin"
+                    href="/docs"
                     className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />

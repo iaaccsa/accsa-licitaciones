@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
-import { validateUUID, invalidIdResponse, apiError, safeLogError, parsePaginationBody } from "@/lib/api-utils";
+import { validateUUID, invalidIdResponse, apiError, safeLogError } from "@/lib/api-utils";
 
-export async function POST(
-    request: Request,
+export async function GET(
+    request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;
@@ -14,22 +14,17 @@ export async function POST(
 
     try {
         const env = getEnv();
-        const rawBody = await request.json().catch(() => null);
-        const { limit, offset } = parsePaginationBody(rawBody);
+        const searchParams = request.nextUrl.searchParams;
+        const limit = searchParams.get("limit") ?? "50";
+        const offset = searchParams.get("offset") ?? "0";
 
-        const url = `${env.API_BASE_URL}${env.API_REQUIREMENTS_PATH}`;
+        const url = `${env.API_BASE_URL}${env.API_REQUIREMENTS_PATH}/${id}?limit=${limit}&offset=${offset}`;
 
         const response = await fetch(url, {
-            method: "POST",
+            method: "GET",
             headers: {
-                "Content-Type": "application/json",
                 "X-API-Key": env.BACKEND_API_KEY,
             },
-            body: JSON.stringify({
-                analysis_id: id,
-                limit: limit || 10,
-                offset: offset || 0
-            }),
         });
 
         if (response.ok) {

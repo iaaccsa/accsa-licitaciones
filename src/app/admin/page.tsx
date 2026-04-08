@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, ListChecks } from "lucide-react";
+import { Activity } from "lucide-react";
 import { AnalysisList } from "@/components/AnalysisList";
 import CleanupButton from "@/components/CleanupButton";
 
@@ -13,13 +13,6 @@ export default function AdminPage() {
                     Análisis
                 </h1>
                 <div className="flex items-center gap-2">
-                    <Link
-                        href="/admin/tender_evaluation_types"
-                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-colors shadow-sm"
-                    >
-                        <ListChecks className="w-4 h-4" />
-                        Tipos de Evaluación
-                    </Link>
                     <Link
                         href="/admin/status"
                         className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-colors shadow-sm"
