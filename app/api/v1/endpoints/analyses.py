@@ -3,8 +3,10 @@ from typing import List
 from uuid import UUID
 from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
 from app.schemas.job import CancelPipelineResponse, ResumePipelineResponse
+from app.schemas.proposal import ProposalRead
 from app.services.analysis_service import analysis_service
 from app.services.job_orchestrator_service import job_orchestrator_service
+from app.services.proposal_service import proposal_service
 
 router = APIRouter()
 
@@ -64,6 +66,14 @@ def resume_analysis(analysis_id: UUID):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{analysis_id}/proposals", response_model=List[ProposalRead])
+def list_proposals_by_analysis(analysis_id: UUID):
+    try:
+        return proposal_service.get_by_analysis_id(analysis_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/{analysis_id}/sources", response_model=List[AnalysisSource])
 def get_analysis_sources(analysis_id: UUID):
