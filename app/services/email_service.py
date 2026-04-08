@@ -20,21 +20,21 @@ class EmailService:
             return
         analysis_url = f"{settings.FRONTEND_BASE_URL}/analyses/{analysis_id}"
         html = self._render_template("awaiting_approval.html", analysis_url)
-        self._send(to=user_email, subject="Licitación lista para revisión - ACCSA", html=html)
+        self._send(to=user_email, subject="Análisis pendiente de aprobación", html=html)
 
     def send_pipeline_completed(self, analysis_id: str, user_email: str) -> None:
         if not self._is_allowed(user_email):
             return
         analysis_url = f"{settings.FRONTEND_BASE_URL}/analyses/{analysis_id}"
         html = self._render_template("pipeline_completed.html", analysis_url)
-        self._send(to=user_email, subject="Análisis completado - ACCSA", html=html)
+        self._send(to=user_email, subject="Análisis terminado exitosamente", html=html)
 
     def send_pipeline_failed(self, analysis_id: str, user_email: str) -> None:
         if not self._is_allowed(user_email):
             return
         analysis_url = f"{settings.FRONTEND_BASE_URL}/analyses/{analysis_id}"
         html = self._render_template("pipeline_failed.html", analysis_url)
-        self._send(to=user_email, subject="Error en el análisis - ACCSA", html=html)
+        self._send(to=user_email, subject="Análisis terminado con errores", html=html)
 
     def _is_allowed(self, email: str) -> bool:
         return email.endswith(f"@{ALLOWED_EMAIL_DOMAIN}")
