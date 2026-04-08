@@ -1,68 +1,74 @@
-from fastapi import APIRouter, HTTPException, Query
-from typing import List
+from fastapi import APIRouter, HTTPException
+from typing import List, Optional
 from uuid import UUID
-from app.schemas.proposal import Proposal, ProposalBase, ProposalFilter, ProposalUpdate, ProposalScoreUpdate
+from app.schemas.proposal import (
+    ProposalRead, ProposalCreate, ProposalUpdate,
+    ProposalMatchingStart, ProposalMatchingResult, ProposalMatchingFailure,
+    ProposalSummaryStart, ProposalSummaryResult, ProposalSummaryFailure,
+    ProposalMatchingStatus,
+)
 from app.services.proposal_service import proposal_service
 
 router = APIRouter()
 
-@router.get("/", response_model=List[Proposal])
-def list_proposals(analysis_id: UUID = Query(...)):
-    try:
-        return proposal_service.search_proposals(ProposalFilter(analysis_id=analysis_id))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/search", response_model=List[Proposal])
-def search_proposals(filter_params: ProposalFilter):
-    """
-    Search proposals by analysis_id.
-    """
-    try:
-        return proposal_service.search_proposals(filter_params)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/", response_model=Proposal)
-def create_proposal(proposal_data: ProposalBase):
-    """
-    Create a new proposal.
-    """
+@router.post("/", response_model=ProposalRead)
+def create_proposal(proposal_data: ProposalCreate):
     try:
         return proposal_service.create_proposal(proposal_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{proposal_id}", response_model=Proposal)
-def get_proposal(proposal_id: UUID):
-    result = proposal_service.get_proposal_by_id(str(proposal_id))
-    if not result:
-        raise HTTPException(status_code=404, detail="Proposal not found")
-    return result
 
-@router.post("/search-with-counts", response_model=List[Proposal])
-def search_proposals_with_counts(filter_params: ProposalFilter):
-    """
-    Returns proposals for an analysis with compliance result counts.
-    """
+@router.get("/by-analysis/{analysis_id}", response_model=List[ProposalRead])
+def list_proposals_by_analysis(
+    analysis_id: UUID,
+    matching_status: Optional[ProposalMatchingStatus] = None,
+):
     try:
-        return proposal_service.search_proposals(filter_params)
+        proposals = proposal_service.get_by_analysis_id(analysis_id)
+        if matching_status:
+            proposals = [p for p in proposals if p.matching_status == matching_status]
+        return proposals
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.patch("/{proposal_id}", response_model=Proposal)
-def update_proposal(proposal_id: UUID, update_data: ProposalUpdate):
-    result = proposal_service.update_proposal(str(proposal_id), update_data)
-    if not result:
-        raise HTTPException(status_code=404, detail="Proposal not found")
-    return result
 
-@router.patch("/{proposal_id}/score", response_model=Proposal)
-def update_proposal_score(proposal_id: UUID, score_data: ProposalScoreUpdate):
-    """
-    Updates compliance_score and compliance_summary for a proposal.
-    """
-    result = proposal_service.update_score(str(proposal_id), score_data)
-    if not result:
-        raise HTTPException(status_code=404, detail="Proposal not found")
-    return result
+@router.get("/{proposal_id}", response_model=ProposalRead)
+def get_proposal(proposal_id: UUID):
+    return proposal_service.get_proposal_by_id(str(proposal_id))
+
+
+@router.patch("/{proposal_id}", response_model=ProposalRead)
+def update_proposal(proposal_id: UUID, update_data: ProposalUpdate):
+    return proposal_service.update_proposal(str(proposal_id), update_data)
+
+
+@router.patch("/{proposal_id}/matching-start", response_model=ProposalRead)
+def matching_start(proposal_id: UUID, body: ProposalMatchingStart):
+    return proposal_service.matching_start(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/matching-result", response_model=ProposalRead)
+def matching_result(proposal_id: UUID, body: ProposalMatchingResult):
+    return proposal_service.matching_result(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/matching-failure", response_model=ProposalRead)
+def matching_failure(proposal_id: UUID, body: ProposalMatchingFailure):
+    return proposal_service.matching_failure(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/summary-start", response_model=ProposalRead)
+def summary_start(proposal_id: UUID, body: ProposalSummaryStart):
+    return proposal_service.summary_start(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/summary-result", response_model=ProposalRead)
+def summary_result(proposal_id: UUID, body: ProposalSummaryResult):
+    return proposal_service.summary_result(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/summary-failure", response_model=ProposalRead)
+def summary_failure(proposal_id: UUID, body: ProposalSummaryFailure):
+    return proposal_service.summary_failure(str(proposal_id), body)

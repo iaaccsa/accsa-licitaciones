@@ -9,7 +9,7 @@ class ProposalRepository(BaseRepository):
 
     def get_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
         response = (
-            supabase.table("proposals_view")
+            supabase.table("proposals")
             .select("*")
             .eq("analysis_id", str(analysis_id))
             .execute()
@@ -18,7 +18,7 @@ class ProposalRepository(BaseRepository):
 
     def get_by_id(self, proposal_id: str) -> Dict[str, Any]:
         response = (
-            supabase.table("proposals_view")
+            supabase.table("proposals")
             .select("*")
             .eq("id", proposal_id)
             .single()
