@@ -681,7 +681,7 @@ def process_classification():
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
     gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 
-    log_event(ANALYSIS_ID, "info", "Iniciando clasificacion del sistema de evaluacion...", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", "Iniciando clasificación del sistema de evaluación...", EVENT_SOURCE)
 
     # 1. Get collection name (slug) via API
     analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")

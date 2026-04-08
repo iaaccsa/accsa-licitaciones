@@ -220,7 +220,7 @@ def process_conversion():
 
     slug = analysis["slug"].strip()
     logger.info(f"Found analysis — slug={slug}")
-    log_event(ANALYSIS_ID, "info", "Inicio de conversion de archivos (Mistral OCR)", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", "Inicio de conversión de archivos (Mistral OCR)", EVENT_SOURCE)
 
     logger.info("Querying files via API …")
     all_files = api_request("POST", f"{API_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
@@ -291,7 +291,7 @@ def process_conversion():
             # Cleanup
             local_path.unlink(missing_ok=True)
 
-    log_event(ANALYSIS_ID, "info", "Conversion de archivos completada (Mistral OCR)", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", "Conversión de archivos completada (Mistral OCR)", EVENT_SOURCE)
 
     try:
         api_request("POST", API_JOBS_CALLBACK, {

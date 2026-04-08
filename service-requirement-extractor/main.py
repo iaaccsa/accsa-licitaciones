@@ -651,7 +651,7 @@ def process_extraction():
     gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
-    log_event(ANALYSIS_ID, "info", "Iniciando extraccion de requerimientos con clasificacion multi-eje...", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", "Iniciando extracción de requerimientos con clasificación multi-eje...", EVENT_SOURCE)
 
     # 1. Get analysis slug
     analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")

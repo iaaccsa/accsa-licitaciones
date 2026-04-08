@@ -243,7 +243,7 @@ def process_file_metadata_extraction():
         return
 
     file_name = file_record["file_name"]
-    log_event(ANALYSIS_ID, "info", f"Iniciando extraccion de metadata para: {file_name}", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", f"Iniciando extracción de metadata para: {file_name}", EVENT_SOURCE)
 
     # 3. Scroll all chunks from the per-file Qdrant collection
     qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)

@@ -20,6 +20,7 @@ VALID_SERVICES=(
   "service-documents-grouper"
   "service-joiner"
   "service-tender-classifier"
+  "service-compliance-matcher"
 )
 
 if [ -z "$1" ]; then
