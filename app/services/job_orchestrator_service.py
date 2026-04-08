@@ -6,6 +6,7 @@ from app.core.azure import azure_container_apps_client
 from app.core.config import get_settings
 from app.config.jobs_config import get_root_jobs, get_next_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type, is_pause_after_job
 from app.repositories.file_repository import file_repository
+from app.repositories.proposal_repository import proposal_repository
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.repositories.analysis_repository import analysis_repository
@@ -187,18 +188,20 @@ class JobOrchestratorService:
         launched = []
         fan_out_type = get_fan_out_type(next_job)
 
-        if fan_out_type in ("file", "merged_file", "file_with_metadata"):
+        if fan_out_type in ("file", "merged_file", "file_with_metadata", "proposal"):
             if fan_out_type == "merged_file":
-                files = file_repository.get_merged_by_analysis_id(analysis_id)
+                items = file_repository.get_merged_by_analysis_id(analysis_id)
             elif fan_out_type == "file_with_metadata":
-                files = file_repository.get_processed_with_metadata_by_analysis_id(analysis_id)
+                items = file_repository.get_processed_with_metadata_by_analysis_id(analysis_id)
+            elif fan_out_type == "proposal":
+                items = proposal_repository.get_by_analysis_id(analysis_id)
             else:
-                files = file_repository.get_processed_by_analysis_id(analysis_id)
-            if not files:
-                logger.warning(f"No {fan_out_type} files found for analysis_id={analysis_id}, skipping fan-out job {next_job}")
+                items = file_repository.get_processed_by_analysis_id(analysis_id)
+            if not items:
+                logger.warning(f"No {fan_out_type} items found for analysis_id={analysis_id}, skipping fan-out job {next_job}")
                 return []
 
-            logger.info(f"Fan-out: launching {len(files)} instances of {next_job} for analysis_id={analysis_id}")
+            logger.info(f"Fan-out: launching {len(items)} instances of {next_job} for analysis_id={analysis_id}")
 
             # Start workflow step once for the fan-out group
             try:
@@ -206,12 +209,17 @@ class JobOrchestratorService:
             except Exception as step_error:
                 logger.error(f"Failed to start workflow step for {next_job}: {step_error}")
 
-            for file_data in files:
-                file_id = file_data["id"]
-                azure_response = self._launch_job(next_job, analysis_id, proposal_id, file_id=UUID(file_id))
-                self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for file {file_id}", azure_response)
+            for item_data in items:
+                item_id = item_data["id"]
+                if fan_out_type == "proposal":
+                    azure_response = self._launch_job(next_job, analysis_id, proposal_id=UUID(item_id))
+                    self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for proposal {item_id}", azure_response)
+                    logger.info(f"Launched fan-out job: {next_job} proposal_id={item_id} for analysis_id={analysis_id}")
+                else:
+                    azure_response = self._launch_job(next_job, analysis_id, proposal_id, file_id=UUID(item_id))
+                    self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for file {item_id}", azure_response)
+                    logger.info(f"Launched fan-out job: {next_job} file_id={item_id} for analysis_id={analysis_id}")
                 launched.append(next_job)
-                logger.info(f"Launched fan-out job: {next_job} file_id={file_id} for analysis_id={analysis_id}")
         else:
             azure_response = self._launch_job(next_job, analysis_id, proposal_id)
             self._log_event(analysis_id, "info", f"Started job {next_job}", azure_response)
