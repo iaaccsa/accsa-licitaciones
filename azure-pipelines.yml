@@ -43,6 +43,8 @@ strategy:
       SERVICE_NAME: "service-tender-classifier"
     service-compliance-matcher:
       SERVICE_NAME: "service-compliance-matcher"
+    service-compliance-summarizer:
+      SERVICE_NAME: "service-compliance-summarizer"
 
 steps:
   - script: |
@@ -84,3 +86,5 @@ steps:
       API_REQUIREMENTS_PATH: $(API_REQUIREMENTS_PATH)
       API_COMPLIANCE_RESULTS_PATH: $(API_COMPLIANCE_RESULTS_PATH)
       API_TENDER_CLASSIFICATIONS_PATH: $(API_TENDER_CLASSIFICATIONS_PATH)
+      API_ANALYSIS_REQUIREMENTS_PATH: $(API_ANALYSIS_REQUIREMENTS_PATH)
+      API_COMPLIANCE_MATRIX_PATH: $(API_COMPLIANCE_MATRIX_PATH)

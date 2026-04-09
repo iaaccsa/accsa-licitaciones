@@ -21,6 +21,7 @@ VALID_SERVICES=(
   "service-joiner"
   "service-tender-classifier"
   "service-compliance-matcher"
+  "service-compliance-summarizer"
 )
 
 if [ -z "$1" ]; then
