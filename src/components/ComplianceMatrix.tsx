@@ -124,8 +124,8 @@ function VerdictBadge({ verdict }: { verdict: ComplianceVerdict }) {
 
 function ConfidenceLabel({ confidence }: { confidence: string }) {
     const cfg = CONFIDENCE_CONFIG[confidence as Confidence];
-    if (!cfg) return <span className="text-xs text-zinc-400 font-mono">{confidence}</span>;
-    return <span className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>;
+    if (!cfg) return <span className="text-xs text-zinc-400 font-mono">Confianza: {confidence}</span>;
+    return <span className={`text-xs font-semibold ${cfg.color}`}>Confianza: {cfg.label}</span>;
 }
 
 function asString(val: unknown): string {
@@ -221,9 +221,9 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
         })
         : entries;
 
-    // Optimistic update helper
-    function patchLocal(entryId: string, updated: ComplianceEntry) {
-        setEntries((prev) => prev.map((e) => (e.id === entryId ? updated : e)));
+    // Optimistic update helper — merges so embedded `requirement` is preserved
+    function patchLocal(entryId: string, updated: Partial<ComplianceEntry>) {
+        setEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...updated } : e)));
     }
 
     function startEdit(entry: ComplianceEntry) {
@@ -260,7 +260,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                 body: JSON.stringify(body),
             });
             if (!res.ok) throw new Error(`Error ${res.status}`);
-            const updated: ComplianceEntry = await res.json();
+            const updated: Partial<ComplianceEntry> = await res.json();
             patchLocal(entryId, updated);
             setEditingId(null);
             setDraft(null);
@@ -280,7 +280,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                 body: JSON.stringify({ is_verified: true, manual_verification_required: false }),
             });
             if (!res.ok) return;
-            const updated: ComplianceEntry = await res.json();
+            const updated: Partial<ComplianceEntry> = await res.json();
             patchLocal(entry.id, updated);
         } catch {
             // silent - user can retry via full edit

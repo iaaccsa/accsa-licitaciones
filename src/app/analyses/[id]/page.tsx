@@ -14,7 +14,7 @@ interface Analysis {
     user_name: string | null;
     generated_name: string | null;
     user_email: string | null;
-    status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
+    status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval" | "cancelled";
     is_success: boolean | null;
     paused_at_service: string | null;
     created_at: string;
@@ -40,6 +40,7 @@ export default function AnalysisDetailPage() {
     const [error, setError] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [isResuming, setIsResuming] = useState(false);
+    const [cancelMessage, setCancelMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
     const fetchData = useCallback(async (silent = false) => {
         if (!silent) setIsLoading(true);
@@ -72,14 +73,22 @@ export default function AnalysisDetailPage() {
 
     const handleCancel = useCallback(async () => {
         if (!analysis || isCancelling) return;
+        const confirmed = window.confirm(
+            "Esta acción no se puede deshacer. Los jobs en ejecución serán detenidos."
+        );
+        if (!confirmed) return;
         setIsCancelling(true);
+        setCancelMessage(null);
         try {
             const res = await fetch(`/api/analyses/${id}/cancel`, { method: "POST" });
             if (res.ok) {
-                setAnalysis((prev) => prev ? { ...prev, status: "failed" } : prev);
+                setAnalysis((prev) => prev ? { ...prev, status: "cancelled" } : prev);
+                setCancelMessage({ type: "success", text: "Análisis cancelado correctamente." });
+            } else {
+                setCancelMessage({ type: "error", text: "Error al cancelar el análisis. Intenta nuevamente." });
             }
-        } catch (err) {
-            console.error("Error cancelling analysis:", err);
+        } catch {
+            setCancelMessage({ type: "error", text: "Error al cancelar el análisis. Intenta nuevamente." });
         } finally {
             setIsCancelling(false);
         }
@@ -177,6 +186,12 @@ export default function AnalysisDetailPage() {
                     )}
                 </div>
             </div>
+
+            {cancelMessage && (
+                <div className={`rounded-lg px-4 py-3 text-sm font-medium ${cancelMessage.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                    {cancelMessage.text}
+                </div>
+            )}
 
             {/* Workflow Visualization */}
             <WorkflowVisualization analysisId={id} analysisStatus={analysis.status} />
@@ -320,6 +335,11 @@ function StatusBadge({ status, isSuccess }: { status: string; isSuccess: boolean
     if (status === "awaiting_approval") return (
         <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 flex items-center gap-1">
             <PauseCircle className="w-3 h-3" /> Esperando Aprobación
+        </span>
+    );
+    if (status === "cancelled") return (
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-200 text-zinc-600 flex items-center gap-1">
+            <Ban className="w-3 h-3" /> Cancelado
         </span>
     );
     if (status === "ready") {
