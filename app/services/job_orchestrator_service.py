@@ -45,7 +45,7 @@ class JobOrchestratorService:
 
             # 2. Start the workflow step for the first job
             try:
-                workflow_step_service.start_step_by_service(str(analysis_id), first_job)
+                workflow_step_service.start_step_by_service(str(analysis_id), first_job, instances_count=1)
             except Exception as e:
                 logger.error(f"Failed to start workflow step for first job {first_job}: {e}")
 
@@ -126,11 +126,20 @@ class JobOrchestratorService:
                 # Not all instances done yet — wait
                 return []
 
-        # All instances done (or not a fan-out job) — complete workflow step
+        # All instances done (or not a fan-out job) — atomically complete workflow step.
+        # Returns False if another concurrent callback already completed it.
         try:
-            workflow_step_service.complete_step_by_service(str(analysis_id), service_name)
+            step_claimed = workflow_step_service.complete_step_by_service_if_running(str(analysis_id), service_name)
         except Exception as e:
             logger.error(f"Failed to complete workflow step for {service_name}: {e}")
+            step_claimed = False
+
+        if not step_claimed:
+            logger.info(
+                f"Workflow step for {service_name} already completed by a concurrent callback "
+                f"— skipping for analysis_id={analysis_id}"
+            )
+            return launched
 
         # Check if pipeline should pause for user approval
         if is_pause_after_job(service_name):

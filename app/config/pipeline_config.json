@@ -44,7 +44,7 @@
     "next_services": [
       "service-file-metadata-extractor"
     ],
-    "code": "qdrant-by-file",
+    "code": "qdrant_by_file",
     "display_name": "Indexación de Documentos",
     "parent": "converter",
     "create_on_start": true,
@@ -59,9 +59,9 @@
     "next_services": [
       "service-setup-qdrant"
     ],
-    "code": "file-metadata-extractor",
+    "code": "file_metadata_extractor",
     "display_name": "Extracción de Metadatos",
-    "parent": "qdrant-by-file",
+    "parent": "qdrant_by_file",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
@@ -74,9 +74,9 @@
     "next_services": [
       "service-documents-classifier"
     ],
-    "code": "setup-qdrant",
+    "code": "setup_qdrant",
     "display_name": "Configuración RAG",
-    "parent": "file-metadata-extractor",
+    "parent": "file_metadata_extractor",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
@@ -87,9 +87,9 @@
     "next_services": [
       "service-documents-grouper"
     ],
-    "code": "documents-classifier",
+    "code": "documents_classifier",
     "display_name": "Clasificación de Documentos",
-    "parent": "setup-qdrant",
+    "parent": "setup_qdrant",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
@@ -102,9 +102,9 @@
     "next_services": [
       "service-joiner"
     ],
-    "code": "documents-grouper",
+    "code": "documents_grouper",
     "display_name": "Agrupación de Documentos",
-    "parent": "documents-classifier",
+    "parent": "documents_classifier",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
@@ -118,7 +118,7 @@
     ],
     "code": "joiner",
     "display_name": "Uniendo Documentos",
-    "parent": "documents-grouper",
+    "parent": "documents_grouper",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
@@ -170,10 +170,25 @@
   },
   {
     "service": "service-compliance-matcher",
-    "next_services": [],
+    "next_services": [
+      "service-compliance-summarizer"
+    ],
     "code": "compliance_matcher",
     "display_name": "Matcher de Cumplimiento",
     "parent": "requirement_extraction",
+    "create_on_start": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false,
+    "pause_after": true,
+    "fan_out_by": "proposal"
+  },
+  {
+    "service": "service-compliance-summarizer",
+    "next_services": [],
+    "code": "compliance_summarizer",
+    "display_name": "Resumen de Cumplimiento",
+    "parent": "compliance_matcher",
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,

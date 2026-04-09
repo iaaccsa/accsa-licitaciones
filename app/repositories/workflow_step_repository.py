@@ -46,11 +46,23 @@ class WorkflowStepRepository(BaseRepository):
         )
         return response.data
 
+    def complete_step_if_running(self, analysis_id: str, code: str) -> bool:
+        """Atomically transitions step from running to completed. Returns True if this call won."""
+        response = (
+            supabase.table(self.table_name)
+            .update({"status": "completed", "ended_at": datetime.now().isoformat()})
+            .eq("analysis_id", analysis_id)
+            .eq("code", code)
+            .eq("status", "running")
+            .execute()
+        )
+        return bool(response.data)
+
     def claim_step_if_pending(self, analysis_id: str, code: str) -> bool:
         """Atomically transitions step from pending to running. Returns True if claimed."""
         response = (
             supabase.table(self.table_name)
-            .update({"status": "running", "started_at": datetime.now().isoformat()})
+            .update({"status": "running", "started_at": datetime.now().isoformat(), "instances_count": 1})
             .eq("analysis_id", analysis_id)
             .eq("code", code)
             .eq("status", "pending")
