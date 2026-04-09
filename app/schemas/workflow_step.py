@@ -8,11 +8,11 @@ class WorkflowStepBase(BaseModel):
     code: str
     display_name: str
     status: str
-    instances_count: int = 1
+    instances_count: int = 0
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
     error_log: Optional[str] = None
-parent_code: Optional[str] = None
+    parent_code: Optional[str] = None
 
 class WorkflowStep(WorkflowStepBase):
     id: UUID

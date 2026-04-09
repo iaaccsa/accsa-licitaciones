@@ -76,7 +76,7 @@ class WorkflowStepService:
         data = self.repository.upsert(update_data)
         return WorkflowStep(**data) if data else None
 
-    def start_step_by_service(self, analysis_id: str, service_name: str, instances_count: int = 1) -> Optional[WorkflowStep]:
+    def start_step_by_service(self, analysis_id: str, service_name: str, instances_count: int = 0) -> Optional[WorkflowStep]:
         config = self._get_step_config_by_service(service_name)
         code = config.get("code")
         if not code:
