@@ -21,6 +21,7 @@ Required environment variables:
 
 import os
 import sys
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -49,6 +50,9 @@ SERVICE_NAME = "service-files-converter-mistral"
 WORKSPACE_DIR = Path("/app/workspace")
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 STORAGE_BUCKET = "files"
+MAX_FILE_SIZE_MB = 45  # Mistral OCR proxy limit (~50 MB); reject before upload
+OCR_MAX_RETRIES = 3
+OCR_RETRY_DELAYS = [10, 30, 60]  # seconds
 
 logger = setup_logger("files-converter-mistral")
 SESSION = make_session()
@@ -117,11 +121,25 @@ def parse_file(client: Mistral, file_path: str) -> str:
         # Step 2: Get a signed URL for the uploaded file
         signed = client.files.get_signed_url(file_id=uploaded.id)
 
-        # Step 3: Run OCR
-        result = client.ocr.process(
-            model="mistral-ocr-latest",
-            document={"type": "document_url", "document_url": signed.url},
-        )
+        # Step 3: Run OCR with retry on transient errors
+        last_exc = None
+        for attempt in range(OCR_MAX_RETRIES):
+            try:
+                result = client.ocr.process(
+                    model="mistral-ocr-latest",
+                    document={"type": "document_url", "document_url": signed.url},
+                )
+                last_exc = None
+                break
+            except Exception as e:
+                last_exc = e
+                if attempt < OCR_MAX_RETRIES - 1:
+                    delay = OCR_RETRY_DELAYS[attempt]
+                    logger.warning(f"OCR attempt {attempt + 1} failed, retrying in {delay}s: {e}")
+                    time.sleep(delay)
+
+        if last_exc is not None:
+            raise last_exc
 
         pages = result.pages if result.pages else []
         return "\n\n".join(page.markdown for page in pages if page.markdown)
@@ -257,17 +275,27 @@ def process_conversion():
                 file_bytes = supabase.storage.from_(STORAGE_BUCKET).download(storage_path)
             except Exception as e:
                 logger.error(f"Failed to download {file_name}: {e}")
+                log_event(ANALYSIS_ID, "error", f"No se pudo descargar el archivo: {file_name}. Error: {e}", EVENT_SOURCE)
                 continue  # Skip failing file instead of exiting
 
             # Save local
             local_path = work_dir / file_name
             local_path.write_bytes(file_bytes)
 
+            # Validate file size before uploading to Mistral
+            file_size_mb = local_path.stat().st_size / (1024 * 1024)
+            if file_size_mb > MAX_FILE_SIZE_MB:
+                logger.warning(f"{file_name} is {file_size_mb:.1f} MB, exceeds limit of {MAX_FILE_SIZE_MB} MB — skipping")
+                log_event(ANALYSIS_ID, "warning", f"Archivo omitido por tamaño excesivo ({file_size_mb:.1f} MB): {file_name}", EVENT_SOURCE)
+                local_path.unlink(missing_ok=True)
+                continue
+
             # Parse
             try:
                 md_content = parse_file(client, str(local_path))
             except Exception as e:
                 logger.error(f"Failed to parse {file_name}: {e}")
+                log_event(ANALYSIS_ID, "error", f"No se pudo convertir el archivo: {file_name}. Error: {e}", EVENT_SOURCE)
                 continue
 
             # Upload individual .md
@@ -287,6 +315,7 @@ def process_conversion():
                 )
             except Exception as e:
                 logger.error(f"Failed to upload {md_file_name}: {e}")
+                log_event(ANALYSIS_ID, "error", f"No se pudo subir el archivo convertido: {md_file_name}. Error: {e}", EVENT_SOURCE)
 
             # Cleanup
             local_path.unlink(missing_ok=True)
