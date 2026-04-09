@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Layers, Scale } from "lucide-react";
+import { BookOpen, Layers, Scale, GitBranch } from "lucide-react";
 
 const docs = [
     {
@@ -13,6 +13,12 @@ const docs = [
         icon: Scale,
         title: "Tipos de Evaluación",
         description: "Catálogo de sistemas de evaluación de licitaciones detectados por el clasificador.",
+    },
+    {
+        href: "/docs/pipeline",
+        icon: GitBranch,
+        title: "Pipeline de evaluación",
+        description: "Estado actual y etapas propuestas del pipeline de punta a punta, desde ingesta hasta acta de adjudicación.",
     },
 ];
 
