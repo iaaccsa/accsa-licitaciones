@@ -160,7 +160,7 @@
       "service-compliance-matcher"
     ],
     "code": "requirement_extraction",
-    "display_name": "Extracción de Requisitos",
+    "display_name": "Extracción de Requerimientos",
     "parent": "tender_classifier",
     "create_on_start": true,
     "initial_status": "pending",
