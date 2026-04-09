@@ -11,38 +11,38 @@ variables:
 
 strategy:
   matrix:
-    service-file-extractor:
-      SERVICE_NAME: "service-file-extractor"
+    # service-file-extractor:
+    #   SERVICE_NAME: "service-file-extractor"
     # service-files-converter-llama:
     #   SERVICE_NAME: "service-files-converter-llama"
-    service-files-converter-mistral:
-      SERVICE_NAME: "service-files-converter-mistral"
-    service-setup-qdrant:
-      SERVICE_NAME: "service-setup-qdrant"
-    service-chunk-and-index:
-      SERVICE_NAME: "service-chunk-and-index"
-    service-requirement-extractor:
-      SERVICE_NAME: "service-requirement-extractor"
-    service-verify-compliance:
-      SERVICE_NAME: "service-verify-compliance"
-    service-metadata-extractor:
-      SERVICE_NAME: "service-metadata-extractor"
-    service-proposal-scorer:
-      SERVICE_NAME: "service-proposal-scorer"
-    service-qdrant-by-file:
-      SERVICE_NAME: "service-qdrant-by-file"
-    service-file-metadata-extractor:
-      SERVICE_NAME: "service-file-metadata-extractor"
-    service-documents-classifier:
-      SERVICE_NAME: "service-documents-classifier"
-    service-documents-grouper:
-      SERVICE_NAME: "service-documents-grouper"
-    service-joiner:
-      SERVICE_NAME: "service-joiner"
-    service-tender-classifier:
-      SERVICE_NAME: "service-tender-classifier"
-    service-compliance-matcher:
-      SERVICE_NAME: "service-compliance-matcher"
+    # service-files-converter-mistral:
+    #   SERVICE_NAME: "service-files-converter-mistral"
+    # service-setup-qdrant:
+    #   SERVICE_NAME: "service-setup-qdrant"
+    # service-chunk-and-index:
+    #   SERVICE_NAME: "service-chunk-and-index"
+    # service-requirement-extractor:
+    #   SERVICE_NAME: "service-requirement-extractor"
+    # service-verify-compliance:
+    #   SERVICE_NAME: "service-verify-compliance"
+    # service-metadata-extractor:
+    #   SERVICE_NAME: "service-metadata-extractor"
+    # service-proposal-scorer:
+    #   SERVICE_NAME: "service-proposal-scorer"
+    # service-qdrant-by-file:
+    #   SERVICE_NAME: "service-qdrant-by-file"
+    # service-file-metadata-extractor:
+    #   SERVICE_NAME: "service-file-metadata-extractor"
+    # service-documents-classifier:
+    #   SERVICE_NAME: "service-documents-classifier"
+    # service-documents-grouper:
+    #   SERVICE_NAME: "service-documents-grouper"
+    # service-joiner:
+    #   SERVICE_NAME: "service-joiner"
+    # service-tender-classifier:
+    #   SERVICE_NAME: "service-tender-classifier"
+    # service-compliance-matcher:
+    #   SERVICE_NAME: "service-compliance-matcher"
     service-compliance-summarizer:
       SERVICE_NAME: "service-compliance-summarizer"
 
