@@ -6,6 +6,8 @@ from app.schemas.compliance_matrix import (
     ComplianceEntryRead,
     ComplianceEntryReadWithRequirement,
     ComplianceEntryPatch,
+    ComplianceEntryCreate,
+    ComplianceEntryFlatCreate,
     ComplianceMatrixBulkCreate,
     BulkReplaceMatrixResponse,
     ComplianceVerdict,
@@ -16,7 +18,20 @@ router = APIRouter()
 
 
 @router.post("/bulk", response_model=BulkReplaceMatrixResponse)
-def bulk_replace(payload: ComplianceMatrixBulkCreate):
+def bulk_replace(items: List[ComplianceEntryFlatCreate]):
+    if not items:
+        raise HTTPException(status_code=422, detail="items list must not be empty")
+    analysis_id = items[0].analysis_id
+    proposal_id = items[0].proposal_id
+    entries = [
+        ComplianceEntryCreate(**item.model_dump(exclude={"analysis_id", "proposal_id"}))
+        for item in items
+    ]
+    payload = ComplianceMatrixBulkCreate(
+        analysis_id=analysis_id,
+        proposal_id=proposal_id,
+        entries=entries,
+    )
     return compliance_matrix_service.bulk_replace(payload)
 
 

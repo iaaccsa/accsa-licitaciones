@@ -97,7 +97,8 @@ class JobOrchestratorService:
 
         job_status = "succeeded" if status == "success" else "failed"
         file_id_str = str(file_id) if file_id else None
-        job_repository.update_job_status(str(analysis_id), service_name, job_status, file_id=file_id_str)
+        proposal_id_str = str(proposal_id) if proposal_id else None
+        job_repository.update_job_status(str(analysis_id), service_name, job_status, file_id=file_id_str, proposal_id=proposal_id_str)
 
         if status == "failed":
             logger.error(
@@ -294,6 +295,8 @@ class JobOrchestratorService:
         }
         if file_id:
             job_record["file_id"] = str(file_id)
+        if proposal_id:
+            job_record["proposal_id"] = str(proposal_id)
         job_repository.create(job_record)
 
         return azure_response

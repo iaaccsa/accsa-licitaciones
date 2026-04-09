@@ -36,6 +36,11 @@ class ComplianceEntryCreate(BaseModel):
     notes:                        Optional[str]                = None
 
 
+class ComplianceEntryFlatCreate(ComplianceEntryCreate):
+    analysis_id: UUID
+    proposal_id: UUID
+
+
 class ComplianceMatrixBulkCreate(BaseModel):
     analysis_id: UUID
     proposal_id: UUID
