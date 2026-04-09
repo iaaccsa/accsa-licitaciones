@@ -205,7 +205,7 @@ class JobOrchestratorService:
 
             # Start workflow step once for the fan-out group
             try:
-                workflow_step_service.start_step_by_service(str(analysis_id), next_job)
+                workflow_step_service.start_step_by_service(str(analysis_id), next_job, instances_count=len(items))
             except Exception as step_error:
                 logger.error(f"Failed to start workflow step for {next_job}: {step_error}")
 
