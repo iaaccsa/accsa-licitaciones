@@ -135,7 +135,7 @@ class JobOrchestratorService:
         if is_pause_after_job(service_name):
             analysis_repository.update_by_id(
                 str(analysis_id),
-                {"status": "awaiting_approval", "paused_at_service": service_name}
+                {"status": "awaiting_approval", "paused_at_service": service_name, "is_success": None}
             )
             self._log_event(
                 analysis_id, "info",
@@ -221,12 +221,18 @@ class JobOrchestratorService:
                     logger.info(f"Launched fan-out job: {next_job} file_id={item_id} for analysis_id={analysis_id}")
                 launched.append(next_job)
         else:
+            # Atomic gate: only proceed if we can claim the step (pending → running).
+            # Prevents duplicate Azure launches when multiple concurrent fan-out
+            # callbacks all pass the completed >= total check simultaneously.
+            claimed = workflow_step_service.start_step_by_service_if_pending(str(analysis_id), next_job)
+            if not claimed:
+                logger.warning(
+                    f"Skipping duplicate launch of {next_job} for analysis_id={analysis_id} "
+                    f"— step already claimed by another callback"
+                )
+                return launched
             azure_response = self._launch_job(next_job, analysis_id, proposal_id)
             self._log_event(analysis_id, "info", f"Started job {next_job}", azure_response)
-            try:
-                workflow_step_service.start_step_by_service(str(analysis_id), next_job)
-            except Exception as step_error:
-                logger.error(f"Failed to start workflow step for {next_job}: {step_error}")
             launched.append(next_job)
             logger.info(f"Launched next job: {next_job} after {previous_job} for analysis_id={analysis_id}")
 

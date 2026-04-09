@@ -1,5 +1,6 @@
 from app.repositories.base_repository import BaseRepository
 from app.core.supabase import supabase
+from datetime import datetime
 from typing import List, Dict, Any
 from uuid import UUID
 
@@ -44,6 +45,18 @@ class WorkflowStepRepository(BaseRepository):
             .execute()
         )
         return response.data
+
+    def claim_step_if_pending(self, analysis_id: str, code: str) -> bool:
+        """Atomically transitions step from pending to running. Returns True if claimed."""
+        response = (
+            supabase.table(self.table_name)
+            .update({"status": "running", "started_at": datetime.now().isoformat()})
+            .eq("analysis_id", analysis_id)
+            .eq("code", code)
+            .eq("status", "pending")
+            .execute()
+        )
+        return bool(response.data)
 
     def cancel_pending_by_analysis(self, analysis_id: str) -> int:
         """Cancel all workflow steps that are running or pending."""

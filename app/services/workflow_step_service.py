@@ -94,6 +94,13 @@ class WorkflowStepService:
         data = self.repository.upsert(update_data)
         return WorkflowStep(**data) if data else None
 
+    def start_step_by_service_if_pending(self, analysis_id: str, service_name: str) -> bool:
+        config = self._get_step_config_by_service(service_name)
+        code = config.get("code")
+        if not code:
+            return False
+        return self.repository.claim_step_if_pending(analysis_id, code)
+
     def fail_step_by_service(self, analysis_id: str, service_name: str) -> Optional[WorkflowStep]:
         config = self._get_step_config_by_service(service_name)
         code = config.get("code")

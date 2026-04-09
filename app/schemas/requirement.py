@@ -15,6 +15,7 @@ class ReqDomain(str, Enum):
     ambiental            = "ambiental"
     calidad              = "calidad"
     seguridad            = "seguridad"
+    comercial            = "comercial"
     otro                 = "otro"
 
 
