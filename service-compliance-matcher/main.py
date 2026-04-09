@@ -217,9 +217,9 @@ API_HEADERS = {
 }
 
 
-def api_request(method: str, path: str, json_data: dict | list | None = None) -> dict | list | None:
+def api_request(method: str, path: str, json_data: dict | list | None = None, params: dict | None = None) -> dict | list | None:
     url = f"{API_BASE_URL}{path}"
-    response = SESSION.request(method, url, json=json_data, headers=API_HEADERS, timeout=60)
+    response = SESSION.request(method, url, json=json_data, params=params, headers=API_HEADERS, timeout=60)
     response.raise_for_status()
     try:
         return response.json()
@@ -330,10 +330,18 @@ def load_proposal(proposal_id: str) -> dict:
 
 
 def load_requirements(analysis_id: str) -> List[dict]:
-    result = api_request("GET", f"{API_ANALYSIS_REQUIREMENTS_PATH}{analysis_id}")
-    if not isinstance(result, list):
-        raise RuntimeError(f"Unexpected response from analysis-requirements: {type(result)}")
-    return result
+    all_requirements = []
+    limit = 100
+    offset = 0
+    while True:
+        result = api_request("GET", f"{API_ANALYSIS_REQUIREMENTS_PATH}{analysis_id}", params={"limit": limit, "offset": offset})
+        if not isinstance(result, list):
+            raise RuntimeError(f"Unexpected response from analysis-requirements: {type(result)}")
+        all_requirements.extend(result)
+        if len(result) < limit:
+            break
+        offset += limit
+    return all_requirements
 
 
 def load_evaluation_profile(analysis_id: str) -> dict:

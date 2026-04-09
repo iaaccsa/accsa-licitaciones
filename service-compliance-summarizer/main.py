@@ -277,7 +277,7 @@ def notify_failure(error_msg: str):
 def load_all_pages(path: str) -> List[dict]:
     results: List[dict] = []
     offset = 0
-    limit  = 500
+    limit  = 100
     while True:
         sep  = "&" if "?" in path else "?"
         page = api_request("GET", f"{path}{sep}limit={limit}&offset={offset}")

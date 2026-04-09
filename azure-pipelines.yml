@@ -41,8 +41,8 @@ strategy:
     #   SERVICE_NAME: "service-joiner"
     # service-tender-classifier:
     #   SERVICE_NAME: "service-tender-classifier"
-    # service-compliance-matcher:
-    #   SERVICE_NAME: "service-compliance-matcher"
+    service-compliance-matcher:
+      SERVICE_NAME: "service-compliance-matcher"
     service-compliance-summarizer:
       SERVICE_NAME: "service-compliance-summarizer"
 
