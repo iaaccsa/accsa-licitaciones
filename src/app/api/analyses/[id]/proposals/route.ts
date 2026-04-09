@@ -14,15 +14,13 @@ export async function GET(
 
     try {
         const env = getEnv();
-        const url = `${env.API_BASE_URL}${env.API_PROPOSALS_PATH}`;
+        const url = `${env.API_BASE_URL}${env.API_ANALYSES_PATH}/${id}/proposals`;
 
         const res = await fetch(url, {
-            method: "POST",
+            method: "GET",
             headers: {
-                "Content-Type": "application/json",
                 "X-API-Key": env.BACKEND_API_KEY,
             },
-            body: JSON.stringify({ analysis_id: id }),
         });
 
         if (!res.ok) {

@@ -2,12 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Calendar, Mail, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play, Scale } from "lucide-react";
+import { Loader2, Calendar, Mail, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play, Scale, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowVisualization from "@/components/WorkflowVisualization";
-import ProposalsList from "@/components/ProposalsList";
-import ProposalsComplianceChart from "@/components/ProposalsComplianceChart";
+import ProposalsSummary from "@/components/ProposalsSummary";
 
 interface Analysis {
     id: string;
@@ -121,45 +120,12 @@ export default function AnalysisDetailPage() {
         <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
             {/* Header */}
             <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-                <div className="flex flex-col gap-2 mb-6">
+                <div className="flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-3">
                         <h1 className="text-2xl font-bold text-zinc-900">
                             {analysis.user_name || analysis.generated_name || <span className="font-mono uppercase">{analysis.slug}</span>}
                         </h1>
-                        <div className="flex items-center gap-2">
-                            <StatusBadge status={analysis.status} isSuccess={analysis.is_success} />
-                            {analysis.status === "awaiting_approval" && (
-                                <Button
-                                    size="sm"
-                                    onClick={handleResume}
-                                    disabled={isResuming}
-                                    className="bg-green-600 text-white hover:bg-green-700"
-                                >
-                                    {isResuming ? (
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                        <Play className="h-3.5 w-3.5" />
-                                    )}
-                                    Continuar
-                                </Button>
-                            )}
-                            {(analysis.status === "pending" || analysis.status === "processing" || analysis.status === "awaiting_approval") && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={handleCancel}
-                                    disabled={isCancelling}
-                                    className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
-                                >
-                                    {isCancelling ? (
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                        <Ban className="h-3.5 w-3.5" />
-                                    )}
-                                    Cancelar
-                                </Button>
-                            )}
-                        </div>
+                        <StatusBadge status={analysis.status} isSuccess={analysis.is_success} />
                     </div>
                     <div className="flex items-center justify-between text-sm text-zinc-500 gap-4">
                         <span className="flex items-center gap-1">
@@ -176,6 +142,39 @@ export default function AnalysisDetailPage() {
                             {analysis.user_email}
                         </div>
                     )}
+                    {(analysis.status === "pending" || analysis.status === "processing" || analysis.status === "awaiting_approval") && (
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                            {analysis.status === "awaiting_approval" && (
+                                <Button
+                                    size="sm"
+                                    onClick={handleResume}
+                                    disabled={isResuming}
+                                    className="bg-green-600 text-white hover:bg-green-700"
+                                >
+                                    {isResuming ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                        <Play className="h-3.5 w-3.5" />
+                                    )}
+                                    Continuar
+                                </Button>
+                            )}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleCancel}
+                                disabled={isCancelling}
+                                className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                            >
+                                {isCancelling ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                    <Ban className="h-3.5 w-3.5" />
+                                )}
+                                Cancelar
+                            </Button>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -183,11 +182,17 @@ export default function AnalysisDetailPage() {
             <WorkflowVisualization analysisId={id} analysisStatus={analysis.status} />
 
             {/* Navigation Buttons */}
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <a
                     href={`/analyses/${id}/files`}
-                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all group text-center"
+                    className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all group text-center"
                 >
+                    {analysis.status === "awaiting_approval" && analysis.paused_at_service === "service-documents-grouper" && (
+                        <span className="absolute top-2 right-2 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                        </span>
+                    )}
                     <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         <FileText className="w-8 h-8" />
                     </div>
@@ -220,8 +225,14 @@ export default function AnalysisDetailPage() {
 
                 <a
                     href={`/analyses/${id}/requirements`}
-                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-green-300 hover:shadow-md transition-all group text-center"
+                    className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-green-300 hover:shadow-md transition-all group text-center"
                 >
+                    {analysis.status === "awaiting_approval" && analysis.paused_at_service === "service-requirement-extractor" && (
+                        <span className="absolute top-2 right-2 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                        </span>
+                    )}
                     <div className="p-3 bg-green-50 text-green-600 rounded-lg group-hover:bg-green-600 group-hover:text-white transition-colors">
                         <ClipboardList className="w-8 h-8" />
                     </div>
@@ -234,10 +245,26 @@ export default function AnalysisDetailPage() {
                         </p>
                     </div>
                 </a>
+
+                <a
+                    href={`/analyses/${id}/proposals`}
+                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-orange-300 hover:shadow-md transition-all group text-center"
+                >
+                    <div className="p-3 bg-orange-50 text-orange-600 rounded-lg group-hover:bg-orange-600 group-hover:text-white transition-colors">
+                        <Users className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-orange-600 transition-colors">
+                            Propuestas
+                        </h3>
+                        <p className="text-sm text-zinc-500">
+                            Ver propuestas y cumplimiento
+                        </p>
+                    </div>
+                </a>
             </div>
 
-            <ProposalsList analysisId={id} />
-            <ProposalsComplianceChart analysisId={id} />
+            <ProposalsSummary analysisId={id} />
         </div>
     );
 }

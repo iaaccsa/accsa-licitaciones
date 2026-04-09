@@ -387,13 +387,14 @@ export default function AnalysisFilesPage() {
                     <div className="space-y-6">
                         {proposalFiles.length > 0 ? (
                             Object.entries(proposalFiles.reduce((acc, file) => {
-                                // Prioritize provider name, then label, then default
-                                const label = file.proposal_provider_name || file.proposal_label || 'Sin etiqueta';
-                                if (!acc[label]) acc[label] = [];
-                                acc[label].push(file);
+                                const key = file.proposal_id || 'sin-propuesta';
+                                if (!acc[key]) acc[key] = [];
+                                acc[key].push(file);
                                 return acc;
-                            }, {} as Record<string, AnalysisFile[]>)).map(([label, files]) => (
-                                <div key={label} className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
+                            }, {} as Record<string, AnalysisFile[]>)).map(([proposalId, files]) => {
+                            const label = files[0].proposal_label || files[0].proposal_provider_name || 'Sin etiqueta';
+                            return (
+                                <div key={proposalId} className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                                     <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
                                         <FileText className="w-5 h-5 text-green-600" />
                                         Oferta: {label}
@@ -476,7 +477,8 @@ export default function AnalysisFilesPage() {
                                         ))}
                                     </ul>
                                 </div>
-                            ))
+                            );
+                            })
                         ) : (
                             <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                                 <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">

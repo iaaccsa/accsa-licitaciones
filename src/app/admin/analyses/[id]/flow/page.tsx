@@ -11,6 +11,7 @@ interface WorkflowStep {
     label: string;
     status: "pending" | "running" | "completed" | "failed" | "success" | "processing";
     display_name?: string;
+    instances_count?: number;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
@@ -135,6 +136,7 @@ export default function AnalysisFlowPage() {
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Código</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nombre</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Paso Padre</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">Instancias</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Estado</th>
                                 </tr>
                             </thead>
@@ -157,6 +159,13 @@ export default function AnalysisFlowPage() {
                                                 <span title={codeToName[step.parent_code]}>
                                                     {step.parent_code}
                                                 </span>
+                                            ) : (
+                                                <span className="text-zinc-300">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            {step.instances_count != null ? (
+                                                <span className="font-mono text-sm font-semibold text-zinc-700">{step.instances_count}</span>
                                             ) : (
                                                 <span className="text-zinc-300">—</span>
                                             )}
