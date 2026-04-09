@@ -139,7 +139,7 @@ class JobOrchestratorService:
                 f"Workflow step for {service_name} already completed by a concurrent callback "
                 f"— skipping for analysis_id={analysis_id}"
             )
-            return launched
+            return []
 
         # Check if pipeline should pause for user approval
         if is_pause_after_job(service_name):
