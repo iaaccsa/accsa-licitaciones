@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Layers, Scale, GitBranch } from "lucide-react";
+import { BookOpen, Layers, Scale, GitBranch, ScanText } from "lucide-react";
 
 const docs = [
     {
@@ -19,6 +19,12 @@ const docs = [
         icon: GitBranch,
         title: "Pipeline de evaluación",
         description: "Estado actual y etapas propuestas del pipeline de punta a punta, desde ingesta hasta acta de adjudicación.",
+    },
+    {
+        href: "/docs/ocr-apis",
+        icon: ScanText,
+        title: "Modelos OCR para conversión PDF a Markdown",
+        description: "Análisis comparativo de los principales modelos multimodales disponibles via REST API para conversión de documentos PDF a Markdown.",
     },
 ];
 
