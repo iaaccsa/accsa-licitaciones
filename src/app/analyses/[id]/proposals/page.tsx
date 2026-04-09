@@ -56,7 +56,7 @@ function StatusBadge({ status }: { status: MatchingStatus }) {
 }
 
 function ComplianceBar({ rate }: { rate: number }) {
-    const pct = Math.round(rate * 100);
+    const pct = Math.round(rate);
     const color = pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-red-500";
     return (
         <div className="flex items-center gap-2 min-w-0">

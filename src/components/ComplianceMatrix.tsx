@@ -93,7 +93,7 @@ const VERDICT_CONFIG: Record<ComplianceVerdict, { label: string; color: string; 
         icon: <MinusCircle className="w-3.5 h-3.5" />,
     },
     requiere_verificacion_manual: {
-        label: "Verificacion Manual",
+        label: "Verificación Manual",
         color: "bg-orange-50 text-orange-700 border-orange-200",
         icon: <ShieldAlert className="w-3.5 h-3.5" />,
     },
@@ -298,7 +298,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                     <input
                         type="text"
-                        placeholder="Buscar por codigo o texto del requisito..."
+                        placeholder="Buscar por código o texto del requisito..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-zinc-50"
@@ -353,7 +353,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                     {(
                         [
                             { key: "isVerified", label: "Verificados", trueLabel: "Solo verificados", falseLabel: "Sin verificar" },
-                            { key: "manualVerificationRequired", label: "Requieren revision", trueLabel: "Requieren revision", falseLabel: "No requieren revision" },
+                            { key: "manualVerificationRequired", label: "Requieren revisión", trueLabel: "Requieren revisión", falseLabel: "No requieren revisión" },
                         ] as const
                     ).map(({ key, trueLabel, falseLabel }) => {
                         const val = filters[key];
@@ -449,11 +449,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
 
                                     {/* Flags */}
                                     <div className="flex items-center gap-2 shrink-0">
-                                        {entry.manual_verification_required && (
-                                            <span title="Requiere verificacion manual">
-                                                <ShieldAlert className="w-4 h-4 text-orange-500" />
-                                            </span>
-                                        )}
                                         {entry.is_verified && (
                                             <span title="Verificado">
                                                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -557,7 +552,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                             <div className="border border-zinc-200 rounded-xl p-4 space-y-4 bg-zinc-50">
                                                 <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
                                                     <ClipboardEdit className="w-3.5 h-3.5" />
-                                                    Edicion manual
+                                                    Edición manual
                                                 </p>
 
                                                 <div className="grid grid-cols-2 gap-3">
@@ -642,7 +637,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                             onChange={(e) => setDraft((d) => d && { ...d, manual_verification_required: e.target.checked })}
                                                             className="w-4 h-4 rounded"
                                                         />
-                                                        <span className="text-sm text-zinc-700">Requiere revision manual</span>
+                                                        <span className="text-sm text-zinc-700">Requiere revisión manual</span>
                                                     </label>
                                                 </div>
 
@@ -693,7 +688,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                 {entry.manual_verification_required && !entry.is_verified && (
                                                     <span className="inline-flex items-center gap-1 text-xs text-orange-600">
                                                         <HelpCircle className="w-3.5 h-3.5" />
-                                                        Pendiente de revision manual
+                                                        Pendiente de revisión manual
                                                     </span>
                                                 )}
                                             </div>
@@ -713,7 +708,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                 className="inline-flex items-center gap-2 px-4 py-2 text-sm text-zinc-600 border border-zinc-200 rounded-lg hover:bg-zinc-50 disabled:opacity-50 transition-colors"
                             >
                                 {loadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                                Cargar mas
+                                Cargar más
                             </button>
                         </div>
                     )}

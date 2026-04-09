@@ -123,7 +123,7 @@ export default function ProposalDetailPage() {
                     onClick={() => router.back()}
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Volver al análisis
+                    Volver al listado de propuestas
                 </Button>
 
                 <div className="bg-white rounded-xl border border-zinc-200 shadow-sm px-5 py-4 flex items-center justify-between gap-6">
@@ -177,14 +177,14 @@ export default function ProposalDetailPage() {
                         )}
                         {proposal.critical_failures_count != null && (
                             <div className="px-5 text-center">
-                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Criticos</p>
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Críticos</p>
                                 <p className="text-sm font-bold text-red-600">{proposal.critical_failures_count}</p>
                             </div>
                         )}
                         {proposal.compliance_rate != null && (
                             <div className="px-5 text-center">
                                 <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Cumplimiento</p>
-                                <p className="text-base font-bold text-zinc-800">{Math.round(proposal.compliance_rate * 100)}<span className="text-zinc-400 text-sm">%</span></p>
+                                <p className="text-base font-bold text-zinc-800">{Math.round(proposal.compliance_rate)}<span className="text-zinc-400 text-sm">%</span></p>
                             </div>
                         )}
                     </div>
@@ -208,7 +208,7 @@ export default function ProposalDetailPage() {
                 {proposal.compliance_summary && (
                     <Card>
                         <CardHeader>
-                            <CardTitle>Resumen de Auditoria</CardTitle>
+                            <CardTitle>Resumen de Auditoría</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{proposal.compliance_summary}</p>
