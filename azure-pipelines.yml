@@ -22,8 +22,8 @@ strategy:
     #   SERVICE_NAME: "service-file-extractor"
     # service-files-converter-llama:
     #   SERVICE_NAME: "service-files-converter-llama"
-    service-files-converter-mistral:
-      SERVICE_NAME: "service-files-converter-mistral"
+    # service-files-converter-mistral:
+    #  SERVICE_NAME: "service-files-converter-mistral"
     # service-setup-qdrant:
     #   SERVICE_NAME: "service-setup-qdrant"
     # service-chunk-and-index:
@@ -42,8 +42,8 @@ strategy:
     #   SERVICE_NAME: "service-joiner"
     # service-tender-classifier:
     #   SERVICE_NAME: "service-tender-classifier"
-    # service-compliance-matcher:
-    #   SERVICE_NAME: "service-compliance-matcher"
+    service-compliance-matcher:
+      SERVICE_NAME: "service-compliance-matcher"
     # service-compliance-summarizer:
     #   SERVICE_NAME: "service-compliance-summarizer"
 

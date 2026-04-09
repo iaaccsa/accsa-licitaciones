@@ -12,7 +12,9 @@ Obtiene los datos de la propuesta (label, provider_name) para incluir en el prom
 
 ### GET /api/v1/analysis-requirements/{analysis_id}
 Obtiene la lista de requerimientos atomicos extraidos por service-requirement-extractor.
-- **Response:** `[{id, requirement_text, roles, verification_method, domain, ...}, ...]`
+- **Query params:** `is_verified` (true/false/none), `domain`, `role`, `factor_id`, `limit`, `offset`
+- **Usage:** Llamado con `is_verified=true` para obtener solo requerimientos validados por el usuario.
+- **Response:** `[{id, requirement_text, roles, verification_method, domain, is_verified, ...}, ...]`
 
 ### GET /api/v1/tender-classifications/{analysis_id}
 Obtiene el evaluation_profile producido por service-tender-classifier (contexto, no bloqueante).

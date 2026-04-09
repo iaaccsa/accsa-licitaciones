@@ -8,7 +8,7 @@ Construye la matriz de cumplimiento (`analysis_compliance_matrix`) entre cada re
 1. `PATCH /api/v1/proposals/{PROPOSAL_ID}/matching-start` — transiciona a `matching`.
 2. Carga el analisis via `GET /api/v1/analyses/{ANALYSIS_ID}`.
 3. Carga el evaluation_profile via `GET /api/v1/tender-classifications/{ANALYSIS_ID}` (contexto, no bloqueante).
-4. Carga todos los requerimientos via `GET /api/v1/analysis-requirements/{ANALYSIS_ID}`.
+4. Carga los requerimientos verificados via `GET /api/v1/analysis-requirements/{ANALYSIS_ID}?is_verified=true`. Si no hay requerimientos verificados, emite un evento `warning`, marca el analisis como fallido y aborta.
 5. Aplica filtros automaticos sin invocar al LLM:
    - `no_aplica`: roles `informativo` puro, `desconocido_pendiente_pliego_general`, `preferencia_legal` puro.
    - `requiere_verificacion_manual`: `verification_method` in (`inspeccion`, `muestra`, `visita_tecnica`).
@@ -38,7 +38,7 @@ Va al LLM pero con instruccion distinta: buscar si el oferente **declara** adjun
 ## Entrada
 - **ANALYSIS_ID** (runtime): UUID del analisis
 - **PROPOSAL_ID** (runtime): UUID de la propuesta a evaluar
-- Requiere: requerimientos en `analysis_requirements`
+- Requiere: requerimientos en `analysis_requirements` con `is_verified=true`
 - Requiere: chunks de la propuesta indexados en Qdrant con `category=proposal`, `proposal_id`, `analysis_id`, `chunk_index`, `text`
 
 ## Servicios externos

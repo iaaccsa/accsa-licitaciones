@@ -334,7 +334,7 @@ def load_requirements(analysis_id: str) -> List[dict]:
     limit = 100
     offset = 0
     while True:
-        result = api_request("GET", f"{API_ANALYSIS_REQUIREMENTS_PATH}{analysis_id}", params={"limit": limit, "offset": offset})
+        result = api_request("GET", f"{API_ANALYSIS_REQUIREMENTS_PATH}{analysis_id}", params={"limit": limit, "offset": offset, "is_verified": "true"})
         if not isinstance(result, list):
             raise RuntimeError(f"Unexpected response from analysis-requirements: {type(result)}")
         all_requirements.extend(result)
@@ -593,6 +593,13 @@ async def process_compliance_matching_async():
 
         proposal = load_proposal(PROPOSAL_ID)
         requirements = load_requirements(ANALYSIS_ID)
+
+        if not requirements:
+            msg = "No se encontraron requerimientos verificados (is_verified=true). Verificar que los requerimientos hayan sido validados antes de iniciar el matching."
+            log_event(ANALYSIS_ID, "warning", msg, EVENT_SOURCE)
+            mark_failed(ANALYSIS_ID, msg, EVENT_SOURCE)
+            raise RuntimeError(msg)
+
         _profile = load_evaluation_profile(ANALYSIS_ID)  # context, not blocking
 
         logger.info(f"Loaded {len(requirements)} requirements.")
