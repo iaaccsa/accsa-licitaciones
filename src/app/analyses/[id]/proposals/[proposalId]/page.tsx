@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Calendar, FileText, AlertCircle, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ComplianceResultsList from "@/components/ComplianceResultsList";
+import ComplianceMatrix from "@/components/ComplianceMatrix";
 
 interface Analysis {
     id: string;
@@ -13,29 +13,30 @@ interface Analysis {
     status: "pending" | "processing" | "ready" | "failed";
 }
 
-interface ProviderMetadata {
-    email: string | null;
-    phone: string | null;
-    tax_id: string | null;
-    address: string | null;
-    company_name: string | null;
-    representative_name: string | null;
-    additional: Record<string, string | number | boolean | null> | null;
-}
+type MatchingStatus =
+    | "pending"
+    | "matching"
+    | "matrix_ready"
+    | "summarizing"
+    | "completed"
+    | "failed"
+    | "summary_failed";
 
 interface Proposal {
     id: string;
     analysis_id: string;
+    label: string;
     provider_name: string | null;
-    label: string | null;
+    provider_metadata: Record<string, unknown> | null;
+    matching_status: MatchingStatus;
+    matching_error: string | null;
+    summary_error: string | null;
+    compliance_rate: number | null;
+    compliance_counts: Record<string, number> | null;
     compliance_summary: string | null;
-    provider_metadata: ProviderMetadata | null;
+    critical_failures_count: number | null;
     created_at: string;
-    compliance_score: number | null;
-    compliant_count: number | null;
-    non_compliant_count: number | null;
-    missing_info_count: number | null;
-    unprocessable_count: number | null;
+    updated_at: string;
 }
 
 
@@ -156,26 +157,34 @@ export default function ProposalDetailPage() {
 
                     {/* Right: metrics */}
                     <div className="flex items-center divide-x divide-zinc-100 shrink-0">
-                        <div className="px-5 text-center">
-                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Cumple</p>
-                            <p className="text-sm font-bold text-emerald-600">{proposal.compliant_count ?? "—"}</p>
-                        </div>
-                        <div className="px-5 text-center">
-                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">No cumple</p>
-                            <p className="text-sm font-bold text-red-500">{proposal.non_compliant_count ?? "—"}</p>
-                        </div>
-                        <div className="px-5 text-center">
-                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Sin info</p>
-                            <p className="text-sm font-bold text-amber-500">{proposal.missing_info_count ?? "—"}</p>
-                        </div>
-                        <div className="px-5 text-center">
-                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">No procesado</p>
-                            <p className="text-sm font-bold text-zinc-400">{proposal.unprocessable_count ?? "—"}</p>
-                        </div>
-                        {proposal.compliance_score != null && (
+                        {proposal.compliance_counts?.compliant != null && (
                             <div className="px-5 text-center">
-                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Puntuación</p>
-                                <p className="text-base font-bold text-zinc-800">{proposal.compliance_score}/<span className="text-zinc-400 text-sm">100</span></p>
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Cumple</p>
+                                <p className="text-sm font-bold text-emerald-600">{proposal.compliance_counts.compliant}</p>
+                            </div>
+                        )}
+                        {proposal.compliance_counts?.non_compliant != null && (
+                            <div className="px-5 text-center">
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">No cumple</p>
+                                <p className="text-sm font-bold text-red-500">{proposal.compliance_counts.non_compliant}</p>
+                            </div>
+                        )}
+                        {proposal.compliance_counts?.missing_info != null && (
+                            <div className="px-5 text-center">
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Sin info</p>
+                                <p className="text-sm font-bold text-amber-500">{proposal.compliance_counts.missing_info}</p>
+                            </div>
+                        )}
+                        {proposal.critical_failures_count != null && (
+                            <div className="px-5 text-center">
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Criticos</p>
+                                <p className="text-sm font-bold text-red-600">{proposal.critical_failures_count}</p>
+                            </div>
+                        )}
+                        {proposal.compliance_rate != null && (
+                            <div className="px-5 text-center">
+                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Cumplimiento</p>
+                                <p className="text-base font-bold text-zinc-800">{Math.round(proposal.compliance_rate * 100)}<span className="text-zinc-400 text-sm">%</span></p>
                             </div>
                         )}
                     </div>
@@ -196,22 +205,21 @@ export default function ProposalDetailPage() {
                     </Card>
                 )}
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Resultados de Auditoría</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {proposal.compliance_summary ? (
+                {proposal.compliance_summary && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Resumen de Auditoria</CardTitle>
+                        </CardHeader>
+                        <CardContent>
                             <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{proposal.compliance_summary}</p>
-                        ) : (
-                            <div className="text-center py-8 text-zinc-500 italic">
-                                No hay resultados de auditoría reportados en la propuesta.
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                )}
 
-                <ComplianceResultsList analysisId={analysisId} proposalId={proposalId} />
+                <div>
+                    <h2 className="text-lg font-semibold text-zinc-900 mb-3">Matriz de Cumplimiento</h2>
+                    <ComplianceMatrix analysisId={analysisId} proposalId={proposalId} />
+                </div>
             </div>
         </div>
     );
