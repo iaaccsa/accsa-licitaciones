@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from uuid import UUID
 from enum import Enum
@@ -54,7 +54,7 @@ class ProposalUpdate(BaseModel):
 # --- Payloads de la máquina de estados ---
 
 class ProposalMatchingStart(BaseModel):
-    matching_started_at: datetime
+    matching_started_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 class ProposalMatchingResult(BaseModel):
