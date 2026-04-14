@@ -17,7 +17,7 @@ Required environment variables:
   - API_KEY
   - API_EVENTS_PATH
   - API_ANALYSES_PATH
-  - API_FILES_PATH
+  - API_PROCESSED_FILES_PATH
   - API_JOBS_CALLBACK
   - ANALYSIS_ID
   - FILE_ID
@@ -49,7 +49,7 @@ API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
-API_FILES_PATH = os.environ.get("API_FILES_PATH")
+API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 FILE_ID = os.environ.get("FILE_ID")
@@ -95,7 +95,7 @@ def validate_env():
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
-            ("API_FILES_PATH", API_FILES_PATH),
+            ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
             ("FILE_ID", FILE_ID),
@@ -222,7 +222,7 @@ def process_qdrant_by_file():
 
     # 2. Fetch specific file record via API
     logger.info(f"Fetching file info for {FILE_ID}...")
-    file_record = api_request("GET", f"{API_FILES_PATH}{FILE_ID}")
+    file_record = api_request("GET", f"{API_PROCESSED_FILES_PATH}{FILE_ID}")
     
     if not file_record:
         logger.warning(f"File {FILE_ID} not found.")
@@ -273,7 +273,7 @@ def process_qdrant_by_file():
         # 3f. Update total_chunks via API
         logger.info(f"Updating file record with total_chunks={len(chunks)}...")
         try:
-            api_request("PATCH", f"{API_FILES_PATH}{FILE_ID}", {"total_chunks": len(chunks)})
+            api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{FILE_ID}", {"total_chunks": len(chunks)})
         except Exception as e:
             logger.error(f"Error updating total_chunks for file {FILE_ID}: {e}")
 

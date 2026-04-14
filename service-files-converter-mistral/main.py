@@ -12,7 +12,8 @@ Required environment variables:
   - API_BASE_URL              : Backend API base URL
   - API_KEY                   : API key for backend authentication
   - API_EVENTS_PATH           : Path for events endpoint
-  - API_FILES_PATH            : Path for files endpoint (optional, default: /api/v1/files/)
+  - API_ORIGINAL_FILES_PATH   : Path for original files endpoint
+  - API_PROCESSED_FILES_PATH  : Path for processed files endpoint
   - API_ANALYSES_PATH         : Path for analyses endpoint (optional, default: /api/v1/analyses/)
   - API_PROPOSALS_PATH        : Path for proposals endpoint (optional, default: /api/v1/proposals/)
   - API_JOBS_CALLBACK         : Path for job completion callback endpoint
@@ -40,7 +41,8 @@ MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY")
 API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
-API_FILES_PATH = os.environ.get("API_FILES_PATH", "/api/v1/files/")
+API_ORIGINAL_FILES_PATH = os.environ.get("API_ORIGINAL_FILES_PATH")
+API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH", "/api/v1/analyses/")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH", "/api/v1/proposals/")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
@@ -91,6 +93,10 @@ def validate_env():
         missing.append("API_KEY")
     if not API_EVENTS_PATH:
         missing.append("API_EVENTS_PATH")
+    if not API_ORIGINAL_FILES_PATH:
+        missing.append("API_ORIGINAL_FILES_PATH")
+    if not API_PROCESSED_FILES_PATH:
+        missing.append("API_PROCESSED_FILES_PATH")
     if not API_JOBS_CALLBACK:
         missing.append("API_JOBS_CALLBACK")
     if not ANALYSIS_ID:
@@ -187,19 +193,17 @@ def upload_markdown(
 
     # Insert file record via API
     record = {
-        "id": file_id,
         "analysis_id": analysis_id,
         "file_name": file_name,
         "storage_path": storage_path,
         "category": None,
         "file_size": len(content_bytes),
         "mime_type": "text/markdown",
-        "is_processed_version": True,
         "is_merged": False,
         "link": source_file_id,
     }
 
-    api_request("POST", API_FILES_PATH, record)
+    api_request("POST", API_PROCESSED_FILES_PATH, record)
     logger.info(f"Inserted file record via API: {file_name} (id={file_id})")
 
     return record
@@ -241,12 +245,9 @@ def process_conversion():
     log_event(ANALYSIS_ID, "info", "Inicio de conversión de archivos (Mistral OCR)", EVENT_SOURCE)
 
     logger.info("Querying files via API …")
-    all_files = api_request("POST", f"{API_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
+    all_files = api_request("POST", f"{API_ORIGINAL_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
 
-    files_to_process = [
-        f for f in all_files
-        if not f.get("is_processed_version")
-    ]
+    files_to_process = all_files
 
     if files_to_process:
         logger.info(f"Found {len(files_to_process)} file(s) to process")

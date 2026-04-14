@@ -13,7 +13,7 @@ Required environment variables:
   - API_EVENTS_PATH            : Path for events endpoint
   - API_PROPOSALS_PATH         : Path for proposals endpoint
   - API_ANALYSES_PATH          : Path for analyses endpoint
-  - API_FILES_PATH             : Path for files endpoint
+  - API_ORIGINAL_FILES_PATH             : Path for files endpoint
   - ANALYSIS_ID                : UUID of the analysis to process
 """
 
@@ -41,7 +41,7 @@ API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
-API_FILES_PATH = os.environ.get("API_FILES_PATH")
+API_ORIGINAL_FILES_PATH = os.environ.get("API_ORIGINAL_FILES_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
@@ -124,14 +124,12 @@ def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_d
             file_stat = file_path.stat()
 
             file_record = {
-                "id": file_id,
                 "analysis_id": analysis_id,
                 "file_name": filename,
                 "storage_path": storage_path,
                 "category": None,
                 "file_size": file_stat.st_size,
                 "mime_type": mime_type,
-                "is_processed_version": False
             }
 
             files_to_insert.append(file_record)
@@ -141,7 +139,7 @@ def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_d
         logger.info(f"Inserting {len(files_to_insert)} file records via API")
         try:
             for file_record in files_to_insert:
-                api_request("POST", API_FILES_PATH, file_record)
+                api_request("POST", API_ORIGINAL_FILES_PATH, file_record)
         except Exception as e:
             logger.error(f"Failed to insert file records: {e}")
             raise e
@@ -168,8 +166,8 @@ def validate_env():
         missing.append("API_PROPOSALS_PATH")
     if not API_ANALYSES_PATH:
         missing.append("API_ANALYSES_PATH")
-    if not API_FILES_PATH:
-        missing.append("API_FILES_PATH")
+    if not API_ORIGINAL_FILES_PATH:
+        missing.append("API_ORIGINAL_FILES_PATH")
     if not API_JOBS_CALLBACK:
         missing.append("API_JOBS_CALLBACK")
     if not ANALYSIS_ID:

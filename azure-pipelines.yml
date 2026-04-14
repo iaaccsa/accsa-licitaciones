@@ -18,12 +18,12 @@ strategy:
     # service-proposal-scorer: # arvhived
     #   SERVICE_NAME: "service-proposal-scorer"
 
-    # service-file-extractor:
-    #   SERVICE_NAME: "service-file-extractor"
+    service-file-extractor:
+      SERVICE_NAME: "service-file-extractor"
     # service-files-converter-llama:
     #   SERVICE_NAME: "service-files-converter-llama"
-    # service-files-converter-mistral:
-    #  SERVICE_NAME: "service-files-converter-mistral"
+    service-files-converter-mistral:
+      SERVICE_NAME: "service-files-converter-mistral"
     # service-setup-qdrant:
     #   SERVICE_NAME: "service-setup-qdrant"
     # service-chunk-and-index:
@@ -32,20 +32,22 @@ strategy:
     #   SERVICE_NAME: "service-requirement-extractor"
     # service-metadata-extractor:
     #   SERVICE_NAME: "service-metadata-extractor"
-    # service-qdrant-by-file:
-    #   SERVICE_NAME: "service-qdrant-by-file"
-    # service-documents-classifier:
-    #   SERVICE_NAME: "service-documents-classifier"
+    service-qdrant-by-file:
+      SERVICE_NAME: "service-qdrant-by-file"
+    service-documents-classifier:
+      SERVICE_NAME: "service-documents-classifier"
     # service-documents-grouper:
     #   SERVICE_NAME: "service-documents-grouper"
     # service-joiner:
     #   SERVICE_NAME: "service-joiner"
     # service-tender-classifier:
     #   SERVICE_NAME: "service-tender-classifier"
-    service-compliance-matcher:
-      SERVICE_NAME: "service-compliance-matcher"
+    # service-compliance-matcher:
+    #   SERVICE_NAME: "service-compliance-matcher"
     # service-compliance-summarizer:
     #   SERVICE_NAME: "service-compliance-summarizer"
+    service-file-metadata-extractor:
+      SERVICE_NAME: "service-file-metadata-extractor"
 
 steps:
   - script: |
@@ -82,7 +84,8 @@ steps:
       API_PROPOSALS_PATH: $(API_PROPOSALS_PATH)
       API_TENDERS_PATH: $(API_TENDERS_PATH)
       API_ANALYSES_PATH: $(API_ANALYSES_PATH)
-      API_FILES_PATH: $(API_FILES_PATH)
+      API_ORIGINAL_FILES_PATH: $(API_ORIGINAL_FILES_PATH)
+      API_PROCESSED_FILES_PATH: $(API_PROCESSED_FILES_PATH)
       API_JOBS_CALLBACK: $(API_JOBS_CALLBACK)
       API_REQUIREMENTS_PATH: $(API_REQUIREMENTS_PATH)
       API_COMPLIANCE_RESULTS_PATH: $(API_COMPLIANCE_RESULTS_PATH)

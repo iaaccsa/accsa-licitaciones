@@ -10,9 +10,9 @@ Obtiene el registro del análisis.
 Actualiza el estado del análisis.
 - **Campos usados:** `status`, `is_success`
 
-### POST /api/v1/files/
-Crea un registro de archivo.
-- **Request:** `{id, analysis_id, file_name, storage_path, category, file_size, mime_type, is_processed_version}`
+### POST /api/v1/original-files/
+Crea un registro de archivo original.
+- **Request:** `{analysis_id, file_name, storage_path, category, file_size, mime_type}`
 
 ### POST /api/v1/jobs/callback
 Notifica finalización del job.

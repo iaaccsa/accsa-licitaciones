@@ -7,7 +7,7 @@ Convierte archivos de licitación (PDF, imágenes) a Markdown usando **Mistral O
 ## Flujo
 
 1. Obtiene el slug del análisis vía API
-2. Consulta archivos no procesados (`is_processed_version=false`) para el `ANALYSIS_ID`
+2. Consulta archivos originales via `POST /api/v1/original-files/search` para el `ANALYSIS_ID`
 3. Por cada archivo:
    - Descarga desde Supabase Storage
    - Sube a Mistral Files API y obtiene URL firmada
@@ -35,6 +35,8 @@ Convierte archivos de licitación (PDF, imágenes) a Markdown usando **Mistral O
 | `API_BASE_URL` | URL base del backend |
 | `API_KEY` | Clave de autenticación (`X-API-Key`) |
 | `API_EVENTS_PATH` | Path de eventos |
+| `API_ORIGINAL_FILES_PATH` | Path para buscar archivos originales |
+| `API_PROCESSED_FILES_PATH` | Path para crear archivos procesados |
 | `API_JOBS_CALLBACK` | Path de callback |
 | `ANALYSIS_ID` | UUID del análisis (runtime) |
 

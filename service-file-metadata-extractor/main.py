@@ -15,7 +15,7 @@ Required environment variables:
   - API_KEY                : API key for backend authentication
   - API_EVENTS_PATH        : Path for events endpoint
   - API_ANALYSES_PATH      : Path for analyses endpoint
-  - API_FILES_PATH         : Path for files endpoint
+  - API_PROCESSED_FILES_PATH : Path for processed files endpoint
   - API_JOBS_CALLBACK      : Path for job status callback
   - ANALYSIS_ID            : UUID of the analysis to process (runtime)
   - FILE_ID                : UUID of the file to process (runtime)
@@ -45,7 +45,7 @@ API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
-API_FILES_PATH = os.environ.get("API_FILES_PATH")
+API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 FILE_ID = os.environ.get("FILE_ID")
@@ -91,7 +91,7 @@ def validate_env():
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
-            ("API_FILES_PATH", API_FILES_PATH),
+            ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
             ("FILE_ID", FILE_ID),
@@ -230,7 +230,7 @@ def process_file_metadata_extraction():
     logger.info(f"Target Qdrant collection: {collection_name}")
 
     # 2. Fetch file record
-    file_record = api_request("GET", f"{API_FILES_PATH}{FILE_ID}")
+    file_record = api_request("GET", f"{API_PROCESSED_FILES_PATH}{FILE_ID}")
     if not file_record:
         logger.warning(f"File {FILE_ID} not found.")
         log_event(ANALYSIS_ID, "warning", f"El archivo {FILE_ID} no existe.", EVENT_SOURCE)
@@ -290,7 +290,7 @@ def process_file_metadata_extraction():
                 f"company={metadata.get('company_name')}")
 
     # 6. Persist metadata via API
-    api_request("PATCH", f"{API_FILES_PATH}{FILE_ID}", {"metadata": metadata})
+    api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{FILE_ID}", {"metadata": metadata})
 
     log_event(
         ANALYSIS_ID, "info",

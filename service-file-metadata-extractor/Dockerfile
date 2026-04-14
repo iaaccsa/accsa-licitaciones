@@ -11,7 +11,7 @@ ARG API_BASE_URL
 ARG API_KEY
 ARG API_EVENTS_PATH
 ARG API_ANALYSES_PATH
-ARG API_FILES_PATH
+ARG API_PROCESSED_FILES_PATH
 ARG API_JOBS_CALLBACK
 
 # Environment variables
@@ -23,7 +23,7 @@ ENV API_BASE_URL=$API_BASE_URL
 ENV API_KEY=$API_KEY
 ENV API_EVENTS_PATH=$API_EVENTS_PATH
 ENV API_ANALYSES_PATH=$API_ANALYSES_PATH
-ENV API_FILES_PATH=$API_FILES_PATH
+ENV API_PROCESSED_FILES_PATH=$API_PROCESSED_FILES_PATH
 ENV API_JOBS_CALLBACK=$API_JOBS_CALLBACK
 
 # Validate required build arguments
@@ -35,7 +35,7 @@ RUN test -n "$API_BASE_URL" || (echo "ERROR: API_BASE_URL is required" && exit 1
 RUN test -n "$API_KEY" || (echo "ERROR: API_KEY is required" && exit 1)
 RUN test -n "$API_EVENTS_PATH" || (echo "ERROR: API_EVENTS_PATH is required" && exit 1)
 RUN test -n "$API_ANALYSES_PATH" || (echo "ERROR: API_ANALYSES_PATH is required" && exit 1)
-RUN test -n "$API_FILES_PATH" || (echo "ERROR: API_FILES_PATH is required" && exit 1)
+RUN test -n "$API_PROCESSED_FILES_PATH" || (echo "ERROR: API_PROCESSED_FILES_PATH is required" && exit 1)
 RUN test -n "$API_JOBS_CALLBACK" || (echo "ERROR: API_JOBS_CALLBACK is required" && exit 1)
 
 # Install Python dependencies

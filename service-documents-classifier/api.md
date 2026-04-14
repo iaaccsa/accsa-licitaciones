@@ -2,12 +2,16 @@
 
 ## Endpoints consumidos
 
-### GET /api/v1/files/{file_id}
-Obtiene el registro de un archivo individual.
+### GET /api/v1/processed-files/{file_id}
+Obtiene el registro de un archivo procesado (markdown).
 - **Response:** `{file_record}`
 
-### PATCH /api/v1/files/{file_id}
-Actualiza campos de un archivo.
+### PATCH /api/v1/processed-files/{file_id}
+Actualiza campos de un archivo procesado.
+- **Campos usados:** `category`
+
+### PATCH /api/v1/original-files/{file_id}
+Propaga la categoría al archivo original vinculado (`link` field).
 - **Campos usados:** `category`
 
 ### POST /api/v1/events/

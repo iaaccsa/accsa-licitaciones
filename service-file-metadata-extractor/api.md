@@ -6,11 +6,11 @@
 Obtiene el registro del análisis.
 - **Response:** `{slug, ...}`
 
-### GET /api/v1/files/{file_id}
-Obtiene el registro de un archivo específico.
+### GET /api/v1/processed-files/{file_id}
+Obtiene el registro de un archivo procesado (markdown).
 
-### PATCH /api/v1/files/{file_id}
-Actualiza campos de un archivo.
+### PATCH /api/v1/processed-files/{file_id}
+Actualiza campos de un archivo procesado.
 - **Campos usados:** `metadata`
 
 ### PATCH /api/v1/analyses/{analysis_id}/status

@@ -20,7 +20,7 @@ Descarga un archivo ZIP desde la URL del artefacto, extrae su contenido, sube ca
 
 ## Salida
 - Archivos subidos a Supabase Storage en `files/{slug}/{file_id}{suffix}`
-- Registros de archivo creados en la DB (id, analysis_id, file_name, storage_path, file_size, mime_type)
+- Registros de archivo creados via `POST /api/v1/original-files/` (analysis_id, file_name, storage_path, category, file_size, mime_type)
 
 ## Servicios externos
 

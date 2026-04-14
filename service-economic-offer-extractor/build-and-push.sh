@@ -8,7 +8,7 @@ if [[ "$ENV_TYPE" != "local" && "$ENV_TYPE" != "azure" ]]; then
   exit 1
 fi
 
-APP_NAME="service-qdrant-by-file"
+APP_NAME="service-economic-offer-extractor"
 APP_TAG="latest"
 APP_PATH="services"
 REGISTRY="accsalicitaciones.azurecr.io"
@@ -24,24 +24,24 @@ if [ "$ENV_TYPE" = "local" ]; then
   fi
   BUILD_ARGS="--no-cache"
 else
-  # azure
   BUILD_ARGS=""
 fi
 
 echo "Building Docker image for $APP_NAME targeting $ENV_TYPE..."
 
 docker build $BUILD_ARGS --platform linux/amd64 \
+  --build-arg GOOGLE_API_KEY="$GOOGLE_API_KEY" \
+  --build-arg OPENAI_API_KEY="$OPENAI_API_KEY" \
+  --build-arg QDRANT_URL="$QDRANT_URL" \
+  --build-arg QDRANT_API_KEY="$QDRANT_API_KEY" \
   --build-arg API_BASE_URL="$API_BASE_URL" \
   --build-arg API_KEY="$API_KEY" \
   --build-arg API_EVENTS_PATH="$API_EVENTS_PATH" \
   --build-arg API_ANALYSES_PATH="$API_ANALYSES_PATH" \
-  --build-arg API_PROCESSED_FILES_PATH="$API_PROCESSED_FILES_PATH" \
+  --build-arg API_PROPOSALS_PATH="$API_PROPOSALS_PATH" \
+  --build-arg API_TENDER_CLASSIFICATIONS_PATH="$API_TENDER_CLASSIFICATIONS_PATH" \
+  --build-arg API_PROPOSAL_ECONOMIC_OFFERS_PATH="$API_PROPOSAL_ECONOMIC_OFFERS_PATH" \
   --build-arg API_JOBS_CALLBACK="$API_JOBS_CALLBACK" \
-  --build-arg SUPABASE_URL="$SUPABASE_URL" \
-  --build-arg SUPABASE_SERVICE_KEY="$SUPABASE_SERVICE_KEY" \
-  --build-arg OPENAI_API_KEY="$OPENAI_API_KEY" \
-  --build-arg QDRANT_URL="$QDRANT_URL" \
-  --build-arg QDRANT_API_KEY="$QDRANT_API_KEY" \
   -t "$IMAGE" -f Dockerfile ..
 
 if [ "$ENV_TYPE" = "azure" ]; then
