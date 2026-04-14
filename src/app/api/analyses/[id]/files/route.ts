@@ -14,7 +14,7 @@ export async function POST(
 
     try {
         const env = getEnv();
-        const url = `${env.API_BASE_URL}${env.API_FILES_PATH}`;
+        const url = `${env.API_BASE_URL}${env.API_ORIGINAL_FILES_PATH}`;
 
         const response = await fetch(url, {
             method: "POST",

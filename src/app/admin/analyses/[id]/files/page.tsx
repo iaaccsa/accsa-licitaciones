@@ -9,14 +9,14 @@ import ReactMarkdown from "react-markdown";
 interface AnalysisFile {
     id: string;
     file_name: string;
-    category: "tender" | "proposal";
+    category: "tender" | "proposal" | "unclassified";
     file_size: number;
     mime_type: string;
     storage_path: string;
     created_at: string;
     proposal_label?: string;
     proposal_provider_name?: string;
-    is_processed_version?: boolean;
+    kind: "original" | "processed";
     total_chunks?: number;
     analysis_id: string;
     proposal_id?: string;
@@ -59,17 +59,27 @@ export default function AdminAnalysisFilesPage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                const [filesRes, analysisRes] = await Promise.all([
+                const [originalRes, processedRes, analysisRes] = await Promise.all([
                     fetch(`/api/analyses/${id}/files`, { method: "POST" }),
+                    fetch(`/api/analyses/${id}/processed-files`, { method: "POST" }),
                     fetch(`/api/analyses/${id}`),
                 ]);
 
-                if (filesRes.ok) {
-                    const data = await filesRes.json();
-                    setFiles(Array.isArray(data) ? data : []);
-                } else {
-                    throw new Error("Error al cargar los archivos");
-                }
+                if (!originalRes.ok) throw new Error("Error al cargar los archivos originales");
+                if (!processedRes.ok) throw new Error("Error al cargar los archivos procesados");
+
+                const originalData = await originalRes.json();
+                const processedData = await processedRes.json();
+
+                const original: AnalysisFile[] = (Array.isArray(originalData) ? originalData : []).map(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (f: any) => ({ ...f, kind: "original" as const })
+                );
+                const processed: AnalysisFile[] = (Array.isArray(processedData) ? processedData : []).map(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (f: any) => ({ ...f, kind: "processed" as const })
+                );
+                setFiles([...original, ...processed]);
 
                 if (analysisRes.ok) {
                     const analysisData = await analysisRes.json();
@@ -174,7 +184,7 @@ export default function AdminAnalysisFilesPage() {
                                             <span className="font-medium text-zinc-800 truncate max-w-[200px]" title={file.file_name}>
                                                 {file.file_name}
                                             </span>
-                                            {file.is_processed_version ? (
+                                            {file.kind === "processed" ? (
                                                 <span className="text-blue-600 bg-blue-50 border border-blue-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider shrink-0">
                                                     Procesado
                                                 </span>
@@ -186,7 +196,7 @@ export default function AdminAnalysisFilesPage() {
                                         </div>
                                     </td>
                                     <td className="px-4 py-3 text-zinc-600 text-xs">
-                                        {file.category === "tender" ? "Pliego" : "Oferta"}
+                                        {file.category === "tender" ? "Pliego" : file.category === "proposal" ? "Oferta" : "Sin clasificar"}
                                     </td>
                                     <td className="px-4 py-3 text-zinc-500 font-mono text-xs whitespace-nowrap">
                                         {formatBytes(file.file_size)}

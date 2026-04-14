@@ -16,7 +16,7 @@ interface AnalysisFile {
     created_at: string;
     proposal_label?: string;
     proposal_provider_name?: string;
-    is_processed_version?: boolean;
+
     is_reorderable?: boolean;
     total_chunks?: number;
     analysis_id: string;
@@ -194,9 +194,9 @@ export default function AnalysisFilesPage() {
         );
     }
 
-    const tenderFiles = files.filter(f => f.category === 'tender' && !f.is_processed_version);
-    const proposalFiles = files.filter(f => f.category === 'proposal' && !f.is_processed_version);
-    const unclassifiedFiles = files.filter(f => f.category === 'unclassified' && !f.is_processed_version);
+    const tenderFiles = files.filter(f => f.category === 'tender');
+    const proposalFiles = files.filter(f => f.category === 'proposal');
+    const unclassifiedFiles = files.filter(f => f.category === 'unclassified');
 
     return (
         <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
