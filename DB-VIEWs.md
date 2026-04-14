@@ -8,7 +8,7 @@ SQL to recreate the four public views. Run these after modifying the base tables
 
 Agrega conteos de eventos, archivos, propuestas y requerimientos a cada analisis.
 
-Tablas base: `analyses`, `events`, `files`, `proposals`, `analysis_requirements`
+Tablas base: `analyses`, `events`, `original_files`, `proposals`, `analysis_requirements`
 
 ```sql
 CREATE OR REPLACE VIEW analyses_view AS
@@ -25,7 +25,7 @@ SELECT
     paused_at_service,
     user_email,
     (SELECT count(*) FROM events e WHERE e.analysis_id = a.id)::integer AS total_events,
-    (SELECT count(*) FROM files f WHERE f.analysis_id = a.id)::integer AS total_files,
+    (SELECT count(*) FROM original_files f WHERE f.analysis_id = a.id)::integer AS total_files,
     (SELECT count(*) FROM proposals p WHERE p.analysis_id = a.id)::integer AS total_proposals,
     (SELECT count(*) FROM analysis_requirements r WHERE r.analysis_id = a.id)::integer AS total_requirements
 FROM analyses a;
@@ -33,36 +33,59 @@ FROM analyses a;
 
 ---
 
-## files_view
+## original_files_view
 
-Expone todos los campos de `files` y enriquece cada fila con el nombre, path y mime_type del archivo vinculado via la columna `link` (auto-referencia).
+Expone todos los campos de `original_files`.
 
-Tablas base: `files` (self-join via `files.link -> files.id`)
+Tabla base: `original_files`
 
 ```sql
-CREATE OR REPLACE VIEW files_view AS
+CREATE OR REPLACE VIEW original_files_view AS
 SELECT
-    f.id,
-    f.analysis_id,
-    f.file_name,
-    f.storage_path,
-    f.file_size,
-    f.mime_type,
-    f.is_processed_version,
-    f.created_at,
-    f.category,
-    f.proposal_id,
-    f.is_merged,
-    f.total_chunks,
-    f.metadata,
-    f.link,
-    f.is_reorderable,
-    f.tender_id,
-    linked.file_name AS linked_file_name,
-    linked.storage_path AS linked_storage_path,
-    linked.mime_type AS linked_mime_type
-FROM files f
-LEFT JOIN files linked ON linked.id = f.link;
+    id,
+    analysis_id,
+    file_name,
+    storage_path,
+    file_size,
+    mime_type,
+    created_at,
+    category,
+    proposal_id,
+    tender_id,
+    is_reorderable
+FROM original_files;
+```
+
+---
+
+## processed_files_view
+
+Expone todos los campos de `processed_files` y enriquece cada fila con el nombre, path y mime_type del archivo original vinculado via `original_file_id`.
+
+Tablas base: `processed_files` LEFT JOIN `original_files`
+
+```sql
+CREATE OR REPLACE VIEW processed_files_view AS
+SELECT
+    pf.id,
+    pf.analysis_id,
+    pf.original_file_id,
+    pf.file_name,
+    pf.storage_path,
+    pf.file_size,
+    pf.mime_type,
+    pf.created_at,
+    pf.is_merged,
+    pf.metadata,
+    pf.total_chunks,
+    pf.category,
+    pf.proposal_id,
+    pf.tender_id,
+    of.file_name AS original_file_name,
+    of.storage_path AS original_storage_path,
+    of.mime_type AS original_mime_type
+FROM processed_files pf
+LEFT JOIN original_files of ON of.id = pf.original_file_id;
 ```
 
 ---
@@ -96,6 +119,41 @@ SELECT
     updated_at,
     (SELECT count(*) FROM proposal_compliance_results cr WHERE cr.proposal_id = p.id)::integer AS total_compliance_results
 FROM proposals p;
+```
+
+---
+
+## analysis_compliance_matrix_view
+
+Expone todos los campos de `analysis_compliance_matrix` enriquecidos con el `slug` del análisis y el `requirement_code` del requerimiento.
+
+Tablas base: `analysis_compliance_matrix`, `analyses`, `analysis_requirements`
+
+```sql
+CREATE OR REPLACE VIEW analysis_compliance_matrix_view AS
+SELECT
+    m.id,
+    m.analysis_id,
+    m.requirement_id,
+    m.proposal_id,
+    m.verdict,
+    m.confidence,
+    m.reasoning,
+    m.missing_elements,
+    m.citations,
+    m.manual_verification_required,
+    m.extraction_batch_id,
+    m.is_verified,
+    m.reviewed_by,
+    m.reviewed_at,
+    m.notes,
+    m.created_at,
+    m.updated_at,
+    a.slug AS analysis_slug,
+    r.requirement_code
+FROM analysis_compliance_matrix m
+JOIN analyses a ON a.id = m.analysis_id
+JOIN analysis_requirements r ON r.id = m.requirement_id;
 ```
 
 ---

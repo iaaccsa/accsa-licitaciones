@@ -5,7 +5,8 @@ from uuid import UUID
 from app.core.azure import azure_container_apps_client
 from app.core.config import get_settings
 from app.config.jobs_config import get_root_jobs, get_next_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type, is_pause_after_job
-from app.repositories.file_repository import file_repository
+from app.repositories.original_file_repository import original_file_repository
+from app.repositories.processed_file_repository import processed_file_repository
 from app.repositories.proposal_repository import proposal_repository
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
@@ -200,13 +201,13 @@ class JobOrchestratorService:
 
         if fan_out_type in ("file", "merged_file", "file_with_metadata", "proposal"):
             if fan_out_type == "merged_file":
-                items = file_repository.get_merged_by_analysis_id(analysis_id)
+                items = processed_file_repository.get_merged_by_analysis_id(analysis_id)
             elif fan_out_type == "file_with_metadata":
-                items = file_repository.get_processed_with_metadata_by_analysis_id(analysis_id)
+                items = processed_file_repository.get_with_metadata_by_analysis_id(analysis_id)
             elif fan_out_type == "proposal":
                 items = proposal_repository.get_by_analysis_id(analysis_id)
             else:
-                items = file_repository.get_processed_by_analysis_id(analysis_id)
+                items = processed_file_repository.get_by_analysis_id(analysis_id)
             if not items:
                 logger.warning(f"No {fan_out_type} items found for analysis_id={analysis_id}, skipping fan-out job {next_job}")
                 return []
@@ -327,10 +328,8 @@ class JobOrchestratorService:
 
         # Lock file reordering before launching service-joiner
         if paused_at_service == "service-documents-grouper":
-            file_repository.update_files_by_analysis_id(
-                str(analysis_id), {"is_reorderable": False}
-            )
-            logger.info(f"Set is_reorderable=False for all files in analysis {analysis_id}")
+            original_file_repository.lock_reordering(str(analysis_id))
+            logger.info(f"Set is_reorderable=False for all original files in analysis {analysis_id}")
 
         # Clear paused state, return to processing
         analysis_repository.update_by_id(

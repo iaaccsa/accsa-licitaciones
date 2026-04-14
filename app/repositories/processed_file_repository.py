@@ -3,9 +3,9 @@ from app.core.supabase import supabase
 from typing import List, Dict, Any
 from uuid import UUID
 
-class FileRepository(BaseRepository):
+class ProcessedFileRepository(BaseRepository):
     def __init__(self):
-        super().__init__("files_view")
+        super().__init__("processed_files_view")
 
     def get_by_id(self, file_id: str) -> Dict[str, Any] | None:
         response = (
@@ -26,27 +26,6 @@ class FileRepository(BaseRepository):
         )
         return response.data
 
-    def get_processed_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
-        response = (
-            supabase.table(self.table_name)
-            .select("*")
-            .eq("analysis_id", str(analysis_id))
-            .eq("is_processed_version", True)
-            .execute()
-        )
-        return response.data
-
-    def get_processed_with_metadata_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
-        response = (
-            supabase.table(self.table_name)
-            .select("*")
-            .eq("analysis_id", str(analysis_id))
-            .eq("is_processed_version", True)
-            .not_.is_("metadata", None)
-            .execute()
-        )
-        return response.data
-
     def get_merged_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
         response = (
             supabase.table(self.table_name)
@@ -57,20 +36,40 @@ class FileRepository(BaseRepository):
         )
         return response.data
 
-    def create_file(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        response = supabase.table("files").insert(data).execute()
+    def get_with_metadata_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
+        response = (
+            supabase.table(self.table_name)
+            .select("*")
+            .eq("analysis_id", str(analysis_id))
+            .not_.is_("metadata", None)
+            .execute()
+        )
+        return response.data
+
+    def get_by_original_file_id(self, original_file_id: str) -> List[Dict[str, Any]]:
+        response = (
+            supabase.table(self.table_name)
+            .select("*")
+            .eq("original_file_id", original_file_id)
+            .execute()
+        )
+        return response.data
+
+    def create(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        response = supabase.table("processed_files").insert(data).execute()
         return response.data[0]
 
-    def update_file_by_id(self, file_id: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        response = supabase.table("files").update(data).eq("id", file_id).execute()
+    def update_by_id(self, file_id: str, data: Dict[str, Any]) -> Dict[str, Any] | None:
+        response = supabase.table("processed_files").update(data).eq("id", file_id).execute()
         return response.data[0] if response.data else None
 
-    def update_files_by_link(self, link: str, data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        response = supabase.table("files").update(data).eq("link", link).execute()
+    def update_by_original_file_id(self, original_file_id: str, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        response = (
+            supabase.table("processed_files")
+            .update(data)
+            .eq("original_file_id", original_file_id)
+            .execute()
+        )
         return response.data
 
-    def update_files_by_analysis_id(self, analysis_id: str, data: Dict[str, Any]) -> List[Dict[str, Any]]:
-        response = supabase.table("files").update(data).eq("analysis_id", analysis_id).execute()
-        return response.data
-
-file_repository = FileRepository()
+processed_file_repository = ProcessedFileRepository()
