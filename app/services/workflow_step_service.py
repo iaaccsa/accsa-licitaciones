@@ -1,5 +1,6 @@
 from app.repositories.workflow_step_repository import workflow_step_repository
 from app.schemas.workflow_step import WorkflowStep, WorkflowStepBase, WorkflowStepFilter
+from app.services.workflow_phase_service import workflow_phase_service
 import json
 import os
 from datetime import datetime
@@ -64,7 +65,7 @@ class WorkflowStepService:
         code = config.get("code")
         if not code:
             return None
-        
+
         update_data = {
             "analysis_id": analysis_id,
             "code": code,
@@ -72,8 +73,9 @@ class WorkflowStepService:
             "status": "completed",
             "ended_at": datetime.now().isoformat()
         }
-        
+
         data = self.repository.upsert(update_data)
+        workflow_phase_service.update_phase_progress(analysis_id, code)
         return WorkflowStep(**data) if data else None
 
     def start_step_by_service(self, analysis_id: str, service_name: str, instances_count: int = 0) -> Optional[WorkflowStep]:
@@ -124,6 +126,7 @@ class WorkflowStepService:
         }
 
         data = self.repository.upsert(update_data)
+        workflow_phase_service.update_phase_progress(analysis_id, code)
         return WorkflowStep(**data) if data else None
 
 workflow_step_service = WorkflowStepService()

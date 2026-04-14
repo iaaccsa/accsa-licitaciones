@@ -70,3 +70,52 @@ def get_fan_out_type(job_name: str) -> Optional[str]:
         if entry["service"] == job_name:
             return entry.get("fan_out_by")
     return None
+
+
+# Phase definitions (high-level groupings for the UI)
+_PHASES = [
+    {
+        "code": "processing",
+        "display_name": "Procesamiento",
+        "order": 1,
+    },
+    {
+        "code": "requirement_extraction",
+        "display_name": "Extracción de Requisitos",
+        "order": 2,
+    },
+    {
+        "code": "compliance_verification",
+        "display_name": "Verificación de Cumplimiento",
+        "order": 3,
+    },
+]
+
+# Build lookup: step_code -> phase_code
+_step_to_phase: Dict[str, str] = {
+    entry["code"]: entry["phase"]
+    for entry in _pipeline_config
+    if entry.get("phase")
+}
+
+# Build lookup: phase_code -> list of step codes
+_phase_to_steps: Dict[str, List[str]] = {}
+for _entry in _pipeline_config:
+    _phase = _entry.get("phase")
+    if _phase:
+        _phase_to_steps.setdefault(_phase, []).append(_entry["code"])
+
+
+def get_phases() -> List[Dict]:
+    """Return the list of high-level phase definitions."""
+    return list(_PHASES)
+
+
+def get_phase_for_step(step_code: str) -> Optional[str]:
+    """Return the phase code for a given step code, or None if not found."""
+    return _step_to_phase.get(step_code)
+
+
+def get_steps_for_phase(phase_code: str) -> List[str]:
+    """Return all step codes belonging to the given phase."""
+    return list(_phase_to_steps.get(phase_code, []))

@@ -9,7 +9,8 @@
     "initial_status": "completed",
     "is_initial": true,
     "is_final": false,
-    "pause_after": false
+    "pause_after": false,
+    "phase": "processing"
   },
   {
     "service": "service-file-extractor",
@@ -23,7 +24,8 @@
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
-    "pause_after": false
+    "pause_after": false,
+    "phase": "processing"
   },
   {
     "service": "service-files-converter-mistral",
@@ -37,7 +39,8 @@
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
-    "pause_after": false
+    "pause_after": false,
+    "phase": "processing"
   },
   {
     "service": "service-qdrant-by-file",
@@ -52,7 +55,8 @@
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
-    "fan_out_by": "file"
+    "fan_out_by": "file",
+    "phase": "processing"
   },
   {
     "service": "service-file-metadata-extractor",
@@ -67,7 +71,8 @@
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
-    "fan_out_by": "file"
+    "fan_out_by": "file",
+    "phase": "processing"
   },
   {
     "service": "service-setup-qdrant",
@@ -80,7 +85,8 @@
     "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": false
+    "is_final": false,
+    "phase": "processing"
   },
   {
     "service": "service-documents-classifier",
@@ -95,7 +101,8 @@
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
-    "fan_out_by": "file_with_metadata"
+    "fan_out_by": "file_with_metadata",
+    "phase": "processing"
   },
   {
     "service": "service-documents-grouper",
@@ -109,7 +116,8 @@
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
-    "pause_after": true
+    "pause_after": true,
+    "phase": "processing"
   },
   {
     "service": "service-joiner",
@@ -123,7 +131,8 @@
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
-    "pause_after": false
+    "pause_after": false,
+    "phase": "processing"
   },
   {
     "service": "service-chunk-and-index",
@@ -138,7 +147,8 @@
     "is_initial": false,
     "is_final": false,
     "fan_out_by": "merged_file",
-    "pause_after": false
+    "pause_after": false,
+    "phase": "processing"
   },
   {
     "service": "service-tender-classifier",
@@ -152,7 +162,8 @@
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
-    "pause_after": false
+    "pause_after": false,
+    "phase": "processing"
   },
   {
     "service": "service-requirement-extractor",
@@ -166,7 +177,8 @@
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
-    "pause_after": true
+    "pause_after": true,
+    "phase": "requirement_extraction"
   },
   {
     "service": "service-compliance-matcher",
@@ -181,7 +193,8 @@
     "is_initial": false,
     "is_final": false,
     "pause_after": true,
-    "fan_out_by": "proposal"
+    "fan_out_by": "proposal",
+    "phase": "compliance_verification"
   },
   {
     "service": "service-compliance-summarizer",
@@ -194,6 +207,7 @@
     "is_initial": false,
     "is_final": true,
     "pause_after": false,
-    "fan_out_by": "proposal"
+    "fan_out_by": "proposal",
+    "phase": "compliance_verification"
   }
 ]

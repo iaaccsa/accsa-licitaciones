@@ -23,6 +23,7 @@ class ProcessedFile(ProcessedFileBase):
     original_file_name: Optional[str] = None
     original_storage_path: Optional[str] = None
     original_mime_type: Optional[str] = None
+    proposal_label: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

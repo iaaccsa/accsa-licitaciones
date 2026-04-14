@@ -5,6 +5,7 @@ from app.schemas.analysis import Analysis, AnalysisFromStoragePath, AnalysisUpda
 from app.schemas.event import EventBase
 from app.services.event_service import event_service
 from app.services.workflow_step_service import workflow_step_service
+from app.services.workflow_phase_service import workflow_phase_service
 from app.services.job_orchestrator_service import job_orchestrator_service
 from app.core.supabase import supabase
 from fastapi import UploadFile
@@ -59,7 +60,8 @@ class AnalysisService:
         
         # 5. Initialize Workflow Steps
         workflow_step_service.initialize_steps(analysis.id)
-        
+        workflow_phase_service.initialize_phases(str(analysis.id))
+
         # 6. Start Jobs Pipeline
         try:
             job_orchestrator_service.start_pipeline(analysis_id=analysis.id)
@@ -93,6 +95,7 @@ class AnalysisService:
 
         # 3. Initialize Workflow Steps
         workflow_step_service.initialize_steps(analysis.id)
+        workflow_phase_service.initialize_phases(str(analysis.id))
 
         # 4. Start Jobs Pipeline
         try:

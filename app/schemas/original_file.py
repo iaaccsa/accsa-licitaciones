@@ -17,6 +17,7 @@ class OriginalFileBase(BaseModel):
 class OriginalFile(OriginalFileBase):
     id: Optional[UUID] = None
     created_at: datetime
+    proposal_label: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
