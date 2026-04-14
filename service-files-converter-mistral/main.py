@@ -200,7 +200,7 @@ def upload_markdown(
         "file_size": len(content_bytes),
         "mime_type": "text/markdown",
         "is_merged": False,
-        "link": source_file_id,
+        "original_file_id": source_file_id,
     }
 
     api_request("POST", API_PROCESSED_FILES_PATH, record)

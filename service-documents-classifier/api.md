@@ -11,7 +11,7 @@ Actualiza campos de un archivo procesado.
 - **Campos usados:** `category`
 
 ### PATCH /api/v1/original-files/{file_id}
-Propaga la categoría al archivo original vinculado (`link` field).
+Propaga la categoría al archivo original vinculado (`original_file_id` field).
 - **Campos usados:** `category`
 
 ### POST /api/v1/events/

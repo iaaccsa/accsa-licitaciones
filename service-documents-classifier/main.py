@@ -206,7 +206,7 @@ def process_document_classification():
         logger.info(f"Skipping '{file_name}' — no metadata available.")
         log_event(ANALYSIS_ID, "info", f"Archivo '{file_name}' sin metadata, clasificado como 'unclassified'.", EVENT_SOURCE)
         api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{FILE_ID}", {"category": "unclassified"})
-        link_id = file_record.get("link")
+        link_id = file_record.get("original_file_id")
         if link_id:
             api_request("PATCH", f"{API_ORIGINAL_FILES_PATH}{link_id}", {"category": "unclassified"})
         api_request("POST", API_JOBS_CALLBACK, {
@@ -234,7 +234,7 @@ def process_document_classification():
     log_event(ANALYSIS_ID, "info", f"Archivo '{file_name}' clasificado como '{category}'.", EVENT_SOURCE)
 
     # 5. Propagate category to the linked source file (if any)
-    link_id = file_record.get("link")
+    link_id = file_record.get("original_file_id")
     if link_id:
         api_request("PATCH", f"{API_ORIGINAL_FILES_PATH}{link_id}", {"category": category})
         logger.info(f"Propagated '{category}' to linked file {link_id}")

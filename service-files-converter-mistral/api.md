@@ -13,7 +13,7 @@ Busca archivos originales por filtro.
 
 ### POST /api/v1/processed-files/
 Crea un registro de archivo procesado (versión markdown convertida).
-- **Request:** `{analysis_id, file_name, storage_path, category, file_size, mime_type, is_merged, link}`
+- **Request:** `{analysis_id, file_name, storage_path, category, file_size, mime_type, is_merged, original_file_id}`
 
 ### PATCH /api/v1/analyses/{analysis_id}/status
 Actualiza el estado del análisis (usado en caso de fallo).

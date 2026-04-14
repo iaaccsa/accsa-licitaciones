@@ -18,8 +18,8 @@ strategy:
     # service-proposal-scorer: # arvhived
     #   SERVICE_NAME: "service-proposal-scorer"
 
-    service-file-extractor:
-      SERVICE_NAME: "service-file-extractor"
+    # service-file-extractor:
+      # SERVICE_NAME: "service-file-extractor"
     # service-files-converter-llama:
     #   SERVICE_NAME: "service-files-converter-llama"
     service-files-converter-mistral:
@@ -32,12 +32,12 @@ strategy:
     #   SERVICE_NAME: "service-requirement-extractor"
     # service-metadata-extractor:
     #   SERVICE_NAME: "service-metadata-extractor"
-    service-qdrant-by-file:
-      SERVICE_NAME: "service-qdrant-by-file"
+    # service-qdrant-by-file:
+    #   SERVICE_NAME: "service-qdrant-by-file"
     service-documents-classifier:
       SERVICE_NAME: "service-documents-classifier"
-    # service-documents-grouper:
-    #   SERVICE_NAME: "service-documents-grouper"
+    service-documents-grouper:
+      SERVICE_NAME: "service-documents-grouper"
     # service-joiner:
     #   SERVICE_NAME: "service-joiner"
     # service-tender-classifier:
@@ -46,8 +46,8 @@ strategy:
     #   SERVICE_NAME: "service-compliance-matcher"
     # service-compliance-summarizer:
     #   SERVICE_NAME: "service-compliance-summarizer"
-    service-file-metadata-extractor:
-      SERVICE_NAME: "service-file-metadata-extractor"
+    # service-file-metadata-extractor:
+    #   SERVICE_NAME: "service-file-metadata-extractor"
 
 steps:
   - script: |

@@ -12,7 +12,8 @@ Required environment variables:
   - API_KEY                : API key for backend authentication
   - API_EVENTS_PATH        : Path for events endpoint
   - API_ANALYSES_PATH      : Path for analyses endpoint
-  - API_FILES_PATH         : Path for files endpoint
+  - API_PROCESSED_FILES_PATH : Path for processed files endpoint
+  - API_ORIGINAL_FILES_PATH  : Path for original files endpoint (propagation)
   - API_PROPOSALS_PATH     : Path for proposals endpoint
   - API_TENDERS_PATH       : Path for tenders endpoint
   - API_JOBS_CALLBACK      : Path for job status callback
@@ -38,7 +39,8 @@ API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
-API_FILES_PATH = os.environ.get("API_FILES_PATH")
+API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
+API_ORIGINAL_FILES_PATH = os.environ.get("API_ORIGINAL_FILES_PATH")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
 API_TENDERS_PATH = os.environ.get("API_TENDERS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
@@ -82,7 +84,8 @@ def validate_env():
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
-            ("API_FILES_PATH", API_FILES_PATH),
+            ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
+            ("API_ORIGINAL_FILES_PATH", API_ORIGINAL_FILES_PATH),
             ("API_PROPOSALS_PATH", API_PROPOSALS_PATH),
             ("API_TENDERS_PATH", API_TENDERS_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
@@ -239,13 +242,13 @@ def create_proposals_and_update_files(gemini_client: genai.Client, openai_client
 
         # Update each file with proposal_id
         for file_id in file_ids:
-            api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"proposal_id": proposal_id})
+            api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{file_id}", {"proposal_id": proposal_id})
 
             # Propagate to linked source file
             file_record = file_lookup.get(file_id)
-            link_id = file_record.get("link") if file_record else None
+            link_id = file_record.get("original_file_id") if file_record else None
             if link_id:
-                api_request("PATCH", f"{API_FILES_PATH}{link_id}", {"proposal_id": proposal_id})
+                api_request("PATCH", f"{API_ORIGINAL_FILES_PATH}{link_id}", {"proposal_id": proposal_id})
                 logger.info(f"Propagated proposal_id to linked file {link_id}")
 
         log_event(ANALYSIS_ID, "info", f"Propuesta '{label}' creada con {len(file_ids)} archivos.", EVENT_SOURCE)
@@ -264,7 +267,7 @@ def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, fil
     Returns (generated_name, contracting_entity). Also PATCHes the analysis with generated_name."""
     tender_files = [
         f for f in files
-        if f.get("category") == "tender" and f.get("is_processed_version") is True and f.get("metadata")
+        if f.get("category") == "tender" and f.get("metadata")
     ]
 
     if not tender_files:
@@ -327,11 +330,11 @@ def create_tender_and_update_files(files: list[dict], generated_name: str | None
     for file_record in tender_normative_files:
         file_id = file_record["id"]
         file_name = file_record.get("file_name", "unknown")
-        api_request("PATCH", f"{API_FILES_PATH}{file_id}", {"tender_id": tender_id})
+        api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{file_id}", {"tender_id": tender_id})
 
-        link_id = file_record.get("link")
+        link_id = file_record.get("original_file_id")
         if link_id:
-            api_request("PATCH", f"{API_FILES_PATH}{link_id}", {"tender_id": tender_id})
+            api_request("PATCH", f"{API_ORIGINAL_FILES_PATH}{link_id}", {"tender_id": tender_id})
             logger.info(f"Propagated tender_id to linked file {link_id}")
 
         logger.info(f"Linked '{file_name}' (category={file_record.get('category')}) to tender {tender_id}")
@@ -370,7 +373,7 @@ def process_documents_grouping():
     logger.info(f"Starting {SERVICE_NAME} for ANALYSIS_ID={ANALYSIS_ID}")
 
     # 1. Fetch all files for this analysis
-    files = api_request("POST", f"{API_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
+    files = api_request("POST", f"{API_PROCESSED_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
 
     if not files:
         logger.warning("No files found for this analysis.")

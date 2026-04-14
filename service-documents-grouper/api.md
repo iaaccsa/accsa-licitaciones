@@ -2,13 +2,17 @@
 
 ## Endpoints consumidos
 
-### POST /api/v1/files/search
-Busca archivos por `analysis_id`.
+### POST /api/v1/processed-files/search
+Busca archivos procesados por `analysis_id`.
 - **Request:** `{"analysis_id": "uuid"}`
 - **Response:** `[{file_record}, ...]`
 
-### PATCH /api/v1/files/{file_id}
-Actualiza campos de un archivo.
+### PATCH /api/v1/processed-files/{file_id}
+Actualiza campos de un archivo procesado.
+- **Campos usados:** `proposal_id`, `tender_id`
+
+### PATCH /api/v1/original-files/{file_id}
+Propaga campos al archivo original vinculado (`original_file_id` field).
 - **Campos usados:** `proposal_id`, `tender_id`
 
 ### POST /api/v1/proposals/
