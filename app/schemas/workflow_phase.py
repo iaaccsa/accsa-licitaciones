@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 from uuid import UUID
 
@@ -8,10 +8,10 @@ class WorkflowPhaseBase(BaseModel):
     analysis_id: UUID
     code: str
     display_name: str
-    status: str
+    status: Literal["pending", "running", "completed", "failed"] = "pending"
     progress: int = 0
     order: int
-    type: str = "processing"
+    type: Literal["processing", "approval"] = "processing"
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
 
