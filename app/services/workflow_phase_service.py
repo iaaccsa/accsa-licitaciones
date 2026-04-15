@@ -1,7 +1,7 @@
 from app.repositories.workflow_phase_repository import workflow_phase_repository
 from app.repositories.workflow_step_repository import workflow_step_repository
 from app.schemas.workflow_phase import WorkflowPhase, WorkflowPhaseFilter
-from app.config.jobs_config import get_phases, get_phase_for_step, get_steps_for_phase
+from app.config.jobs_config import get_phases, get_phase_for_step, get_steps_for_phase, get_next_phase
 from datetime import datetime
 from typing import List
 
@@ -86,6 +86,25 @@ class WorkflowPhaseService:
             upsert_data["ended_at"] = now
 
         self.repository.upsert(upsert_data)
+
+        if new_status == "completed":
+            next_phase = get_next_phase(phase_code)
+            if next_phase and next_phase.get("type") == "approval":
+                self._activate_approval_phase(analysis_id, next_phase, now)
+
+    def _activate_approval_phase(self, analysis_id: str, phase_meta: dict, now: str) -> None:
+        existing = self.repository.get_by_analysis_and_code(analysis_id, phase_meta["code"])
+        if existing and existing.get("status") in ("running", "completed"):
+            return
+        self.repository.upsert({
+            "analysis_id": analysis_id,
+            "code": phase_meta["code"],
+            "display_name": phase_meta["display_name"],
+            "status": "running",
+            "progress": 0,
+            "order": phase_meta["order"],
+            "started_at": now,
+        })
 
 
 workflow_phase_service = WorkflowPhaseService()

@@ -1,0 +1,32 @@
+[
+  {
+    "code": "document_processing",
+    "display_name": "Procesamiento de Documentos",
+    "order": 1,
+    "type": "processing"
+  },
+  {
+    "code": "awaiting_approval_one",
+    "display_name": "Esperando Aprobación",
+    "order": 2,
+    "type": "approval"
+  },
+  {
+    "code": "requirement_extraction",
+    "display_name": "Extracción de Requisitos",
+    "order": 3,
+    "type": "processing"
+  },
+  {
+    "code": "awaiting_approval_two",
+    "display_name": "Esperando Aprobación",
+    "order": 4,
+    "type": "approval"
+  },
+  {
+    "code": "compliance_verification",
+    "display_name": "Verificación de Cumplimiento",
+    "order": 5,
+    "type": "processing"
+  }
+]

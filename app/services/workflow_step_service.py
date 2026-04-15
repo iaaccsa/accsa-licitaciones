@@ -36,17 +36,16 @@ class WorkflowStepService:
             
         steps = []
         for item in steps_config:
-            if item.get("create_on_start"):
-                step = {
-                    "analysis_id": str(analysis_id),
-                    "code": item["code"],
-                    "display_name": item["display_name"],
-                    "status": item["initial_status"],
-                    "parent_code": item.get("parent"),
-                    "started_at": now.isoformat() if item.get("is_initial") else None,
-                    "ended_at": None
-                }
-                steps.append(step)
+            step = {
+                "analysis_id": str(analysis_id),
+                "code": item["code"],
+                "display_name": item["display_name"],
+                "status": item["initial_status"],
+                "parent_code": item.get("parent"),
+                "started_at": now.isoformat() if item.get("is_initial") else None,
+                "ended_at": None
+            }
+            steps.append(step)
         
         data = self.repository.create_batch(steps)
         return [WorkflowStep(**item) for item in data]
@@ -102,7 +101,10 @@ class WorkflowStepService:
         code = config.get("code")
         if not code:
             return False
-        return self.repository.complete_step_if_running(analysis_id, code)
+        completed = self.repository.complete_step_if_running(analysis_id, code)
+        if completed:
+            workflow_phase_service.update_phase_progress(analysis_id, code)
+        return completed
 
     def start_step_by_service_if_pending(self, analysis_id: str, service_name: str) -> bool:
         config = self._get_step_config_by_service(service_name)

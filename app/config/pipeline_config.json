@@ -5,12 +5,11 @@
     "code": "queue",
     "display_name": "En Espera",
     "parent": null,
-    "create_on_start": true,
     "initial_status": "completed",
     "is_initial": true,
     "is_final": false,
     "pause_after": false,
-    "phase": "processing"
+    "phase": "document_processing"
   },
   {
     "service": "service-file-extractor",
@@ -20,12 +19,11 @@
     "code": "extractor",
     "display_name": "Extracción de Archivos",
     "parent": "queue",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
-    "phase": "processing"
+    "phase": "document_processing"
   },
   {
     "service": "service-files-converter-mistral",
@@ -35,12 +33,11 @@
     "code": "converter",
     "display_name": "Preparación de Documentos",
     "parent": "extractor",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
-    "phase": "processing"
+    "phase": "document_processing"
   },
   {
     "service": "service-qdrant-by-file",
@@ -50,13 +47,12 @@
     "code": "qdrant_by_file",
     "display_name": "Indexación de Documentos",
     "parent": "converter",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
     "fan_out_by": "file",
-    "phase": "processing"
+    "phase": "document_processing"
   },
   {
     "service": "service-file-metadata-extractor",
@@ -66,13 +62,12 @@
     "code": "file_metadata_extractor",
     "display_name": "Extracción de Metadatos",
     "parent": "qdrant_by_file",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
     "fan_out_by": "file",
-    "phase": "processing"
+    "phase": "document_processing"
   },
   {
     "service": "service-setup-qdrant",
@@ -82,11 +77,10 @@
     "code": "setup_qdrant",
     "display_name": "Configuración RAG",
     "parent": "file_metadata_extractor",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
-    "phase": "processing"
+    "phase": "document_processing"
   },
   {
     "service": "service-documents-classifier",
@@ -96,13 +90,12 @@
     "code": "documents_classifier",
     "display_name": "Clasificación de Documentos",
     "parent": "setup_qdrant",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
     "fan_out_by": "file_with_metadata",
-    "phase": "processing"
+    "phase": "document_processing"
   },
   {
     "service": "service-documents-grouper",
@@ -112,12 +105,11 @@
     "code": "documents_grouper",
     "display_name": "Agrupación de Documentos",
     "parent": "documents_classifier",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "pause_after": true,
-    "phase": "processing"
+    "phase": "document_processing"
   },
   {
     "service": "service-joiner",
@@ -127,12 +119,11 @@
     "code": "joiner",
     "display_name": "Uniendo Documentos",
     "parent": "documents_grouper",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
-    "phase": "processing"
+    "phase": "requirement_extraction"
   },
   {
     "service": "service-chunk-and-index",
@@ -142,13 +133,12 @@
     "code": "chunk_and_index",
     "display_name": "Chunking e Indexación",
     "parent": "joiner",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "fan_out_by": "merged_file",
     "pause_after": false,
-    "phase": "processing"
+    "phase": "requirement_extraction"
   },
   {
     "service": "service-tender-classifier",
@@ -158,12 +148,11 @@
     "code": "tender_classifier",
     "display_name": "Determinación Sistema de Evaluación",
     "parent": "chunk_and_index",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
-    "phase": "processing"
+    "phase": "requirement_extraction"
   },
   {
     "service": "service-requirement-extractor",
@@ -173,7 +162,6 @@
     "code": "requirement_extraction",
     "display_name": "Extracción de Requerimientos",
     "parent": "tender_classifier",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
@@ -188,7 +176,6 @@
     "code": "compliance_matcher",
     "display_name": "Matcher de Cumplimiento",
     "parent": "requirement_extraction",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
@@ -202,7 +189,6 @@
     "code": "compliance_summarizer",
     "display_name": "Resumen de Cumplimiento",
     "parent": "compliance_matcher",
-    "create_on_start": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": true,

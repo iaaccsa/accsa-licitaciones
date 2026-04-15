@@ -72,24 +72,10 @@ def get_fan_out_type(job_name: str) -> Optional[str]:
     return None
 
 
-# Phase definitions (high-level groupings for the UI)
-_PHASES = [
-    {
-        "code": "processing",
-        "display_name": "Procesamiento",
-        "order": 1,
-    },
-    {
-        "code": "requirement_extraction",
-        "display_name": "Extracción de Requisitos",
-        "order": 2,
-    },
-    {
-        "code": "compliance_verification",
-        "display_name": "Verificación de Cumplimiento",
-        "order": 3,
-    },
-]
+_PHASES_CONFIG_PATH = Path(__file__).parent / "phases_config.json"
+
+with open(_PHASES_CONFIG_PATH, "r") as f:
+    _PHASES: List[Dict] = json.load(f)
 
 # Build lookup: step_code -> phase_code
 _step_to_phase: Dict[str, str] = {
@@ -119,3 +105,12 @@ def get_phase_for_step(step_code: str) -> Optional[str]:
 def get_steps_for_phase(phase_code: str) -> List[str]:
     """Return all step codes belonging to the given phase."""
     return list(_phase_to_steps.get(phase_code, []))
+
+
+def get_next_phase(phase_code: str) -> Optional[Dict]:
+    """Return the next phase by order after the given phase, or None."""
+    current = next((p for p in _PHASES if p["code"] == phase_code), None)
+    if not current:
+        return None
+    next_order = current["order"] + 1
+    return next((p for p in _PHASES if p["order"] == next_order), None)
