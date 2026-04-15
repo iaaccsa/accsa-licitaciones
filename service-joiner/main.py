@@ -14,7 +14,7 @@ Required environment variables:
   - API_KEY
   - API_EVENTS_PATH
   - API_ANALYSES_PATH
-  - API_FILES_PATH
+  - API_PROCESSED_FILES_PATH
   - API_JOBS_CALLBACK
   - ANALYSIS_ID
 """
@@ -37,7 +37,7 @@ API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
-API_FILES_PATH = os.environ.get("API_FILES_PATH")
+API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
@@ -78,7 +78,7 @@ def validate_env():
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
-            ("API_FILES_PATH", API_FILES_PATH),
+            ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
         ]
@@ -107,19 +107,17 @@ def create_merged_file_record(file_name: str, storage_path: str, content: bytes,
                                category: str, proposal_id: str | None = None) -> dict:
     """Create a file record for a merged file via the API."""
     record = {
-        "id": str(uuid4()),
         "analysis_id": ANALYSIS_ID,
         "file_name": file_name,
         "storage_path": storage_path,
         "category": category,
         "file_size": len(content),
         "mime_type": "text/markdown",
-        "is_processed_version": True,
         "is_merged": True,
     }
     if proposal_id:
         record["proposal_id"] = proposal_id
-    return api_request("POST", f"{API_FILES_PATH}", record)
+    return api_request("POST", API_PROCESSED_FILES_PATH, record)
 
 
 def concatenate_files(supabase, files: list[dict]) -> bytes:
@@ -170,7 +168,7 @@ def process_joiner():
     logger.info(f"Analysis slug: {slug}")
 
     # 2. Fetch all files
-    files = api_request("POST", f"{API_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
+    files = api_request("POST", f"{API_PROCESSED_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
     if not files:
         logger.warning("No files found for this analysis.")
         log_event(ANALYSIS_ID, "warning", "No se encontraron archivos para unir.", EVENT_SOURCE)
@@ -184,7 +182,7 @@ def process_joiner():
     # 3. Filter processed markdown files with category
     md_files = [
         f for f in files
-        if f.get("is_processed_version") is True and f.get("category") and not f.get("is_merged")
+        if f.get("category") and not f.get("is_merged")
     ]
     logger.info(f"Found {len(md_files)} processed markdown files with category.")
 

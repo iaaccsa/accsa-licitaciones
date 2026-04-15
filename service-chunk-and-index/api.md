@@ -13,13 +13,13 @@
 Obtiene el registro del análisis.
 - **Response:** `{slug, ...}`
 
-### POST /api/v1/files/merged
-Obtiene archivos con metadata combinada (incluye datos de proposal). Se filtra localmente por `FILE_ID`.
+### POST /api/v1/processed-files/merged
+Obtiene archivos procesados con metadata combinada (incluye datos de proposal). Se filtra localmente por `FILE_ID`.
 - **Request:** `{"analysis_id": "uuid"}`
 - **Response:** `[{file_record}, ...]`
 
-### PATCH /api/v1/files/{file_id}
-Actualiza campos de un archivo.
+### PATCH /api/v1/processed-files/{file_id}
+Actualiza campos de un archivo procesado.
 - **Campos usados:** `total_chunks`
 
 ### PATCH /api/v1/analyses/{analysis_id}/status

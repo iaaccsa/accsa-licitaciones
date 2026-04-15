@@ -16,7 +16,7 @@ Required environment variables:
   - API_KEY
   - API_EVENTS_PATH
   - API_ANALYSES_PATH
-  - API_FILES_PATH
+  - API_PROCESSED_FILES_PATH
   - API_JOBS_CALLBACK
   - ANALYSIS_ID
   - FILE_ID
@@ -48,7 +48,7 @@ API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
-API_FILES_PATH = os.environ.get("API_FILES_PATH")
+API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 FILE_ID = os.environ.get("FILE_ID")
@@ -94,7 +94,7 @@ def validate_env():
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
-            ("API_FILES_PATH", API_FILES_PATH),
+            ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
             ("FILE_ID", FILE_ID),
@@ -218,7 +218,7 @@ def process_indexing():
     log_event(ANALYSIS_ID, "info", f"Iniciando indexación de archivo {FILE_ID}", EVENT_SOURCE)
 
     # 2. Fetch file record via merged endpoint and filter by FILE_ID
-    all_files = api_request("POST", f"{API_FILES_PATH}merged", {"analysis_id": ANALYSIS_ID})
+    all_files = api_request("POST", f"{API_PROCESSED_FILES_PATH}merged", {"analysis_id": ANALYSIS_ID})
     file_record = next((f for f in (all_files or []) if f["id"] == FILE_ID), None)
     if not file_record:
         raise ValueError(f"File {FILE_ID} not found in merged files for analysis {ANALYSIS_ID}")
@@ -253,7 +253,7 @@ def process_indexing():
     # 3e. Update total_chunks via API
     logger.info(f"Updating file record with total_chunks={len(chunks)}...")
     try:
-        api_request("PATCH", f"{API_FILES_PATH}{FILE_ID}", {"total_chunks": len(chunks)})
+        api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{FILE_ID}", {"total_chunks": len(chunks)})
     except Exception as e:
         logger.error(f"Error updating total_chunks for file {FILE_ID}: {e}")
 

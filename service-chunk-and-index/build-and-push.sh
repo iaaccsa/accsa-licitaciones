@@ -40,7 +40,7 @@ docker build $BUILD_ARGS --platform linux/amd64 \
   --build-arg API_KEY="$API_KEY" \
   --build-arg API_EVENTS_PATH="$API_EVENTS_PATH" \
   --build-arg API_ANALYSES_PATH="$API_ANALYSES_PATH" \
-  --build-arg API_FILES_PATH="$API_FILES_PATH" \
+  --build-arg API_PROCESSED_FILES_PATH="$API_PROCESSED_FILES_PATH" \
   --build-arg API_JOBS_CALLBACK="$API_JOBS_CALLBACK" \
   -t "$IMAGE" -f Dockerfile ..
 
