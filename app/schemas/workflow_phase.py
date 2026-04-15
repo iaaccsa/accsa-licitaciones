@@ -11,6 +11,7 @@ class WorkflowPhaseBase(BaseModel):
     status: str
     progress: int = 0
     order: int
+    type: str = "processing"
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
 

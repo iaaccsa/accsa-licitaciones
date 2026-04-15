@@ -25,6 +25,7 @@ class WorkflowPhaseService:
                 "status": "pending",
                 "progress": 0,
                 "order": p["order"],
+                "type": p.get("type", "processing"),
             }
             for p in phases
         ]
@@ -74,6 +75,7 @@ class WorkflowPhaseService:
             "status": new_status,
             "progress": progress,
             "order": phase_meta["order"],
+            "type": phase_meta.get("type", "processing"),
         }
 
         if new_status in ("running", "completed", "failed"):
@@ -103,6 +105,7 @@ class WorkflowPhaseService:
             "status": "running",
             "progress": 0,
             "order": phase_meta["order"],
+            "type": phase_meta.get("type", "approval"),
             "started_at": now,
         })
 
