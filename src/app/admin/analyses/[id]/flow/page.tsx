@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, ChevronLeft, GitBranch, CheckCircle2, XCircle, Clock, Settings, Loader2 } from "lucide-react";
+import { AlertCircle, ChevronLeft, GitBranch, CheckCircle2, XCircle, Clock, Settings, Layers } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface WorkflowStep {
@@ -14,13 +14,25 @@ interface WorkflowStep {
     instances_count?: number;
 }
 
+interface Phase {
+    id: string;
+    code: string;
+    display_name: string;
+    type: "processing" | "approval";
+    status: "pending" | "running" | "completed" | "failed";
+    progress: number;
+    order: number;
+    started_at: string | null;
+    ended_at: string | null;
+}
+
 const STATUS_CONFIG: Record<string, { label: string; className: string; Icon: React.ElementType }> = {
-    completed: { label: "Completado", className: "bg-blue-100 text-blue-700", Icon: CheckCircle2 },
-    success:   { label: "Exitoso",    className: "bg-blue-100 text-blue-700", Icon: CheckCircle2 },
+    completed: { label: "Completado", className: "bg-blue-100 text-blue-700",   Icon: CheckCircle2 },
+    success:   { label: "Exitoso",    className: "bg-blue-100 text-blue-700",   Icon: CheckCircle2 },
     running:   { label: "Ejecutando", className: "bg-orange-100 text-orange-700", Icon: Settings },
     processing:{ label: "Procesando", className: "bg-orange-100 text-orange-700", Icon: Settings },
-    failed:    { label: "Fallido",    className: "bg-red-100 text-red-700", Icon: XCircle },
-    pending:   { label: "Pendiente",  className: "bg-zinc-100 text-zinc-500", Icon: Clock },
+    failed:    { label: "Fallido",    className: "bg-red-100 text-red-700",     Icon: XCircle },
+    pending:   { label: "Pendiente",  className: "bg-zinc-100 text-zinc-500",   Icon: Clock },
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -35,14 +47,24 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
+function formatDateTime(iso: string | null) {
+    if (!iso) return <span className="text-zinc-300">—</span>;
+    return new Date(iso).toLocaleString("es-ES", {
+        day: "2-digit", month: "2-digit", year: "2-digit",
+        hour: "2-digit", minute: "2-digit",
+    });
+}
+
 export default function AnalysisFlowPage() {
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
 
     const [steps, setSteps] = useState<WorkflowStep[]>([]);
-    const [analysis, setAnalysis] = useState<{ slug: string } | null>(null);
+    const [phases, setPhases] = useState<Phase[]>([]);
+    const [analysis, setAnalysis] = useState<{ slug: string; status: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [phasesLoading, setPhasesLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const fetchSteps = useCallback(async () => {
@@ -62,16 +84,32 @@ export default function AnalysisFlowPage() {
         }
     }, [id]);
 
+    const fetchPhases = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/analyses/${id}/phases`);
+            if (res.ok) {
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    setPhases(data.sort((a: Phase, b: Phase) => a.order - b.order));
+                }
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setPhasesLoading(false);
+        }
+    }, [id]);
+
     useEffect(() => {
         if (!id) return;
         fetchSteps();
+        fetchPhases();
         fetch(`/api/analyses/${id}`)
             .then(r => r.ok ? r.json() : null)
             .then(data => { if (data) setAnalysis(data); })
             .catch(() => {});
-    }, [id, fetchSteps]);
+    }, [id, fetchSteps, fetchPhases]);
 
-    // Build a lookup for parent labels
     const codeToName = Object.fromEntries(
         steps.map(s => [s.code, s.display_name || s.label || s.code])
     );
@@ -111,7 +149,95 @@ export default function AnalysisFlowPage() {
                 )}
             </div>
 
+            {/* Phases table */}
             <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-zinc-100 bg-zinc-50/60 flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-zinc-400" />
+                    <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Fases del análisis</span>
+                </div>
+                {phasesLoading ? (
+                    <div className="p-6 space-y-3">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className="flex gap-4">
+                                <Skeleton className="h-5 w-8" />
+                                <Skeleton className="h-5 w-32" />
+                                <Skeleton className="h-5 w-40" />
+                                <Skeleton className="h-5 w-20" />
+                                <Skeleton className="h-5 w-20" />
+                            </div>
+                        ))}
+                    </div>
+                ) : phases.length === 0 ? (
+                    <div className="text-center py-10">
+                        <p className="text-zinc-400 italic text-sm">No hay fases registradas para este análisis.</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="border-b border-zinc-100">
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider w-10">#</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Código</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nombre</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Tipo</th>
+                                    <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">Progreso</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Inicio</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Fin</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100">
+                                {phases.map((phase) => (
+                                    <tr key={phase.id} className="hover:bg-zinc-50/50 transition-colors">
+                                        <td className="px-4 py-3 text-xs font-mono text-zinc-400">{phase.order}</td>
+                                        <td className="px-4 py-3 font-mono text-xs text-zinc-500 whitespace-nowrap">{phase.code}</td>
+                                        <td className="px-4 py-3 text-zinc-800 font-medium whitespace-nowrap">{phase.display_name}</td>
+                                        <td className="px-4 py-3">
+                                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                                                phase.type === "processing"
+                                                    ? "bg-violet-50 text-violet-700"
+                                                    : "bg-amber-50 text-amber-700"
+                                            }`}>
+                                                {phase.type === "processing" ? "Procesamiento" : "Aprobación"}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-center">
+                                            {phase.type === "processing" ? (
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <div className="w-16 h-1.5 bg-zinc-100 rounded-full overflow-hidden">
+                                                        <div
+                                                            className="h-full bg-sky-400 rounded-full"
+                                                            style={{ width: `${phase.progress}%` }}
+                                                        />
+                                                    </div>
+                                                    <span className="text-xs font-mono text-zinc-500">{phase.progress}%</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-zinc-300">—</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 text-xs text-zinc-500 whitespace-nowrap">{formatDateTime(phase.started_at)}</td>
+                                        <td className="px-4 py-3 text-xs text-zinc-500 whitespace-nowrap">{formatDateTime(phase.ended_at)}</td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <StatusBadge status={phase.status} />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        <div className="px-4 py-3 border-t border-zinc-100 text-xs text-zinc-400 text-right">
+                            {phases.length} {phases.length === 1 ? "fase" : "fases"}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Workflow steps table */}
+            <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-zinc-100 bg-zinc-50/60 flex items-center gap-2">
+                    <GitBranch className="w-4 h-4 text-zinc-400" />
+                    <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Pasos del flujo</span>
+                </div>
                 {isLoading ? (
                     <div className="p-6 space-y-3">
                         {[...Array(6)].map((_, i) => (
@@ -132,7 +258,7 @@ export default function AnalysisFlowPage() {
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-zinc-100 bg-zinc-50/60">
+                                <tr className="border-b border-zinc-100">
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Código</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nombre</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Paso Padre</th>

@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { Loader2, Calendar, Mail, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play, Scale, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import WorkflowVisualization from "@/components/WorkflowVisualization";
+import WorkflowPhases from "@/components/WorkflowPhases";
 import ProposalsSummary from "@/components/ProposalsSummary";
 
 interface Analysis {
@@ -193,8 +193,8 @@ export default function AnalysisDetailPage() {
                 </div>
             )}
 
-            {/* Workflow Visualization */}
-            <WorkflowVisualization analysisId={id} analysisStatus={analysis.status} />
+            {/* Workflow Phases */}
+            <WorkflowPhases analysisId={id} />
 
             {/* Navigation Buttons */}
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">

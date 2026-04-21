@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Progreso del análisis</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 1100px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 16px;
+    padding: 32px 40px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  h1 { font-size: 20px; margin: 0; font-weight: 600; letter-spacing: 0.2px; }
+
+  .overall { font-size: 14px; color: #94a3b8; }
+  .overall strong { color: #e2e8f0; font-weight: 600; }
+
+  /* Barra global */
+  .global-bar {
+    height: 6px;
+    background: rgba(148, 163, 184, 0.15);
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 16px 0 48px;
+  }
+  .global-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #38bdf8, #818cf8);
+    border-radius: 999px;
+    transition: width 0.8s ease;
+  }
+
+  /* Stepper horizontal */
+  .stepper {
+    display: flex;
+    align-items: flex-start;
+    position: relative;
+  }
+
+  .step {
+    flex: 0 0 auto;
+    width: 170px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Conector con "esperando aprobación" */
+  .connector {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 14px;    /* alinear con centro del círculo (56/2 - grosor/2) */
+    min-width: 60px;
+  }
+  .connector .line {
+    width: 100%;
+    height: 3px;
+    background: rgba(148, 163, 184, 0.2);
+    border-radius: 999px;
+    position: relative;
+  }
+  .connector .line::after {
+    content: "";
+    position: absolute;
+    left: 0; top: 0;
+    height: 100%;
+    width: 0%;
+    background: #22c55e;
+    border-radius: 999px;
+    transition: width 0.8s ease;
+  }
+  .connector.done .line::after { width: 100%; }
+
+  .connector .approval {
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    color: #94a3b8;
+    background: rgba(15, 23, 42, 0.6);
+    white-space: nowrap;
+  }
+  .connector.waiting .approval {
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.4);
+    background: rgba(251, 191, 36, 0.08);
+  }
+  .connector.done .approval {
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.4);
+    background: rgba(34, 197, 94, 0.08);
+  }
+  .connector .approval .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+  }
+  .connector.waiting .approval .dot {
+    animation: blink 1.2s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.25; }
+  }
+
+  /* Nodo — contenedor relativo para el anillo SVG */
+  .node-wrap {
+    position: relative;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ring {
+    position: absolute;
+    inset: 0;
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .ring circle {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+  }
+  .ring .track    { stroke: rgba(148, 163, 184, 0.2); }
+  .ring .progress {
+    stroke: #38bdf8;
+    stroke-dasharray: 150.8;   /* 2π·24 */
+    stroke-dashoffset: 150.8;
+    transition: stroke-dashoffset 0.9s ease;
+  }
+  .step.pending .ring .progress { stroke: rgba(148, 163, 184, 0.2); }
+  .step.done    .ring .progress { stroke: #22c55e; stroke-dashoffset: 0; }
+
+  .node {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #1e293b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: #94a3b8;
+    z-index: 1;
+    transition: all 0.3s ease;
+  }
+  .step.done .node {
+    background: #16a34a;
+    color: white;
+  }
+  .step.running .node {
+    background: #0f172a;
+    color: #38bdf8;
+    box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
+  }
+
+  /* Pulso para etapa activa */
+  .step.running .node-wrap::after {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid rgba(56, 189, 248, 0.35);
+    animation: pulse 1.8s ease-out infinite;
+    pointer-events: none;
+  }
+  @keyframes pulse {
+    0%   { transform: scale(0.85); opacity: 0.9; }
+    100% { transform: scale(1.25); opacity: 0; }
+  }
+
+  .label {
+    margin-top: 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #cbd5e1;
+    line-height: 1.35;
+  }
+  .status {
+    margin-top: 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #64748b;
+  }
+  .step.done    .status { color: #22c55e; }
+  .step.running .status { color: #38bdf8; }
+
+  .percent {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #38bdf8;
+    min-height: 16px;
+  }
+  .step.pending .percent,
+  .step.done    .percent { opacity: 0; }
+
+  .check { width: 20px; height: 20px; }
+
+  @media (max-width: 720px) {
+    .container { padding: 24px 18px; }
+    .step { width: 130px; }
+    .label { font-size: 12px; }
+    .connector .approval { font-size: 10px; padding: 3px 8px; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Progreso del análisis</h1>
+      <div class="overall">Progreso global: <strong id="overallText">0%</strong></div>
+    </header>
+
+    <div class="global-bar">
+      <div class="global-bar-fill" id="overallFill"></div>
+    </div>
+
+    <div class="stepper" id="stepper"></div>
+  </div>
+
+<script>
+  // Datos tal como vienen de la base de datos
+  const stages = [
+    { code: "processing",              display_name: "Procesamiento",                status: "running", progress: 72, order: 1 },
+    { code: "requirement_extraction",  display_name: "Extracción de Requisitos",     status: "pending", progress: 0,  order: 2 },
+    { code: "compliance_verification", display_name: "Verificación de Cumplimiento", status: "pending", progress: 0,  order: 3 }
+  ];
+
+  const statusLabel = {
+    running: "En curso",
+    pending: "Pendiente",
+    done:    "Completado"
+  };
+
+  const stepper = document.getElementById("stepper");
+  stages.sort((a, b) => a.order - b.order);
+
+  const C = 2 * Math.PI * 24; // radio del anillo = 24
+
+  stages.forEach((stage, idx) => {
+    // Connector entre etapas (excepto antes de la primera)
+    if (idx > 0) {
+      const prev = stages[idx - 1];
+      const connector = document.createElement("div");
+
+      // La aprobación está "done" si la etapa previa está completada y la actual ya arrancó
+      const prevDone = prev.status === "done" || prev.progress >= 100;
+      const currStarted = stage.status !== "pending" || stage.progress > 0;
+
+      let cState = "idle";
+      if (prevDone && currStarted) cState = "done";
+      else if (prevDone && !currStarted) cState = "waiting";
+
+      connector.className = `connector ${cState}`;
+      connector.innerHTML = `
+        <div class="line"></div>
+        <div class="approval">
+          <span class="dot"></span>
+          <span>${cState === "done" ? "Aprobado" : "Esperando aprobación"}</span>
+        </div>
+      `;
+      stepper.appendChild(connector);
+    }
+
+    // Estado visual de la etapa
+    let uiStatus = stage.status;
+    if (stage.status === "done" || stage.progress >= 100) uiStatus = "done";
+
+    const step = document.createElement("div");
+    step.className = `step ${uiStatus}`;
+
+    const nodeInner = uiStatus === "done"
+      ? `<svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+      : (idx + 1);
+
+    step.innerHTML = `
+      <div class="node-wrap">
+        <svg class="ring" viewBox="0 0 56 56">
+          <circle class="track"    cx="28" cy="28" r="24"/>
+          <circle class="progress" cx="28" cy="28" r="24"/>
+        </svg>
+        <div class="node">${nodeInner}</div>
+      </div>
+      <div class="label">${stage.display_name}</div>
+      <div class="status">${statusLabel[uiStatus] || stage.status}</div>
+      <div class="percent">${stage.progress}%</div>
+    `;
+
+    stepper.appendChild(step);
+
+    // Animar anillo de progreso para la etapa en curso
+    if (uiStatus === "running") {
+      requestAnimationFrame(() => {
+        const ring = step.querySelector(".ring .progress");
+        ring.style.strokeDashoffset = C * (1 - stage.progress / 100);
+      });
+    } else if (uiStatus === "done") {
+      const ring = step.querySelector(".ring .progress");
+      ring.style.strokeDashoffset = 0;
+    }
+  });
+
+  // Progreso global
+  const overall = Math.round(
+    stages.reduce((acc, s) => acc + s.progress, 0) / stages.length
+  );
+  document.getElementById("overallText").textContent = `${overall}%`;
+  requestAnimationFrame(() => {
+    document.getElementById("overallFill").style.width = `${overall}%`;
+  });
+</script>
+</body>
+</html>
