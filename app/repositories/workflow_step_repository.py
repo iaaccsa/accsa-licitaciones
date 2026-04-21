@@ -70,6 +70,17 @@ class WorkflowStepRepository(BaseRepository):
         )
         return bool(response.data)
 
+    def get_step_status(self, analysis_id: str, code: str) -> str | None:
+        response = (
+            supabase.table(self.table_name)
+            .select("status")
+            .eq("analysis_id", analysis_id)
+            .eq("code", code)
+            .maybe_single()
+            .execute()
+        )
+        return response.data["status"] if response.data else None
+
     def cancel_pending_by_analysis(self, analysis_id: str) -> int:
         """Cancel all workflow steps that are running or pending."""
         cancelled_count = 0

@@ -25,6 +25,18 @@ for entry in _jobs_config:
 # All known service names
 _all_services: List[str] = [entry["service"] for entry in _jobs_config]
 
+# Build reverse map: service -> list of services that point to it
+_parent_jobs_map: Dict[str, List[str]] = {s: [] for s in _all_services}
+for _entry in _jobs_config:
+    for _ns in _entry.get("next_services", []):
+        if _ns in _parent_jobs_map:
+            _parent_jobs_map[_ns].append(_entry["service"])
+
+
+def get_parent_jobs(job_name: str) -> List[str]:
+    """Return all jobs that have job_name in their next_services."""
+    return _parent_jobs_map.get(job_name, [])
+
 
 def get_root_jobs() -> List[str]:
     """Return jobs that have no predecessors (entry points of the pipeline)."""

@@ -113,6 +113,13 @@ class WorkflowStepService:
             return False
         return self.repository.claim_step_if_pending(analysis_id, code)
 
+    def is_step_completed_by_service(self, analysis_id: str, service_name: str) -> bool:
+        config = self._get_step_config_by_service(service_name)
+        code = config.get("code")
+        if not code:
+            return False
+        return self.repository.get_step_status(analysis_id, code) == "completed"
+
     def fail_step_by_service(self, analysis_id: str, service_name: str) -> Optional[WorkflowStep]:
         config = self._get_step_config_by_service(service_name)
         code = config.get("code")

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 class OriginalFileBase(BaseModel):
@@ -18,6 +18,7 @@ class OriginalFile(OriginalFileBase):
     id: Optional[UUID] = None
     created_at: datetime
     proposal_label: Optional[str] = None
+    digital_signatures: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -29,3 +30,4 @@ class OriginalFileUpdate(BaseModel):
     proposal_id: Optional[UUID] = None
     tender_id: Optional[UUID] = None
     is_reorderable: Optional[bool] = None
+    digital_signatures: Optional[Dict[str, Any]] = None
