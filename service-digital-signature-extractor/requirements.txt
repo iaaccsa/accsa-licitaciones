@@ -1,0 +1,4 @@
+supabase>=2.0.0
+requests
+pyhanko>=0.21.0
+pyhanko-certvalidator>=0.26.0

@@ -22,6 +22,7 @@ VALID_SERVICES=(
   "service-tender-classifier"
   "service-compliance-matcher"
   "service-compliance-summarizer"
+  "service-digital-signature-extractor"
 )
 
 if [ -z "$1" ]; then
@@ -74,7 +75,7 @@ az containerapp job create \
   --registry-username "$ACR_USER_NAME" \
   --registry-password "$ACR_PASSWORD" \
   --trigger-type "Manual" \
-  --replica-timeout 1800 \
+  --replica-timeout 3600 \
   --replica-retry-limit 0 \
   --parallelism 1 \
   --replica-completion-count 1 \

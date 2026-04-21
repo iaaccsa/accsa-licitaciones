@@ -5,6 +5,7 @@
 TODO: Crear una SKILL para creación de servicios
 TODO: Asegurar que todos los servicios si fallan guarden el error en la base de datos y marquen el análisis como finalizado con error, además de guardar el error final en el análisis
 TODO: Revisar que todos los servicios que usan un LLM tengan un LLM de fallback
+TODO: Revisar la ortografía de los archivos summary.md
 
 ## service-iterative-requirement-extractor
 

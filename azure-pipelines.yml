@@ -26,8 +26,8 @@ strategy:
     #   SERVICE_NAME: "service-files-converter-mistral"
     # service-setup-qdrant:
     #   SERVICE_NAME: "service-setup-qdrant"
-    service-chunk-and-index:
-      SERVICE_NAME: "service-chunk-and-index"
+    # service-chunk-and-index:
+    #   SERVICE_NAME: "service-chunk-and-index"
     # service-requirement-extractor:
     #   SERVICE_NAME: "service-requirement-extractor"
     # service-metadata-extractor:
@@ -38,8 +38,10 @@ strategy:
     #   SERVICE_NAME: "service-documents-classifier"
     # service-documents-grouper:
     #   SERVICE_NAME: "service-documents-grouper"
-    service-joiner:
-      SERVICE_NAME: "service-joiner"
+    # service-joiner:
+    #   SERVICE_NAME: "service-joiner"
+    service-digital-signature-extractor:
+      SERVICE_NAME: "service-digital-signature-extractor"
     # service-tender-classifier:
     #   SERVICE_NAME: "service-tender-classifier"
     # service-compliance-matcher:
