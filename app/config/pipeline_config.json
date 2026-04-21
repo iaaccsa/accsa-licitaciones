@@ -181,7 +181,7 @@
     "is_final": false,
     "pause_after": true,
     "fan_out_by": "proposal",
-    "phase": "compliance_verification"
+    "phase": "award_check"
   },
   {
     "service": "service-compliance-summarizer",
@@ -194,6 +194,6 @@
     "is_final": true,
     "pause_after": false,
     "fan_out_by": "proposal",
-    "phase": "compliance_verification"
+    "phase": "final_compliance_check"
   }
 ]

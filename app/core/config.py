@@ -28,7 +28,7 @@ class Settings(BaseSettings):
 
     API_TENDER_CLASSIFICATIONS_PATH: str = "/api/v1/tender-classifications/"
 
-    JOB_TIMEOUT_MINUTES: int = 35
+    JOB_TIMEOUT_MINUTES: int = 65
     JOB_MONITOR_INTERVAL_SECONDS: int = 60
 
     MAILGUN_API_KEY: str
