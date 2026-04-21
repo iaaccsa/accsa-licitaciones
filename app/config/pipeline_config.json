@@ -43,7 +43,7 @@
     "service": "service-qdrant-by-file",
     "next_services": [
       "service-file-metadata-extractor",
-      "service-digital-signature-extractor"
+      "service-digital-sig-extractor"
     ],
     "code": "qdrant_by_file",
     "display_name": "Indexación de Documentos",
@@ -71,7 +71,7 @@
     "phase": "document_processing"
   },
   {
-    "service": "service-digital-signature-extractor",
+    "service": "service-digital-sig-extractor",
     "next_services": [
       "service-setup-qdrant"
     ],
