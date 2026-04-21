@@ -19,6 +19,7 @@ class JobCallbackRequest(BaseModel):
     analysis_id: UUID
     proposal_id: Optional[UUID] = None
     file_id: Optional[UUID] = None
+    original_file_id: Optional[UUID] = None
     status: str  # "success" | "failed"
     error_message: Optional[str] = None
 

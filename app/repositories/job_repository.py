@@ -5,7 +5,7 @@ class JobRepository(BaseRepository):
     def __init__(self):
         super().__init__("jobs")
 
-    def update_job_status(self, analysis_id: str, service_name: str, status: str, file_id: str = None, proposal_id: str = None):
+    def update_job_status(self, analysis_id: str, service_name: str, status: str, file_id: str = None, original_file_id: str = None, proposal_id: str = None):
         query = (
             supabase.table(self.table_name)
             .update({"status": status})
@@ -14,6 +14,8 @@ class JobRepository(BaseRepository):
         )
         if file_id:
             query = query.eq("file_id", file_id)
+        if original_file_id:
+            query = query.eq("original_file_id", original_file_id)
         if proposal_id:
             query = query.eq("proposal_id", proposal_id)
         response = query.execute()

@@ -88,6 +88,7 @@ class JobOrchestratorService:
         analysis_id: UUID,
         proposal_id: Optional[UUID] = None,
         file_id: Optional[UUID] = None,
+        original_file_id: Optional[UUID] = None,
         status: str = "success",
         error_message: Optional[str] = None,
     ) -> List[str]:
@@ -98,8 +99,9 @@ class JobOrchestratorService:
 
         job_status = "succeeded" if status == "success" else "failed"
         file_id_str = str(file_id) if file_id else None
+        original_file_id_str = str(original_file_id) if original_file_id else None
         proposal_id_str = str(proposal_id) if proposal_id else None
-        job_repository.update_job_status(str(analysis_id), service_name, job_status, file_id=file_id_str, proposal_id=proposal_id_str)
+        job_repository.update_job_status(str(analysis_id), service_name, job_status, file_id=file_id_str, original_file_id=original_file_id_str, proposal_id=proposal_id_str)
 
         if status == "failed":
             logger.error(
@@ -228,6 +230,10 @@ class JobOrchestratorService:
                     azure_response = self._launch_job(next_job, analysis_id, proposal_id=UUID(item_id))
                     self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for proposal {item_id}", azure_response)
                     logger.info(f"Launched fan-out job: {next_job} proposal_id={item_id} for analysis_id={analysis_id}")
+                elif fan_out_type == "original_file":
+                    azure_response = self._launch_job(next_job, analysis_id, proposal_id, original_file_id=UUID(item_id))
+                    self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for original_file {item_id}", azure_response)
+                    logger.info(f"Launched fan-out job: {next_job} original_file_id={item_id} for analysis_id={analysis_id}")
                 else:
                     azure_response = self._launch_job(next_job, analysis_id, proposal_id, file_id=UUID(item_id))
                     self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for file {item_id}", azure_response)
@@ -268,6 +274,7 @@ class JobOrchestratorService:
         analysis_id: UUID,
         proposal_id: Optional[UUID] = None,
         file_id: Optional[UUID] = None,
+        original_file_id: Optional[UUID] = None,
     ) -> dict:
         """Launch a single Azure Container Apps Job and create a record in the jobs table."""
         image = f"{self.registry}/{service_name}:latest"
@@ -277,8 +284,9 @@ class JobOrchestratorService:
             {"name": "PROPOSAL_ID", "value": str(proposal_id) if proposal_id else ""},
         ]
 
-        if file_id:
-            env_vars.append({"name": "FILE_ID", "value": str(file_id)})
+        effective_file_id = file_id or original_file_id
+        if effective_file_id:
+            env_vars.append({"name": "FILE_ID", "value": str(effective_file_id)})
 
         template = {
             "containers": [
@@ -290,7 +298,11 @@ class JobOrchestratorService:
             ]
         }
 
-        logger.info(f"Launching Azure job: {service_name} with image: {image}" + (f" for file_id={file_id}" if file_id else ""))
+        logger.info(
+            f"Launching Azure job: {service_name} with image: {image}"
+            + (f" for file_id={file_id}" if file_id else "")
+            + (f" for original_file_id={original_file_id}" if original_file_id else "")
+        )
 
         poller = self.client.jobs.begin_start(
             resource_group_name=self.resource_group,
@@ -301,13 +313,12 @@ class JobOrchestratorService:
         result = poller.result()
         azure_response = result.as_dict() if result else {}
 
-        # Create job record in the jobs table
         input_payload = {
             "ANALYSIS_ID": str(analysis_id),
             "PROPOSAL_ID": str(proposal_id) if proposal_id else "",
         }
-        if file_id:
-            input_payload["FILE_ID"] = str(file_id)
+        if effective_file_id:
+            input_payload["FILE_ID"] = str(effective_file_id)
 
         job_record = {
             "analysis_id": str(analysis_id),
@@ -318,6 +329,8 @@ class JobOrchestratorService:
         }
         if file_id:
             job_record["file_id"] = str(file_id)
+        if original_file_id:
+            job_record["original_file_id"] = str(original_file_id)
         if proposal_id:
             job_record["proposal_id"] = str(proposal_id)
         job_repository.create(job_record)
