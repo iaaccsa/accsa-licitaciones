@@ -51,14 +51,8 @@ Thumbs.db
 *.zip
 *.bak
 curl
-service-file-extractor/job-template.yaml
-job-template.yaml
-fase-1-2-ingest-tender.py
-fase-1-1-setup-qdrant.py
-.env.local
-fase-1-3-chunk_and_index.py
-fase-3-2-verify.py
 
+.env.local
 .agents
 .agent/skills/skill-creator
 .agent/skills/skill-creator/*
@@ -66,7 +60,7 @@ service-creator.skill
 .agent/skills/skill-creator/service-creator.skill
 backend-credentials
 api-doc.md
-CLAUDE.md
 todo-api.md
 service.md
 .mcp.json
+_review/job-template.yaml
