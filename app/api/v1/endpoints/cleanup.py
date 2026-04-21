@@ -8,6 +8,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _collect_bucket_paths(bucket_name: str, prefix: str = "") -> list:
+    items = supabase.storage.from_(bucket_name).list(prefix) if prefix else supabase.storage.from_(bucket_name).list()
+    paths = []
+    for item in items:
+        full_path = f"{prefix}/{item['name']}" if prefix else item["name"]
+        if item.get("id") is None:
+            # folder — recurse
+            paths.extend(_collect_bucket_paths(bucket_name, full_path))
+        else:
+            paths.append(full_path)
+    return paths
+
+
 @router.post("/")
 def cleanup_all():
     """
@@ -31,11 +44,10 @@ def cleanup_all():
     # 2. Empty storage buckets
     for bucket_name in ["artifacts", "files"]:
         try:
-            bucket_files = supabase.storage.from_(bucket_name).list()
-            if bucket_files:
-                paths = [f["name"] for f in bucket_files]
-                supabase.storage.from_(bucket_name).remove(paths)
-            results["storage"][bucket_name] = f"deleted {len(bucket_files)} files"
+            all_paths = _collect_bucket_paths(bucket_name)
+            if all_paths:
+                supabase.storage.from_(bucket_name).remove(all_paths)
+            results["storage"][bucket_name] = f"deleted {len(all_paths)} files"
         except Exception as e:
             logger.error(f"Error cleaning bucket {bucket_name}: {e}")
             results["storage"][bucket_name] = f"error: {str(e)}"
