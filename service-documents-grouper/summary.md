@@ -7,15 +7,17 @@ Agrupa los archivos ya clasificados de un análisis: crea registros de proposals
 
 1. Obtiene todos los archivos del análisis via API (`POST /api/v1/files/search`)
 2. **Agrupación de proposals**: Filtra archivos `proposal` con metadata:
-   - Envía solo la metadata a Gemini para agrupar por empresa/dominio
-   - Agrupa por company_name, tax_id, representative_name
+   - Envía metadata y `digital_signatures` a Gemini para agrupar por empresa/dominio
+   - Agrupa por company_name, tax_id, representative_name (metadata)
+   - Usa signer name, organization y tax_id de `digital_signatures` como señal adicional (especialmente cuando metadata es insuficiente)
    - Genera un label descriptivo por grupo
 3. **Creación de proposals**: Por cada grupo:
    - Crea un registro de proposal via API (label, provider_name)
    - Actualiza `proposal_id` en cada archivo del grupo
    - Propaga `proposal_id` a archivos vinculados
 4. **Generación de info del tender**: Filtra archivos tender (`is_processed_version=true`):
-   - Envía solo la metadata a Gemini para generar un nombre (5-15 palabras) y la entidad contratante
+   - Envía metadata y `digital_signatures` a Gemini para generar un nombre (5-15 palabras) y la entidad contratante
+   - Usa signer organization como señal secundaria para identificar la entidad contratante
    - Actualiza `generated_name` en el análisis via API
 5. **Creación de tender**: Crea UN registro de tender por análisis (label, provider_name):
    - Actualiza `tender_id` en todos los archivos `tender` y `normative`
@@ -25,7 +27,7 @@ Agrupa los archivos ya clasificados de un análisis: crea registros de proposals
 
 ## Entrada
 - **ANALYSIS_ID** (runtime): UUID del análisis
-- Lee: todos los archivos ya clasificados con `category` y `metadata` poblados
+- Lee: todos los archivos ya clasificados con `category`, `metadata` y `digital_signatures` poblados
 
 ## Salida
 - Archivos `proposal` actualizados con `proposal_id`

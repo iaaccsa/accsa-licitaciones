@@ -109,7 +109,7 @@ def extract_signatures(pdf_bytes: bytes) -> dict:
         "has_signatures": False,
         "signatures": [],
         "extraction_status": "no_signatures",
-        "extraction_error": None,
+        "extraction_error": False,
     }
 
     try:
@@ -176,7 +176,7 @@ def extract_signatures(pdf_bytes: bytes) -> dict:
     except Exception as e:
         logger.error(f"Signature extraction error: {e}")
         result["extraction_status"] = "failed"
-        result["extraction_error"] = str(e)
+        result["extraction_error"] = True
 
     return result
 

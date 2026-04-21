@@ -6,6 +6,7 @@
 Busca archivos procesados por `analysis_id`.
 - **Request:** `{"analysis_id": "uuid"}`
 - **Response:** `[{file_record}, ...]`
+- **Campos requeridos en respuesta:** `id`, `file_name`, `category`, `metadata`, `original_file_id`, `digital_signatures`
 
 ### PATCH /api/v1/processed-files/{file_id}
 Actualiza campos de un archivo procesado.

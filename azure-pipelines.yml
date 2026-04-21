@@ -36,8 +36,8 @@ strategy:
     #   SERVICE_NAME: "service-qdrant-by-file"
     # service-documents-classifier:
     #   SERVICE_NAME: "service-documents-classifier"
-    # service-documents-grouper:
-    #   SERVICE_NAME: "service-documents-grouper"
+    service-documents-grouper:
+      SERVICE_NAME: "service-documents-grouper"
     # service-joiner:
     #   SERVICE_NAME: "service-joiner"
     service-digital-sig-extractor:

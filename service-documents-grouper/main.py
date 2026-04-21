@@ -109,8 +109,9 @@ Task: group these files by the entity (company/bidder) they belong to.
 
 Grouping rules:
 - Match by company_name (exact or fuzzy match)
-- Use tax_id or representative_name as secondary signals
-- If metadata is insufficient, place the file in its own group
+- Use tax_id or representative_name from key_identifiers as secondary signals
+- Use digital_signatures.signers: signer tax_id and organization are strong identity signals — use them to confirm or override metadata when company_name is null or ambiguous
+- If metadata and signatures are both insufficient, place the file in its own group
 - Generate a descriptive label for each group (use the company or consortium name when possible)
 
 Return JSON:
@@ -139,6 +140,7 @@ Rules for generated_name:
 Rules for contracting_entity:
 - The specific name of the organization issuing the tender (government body, company, institution)
 - Use the official name as it appears in the documents
+- Use digital_signatures.signers[].organization as a secondary signal if metadata is insufficient
 - Return null if it cannot be determined with confidence
 
 Return JSON:
@@ -177,6 +179,7 @@ def group_proposal_files(gemini_client: genai.Client, openai_client: OpenAI, pro
     files_for_prompt = []
     for f in proposal_files:
         metadata = f.get("metadata") or {}
+        ds = f.get("digital_signatures") or {}
         files_for_prompt.append({
             "id": f["id"],
             "file_name": f.get("file_name", "unknown"),
@@ -185,6 +188,18 @@ def group_proposal_files(gemini_client: genai.Client, openai_client: OpenAI, pro
             "document_purpose": metadata.get("document_purpose"),
             "key_identifiers": metadata.get("key_identifiers"),
             "summary": metadata.get("summary"),
+            "digital_signatures": {
+                "has_signatures": ds.get("has_signatures", False),
+                "extraction_status": ds.get("extraction_status"),
+                "signers": [
+                    {
+                        "signer_name": s.get("signer_name"),
+                        "organization": s.get("organization"),
+                        "tax_id": s.get("tax_id"),
+                    }
+                    for s in (ds.get("signatures") or [])
+                ],
+            },
         })
 
     prompt = GROUPING_PROMPT.format(files_json=json.dumps(files_for_prompt, ensure_ascii=False, indent=2))
@@ -279,6 +294,7 @@ def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, fil
     files_for_prompt = []
     for f in tender_files:
         metadata = f.get("metadata") or {}
+        ds = f.get("digital_signatures") or {}
         files_for_prompt.append({
             "file_name": f.get("file_name", "unknown"),
             "document_type": metadata.get("document_type"),
@@ -287,6 +303,18 @@ def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, fil
             "document_purpose": metadata.get("document_purpose"),
             "key_identifiers": metadata.get("key_identifiers"),
             "summary": metadata.get("summary"),
+            "digital_signatures": {
+                "has_signatures": ds.get("has_signatures", False),
+                "extraction_status": ds.get("extraction_status"),
+                "signers": [
+                    {
+                        "signer_name": s.get("signer_name"),
+                        "organization": s.get("organization"),
+                        "tax_id": s.get("tax_id"),
+                    }
+                    for s in (ds.get("signatures") or [])
+                ],
+            },
         })
 
     prompt = NAMING_PROMPT.format(files_json=json.dumps(files_for_prompt, ensure_ascii=False, indent=2))
