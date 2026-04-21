@@ -22,7 +22,7 @@ VALID_SERVICES=(
   "service-tender-classifier"
   "service-compliance-matcher"
   "service-compliance-summarizer"
-  "service-digital-signature-extractor"
+  "service-digital-sig-extractor"
 )
 
 if [ -z "$1" ]; then

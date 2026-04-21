@@ -43,7 +43,7 @@ API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 FILE_ID = os.environ.get("FILE_ID")
 
-SERVICE_NAME = "service-digital-signature-extractor"
+SERVICE_NAME = "service-digital-sig-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 STORAGE_BUCKET = "files"
 

@@ -47,14 +47,14 @@ RUN for entry in \
   done
 
 # Install Python dependencies
-COPY service-digital-signature-extractor/requirements.txt .
+COPY service-digital-sig-extractor/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-digital-signature-extractor/main.py .
+COPY service-digital-sig-extractor/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

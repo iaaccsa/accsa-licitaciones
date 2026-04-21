@@ -40,8 +40,8 @@ strategy:
     #   SERVICE_NAME: "service-documents-grouper"
     # service-joiner:
     #   SERVICE_NAME: "service-joiner"
-    service-digital-signature-extractor:
-      SERVICE_NAME: "service-digital-signature-extractor"
+    service-digital-sig-extractor:
+      SERVICE_NAME: "service-digital-sig-extractor"
     # service-tender-classifier:
     #   SERVICE_NAME: "service-tender-classifier"
     # service-compliance-matcher:
