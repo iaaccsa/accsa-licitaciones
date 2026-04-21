@@ -6,7 +6,7 @@
     "type": "processing"
   },
   {
-    "code": "awaiting_approval_one",
+    "code": "doc_approval",
     "display_name": "Esperando Aprobación de Documentos",
     "order": 2,
     "type": "approval"
@@ -18,7 +18,7 @@
     "type": "processing"
   },
   {
-    "code": "awaiting_approval_two",
+    "code": "requirement_approval",
     "display_name": "Esperando Aprobación de Requisitos",
     "order": 4,
     "type": "approval"
@@ -30,7 +30,7 @@
     "type": "processing"
   },
   {
-    "code": "awaiting_approval_two",
+    "code": "award_approval",
     "display_name": "Esperando Aprobación de Adjudicación",
     "order": 6,
     "type": "approval"
