@@ -199,7 +199,7 @@ def notify_failure(error_msg: str):
         api_request("POST", API_JOBS_CALLBACK, {
             "service_name": SERVICE_NAME,
             "analysis_id": ANALYSIS_ID,
-            "file_id": FILE_ID,
+            "original_file_id": FILE_ID,
             "status": "failed",
             "error_message": error_msg,
         })
@@ -270,7 +270,7 @@ def process_file():
     api_request("POST", API_JOBS_CALLBACK, {
         "service_name": SERVICE_NAME,
         "analysis_id": ANALYSIS_ID,
-        "file_id": FILE_ID,
+        "original_file_id": FILE_ID,
         "status": "success",
     })
     log_event(
