@@ -122,6 +122,7 @@ class ComplianceMatrixService:
         proposal_id: UUID,
         verification_method: Optional[str] = None,
         role: Optional[str] = None,
+        order: str = "asc",
         limit: int = 50,
         offset: int = 0,
     ) -> List[ComplianceMatrixViewEntry]:
@@ -129,6 +130,7 @@ class ComplianceMatrixService:
             proposal_id=proposal_id,
             verification_method=verification_method,
             role=role,
+            order=order,
             limit=limit,
             offset=offset,
         )

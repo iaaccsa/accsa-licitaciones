@@ -69,6 +69,7 @@ class ComplianceMatrixRepository(BaseRepository):
         proposal_id: UUID,
         verification_method: Optional[str] = None,
         role: Optional[str] = None,
+        order: str = "asc",
         limit: int = 50,
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
@@ -76,6 +77,7 @@ class ComplianceMatrixRepository(BaseRepository):
             supabase.table("analysis_compliance_matrix_view")
             .select("*")
             .eq("proposal_id", str(proposal_id))
+            .order("requirement_code", desc=(order == "desc"))
         )
         if verification_method:
             q = q.eq("requirement_verification_method", verification_method)

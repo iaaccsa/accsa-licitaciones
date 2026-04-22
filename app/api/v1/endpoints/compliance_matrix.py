@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional
+from typing import List, Literal, Optional
 from uuid import UUID
 
 from app.schemas.compliance_matrix import (
@@ -101,7 +101,8 @@ def get_view_by_proposal(
     proposal_id: UUID,
     verification_method: Optional[str] = Query(default=None),
     role: Optional[str] = Query(default=None),
-    limit: int = Query(default=50, ge=1, le=500),
+    order: Literal["asc", "desc"] = Query(default="asc"),
+    limit: int = Query(default=50, ge=1, le=50),
     offset: int = Query(default=0, ge=0),
 ):
     try:
@@ -109,6 +110,7 @@ def get_view_by_proposal(
             proposal_id=proposal_id,
             verification_method=verification_method,
             role=role,
+            order=order,
             limit=limit,
             offset=offset,
         )
