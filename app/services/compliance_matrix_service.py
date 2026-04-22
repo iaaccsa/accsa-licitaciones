@@ -12,6 +12,7 @@ from app.schemas.compliance_matrix import (
     ComplianceEntryPatch,
     BulkReplaceMatrixResponse,
     RequirementEmbedded,
+    ComplianceMatrixViewEntry,
 )
 
 
@@ -115,6 +116,23 @@ class ComplianceMatrixService:
 
         rows = rows[offset: offset + limit]
         return [_to_entry_with_req(dict(r)) for r in rows]
+
+    def get_view_by_proposal(
+        self,
+        proposal_id: UUID,
+        verification_method: Optional[str] = None,
+        role: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[ComplianceMatrixViewEntry]:
+        rows = self.repository.get_view_by_proposal(
+            proposal_id=proposal_id,
+            verification_method=verification_method,
+            role=role,
+            limit=limit,
+            offset=offset,
+        )
+        return [ComplianceMatrixViewEntry(**r) for r in rows]
 
     def get_by_requirement(self, requirement_id: UUID) -> List[ComplianceEntryRead]:
         rows = self.repository.get_by_requirement(requirement_id)

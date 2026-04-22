@@ -156,7 +156,22 @@ SELECT
     m.created_at,
     m.updated_at,
     a.slug AS analysis_slug,
-    r.requirement_code
+    r.requirement_code,
+    r.requirement_text,
+    r.requirement_summary,
+    r.roles                  AS requirement_roles,
+    r.mapped_factors         AS requirement_mapped_factors,
+    r.domain                 AS requirement_domain,
+    r.weight                 AS requirement_weight,
+    r.verification_method    AS requirement_verification_method,
+    r.temporal_scope         AS requirement_temporal_scope,
+    r.citations              AS requirement_citations,
+    r.confidence             AS requirement_confidence,
+    r.extraction_batch_id    AS requirement_extraction_batch_id,
+    r.is_verified            AS requirement_is_verified,
+    r.notes                  AS requirement_notes,
+    r.created_at             AS requirement_created_at,
+    r.updated_at             AS requirement_updated_at
 FROM analysis_compliance_matrix m
 JOIN analyses a ON a.id = m.analysis_id
 JOIN analysis_requirements r ON r.id = m.requirement_id;

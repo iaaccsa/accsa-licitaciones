@@ -64,6 +64,26 @@ class ComplianceMatrixRepository(BaseRepository):
         )
         return response.data
 
+    def get_view_by_proposal(
+        self,
+        proposal_id: UUID,
+        verification_method: Optional[str] = None,
+        role: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[Dict[str, Any]]:
+        q = (
+            supabase.table("analysis_compliance_matrix_view")
+            .select("*")
+            .eq("proposal_id", str(proposal_id))
+        )
+        if verification_method:
+            q = q.eq("requirement_verification_method", verification_method)
+        if role:
+            q = q.contains("requirement_roles", [role])
+        q = q.range(offset, offset + limit - 1)
+        return q.execute().data
+
     def get_by_id(self, entry_id: str) -> Optional[Dict[str, Any]]:
         response = (
             supabase.table(self.table_name)

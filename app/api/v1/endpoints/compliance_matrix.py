@@ -11,6 +11,7 @@ from app.schemas.compliance_matrix import (
     ComplianceMatrixBulkCreate,
     BulkReplaceMatrixResponse,
     ComplianceVerdict,
+    ComplianceMatrixViewEntry,
 )
 from app.services.compliance_matrix_service import compliance_matrix_service
 
@@ -86,6 +87,28 @@ def get_by_analysis(
             domain=domain,
             is_verified=is_verified,
             manual_verification_required=manual_verification_required,
+            limit=limit,
+            offset=offset,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/view/by-proposal/{proposal_id}", response_model=List[ComplianceMatrixViewEntry])
+def get_view_by_proposal(
+    proposal_id: UUID,
+    verification_method: Optional[str] = Query(default=None),
+    role: Optional[str] = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+):
+    try:
+        return compliance_matrix_service.get_view_by_proposal(
+            proposal_id=proposal_id,
+            verification_method=verification_method,
+            role=role,
             limit=limit,
             offset=offset,
         )

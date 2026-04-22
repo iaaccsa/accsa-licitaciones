@@ -85,6 +85,45 @@ class ComplianceEntryReadWithRequirement(ComplianceEntryRead):
     requirement: RequirementEmbedded
 
 
+class ComplianceMatrixViewEntry(BaseModel):
+    id:                               UUID
+    analysis_id:                      UUID
+    requirement_id:                   UUID
+    proposal_id:                      UUID
+    verdict:                          ComplianceVerdict
+    confidence:                       str
+    reasoning:                        Optional[str]      = None
+    missing_elements:                 List[Any]          = []
+    citations:                        List[Any]          = []
+    manual_verification_required:     bool
+    extraction_batch_id:              Optional[int]      = None
+    is_verified:                      bool
+    reviewed_by:                      Optional[str]      = None
+    reviewed_at:                      Optional[datetime] = None
+    notes:                            Optional[str]      = None
+    created_at:                       datetime
+    updated_at:                       datetime
+    analysis_slug:                    str
+    requirement_code:                 str
+    requirement_text:                 str
+    requirement_summary:              Optional[str]      = None
+    requirement_roles:                List[str]          = []
+    requirement_mapped_factors:       Optional[Any]      = None
+    requirement_domain:               Optional[str]      = None
+    requirement_weight:               Optional[Any]      = None
+    requirement_verification_method:  Optional[str]      = None
+    requirement_temporal_scope:       Optional[str]      = None
+    requirement_citations:            List[Any]          = []
+    requirement_confidence:           Optional[str]      = None
+    requirement_extraction_batch_id:  Optional[int]      = None
+    requirement_is_verified:          bool               = False
+    requirement_notes:                Optional[str]      = None
+    requirement_created_at:           Optional[datetime] = None
+    requirement_updated_at:           Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ComplianceEntryPatch(BaseModel):
     verdict:                      Optional[ComplianceVerdict] = None
     confidence:                   Optional[Confidence]        = None
