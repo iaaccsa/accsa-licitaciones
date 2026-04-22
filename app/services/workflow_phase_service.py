@@ -1,7 +1,7 @@
 from app.repositories.workflow_phase_repository import workflow_phase_repository
 from app.repositories.workflow_step_repository import workflow_step_repository
 from app.schemas.workflow_phase import WorkflowPhase, WorkflowPhaseFilter
-from app.config.jobs_config import get_phases, get_phase_for_step, get_steps_for_phase, get_next_phase
+from app.config.jobs_config import get_phases, get_phase_for_step, get_steps_for_phase, get_next_phase, get_step_code_for_service
 from datetime import datetime
 from typing import List
 
@@ -93,6 +93,31 @@ class WorkflowPhaseService:
             next_phase = get_next_phase(phase_code)
             if next_phase and next_phase.get("type") == "approval":
                 self._activate_approval_phase(analysis_id, next_phase, now)
+
+    def complete_approval_phase_after_service(self, analysis_id: str, service_name: str) -> None:
+        """Complete the approval phase activated after service_name's processing phase."""
+        step_code = get_step_code_for_service(service_name)
+        if not step_code:
+            return
+        processing_phase_code = get_phase_for_step(step_code)
+        if not processing_phase_code:
+            return
+        next_phase = get_next_phase(processing_phase_code)
+        if not next_phase or next_phase.get("type") != "approval":
+            return
+        now = datetime.now().isoformat()
+        existing = self.repository.get_by_analysis_and_code(analysis_id, next_phase["code"])
+        self.repository.upsert({
+            "analysis_id": analysis_id,
+            "code": next_phase["code"],
+            "display_name": next_phase["display_name"],
+            "status": "completed",
+            "progress": 100,
+            "order": next_phase["order"],
+            "type": "approval",
+            "started_at": existing.get("started_at") if existing else now,
+            "ended_at": now,
+        })
 
     def _activate_approval_phase(self, analysis_id: str, phase_meta: dict, now: str) -> None:
         existing = self.repository.get_by_analysis_and_code(analysis_id, phase_meta["code"])

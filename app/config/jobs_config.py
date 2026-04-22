@@ -76,6 +76,14 @@ def is_pause_after_job(job_name: str) -> bool:
     )
 
 
+def get_requires_admitida(job_name: str) -> bool:
+    """Return True if the job should only fan-out for proposals with admissibility_status=admitida."""
+    return any(
+        entry["service"] == job_name and entry.get("require_admitida", False)
+        for entry in _jobs_config
+    )
+
+
 def get_fan_out_type(job_name: str) -> Optional[str]:
     """Return the fan_out_by value for the job, or None if not a fan-out job."""
     for entry in _jobs_config:
@@ -126,3 +134,11 @@ def get_next_phase(phase_code: str) -> Optional[Dict]:
         return None
     next_order = current["order"] + 1
     return next((p for p in _PHASES if p["order"] == next_order), None)
+
+
+def get_step_code_for_service(service_name: str) -> Optional[str]:
+    """Return the step code for a given service name, or None."""
+    for entry in _pipeline_config:
+        if entry.get("service") == service_name:
+            return entry.get("code")
+    return None

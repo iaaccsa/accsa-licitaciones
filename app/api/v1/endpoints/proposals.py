@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 from uuid import UUID
 from app.schemas.proposal import (
@@ -6,6 +6,8 @@ from app.schemas.proposal import (
     ProposalMatchingStart, ProposalMatchingResult, ProposalMatchingFailure,
     ProposalSummaryStart, ProposalSummaryResult, ProposalSummaryFailure,
     ProposalMatchingStatus,
+    ProposalAdmissibilityStart, ProposalAdmissibilityResult,
+    ProposalAdmissibilityFailure, ProposalAdmissibilityOverride,
 )
 from app.services.proposal_service import proposal_service
 
@@ -72,3 +74,23 @@ def summary_result(proposal_id: UUID, body: ProposalSummaryResult):
 @router.patch("/{proposal_id}/summary-failure", response_model=ProposalRead)
 def summary_failure(proposal_id: UUID, body: ProposalSummaryFailure):
     return proposal_service.summary_failure(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/admissibility-start", response_model=ProposalRead)
+def admissibility_start(proposal_id: UUID, body: ProposalAdmissibilityStart, force: bool = Query(False)):
+    return proposal_service.admissibility_start(str(proposal_id), body, force)
+
+
+@router.patch("/{proposal_id}/admissibility-result", response_model=ProposalRead)
+def admissibility_result(proposal_id: UUID, body: ProposalAdmissibilityResult):
+    return proposal_service.admissibility_result(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/admissibility-failure", response_model=ProposalRead)
+def admissibility_failure(proposal_id: UUID, body: ProposalAdmissibilityFailure):
+    return proposal_service.admissibility_failure(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/admissibility-override", response_model=ProposalRead)
+def admissibility_override(proposal_id: UUID, body: ProposalAdmissibilityOverride):
+    return proposal_service.admissibility_override(str(proposal_id), body)

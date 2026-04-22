@@ -115,6 +115,12 @@ SELECT
     compliance_counts,
     compliance_summary,
     critical_failures_count,
+    admissibility_status,
+    admissibility_started_at,
+    admissibility_completed_at,
+    admissibility_error,
+    admissibility_reasons,
+    admissibility_overridden_by,
     created_at,
     updated_at,
     (SELECT count(*) FROM proposal_compliance_results cr WHERE cr.proposal_id = p.id)::integer AS total_compliance_results

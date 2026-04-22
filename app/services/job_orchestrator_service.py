@@ -4,7 +4,7 @@ from uuid import UUID
 
 from app.core.azure import azure_container_apps_client
 from app.core.config import get_settings
-from app.config.jobs_config import get_root_jobs, get_next_jobs, get_parent_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type, is_pause_after_job
+from app.config.jobs_config import get_root_jobs, get_next_jobs, get_parent_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type, is_pause_after_job, get_requires_admitida
 from app.repositories.original_file_repository import original_file_repository
 from app.repositories.processed_file_repository import processed_file_repository
 from app.repositories.proposal_repository import proposal_repository
@@ -13,6 +13,7 @@ from app.services.event_service import event_service
 from app.repositories.analysis_repository import analysis_repository
 from app.repositories.job_repository import job_repository
 from app.services.workflow_step_service import workflow_step_service
+from app.services.workflow_phase_service import workflow_phase_service
 from app.repositories.workflow_step_repository import workflow_step_repository
 from app.services.email_service import email_service
 
@@ -207,7 +208,10 @@ class JobOrchestratorService:
             elif fan_out_type == "file_with_metadata":
                 items = processed_file_repository.get_with_metadata_by_analysis_id(analysis_id)
             elif fan_out_type == "proposal":
-                items = proposal_repository.get_by_analysis_id(analysis_id)
+                if get_requires_admitida(next_job):
+                    items = proposal_repository.get_admitidas_by_analysis_id(analysis_id)
+                else:
+                    items = proposal_repository.get_by_analysis_id(analysis_id)
             elif fan_out_type == "original_file":
                 items = original_file_repository.get_by_analysis_id(analysis_id)
             else:  # "processed_file"
@@ -356,6 +360,12 @@ class JobOrchestratorService:
         if paused_at_service == "service-documents-grouper":
             original_file_repository.lock_reordering(str(analysis_id))
             logger.info(f"Set is_reorderable=False for all original files in analysis {analysis_id}")
+
+        # Complete the approval phase that was activated when the pipeline paused
+        try:
+            workflow_phase_service.complete_approval_phase_after_service(str(analysis_id), paused_at_service)
+        except Exception as e:
+            logger.error(f"Failed to complete approval phase for {paused_at_service}: {e}")
 
         # Clear paused state, return to processing
         analysis_repository.update_by_id(

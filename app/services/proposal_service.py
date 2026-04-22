@@ -5,6 +5,8 @@ from app.schemas.proposal import (
     ProposalMatchingStart, ProposalMatchingResult, ProposalMatchingFailure,
     ProposalSummaryStart, ProposalSummaryResult, ProposalSummaryFailure,
     ProposalMatchingStatus,
+    ProposalAdmissibilityStart, ProposalAdmissibilityResult,
+    ProposalAdmissibilityFailure, ProposalAdmissibilityOverride,
 )
 from typing import List, Optional
 
@@ -17,6 +19,9 @@ VALID_TRANSITIONS = {
     "summary-result":    ([ProposalMatchingStatus.summarizing],                                     ProposalMatchingStatus.completed),
     "summary-failure":   ([ProposalMatchingStatus.summarizing],                                     ProposalMatchingStatus.summary_failed),
 }
+
+_ADMISSIBILITY_TERMINAL = {"admitida", "rechazada"}
+_VALID_MATCHING_FOR_ADMISSIBILITY = {"matrix_ready", "completed", "summary_failed"}
 
 
 def _assert_transition(current: str, transition: str):
@@ -60,7 +65,7 @@ class ProposalService:
         )
         return ProposalRead(**data)
 
-    # --- Máquina de estados ---
+    # --- Matching state machine ---
 
     def matching_start(self, proposal_id: str, body: ProposalMatchingStart) -> ProposalRead:
         current = self._get_or_404(proposal_id)
@@ -121,6 +126,79 @@ class ProposalService:
             "matching_status":          "summary_failed",
             "summarizing_completed_at": body.summarizing_completed_at.isoformat(),
             "summary_error":            body.summary_error,
+        })
+        return ProposalRead(**data)
+
+    # --- Admissibility state machine ---
+
+    def admissibility_start(self, proposal_id: str, body: ProposalAdmissibilityStart, force: bool = False) -> ProposalRead:
+        current = self._get_or_404(proposal_id)
+        if current["admissibility_status"] not in ("pending", "failed"):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot start admissibility: current status is '{current['admissibility_status']}', allowed from ['pending', 'failed']",
+            )
+        if not force and current["matching_status"] not in _VALID_MATCHING_FOR_ADMISSIBILITY:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot start admissibility: matching_status is '{current['matching_status']}', must be one of {sorted(_VALID_MATCHING_FOR_ADMISSIBILITY)}. Use ?force=true to bypass.",
+            )
+        data = self.repository.update_by_id(proposal_id, {
+            "admissibility_status":     "evaluating",
+            "admissibility_started_at": body.admissibility_started_at.isoformat(),
+            "admissibility_error":      None,
+        })
+        return ProposalRead(**data)
+
+    def admissibility_result(self, proposal_id: str, body: ProposalAdmissibilityResult) -> ProposalRead:
+        current = self._get_or_404(proposal_id)
+        if current["admissibility_status"] != "evaluating":
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot write admissibility result: current status is '{current['admissibility_status']}', must be 'evaluating'",
+            )
+        if body.admissibility_status not in _ADMISSIBILITY_TERMINAL:
+            raise HTTPException(
+                status_code=422,
+                detail=f"admissibility_status must be 'admitida' or 'rechazada', got '{body.admissibility_status}'",
+            )
+        data = self.repository.update_by_id(proposal_id, {
+            "admissibility_status":        body.admissibility_status,
+            "admissibility_completed_at":  body.admissibility_completed_at.isoformat(),
+            "admissibility_reasons":       [r.model_dump() for r in body.admissibility_reasons],
+            "admissibility_overridden_by": None,
+        })
+        return ProposalRead(**data)
+
+    def admissibility_failure(self, proposal_id: str, body: ProposalAdmissibilityFailure) -> ProposalRead:
+        current = self._get_or_404(proposal_id)
+        if current["admissibility_status"] != "evaluating":
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot write admissibility failure: current status is '{current['admissibility_status']}', must be 'evaluating'",
+            )
+        data = self.repository.update_by_id(proposal_id, {
+            "admissibility_status":       "failed",
+            "admissibility_completed_at": body.admissibility_completed_at.isoformat(),
+            "admissibility_error":        body.admissibility_error,
+        })
+        return ProposalRead(**data)
+
+    def admissibility_override(self, proposal_id: str, body: ProposalAdmissibilityOverride) -> ProposalRead:
+        current = self._get_or_404(proposal_id)
+        if current["admissibility_status"] not in _ADMISSIBILITY_TERMINAL:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot override admissibility: current status is '{current['admissibility_status']}', allowed from {sorted(_ADMISSIBILITY_TERMINAL)}",
+            )
+        if body.admissibility_status not in _ADMISSIBILITY_TERMINAL:
+            raise HTTPException(
+                status_code=422,
+                detail=f"admissibility_status must be 'admitida' or 'rechazada', got '{body.admissibility_status}'",
+            )
+        data = self.repository.update_by_id(proposal_id, {
+            "admissibility_status":        body.admissibility_status,
+            "admissibility_overridden_by": body.overridden_by,
         })
         return ProposalRead(**data)
 

@@ -94,6 +94,7 @@ class WorkflowStepService:
         }
 
         data = self.repository.upsert(update_data)
+        workflow_phase_service.update_phase_progress(analysis_id, code)
         return WorkflowStep(**data) if data else None
 
     def complete_step_by_service_if_running(self, analysis_id: str, service_name: str) -> bool:
@@ -111,7 +112,10 @@ class WorkflowStepService:
         code = config.get("code")
         if not code:
             return False
-        return self.repository.claim_step_if_pending(analysis_id, code)
+        claimed = self.repository.claim_step_if_pending(analysis_id, code)
+        if claimed:
+            workflow_phase_service.update_phase_progress(analysis_id, code)
+        return claimed
 
     def is_step_completed_by_service(self, analysis_id: str, service_name: str) -> bool:
         config = self._get_step_config_by_service(service_name)

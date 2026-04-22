@@ -187,7 +187,7 @@
   {
     "service": "service-compliance-matcher",
     "next_services": [
-      "service-compliance-summarizer"
+      "service-admissibility-gate"
     ],
     "code": "compliance_matcher",
     "display_name": "Matcher de Cumplimiento",
@@ -200,11 +200,27 @@
     "phase": "award_check"
   },
   {
+    "service": "service-admissibility-gate",
+    "next_services": [
+      "service-compliance-summarizer"
+    ],
+    "code": "admissibility_gate",
+    "display_name": "Gate de Admisibilidad",
+    "parent": "compliance_matcher",
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false,
+    "pause_after": true,
+    "fan_out_by": "proposal",
+    "phase": "award_check"
+  },
+  {
     "service": "service-compliance-summarizer",
     "next_services": [],
     "code": "compliance_summarizer",
     "display_name": "Resumen de Cumplimiento",
-    "parent": "compliance_matcher",
+    "parent": "admissibility_gate",
+    "require_admitida": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": true,

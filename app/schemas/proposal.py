@@ -15,6 +15,22 @@ class ProposalMatchingStatus(str, Enum):
     summary_failed = "summary_failed"
 
 
+class ProposalAdmissibilityStatus(str, Enum):
+    pending    = "pending"
+    evaluating = "evaluating"
+    admitida   = "admitida"
+    rechazada  = "rechazada"
+    failed     = "failed"
+
+
+class AdmissibilityReason(BaseModel):
+    type:             str
+    requirement_id:   Optional[str] = None
+    requirement_code: Optional[str] = None
+    verdict:          Optional[str] = None
+    reasoning:        Optional[str] = None
+
+
 class ProposalBase(BaseModel):
     label:             str
     provider_name:     Optional[str]            = None
@@ -39,6 +55,12 @@ class ProposalRead(ProposalBase):
     compliance_counts:        Optional[Dict[str, int]] = None
     compliance_summary:       Optional[str]      = None
     critical_failures_count:  Optional[int]      = None
+    admissibility_status:        ProposalAdmissibilityStatus  = ProposalAdmissibilityStatus.pending
+    admissibility_started_at:    Optional[datetime]           = None
+    admissibility_completed_at:  Optional[datetime]           = None
+    admissibility_error:         Optional[str]                = None
+    admissibility_reasons:       List[AdmissibilityReason]    = []
+    admissibility_overridden_by: Optional[str]                = None
     created_at:               datetime
     updated_at:               datetime
 
@@ -81,3 +103,23 @@ class ProposalSummaryResult(BaseModel):
 class ProposalSummaryFailure(BaseModel):
     summarizing_completed_at: datetime
     summary_error:            str
+
+
+class ProposalAdmissibilityStart(BaseModel):
+    admissibility_started_at: datetime
+
+
+class ProposalAdmissibilityResult(BaseModel):
+    admissibility_completed_at: datetime
+    admissibility_status:       str
+    admissibility_reasons:      List[AdmissibilityReason]
+
+
+class ProposalAdmissibilityFailure(BaseModel):
+    admissibility_completed_at: datetime
+    admissibility_error:        str
+
+
+class ProposalAdmissibilityOverride(BaseModel):
+    admissibility_status: str
+    overridden_by:        str
