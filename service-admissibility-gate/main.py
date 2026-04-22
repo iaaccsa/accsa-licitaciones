@@ -15,9 +15,8 @@ let the user decide early which proposals continue in the pipeline.
 The service is 100% DETERMINISTIC — no LLM, no Qdrant, no embeddings.
 
 Verdicts:
-  - admitida:  all auto-verifiable admisibilidad requirements have a
-               passing verdict (cumple / cumple_parcial).
-  - rechazada: at least one such requirement has verdict `no_cumple`.
+  - admitida:  all auto-verifiable admisibilidad requirements have verdict `cumple`.
+  - rechazada: at least one such requirement has a verdict other than `cumple`.
 
 The user can override the verdict via HITL (PATCH .../admissibility-override)
 before the pipeline continues.
@@ -246,12 +245,12 @@ def evaluate_admissibility(
 
         verdict = entry.get("verdict")
 
-        if verdict == "no_cumple":
+        if verdict != "cumple":
             reasons.append({
                 "type": "auto_admisibilidad_no_cumple",
                 "requirement_id": req_id,
                 "requirement_code": req_code,
-                "verdict": "no_cumple",
+                "verdict": verdict,
                 "reasoning": entry.get("reasoning"),
             })
 

@@ -28,8 +28,8 @@ strategy:
     #   SERVICE_NAME: "service-setup-qdrant"
     # service-chunk-and-index:
     #   SERVICE_NAME: "service-chunk-and-index"
-    service-requirement-extractor:
-      SERVICE_NAME: "service-requirement-extractor"
+    # service-requirement-extractor:
+    #   SERVICE_NAME: "service-requirement-extractor"
     # service-metadata-extractor:
     #   SERVICE_NAME: "service-metadata-extractor"
     # service-qdrant-by-file:
