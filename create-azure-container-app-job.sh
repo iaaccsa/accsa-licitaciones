@@ -23,6 +23,7 @@ VALID_SERVICES=(
   "service-compliance-matcher"
   "service-compliance-summarizer"
   "service-digital-sig-extractor"
+  "service-admissibility-gate"
 )
 
 if [ -z "$1" ]; then

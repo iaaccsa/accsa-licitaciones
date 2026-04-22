@@ -28,7 +28,7 @@ import os
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Annotated, Dict, List, Literal, Optional, Tuple
+from typing import Annotated, Dict, List, Literal, Optional, Tuple, Union
 
 import requests
 from google import genai
@@ -70,6 +70,52 @@ logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
 
 # ---------------------------------------------------------------------------
+# Constrained value types
+# ---------------------------------------------------------------------------
+RequirementRole = Literal[
+    "admisibilidad_obligatoria",
+    "admisibilidad_subsanable",
+    "puntuable",
+    "penalizador",
+    "informativo",
+    "preferencia_legal",
+    "desconocido_pendiente_pliego_general",
+]
+
+RequirementVerificationMethod = Literal[
+    "documento_adjunto",
+    "declaracion_jurada",
+    "certificado_externo",
+    "inspeccion",
+    "muestra",
+    "visita_tecnica",
+    "auto_verificable_desde_oferta",
+    "otro",
+]
+
+RequirementDomain = Literal[
+    "tecnico",
+    "administrativo",
+    "legal",
+    "economico_financiero",
+    "rrhh",
+    "logistico",
+    "ambiental",
+    "calidad",
+    "seguridad",
+    "otro",
+]
+
+RequirementTemporalScope = Literal[
+    "al_momento_ofertar",
+    "previo_adjudicacion",
+    "durante_ejecucion",
+    "postventa",
+    "otro",
+]
+
+
+# ---------------------------------------------------------------------------
 # Data Models
 # ---------------------------------------------------------------------------
 CONFIDENCE_ORDER = {"alta": 3, "media": 2, "baja": 1, "muy_baja": 0}
@@ -99,12 +145,12 @@ class RequirementCitation(BaseModel):
 class RawRequirement(BaseModel):
     requirement_text: str
     requirement_summary: Optional[str] = None
-    roles: Annotated[List[str], Field(min_length=1)]
+    roles: Annotated[List[RequirementRole], Field(min_length=1)]
     mapped_factors: List[MappedFactor] = Field(default_factory=list)
-    domain: str = "otro"
+    domain: RequirementDomain = "otro"
     weight: RequirementWeight = Field(default_factory=RequirementWeight)
-    verification_method: str = "otro"
-    temporal_scope: str = "al_momento_ofertar"
+    verification_method: RequirementVerificationMethod = "otro"
+    temporal_scope: RequirementTemporalScope = "al_momento_ofertar"
     citations: Annotated[List[RequirementCitation], Field(min_length=1)]
     confidence: Literal["alta", "media", "baja", "muy_baja"] = "media"
     notes: Optional[str] = None
