@@ -21,10 +21,10 @@ Extrae todos los requerimientos atomicos del pliego (ya indexado en Qdrant) y lo
 |-----|-------|-------------|
 | 1 | `roles` | admisibilidad_obligatoria, admisibilidad_subsanable, puntuable, penalizador, informativo, preferencia_legal |
 | 2 | `mapped_factors` | referencias a factores del evaluation_profile con peso/formula |
-| 3 | `domain` | tecnico, administrativo, legal, economico_financiero, rrhh, logistico, ambiental, calidad, seguridad, otro |
+| 3 | `domain` | technical, administrative, legal, financial, hr, logistics, environmental, quality, safety, other |
 | 4 | `weight` | tipo/valor/formula/bloque del peso cuantitativo |
-| 6 | `verification_method` | documento_adjunto, declaracion_jurada, certificado_externo, inspeccion, muestra, visita_tecnica, auto_verificable_desde_oferta, otro |
-| 7 | `temporal_scope` | al_momento_ofertar, previo_adjudicacion, durante_ejecucion, postventa, otro |
+| 6 | `verification_method` | attached_document, sworn_statement, external_certificate, inspection, sample, site_visit, auto_verifiable_from_offer, other |
+| 7 | `temporal_scope` | at_bid_time, pre_award, during_execution, post_sale, other |
 | - | `citations` | referencias al chunk fuente (chunk_id, page, snippet) |
 
 ## Entrada

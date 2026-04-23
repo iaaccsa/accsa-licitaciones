@@ -83,35 +83,35 @@ RequirementRole = Literal[
 ]
 
 RequirementVerificationMethod = Literal[
-    "documento_adjunto",
-    "declaracion_jurada",
-    "certificado_externo",
-    "inspeccion",
-    "muestra",
-    "visita_tecnica",
-    "auto_verificable_desde_oferta",
-    "otro",
+    "attached_document",
+    "sworn_statement",
+    "external_certificate",
+    "inspection",
+    "sample",
+    "site_visit",
+    "auto_verifiable_from_offer",
+    "other",
 ]
 
 RequirementDomain = Literal[
-    "tecnico",
-    "administrativo",
+    "technical",
+    "administrative",
     "legal",
-    "economico_financiero",
-    "rrhh",
-    "logistico",
-    "ambiental",
-    "calidad",
-    "seguridad",
-    "otro",
+    "financial",
+    "hr",
+    "logistics",
+    "environmental",
+    "quality",
+    "safety",
+    "other",
 ]
 
 RequirementTemporalScope = Literal[
-    "al_momento_ofertar",
-    "previo_adjudicacion",
-    "durante_ejecucion",
-    "postventa",
-    "otro",
+    "at_bid_time",
+    "pre_award",
+    "during_execution",
+    "post_sale",
+    "other",
 ]
 
 
@@ -147,10 +147,10 @@ class RawRequirement(BaseModel):
     requirement_summary: Optional[str] = None
     roles: Annotated[List[RequirementRole], Field(min_length=1)]
     mapped_factors: List[MappedFactor] = Field(default_factory=list)
-    domain: RequirementDomain = "otro"
+    domain: RequirementDomain = "other"
     weight: RequirementWeight = Field(default_factory=RequirementWeight)
-    verification_method: RequirementVerificationMethod = "otro"
-    temporal_scope: RequirementTemporalScope = "al_momento_ofertar"
+    verification_method: RequirementVerificationMethod = "other"
+    temporal_scope: RequirementTemporalScope = "at_bid_time"
     citations: Annotated[List[RequirementCitation], Field(min_length=1)]
     confidence: Literal["alta", "media", "baja", "muy_baja"] = "media"
     notes: Optional[str] = None
@@ -163,6 +163,7 @@ class BatchResponse(BaseModel):
 
 class FinalRequirement(RawRequirement):
     requirement_code: str
+    is_admissibility: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -214,8 +215,8 @@ requirement to any factor of the profile, do NOT invent one -- instead, set
 roles to a non-puntuable role and explain the mismatch in `notes`.
 
 ### Eje 3 -- Dominio
-One of: tecnico, administrativo, legal, economico_financiero, rrhh, logistico,
-ambiental, calidad, seguridad, otro.
+One of: technical, administrative, legal, financial, hr, logistics,
+environmental, quality, safety, other.
 
 ### Eje 4 -- Peso (weight)
 For puntuable/penalizador requirements, copy the weight from the mapped factor.
@@ -223,13 +224,62 @@ For others use { "type": "none", "value": null, "formula": null, "block": null }
 For mixto_cualitativo_cuantitativo strategies, fill `block` accordingly.
 
 ### Eje 6 -- Verification method
-How will compliance be verified at evaluation time:
-- documento_adjunto, declaracion_jurada, certificado_externo, inspeccion,
-  muestra, visita_tecnica, auto_verificable_desde_oferta, otro.
+
+CRITICAL CONTEXT: In this system, compliance is verified EXCLUSIVELY by
+reading the proposal document. We do NOT perform physical inspections,
+site visits, sample testing, or any real-world verification. The only
+question is: "Does the proposal text address this requirement?"
+
+Therefore, MOST requirements should be classified as
+`auto_verifiable_from_offer`. Use a different method ONLY when the
+requirement explicitly demands a specific type of external document or
+action that cannot be satisfied by a statement in the proposal text.
+
+Values and when to use them:
+
+- auto_verifiable_from_offer  -> DEFAULT. Use this whenever the
+    requirement can be checked by reading what the bidder wrote in their
+    proposal. This includes technical specifications, delivery timelines,
+    materials, quantities, methodologies, staffing plans, warranties,
+    and any commitment the bidder can declare in writing.
+    Example: "las botellas deben ser de vidrio" -> auto_verifiable.
+    The proposal just needs to say "usaremos botellas de vidrio".
+
+- attached_document  -> The pliego explicitly requires the bidder to
+    ATTACH a specific document as part of their submission (e.g. a
+    signed contract, a project plan, an organizational chart as a
+    separate annex). The key distinction: the pliego says "adjuntar"
+    or "presentar" a named document, not just describe something.
+
+- sworn_statement  -> The pliego explicitly requires a sworn
+    statement ("declaracion jurada") on a specific matter.
+
+- external_certificate  -> The pliego requires a certificate issued by
+    an EXTERNAL AUTHORITY (BPS, DGI, RUPE, ISO certification body, a
+    professional association, etc.). The bidder cannot self-certify;
+    the document comes from a third party.
+
+- inspection  -> ONLY when the pliego explicitly states that a
+    physical inspection of the bidder's facilities or equipment will
+    be conducted as part of the evaluation process.
+
+- sample  -> ONLY when the pliego explicitly requires the bidder to
+    submit a physical sample of the product for testing.
+
+- site_visit  -> ONLY when the pliego explicitly requires a
+    mandatory site visit as part of the bidding process.
+
+- other  -> None of the above apply.
+
+When in doubt, use `auto_verifiable_from_offer`. Do NOT use
+`inspection`, `sample`, or `site_visit` just because the
+requirement describes something physical (materials, equipment,
+facilities). Those methods are only for when the PLIEGO mandates
+that specific verification action during the evaluation process.
 
 ### Eje 7 -- Temporal scope
 When must the requirement be satisfied:
-- al_momento_ofertar, previo_adjudicacion, durante_ejecucion, postventa, otro.
+- at_bid_time, pre_award, during_execution, post_sale, other.
 
 ### Citations
 Every requirement MUST include at least one citation pointing back to the
@@ -782,6 +832,17 @@ def process_extraction():
         log_event(ANALYSIS_ID, "warning", w, EVENT_SOURCE)
 
     logger.info(f"After validation: {len(cleaned)} requirements remain ({len(with_codes) - len(cleaned)} discarded).")
+
+    # 8b. Calculate is_admissibility
+    admissibility_count = 0
+    for req in cleaned:
+        req.is_admissibility = (
+            "admisibilidad_obligatoria" in req.roles
+            and req.verification_method == "auto_verifiable_from_offer"
+        )
+        if req.is_admissibility:
+            admissibility_count += 1
+    logger.info(f"Admissibility requirements flagged: {admissibility_count}/{len(cleaned)}.")
 
     # 9. Post bulk
     post_bulk(ANALYSIS_ID, cleaned)

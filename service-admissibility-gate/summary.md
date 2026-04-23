@@ -1,30 +1,26 @@
 # service-admissibility-gate
 
 ## Proposito
-Gate parcial de admisibilidad que corre **justo despues del compliance-matcher** (antes del summarizer y del economic-offer-extractor). Evalua de forma **determinista** (sin LLM) si una propuesta cumple los requerimientos de `admisibilidad_obligatoria` que son `auto_verificable_desde_oferta`, cruzando contra la matriz de cumplimiento. Se ejecuta una instancia por propuesta (fan_out_by=proposal) con `pause_after=true` para que el usuario revise y decida que propuestas continuan con el resto del analisis.
+Gate parcial de admisibilidad que corre **justo despues del compliance-matcher** (antes del summarizer y del economic-offer-extractor). Evalua de forma **determinista** (sin LLM) si una propuesta cumple los requerimientos marcados con `is_admissibility=true`, cruzando contra la matriz de cumplimiento. Se ejecuta una instancia por propuesta (fan_out_by=proposal) con `pause_after=true` para que el usuario revise y decida que propuestas continuan con el resto del analisis.
 
 ## Regla
 
-Una propuesta es **rechazada** si tiene al menos un requerimiento que cumple estas tres condiciones:
-1. `roles` contiene `admisibilidad_obligatoria`
-2. `verification_method = auto_verificable_desde_oferta`
-3. `verdict = no_cumple` en la matriz de cumplimiento
+Una propuesta es **rechazada** si tiene al menos un requerimiento con `is_admissibility=true` cuyo verdict en la matriz de cumplimiento NO es `cumple`.
 
-Si todos los requerimientos que cumplen (1) y (2) tienen verdict `cumple` o `cumple_parcial` -> **admitida**.
+Si todos los requerimientos con `is_admissibility=true` tienen verdict `cumple` -> **admitida**.
 
 El usuario puede sobreescribir el veredicto via HITL (`PATCH .../admissibility-override`) antes de continuar. Los motivos originales se conservan para auditoria.
 
 ## Flujo
 
 1. `PATCH /api/v1/proposals/{PROPOSAL_ID}/admissibility-start` -- transiciona `admissibility_status` a `evaluating`.
-2. Carga los requerimientos del analisis filtrados por `role=admisibilidad_obligatoria`, `is_verified=true` via `GET /api/v1/analysis-requirements/{ANALYSIS_ID}`.
-3. Filtra localmente solo los que tienen `verification_method = auto_verificable_desde_oferta`.
-4. Carga la matriz de cumplimiento de la propuesta via `GET /api/v1/analysis-compliance-matrix/by-proposal/{PROPOSAL_ID}` (paginada).
-5. Para cada requerimiento auto-verificable de admisibilidad, busca el verdict en la matriz.
-6. Si al menos uno tiene `no_cumple` -> `rechazada` con los motivos detallados.
-7. Si ninguno tiene `no_cumple` -> `admitida`.
-8. `PATCH /api/v1/proposals/{PROPOSAL_ID}/admissibility-result` con el veredicto y motivos.
-9. Notifica finalizacion via callback.
+2. Carga los requerimientos del analisis filtrados por `is_admissibility=true`, `is_verified=true` via `GET /api/v1/analysis-requirements/{ANALYSIS_ID}`.
+3. Carga la matriz de cumplimiento de la propuesta via `GET /api/v1/analysis-compliance-matrix/by-proposal/{PROPOSAL_ID}` (paginada).
+4. Para cada requerimiento de admisibilidad, busca el verdict en la matriz.
+5. Si al menos uno no tiene verdict `cumple` -> `rechazada` con los motivos detallados.
+6. Si todos tienen verdict `cumple` -> `admitida`.
+7. `PATCH /api/v1/proposals/{PROPOSAL_ID}/admissibility-result` con el veredicto y motivos.
+8. Notifica finalizacion via callback.
 
 ## Entrada
 - **ANALYSIS_ID** (runtime): UUID del analisis.

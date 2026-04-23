@@ -4,8 +4,9 @@ Admissibility Gate Service (partial)
 Given an ANALYSIS_ID and a PROPOSAL_ID, evaluates whether the proposal
 passes the formal admissibility check by cross-referencing:
 
-  - Requirements with role `admisibilidad_obligatoria` AND
-    verification_method `auto_verificable_desde_oferta`
+  - Requirements with `is_admissibility = true` (calculated by the
+    requirement-extractor as: admisibilidad_obligatoria in roles AND
+    verification_method == auto_verifiable_from_offer)
   - Their verdict in the compliance matrix
 
 This is a PARTIAL gate that runs right after the compliance-matcher
@@ -190,17 +191,12 @@ def load_proposal(proposal_id: str) -> dict:
     return result
 
 
-def load_admisibilidad_auto_requirements(analysis_id: str) -> List[dict]:
-    """Load admisibilidad_obligatoria requirements, then filter locally
-    to keep only auto_verificable_desde_oferta."""
-    all_reqs = load_all_paginated(
+def load_admissibility_requirements(analysis_id: str) -> List[dict]:
+    """Load requirements flagged as is_admissibility=true by the extractor."""
+    return load_all_paginated(
         f"{API_ANALYSIS_REQUIREMENTS_PATH}{analysis_id}",
-        params={"role": "admisibilidad_obligatoria", "is_verified": "true"},
+        params={"is_admissibility": "true", "is_verified": "true"},
     )
-    return [
-        r for r in all_reqs
-        if r.get("verification_method") == "auto_verificable_desde_oferta"
-    ]
 
 
 def load_compliance_matrix(proposal_id: str) -> List[dict]:
@@ -275,15 +271,15 @@ def process_admissibility_gate():
 
         log_event(ANALYSIS_ID, "info", f"Evaluando admisibilidad de propuesta {label}...", EVENT_SOURCE)
 
-        # Load admisibilidad_obligatoria + auto_verificable_desde_oferta requirements
-        requirements = load_admisibilidad_auto_requirements(ANALYSIS_ID)
-        logger.info(f"Loaded {len(requirements)} auto-verifiable admisibilidad requirements.")
+        # Load requirements flagged as is_admissibility=true
+        requirements = load_admissibility_requirements(ANALYSIS_ID)
+        logger.info(f"Loaded {len(requirements)} admissibility requirements.")
 
         if not requirements:
-            # No auto-verifiable admisibilidad requirements -> auto-admit
-            logger.info("No auto-verifiable admisibilidad requirements found. Proposal auto-admitted.")
+            # No admissibility requirements -> auto-admit
+            logger.info("No admissibility requirements found. Proposal auto-admitted.")
             log_event(ANALYSIS_ID, "info",
-                      f"Propuesta {label}: no hay requerimientos de admisibilidad_obligatoria auto-verificables. Admitida automaticamente.",
+                      f"Propuesta {label}: no hay requerimientos de admisibilidad. Admitida automaticamente.",
                       EVENT_SOURCE)
             mark_admissibility_result(PROPOSAL_ID, "admitida", [])
             notify_success()
@@ -307,7 +303,7 @@ def process_admissibility_gate():
         log_event(ANALYSIS_ID, "info", summary_msg, EVENT_SOURCE, {
             "proposal_id": PROPOSAL_ID,
             "admissibility_status": status,
-            "auto_admisibilidad_reqs": len(requirements),
+            "admissibility_reqs": len(requirements),
             "matrix_entries_loaded": len(matrix_entries),
             "rejection_reasons": len(reasons),
         })

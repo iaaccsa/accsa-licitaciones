@@ -11,10 +11,9 @@ Obtiene los datos de la propuesta (label, matching_status).
 - **Response:** `ProposalRead`
 
 ### GET /api/v1/analysis-requirements/{analysis_id}
-Obtiene los requerimientos filtrados.
-- **Query params:** `role=admisibilidad_obligatoria`, `is_verified=true`, `limit`, `offset`
+Obtiene los requerimientos de admisibilidad.
+- **Query params:** `is_admissibility=true`, `is_verified=true`, `limit`, `offset`
 - **Response:** `List[AnalysisRequirementRead]`
-- **Filtro local adicional:** el servicio filtra despues por `verification_method = auto_verificable_desde_oferta`.
 
 ### GET /api/v1/analysis-compliance-matrix/by-proposal/{proposal_id}
 Obtiene la matriz de cumplimiento de la propuesta (paginada).

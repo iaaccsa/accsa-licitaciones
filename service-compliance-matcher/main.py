@@ -75,7 +75,7 @@ LLM_RETRY_BACKOFF_BASE = 1.5
 MAX_LLM_FAILURE_RATIO = 0.20
 
 AUTO_NO_APLICA_ROLES = {"informativo", "desconocido_pendiente_pliego_general", "preferencia_legal"}
-AUTO_MANUAL_VERIFICATION_METHODS = {"inspeccion", "muestra", "visita_tecnica"}
+AUTO_MANUAL_VERIFICATION_METHODS = {"inspection", "sample", "site_visit"}
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -147,11 +147,11 @@ Pick EXACTLY ONE verdict:
 
 NOTE: Do NOT use `no_aplica` or `requiere_verificacion_manual`. Those cases
 are handled outside the LLM. Do NOT set `manual_verification_required = true`
-unless specifically instructed below for certificado_externo cases.
+unless specifically instructed below for external_certificate cases.
 
-### Special case: verification_method = certificado_externo
+### Special case: verification_method = external_certificate
 
-When the requirement has verification_method = "certificado_externo", the
+When the requirement has verification_method = "external_certificate", the
 proposal cannot truly prove compliance — only the external registry can. But
 you should check whether the proposal DECLARES that it attaches or references
 the certificate:
@@ -204,7 +204,7 @@ the certificate:
 2. `chunk_id` values in citations MUST come from the `retrieved_chunks` of the input.
 3. `missing_elements` must be empty unless verdict == "cumple_parcial".
 4. `manual_verification_required` must be false unless the requirement is
-   verification_method=certificado_externo AND the verdict is "cumple".
+   verification_method=external_certificate AND the verdict is "cumple".
 """
 
 
@@ -500,7 +500,7 @@ def _call_openai_sync(
 
 def post_process_single(llm_entry: LLMComplianceEntry, req: dict) -> FinalComplianceEntry:
     manual = llm_entry.manual_verification_required
-    if req.get("verification_method") == "certificado_externo" and llm_entry.verdict == "cumple":
+    if req.get("verification_method") == "external_certificate" and llm_entry.verdict == "cumple":
         manual = True
     return FinalComplianceEntry(
         requirement_id=llm_entry.requirement_id,

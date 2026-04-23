@@ -11,7 +11,7 @@ Construye la matriz de cumplimiento (`analysis_compliance_matrix`) entre cada re
 4. Carga los requerimientos verificados via `GET /api/v1/analysis-requirements/{ANALYSIS_ID}?is_verified=true`. Si no hay requerimientos verificados, emite un evento `warning`, marca el analisis como fallido y aborta.
 5. Aplica filtros automaticos sin invocar al LLM:
    - `no_aplica`: roles `informativo` puro, `desconocido_pendiente_pliego_general`, `preferencia_legal` puro.
-   - `requiere_verificacion_manual`: `verification_method` in (`inspeccion`, `muestra`, `visita_tecnica`).
+   - `requiere_verificacion_manual`: `verification_method` in (`inspection`, `sample`, `site_visit`).
 6. Por cada requerimiento restante, busca RAG en Qdrant (`category=proposal`, `proposal_id`, `analysis_id`), recupera `RAG_TOP_K=6` chunks.
 7. Evalua cada requerimiento con UNA llamada dedicada al LLM (Gemini primary, OpenAI fallback), paralelizado con `asyncio.Semaphore(MAX_CONCURRENT_LLM_CALLS=10)`.
 8. Reintentos por requerimiento: hasta `LLM_RETRY_ATTEMPTS=2` con backoff exponencial. Si falla todo, degrada a `requiere_verificacion_manual` (no aborta el job).
@@ -31,7 +31,7 @@ Construye la matriz de cumplimiento (`analysis_compliance_matrix`) entre cada re
 | `no_aplica` | El requerimiento no corresponde evaluar automaticamente |
 | `requiere_verificacion_manual` | Metodo de verificacion exige accion humana o fallo el LLM |
 
-## Caso especial: certificado_externo
+## Caso especial: external_certificate
 
 Va al LLM pero con instruccion distinta: buscar si el oferente **declara** adjuntar o referenciar el certificado. Si lo declara: `cumple` + `manual_verification_required=true`. Si no hay mencion: `no_evidencia`.
 
