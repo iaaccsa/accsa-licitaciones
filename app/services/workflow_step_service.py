@@ -83,17 +83,7 @@ class WorkflowStepService:
         if not code:
             return None
 
-        update_data = {
-            "analysis_id": analysis_id,
-            "code": code,
-            "display_name": config.get("display_name", ""),
-            "status": "running",
-            "parent_code": config.get("parent"),
-            "instances_count": instances_count,
-            "started_at": datetime.now().isoformat()
-        }
-
-        data = self.repository.upsert(update_data)
+        data = self.repository.start_step_by_code(analysis_id, code, instances_count)
         workflow_phase_service.update_phase_progress(analysis_id, code)
         return WorkflowStep(**data) if data else None
 

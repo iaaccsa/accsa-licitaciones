@@ -33,6 +33,23 @@ class WorkflowStepRepository(BaseRepository):
             .eq("code", code) \
             .execute()
 
+    def start_step_by_code(self, analysis_id: str, code: str, instances_count: int) -> dict | None:
+        """Explicit UPDATE to running with fresh started_at. Avoids upsert merge-duplicates bug."""
+        from datetime import timezone
+        response = (
+            supabase.table(self.table_name)
+            .update({
+                "status": "running",
+                "started_at": datetime.now(timezone.utc).isoformat(),
+                "ended_at": None,
+                "instances_count": instances_count,
+            })
+            .eq("analysis_id", analysis_id)
+            .eq("code", code)
+            .execute()
+        )
+        return response.data[0] if response.data else None
+
     def get_timed_out_steps(self, timeout_minutes: int) -> list:
         """Devuelve steps con status='running' cuyo started_at es más antiguo que timeout_minutes."""
         from datetime import datetime, timezone, timedelta
