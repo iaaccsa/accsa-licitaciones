@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from typing import List
 from uuid import UUID
 from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
-from app.schemas.job import CancelPipelineResponse, ResumePipelineResponse
+from app.schemas.job import CancelPipelineResponse, ResumePipelineResponse, RetryJobRequest
 from app.schemas.proposal import ProposalRead
 from app.services.analysis_service import analysis_service
 from app.services.job_orchestrator_service import job_orchestrator_service
@@ -61,6 +61,20 @@ def resume_analysis(analysis_id: UUID):
             analysis_id=analysis_id,
             launched_jobs=launched_jobs,
             message=f"Pipeline reanudado. Jobs lanzados: {', '.join(launched_jobs)}",
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/{analysis_id}/retry-step", response_model=ResumePipelineResponse)
+def retry_step(analysis_id: UUID, request: RetryJobRequest):
+    try:
+        launched_jobs = job_orchestrator_service.retry_job(analysis_id, request.service_name)
+        return ResumePipelineResponse(
+            analysis_id=analysis_id,
+            launched_jobs=launched_jobs,
+            message=f"Job relanzado: {request.service_name}. Instancias: {len(launched_jobs)}",
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

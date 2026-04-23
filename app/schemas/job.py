@@ -40,3 +40,7 @@ class ResumePipelineResponse(BaseModel):
     analysis_id: UUID
     launched_jobs: List[str]
     message: str
+
+
+class RetryJobRequest(BaseModel):
+    service_name: str

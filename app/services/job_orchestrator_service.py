@@ -4,7 +4,7 @@ from uuid import UUID
 
 from app.core.azure import azure_container_apps_client
 from app.core.config import get_settings
-from app.config.jobs_config import get_root_jobs, get_next_jobs, get_parent_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type, is_pause_after_job, get_requires_admitida
+from app.config.jobs_config import get_root_jobs, get_next_jobs, get_parent_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type, is_pause_after_job, get_requires_admitida, get_step_code_for_service
 from app.repositories.original_file_repository import original_file_repository
 from app.repositories.processed_file_repository import processed_file_repository
 from app.repositories.proposal_repository import proposal_repository
@@ -340,6 +340,37 @@ class JobOrchestratorService:
         job_repository.create(job_record)
 
         return azure_response
+
+    def retry_job(self, analysis_id: UUID, service_name: str) -> List[str]:
+        """Manually retry a failed job by resetting its workflow step and re-launching."""
+        if not is_valid_job(service_name):
+            raise ValueError(f"Unknown job: {service_name}")
+
+        code = get_step_code_for_service(service_name)
+        if code:
+            workflow_step_repository.update_status_by_code(analysis_id, code, "pending")
+
+        analysis_repository.update_by_id(str(analysis_id), {"status": "processing", "is_success": None})
+
+        parent_services = get_parent_jobs(service_name)
+        previous_job = parent_services[0] if parent_services else service_name
+
+        launched = []
+        try:
+            launched = self._launch_next_job(service_name, analysis_id, None, previous_job)
+        except Exception as e:
+            logger.error(f"Failed to retry job {service_name} for analysis_id={analysis_id}: {e}")
+            try:
+                workflow_step_service.fail_step_by_service(str(analysis_id), service_name)
+            except Exception as step_error:
+                logger.error(f"Failed to fail workflow step for {service_name}: {step_error}")
+            self._log_event(analysis_id, "error", f"Retry of {service_name} failed: {e}", {"error": str(e)})
+            analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+            raise
+
+        self._log_event(analysis_id, "info", f"Job {service_name} relanzado manualmente.", {"launched_jobs": launched})
+        logger.info(f"Retried job {service_name} for analysis_id={analysis_id}. Launched: {launched}")
+        return launched
 
     def resume_pipeline(self, analysis_id: UUID) -> List[str]:
         """Resume a paused pipeline after user approval."""
