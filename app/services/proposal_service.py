@@ -7,6 +7,7 @@ from app.schemas.proposal import (
     ProposalMatchingStatus,
     ProposalAdmissibilityStart, ProposalAdmissibilityResult,
     ProposalAdmissibilityFailure, ProposalAdmissibilityOverride,
+    ProposalEconomicStart, ProposalEconomicResult, ProposalEconomicFailure,
 )
 from typing import List, Optional
 
@@ -199,6 +200,57 @@ class ProposalService:
         data = self.repository.update_by_id(proposal_id, {
             "admissibility_status":        body.admissibility_status,
             "admissibility_overridden_by": body.overridden_by,
+        })
+        return ProposalRead(**data)
+
+
+    # --- Economic state machine ---
+
+    _VALID_MATCHING_FOR_ECONOMIC = {"matrix_ready", "completed", "summary_failed"}
+
+    def economic_start(self, proposal_id: str, body: ProposalEconomicStart, force: bool = False) -> ProposalRead:
+        current = self._get_or_404(proposal_id)
+        if current["economic_status"] not in ("pending", "failed"):
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot start economic extraction: current status is '{current['economic_status']}', allowed from ['pending', 'failed']",
+            )
+        if not force and current["matching_status"] not in self._VALID_MATCHING_FOR_ECONOMIC:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot start economic extraction: matching_status is '{current['matching_status']}', must be one of {sorted(self._VALID_MATCHING_FOR_ECONOMIC)}. Use ?force=true to bypass.",
+            )
+        data = self.repository.update_by_id(proposal_id, {
+            "economic_status":     "extracting",
+            "economic_started_at": body.economic_started_at.isoformat(),
+            "economic_error":      None,
+        })
+        return ProposalRead(**data)
+
+    def economic_result(self, proposal_id: str, body: ProposalEconomicResult) -> ProposalRead:
+        current = self._get_or_404(proposal_id)
+        if current["economic_status"] != "extracting":
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot write economic result: current status is '{current['economic_status']}', must be 'extracting'",
+            )
+        data = self.repository.update_by_id(proposal_id, {
+            "economic_status":        "ready",
+            "economic_completed_at":  body.economic_completed_at.isoformat(),
+        })
+        return ProposalRead(**data)
+
+    def economic_failure(self, proposal_id: str, body: ProposalEconomicFailure) -> ProposalRead:
+        current = self._get_or_404(proposal_id)
+        if current["economic_status"] != "extracting":
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot write economic failure: current status is '{current['economic_status']}', must be 'extracting'",
+            )
+        data = self.repository.update_by_id(proposal_id, {
+            "economic_status":       "failed",
+            "economic_completed_at": body.economic_completed_at.isoformat(),
+            "economic_error":        body.economic_error,
         })
         return ProposalRead(**data)
 

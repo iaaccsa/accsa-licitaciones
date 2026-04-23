@@ -6,36 +6,35 @@ from uuid import UUID
 
 
 class ReqDomain(str, Enum):
-    tecnico              = "tecnico"
-    administrativo       = "administrativo"
-    legal                = "legal"
-    economico_financiero = "economico_financiero"
-    rrhh                 = "rrhh"
-    logistico            = "logistico"
-    ambiental            = "ambiental"
-    calidad              = "calidad"
-    seguridad            = "seguridad"
-    comercial            = "comercial"
-    otro                 = "otro"
+    technical      = "technical"
+    administrative = "administrative"
+    legal          = "legal"
+    financial      = "financial"
+    hr             = "hr"
+    logistics      = "logistics"
+    environmental  = "environmental"
+    quality        = "quality"
+    safety         = "safety"
+    other          = "other"
 
 
 class ReqVerificationMethod(str, Enum):
-    documento_adjunto             = "documento_adjunto"
-    declaracion_jurada            = "declaracion_jurada"
-    certificado_externo           = "certificado_externo"
-    inspeccion                    = "inspeccion"
-    muestra                       = "muestra"
-    visita_tecnica                = "visita_tecnica"
-    auto_verificable_desde_oferta = "auto_verificable_desde_oferta"
-    otro                          = "otro"
+    attached_document          = "attached_document"
+    sworn_statement            = "sworn_statement"
+    external_certificate       = "external_certificate"
+    inspection                 = "inspection"
+    sample                     = "sample"
+    site_visit                 = "site_visit"
+    auto_verifiable_from_offer = "auto_verifiable_from_offer"
+    other                      = "other"
 
 
 class ReqTemporalScope(str, Enum):
-    al_momento_ofertar  = "al_momento_ofertar"
-    previo_adjudicacion = "previo_adjudicacion"
-    durante_ejecucion   = "durante_ejecucion"
-    postventa           = "postventa"
-    otro                = "otro"
+    at_bid_time      = "at_bid_time"
+    pre_award        = "pre_award"
+    during_execution = "during_execution"
+    post_sale        = "post_sale"
+    other            = "other"
 
 
 VALID_ROLES = {
@@ -71,22 +70,22 @@ class RequirementCitation(BaseModel):
 
 
 class AnalysisRequirementCreate(BaseModel):
-    analysis_id:         Optional[UUID] = None
     requirement_code:    str
     requirement_text:    str
     requirement_summary: Optional[str] = None
 
     roles:               List[str]
     mapped_factors:      List[MappedFactor]    = []
-    domain:              ReqDomain             = ReqDomain.otro
+    domain:              ReqDomain             = ReqDomain.other
     weight:              RequirementWeight     = RequirementWeight()
-    verification_method: ReqVerificationMethod = ReqVerificationMethod.otro
-    temporal_scope:      ReqTemporalScope      = ReqTemporalScope.al_momento_ofertar
+    verification_method: ReqVerificationMethod = ReqVerificationMethod.other
+    temporal_scope:      ReqTemporalScope      = ReqTemporalScope.at_bid_time
 
     citations:           List[RequirementCitation] = []
 
     confidence:          Literal["alta", "media", "baja", "muy_baja"] = "media"
     extraction_batch_id: Optional[int]  = None
+    is_admissibility:    bool           = False
     notes:               Optional[str]  = None
 
     @field_validator("roles")
@@ -116,14 +115,15 @@ class AnalysisRequirementBulkCreate(BaseModel):
 
 
 class AnalysisRequirementUpdate(BaseModel):
-    roles:               Optional[List[str]]           = None
-    mapped_factors:      Optional[List[MappedFactor]]  = None
-    domain:              Optional[ReqDomain]            = None
-    weight:              Optional[RequirementWeight]    = None
-    verification_method: Optional[ReqVerificationMethod] = None
-    temporal_scope:      Optional[ReqTemporalScope]    = None
-    is_verified:         Optional[bool]                = None
-    notes:               Optional[str]                 = None
+    roles:               Optional[List[str]]              = None
+    mapped_factors:      Optional[List[MappedFactor]]     = None
+    domain:              Optional[ReqDomain]              = None
+    weight:              Optional[RequirementWeight]      = None
+    verification_method: Optional[ReqVerificationMethod]  = None
+    temporal_scope:      Optional[ReqTemporalScope]       = None
+    is_admissibility:    Optional[bool]                   = None
+    is_verified:         Optional[bool]                   = None
+    notes:               Optional[str]                   = None
 
     @field_validator("roles")
     @classmethod

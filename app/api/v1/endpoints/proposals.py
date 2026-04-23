@@ -8,6 +8,7 @@ from app.schemas.proposal import (
     ProposalMatchingStatus,
     ProposalAdmissibilityStart, ProposalAdmissibilityResult,
     ProposalAdmissibilityFailure, ProposalAdmissibilityOverride,
+    ProposalEconomicStart, ProposalEconomicResult, ProposalEconomicFailure,
 )
 from app.services.proposal_service import proposal_service
 
@@ -94,3 +95,18 @@ def admissibility_failure(proposal_id: UUID, body: ProposalAdmissibilityFailure)
 @router.patch("/{proposal_id}/admissibility-override", response_model=ProposalRead)
 def admissibility_override(proposal_id: UUID, body: ProposalAdmissibilityOverride):
     return proposal_service.admissibility_override(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/economic-start", response_model=ProposalRead)
+def economic_start(proposal_id: UUID, body: ProposalEconomicStart, force: bool = Query(False)):
+    return proposal_service.economic_start(str(proposal_id), body, force)
+
+
+@router.patch("/{proposal_id}/economic-result", response_model=ProposalRead)
+def economic_result(proposal_id: UUID, body: ProposalEconomicResult):
+    return proposal_service.economic_result(str(proposal_id), body)
+
+
+@router.patch("/{proposal_id}/economic-failure", response_model=ProposalRead)
+def economic_failure(proposal_id: UUID, body: ProposalEconomicFailure):
+    return proposal_service.economic_failure(str(proposal_id), body)

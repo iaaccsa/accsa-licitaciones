@@ -3,7 +3,6 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.schemas.requirement import (
-    AnalysisRequirementCreate,
     AnalysisRequirementBulkCreate,
     AnalysisRequirementRead,
     AnalysisRequirementUpdate,
@@ -16,16 +15,7 @@ router = APIRouter()
 
 
 @router.post("/bulk", response_model=BulkReplaceResponse)
-def bulk_replace(requirements: List[AnalysisRequirementCreate]):
-    if not requirements:
-        raise HTTPException(status_code=422, detail="requirements list is empty")
-    analysis_id = requirements[0].analysis_id
-    if analysis_id is None:
-        raise HTTPException(status_code=422, detail="Each requirement must include analysis_id")
-    payload = AnalysisRequirementBulkCreate(
-        analysis_id=analysis_id,
-        requirements=requirements,
-    )
+def bulk_replace(payload: AnalysisRequirementBulkCreate):
     try:
         return analysis_requirement_service.bulk_replace(payload)
     except Exception as e:
@@ -35,12 +25,13 @@ def bulk_replace(requirements: List[AnalysisRequirementCreate]):
 @router.get("/{analysis_id}", response_model=List[AnalysisRequirementRead])
 def list_requirements(
     analysis_id: UUID,
-    domain: Optional[str]   = Query(None),
-    role: Optional[str]     = Query(None),
-    factor_id: Optional[str] = Query(None),
-    is_verified: Optional[bool] = Query(None),
-    limit: int  = Query(50, ge=1, le=500),
-    offset: int = Query(0, ge=0),
+    domain: Optional[str]            = Query(None),
+    role: Optional[str]              = Query(None),
+    factor_id: Optional[str]         = Query(None),
+    is_admissibility: Optional[bool] = Query(None),
+    is_verified: Optional[bool]      = Query(None),
+    limit: int                       = Query(50, ge=1, le=500),
+    offset: int                      = Query(0, ge=0),
 ):
     try:
         return analysis_requirement_service.get_by_analysis_id(
@@ -48,6 +39,7 @@ def list_requirements(
             domain=domain,
             role=role,
             factor_id=factor_id,
+            is_admissibility=is_admissibility,
             is_verified=is_verified,
             limit=limit,
             offset=offset,

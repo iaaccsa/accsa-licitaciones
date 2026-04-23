@@ -3,7 +3,7 @@ from app.core.supabase import supabase
 from app.core.security import get_api_key
 from app.core.qdrant import verify_qdrant_connection
 from app.core.azure import verify_azure_connection
-from app.api.v1.endpoints import analyses, events, requirements, original_files, processed_files, proposals, tenders, workflow_steps, workflow_phases, compliance_results, compliance_matrix, qdrant, jobs, chat, cleanup, upload_token, tender_classifications, tender_evaluation_types
+from app.api.v1.endpoints import analyses, events, requirements, original_files, processed_files, proposals, tenders, workflow_steps, workflow_phases, compliance_results, compliance_matrix, qdrant, jobs, chat, cleanup, upload_token, tender_classifications, tender_evaluation_types, economic_offers
 
 api_router = APIRouter(dependencies=[Depends(get_api_key)])
 
@@ -25,6 +25,7 @@ api_router.include_router(cleanup.router, prefix="/cleanup", tags=["cleanup"])
 api_router.include_router(upload_token.router, tags=["upload-token"])
 api_router.include_router(tender_classifications.router, prefix="/tender-classifications", tags=["tender-classifications"])
 api_router.include_router(tender_evaluation_types.router, prefix="/tender-evaluation-types", tags=["tender-evaluation-types"])
+api_router.include_router(economic_offers.router, prefix="/proposal-economic-offers", tags=["proposal-economic-offers"])
 
 @api_router.get("/health", tags=["health"], summary="Perform a Health Check")
 async def health_check():

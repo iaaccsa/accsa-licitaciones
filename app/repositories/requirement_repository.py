@@ -26,6 +26,7 @@ class AnalysisRequirementRepository(BaseRepository):
         domain: Optional[str] = None,
         role: Optional[str] = None,
         factor_id: Optional[str] = None,
+        is_admissibility: Optional[bool] = None,
         is_verified: Optional[bool] = None,
         limit: int = 50,
         offset: int = 0,
@@ -37,6 +38,8 @@ class AnalysisRequirementRepository(BaseRepository):
             q = q.contains("roles", [role])
         if factor_id is not None:
             q = q.contains("mapped_factors", [{"factor_id": factor_id}])
+        if is_admissibility is not None:
+            q = q.eq("is_admissibility", is_admissibility)
         if is_verified is not None:
             q = q.eq("is_verified", is_verified)
         return q.order("requirement_code").range(offset, offset + limit - 1).execute().data

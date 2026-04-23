@@ -15,6 +15,13 @@ class ProposalMatchingStatus(str, Enum):
     summary_failed = "summary_failed"
 
 
+class ProposalEconomicStatus(str, Enum):
+    pending    = "pending"
+    extracting = "extracting"
+    ready      = "ready"
+    failed     = "failed"
+
+
 class ProposalAdmissibilityStatus(str, Enum):
     pending    = "pending"
     evaluating = "evaluating"
@@ -61,6 +68,10 @@ class ProposalRead(ProposalBase):
     admissibility_error:         Optional[str]                = None
     admissibility_reasons:       List[AdmissibilityReason]    = []
     admissibility_overridden_by: Optional[str]                = None
+    economic_status:             ProposalEconomicStatus       = ProposalEconomicStatus.pending
+    economic_started_at:         Optional[datetime]           = None
+    economic_completed_at:       Optional[datetime]           = None
+    economic_error:              Optional[str]                = None
     created_at:               datetime
     updated_at:               datetime
 
@@ -123,3 +134,16 @@ class ProposalAdmissibilityFailure(BaseModel):
 class ProposalAdmissibilityOverride(BaseModel):
     admissibility_status: str
     overridden_by:        str
+
+
+class ProposalEconomicStart(BaseModel):
+    economic_started_at: datetime
+
+
+class ProposalEconomicResult(BaseModel):
+    economic_completed_at: datetime
+
+
+class ProposalEconomicFailure(BaseModel):
+    economic_completed_at: datetime
+    economic_error:        str
