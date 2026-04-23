@@ -514,15 +514,17 @@ def post_process_single(llm_entry: LLMComplianceEntry, req: dict) -> FinalCompli
 
 
 # ---------------------------------------------------------------------------
-# Async evaluation
+# Async evaluation (writes each result to DB immediately)
 # ---------------------------------------------------------------------------
-async def evaluate_requirement(
+async def evaluate_and_persist(
     gemini: genai.Client,
     openai_client: OpenAI,
     proposal: dict,
     req: dict,
     chunks: List[dict],
     semaphore: asyncio.Semaphore,
+    analysis_id: str,
+    proposal_id: str,
 ) -> FinalComplianceEntry:
     async with semaphore:
         req_id = str(req["id"])
@@ -532,12 +534,16 @@ async def evaluate_requirement(
         for attempt in range(LLM_RETRY_ATTEMPTS + 1):
             try:
                 llm_entry = await asyncio.to_thread(_call_gemini_sync, gemini, user_prompt)
-                return post_process_single(llm_entry, req)
+                entry = post_process_single(llm_entry, req)
+                await asyncio.to_thread(post_matrix_entries, analysis_id, proposal_id, [entry])
+                return entry
             except Exception as e_gemini:
                 logger.warning(f"req {req_id} attempt {attempt}: Gemini failed ({e_gemini}), trying OpenAI...")
                 try:
                     llm_entry = await asyncio.to_thread(_call_openai_sync, openai_client, user_prompt)
-                    return post_process_single(llm_entry, req)
+                    entry = post_process_single(llm_entry, req)
+                    await asyncio.to_thread(post_matrix_entries, analysis_id, proposal_id, [entry])
+                    return entry
                 except Exception as e_openai:
                     last_error = e_openai
                     logger.warning(f"req {req_id} attempt {attempt}: OpenAI also failed ({e_openai}).")
@@ -546,7 +552,7 @@ async def evaluate_requirement(
                         await asyncio.sleep(backoff)
 
         logger.error(f"req {req_id}: all LLM attempts exhausted. Degrading to requiere_verificacion_manual.")
-        return FinalComplianceEntry(
+        entry = FinalComplianceEntry(
             requirement_id=req_id,
             verdict="requiere_verificacion_manual",
             confidence="muy_baja",
@@ -554,12 +560,21 @@ async def evaluate_requirement(
             manual_verification_required=True,
             notes=f"LLM_FAILURE: {last_error}",
         )
+        await asyncio.to_thread(post_matrix_entries, analysis_id, proposal_id, [entry])
+        return entry
 
 
 # ---------------------------------------------------------------------------
-# Persist
+# Persist (incremental)
 # ---------------------------------------------------------------------------
-def post_bulk_matrix(analysis_id: str, proposal_id: str, entries: List[FinalComplianceEntry]):
+def delete_matrix_for_proposal(proposal_id: str):
+    api_request("DELETE", f"{API_COMPLIANCE_MATRIX_PATH}by-proposal/{proposal_id}")
+    logger.info(f"Deleted existing matrix entries for proposal {proposal_id}.")
+
+
+def post_matrix_entries(analysis_id: str, proposal_id: str, entries: List[FinalComplianceEntry]):
+    if not entries:
+        return
     payload = [
         {
             "analysis_id": analysis_id,
@@ -568,8 +583,8 @@ def post_bulk_matrix(analysis_id: str, proposal_id: str, entries: List[FinalComp
         }
         for e in entries
     ]
-    api_request("POST", f"{API_COMPLIANCE_MATRIX_PATH}bulk", payload)
-    logger.info(f"POST bulk matrix: {len(entries)} entries saved.")
+    api_request("POST", f"{API_COMPLIANCE_MATRIX_PATH}batch", payload)
+    logger.info(f"POST matrix batch: {len(entries)} entries saved.")
 
 
 # ---------------------------------------------------------------------------
@@ -607,6 +622,12 @@ async def process_compliance_matching_async():
 
         auto_na, auto_mn, needs_llm = apply_auto_filters(requirements)
 
+        # Delete existing matrix entries for this proposal
+        delete_matrix_for_proposal(PROPOSAL_ID)
+
+        # Write auto-filtered entries immediately
+        post_matrix_entries(ANALYSIS_ID, PROPOSAL_ID, auto_na + auto_mn)
+
         # RAG search per requirement (synchronous, not the bottleneck)
         chunks_by_req: Dict[str, List[dict]] = {}
         for req in needs_llm:
@@ -617,12 +638,13 @@ async def process_compliance_matching_async():
                 req["requirement_text"], RAG_TOP_K,
             )
 
-        # Parallel LLM evaluation with semaphore
+        # Parallel LLM evaluation with semaphore — each result is persisted immediately
         semaphore = asyncio.Semaphore(MAX_CONCURRENT_LLM_CALLS)
         coros = [
-            evaluate_requirement(
+            evaluate_and_persist(
                 gemini_client, openai_client, proposal,
                 req, chunks_by_req[str(req["id"])], semaphore,
+                ANALYSIS_ID, PROPOSAL_ID,
             )
             for req in needs_llm
         ]
@@ -640,8 +662,6 @@ async def process_compliance_matching_async():
             )
 
         all_entries = list(auto_na) + list(auto_mn) + list(llm_entries)
-
-        post_bulk_matrix(ANALYSIS_ID, PROPOSAL_ID, all_entries)
         mark_matching_result(PROPOSAL_ID)
 
         summary = (

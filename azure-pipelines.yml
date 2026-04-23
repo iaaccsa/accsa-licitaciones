@@ -44,8 +44,8 @@ strategy:
     #   SERVICE_NAME: "service-digital-sig-extractor"
     # service-tender-classifier:
     #   SERVICE_NAME: "service-tender-classifier"
-    # service-compliance-matcher:
-    #   SERVICE_NAME: "service-compliance-matcher"
+    service-compliance-matcher:
+      SERVICE_NAME: "service-compliance-matcher"
     # service-compliance-summarizer:
     #   SERVICE_NAME: "service-compliance-summarizer"
     # service-file-metadata-extractor:

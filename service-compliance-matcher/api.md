@@ -20,10 +20,14 @@ Obtiene la lista de requerimientos atomicos extraidos por service-requirement-ex
 Obtiene el evaluation_profile producido por service-tender-classifier (contexto, no bloqueante).
 - **Response:** `{system_type, factors, enabled_roles, ...}`
 
-### POST /api/v1/analysis-compliance-matrix/bulk
-Reemplaza atomicamente todas las entradas de la matriz para el par (analysis_id, proposal_id).
+### DELETE /api/v1/analysis-compliance-matrix/by-proposal/{proposal_id}
+Elimina todas las entradas de la matriz para la propuesta indicada.
+- **Response 200:** `{deleted: <int>}`
+
+### POST /api/v1/analysis-compliance-matrix/batch
+Inserta un lote de entradas en la matriz (sin borrar las existentes).
 - **Request:** `[{analysis_id, proposal_id, requirement_id, verdict, confidence, reasoning, missing_elements, citations, manual_verification_required, notes}, ...]`
-- **Comportamiento:** elimina entradas previas del par (analysis_id, proposal_id) y crea las nuevas en una sola transaccion.
+- **Comportamiento:** INSERT puro. El servicio se encarga de llamar DELETE antes de comenzar a escribir.
 
 ### PATCH /api/v1/proposals/{proposal_id}/matching-start
 Transiciona la propuesta al estado `matching` y registra `matching_started_at`.
