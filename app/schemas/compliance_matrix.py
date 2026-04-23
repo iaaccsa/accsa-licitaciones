@@ -140,3 +140,11 @@ class BulkReplaceMatrixResponse(BaseModel):
     proposal_id: UUID
     inserted:    int
     deleted:     int
+
+
+class DeleteByProposalResponse(BaseModel):
+    deleted: int
+
+
+class BatchInsertResponse(BaseModel):
+    inserted: int

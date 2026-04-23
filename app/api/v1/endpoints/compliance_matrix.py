@@ -10,6 +10,8 @@ from app.schemas.compliance_matrix import (
     ComplianceEntryFlatCreate,
     ComplianceMatrixBulkCreate,
     BulkReplaceMatrixResponse,
+    DeleteByProposalResponse,
+    BatchInsertResponse,
     ComplianceVerdict,
     ComplianceMatrixViewEntry,
 )
@@ -124,6 +126,24 @@ def get_view_by_proposal(
 def get_by_requirement(requirement_id: UUID):
     try:
         return compliance_matrix_service.get_by_requirement(requirement_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/by-proposal/{proposal_id}", response_model=DeleteByProposalResponse)
+def delete_by_proposal(proposal_id: UUID):
+    try:
+        return compliance_matrix_service.delete_by_proposal(proposal_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/batch", response_model=BatchInsertResponse)
+def batch_insert(items: List[ComplianceEntryFlatCreate]):
+    if not items:
+        raise HTTPException(status_code=422, detail="items list must not be empty")
+    try:
+        return compliance_matrix_service.batch_insert(items)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

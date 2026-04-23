@@ -96,6 +96,21 @@ class ComplianceMatrixRepository(BaseRepository):
         )
         return response.data
 
+    def delete_by_proposal(self, proposal_id: UUID) -> int:
+        response = (
+            supabase.table(self.table_name)
+            .delete()
+            .eq("proposal_id", str(proposal_id))
+            .execute()
+        )
+        return len(response.data)
+
+    def batch_insert(self, rows: List[Dict[str, Any]]) -> int:
+        if not rows:
+            return 0
+        supabase.table(self.table_name).insert(rows).execute()
+        return len(rows)
+
     def update_patch(self, entry_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         response = (
             supabase.table(self.table_name)

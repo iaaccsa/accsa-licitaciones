@@ -8,9 +8,12 @@ from app.schemas.compliance_matrix import (
     ComplianceEntryRead,
     ComplianceEntryReadWithRequirement,
     ComplianceEntryCreate,
+    ComplianceEntryFlatCreate,
     ComplianceMatrixBulkCreate,
     ComplianceEntryPatch,
     BulkReplaceMatrixResponse,
+    DeleteByProposalResponse,
+    BatchInsertResponse,
     RequirementEmbedded,
     ComplianceMatrixViewEntry,
 )
@@ -139,6 +142,22 @@ class ComplianceMatrixService:
     def get_by_requirement(self, requirement_id: UUID) -> List[ComplianceEntryRead]:
         rows = self.repository.get_by_requirement(requirement_id)
         return [_to_entry_read(r) for r in rows]
+
+    def delete_by_proposal(self, proposal_id: UUID) -> DeleteByProposalResponse:
+        deleted = self.repository.delete_by_proposal(proposal_id)
+        return DeleteByProposalResponse(deleted=deleted)
+
+    def batch_insert(self, items: List[ComplianceEntryFlatCreate]) -> BatchInsertResponse:
+        rows = [
+            {
+                "analysis_id": str(item.analysis_id),
+                "proposal_id": str(item.proposal_id),
+                **item.model_dump(mode="json", exclude={"analysis_id", "proposal_id"}),
+            }
+            for item in items
+        ]
+        inserted = self.repository.batch_insert(rows)
+        return BatchInsertResponse(inserted=inserted)
 
     def patch_entry(self, entry_id: str, patch: ComplianceEntryPatch) -> ComplianceEntryRead:
         existing = self.repository.get_by_id(entry_id)
