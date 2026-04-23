@@ -43,8 +43,8 @@ PROPOSAL_ID                     = os.environ.get("PROPOSAL_ID")
 
 SERVICE_NAME          = "service-compliance-summarizer"
 EVENT_SOURCE          = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL          = "gemini-3.1-pro-preview"
-OPENAI_FALLBACK_MODEL = "gpt-5.4"
+GEMINI_MODEL          = "gemini-2.5-flash"
+OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 
 LLM_RETRY_ATTEMPTS    = 2
 LLM_RETRY_BACKOFF     = 2.0

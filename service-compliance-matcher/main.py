@@ -65,8 +65,8 @@ PROPOSAL_ID = os.environ.get("PROPOSAL_ID")
 SERVICE_NAME = "service-compliance-matcher"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 EMBEDDING_MODEL = "text-embedding-3-small"
-GEMINI_MODEL = "gemini-3.1-pro-preview"
-OPENAI_FALLBACK_MODEL = "gpt-5.4"
+GEMINI_MODEL = "gemini-2.5-flash"
+OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 
 RAG_TOP_K = 6
 MAX_CONCURRENT_LLM_CALLS = 10

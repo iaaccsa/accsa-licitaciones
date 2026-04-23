@@ -58,8 +58,8 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 SERVICE_NAME = "service-requirement-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL = "gemini-3.1-pro-preview"
-OPENAI_FALLBACK_MODEL = "gpt-5.4"
+GEMINI_MODEL = "gemini-2.5-flash"
+OPENAI_FALLBACK_MODEL = "gpt-4.1-nano"
 BATCH_SIZE = 15
 BATCH_OVERLAP = 2
 MAX_PARALLEL_BATCHES = 3

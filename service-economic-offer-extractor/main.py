@@ -65,8 +65,8 @@ SERVICE_NAME = "service-economic-offer-extractor"
 SERVICE_VERSION = "1.0.0"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 EMBEDDING_MODEL = "text-embedding-3-small"
-GEMINI_MODEL = "gemini-3.1-pro-preview"
-OPENAI_FALLBACK_MODEL = "gpt-5.4"
+GEMINI_MODEL = "gemini-2.5-flash"
+OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 
 RAG_TOP_K_PER_QUERY = 5
 RAG_MAX_TOTAL_CHUNKS = 20

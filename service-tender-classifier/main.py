@@ -64,8 +64,8 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 SERVICE_NAME = "service-tender-classifier"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 EMBEDDING_MODEL = "text-embedding-3-small"
-GEMINI_MODEL = "gemini-3.1-pro-preview"
-OPENAI_FALLBACK_MODEL = "gpt-5.4"
+GEMINI_MODEL = "gemini-2.5-flash"
+OPENAI_FALLBACK_MODEL = "gpt-4.1-nano"
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()

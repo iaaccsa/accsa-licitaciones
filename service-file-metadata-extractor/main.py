@@ -52,8 +52,8 @@ FILE_ID = os.environ.get("FILE_ID")
 
 SERVICE_NAME = "service-file-metadata-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL = "gemini-3.1-pro-preview"
-OPENAI_FALLBACK_MODEL = "gpt-5.4"
+GEMINI_MODEL = "gemini-2.5-flash"
+OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 MAX_CHARS = 10000
 
 logger = setup_logger(SERVICE_NAME)

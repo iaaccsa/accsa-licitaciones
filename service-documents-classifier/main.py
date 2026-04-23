@@ -46,8 +46,8 @@ FILE_ID = os.environ.get("FILE_ID")
 
 SERVICE_NAME = "service-documents-classifier"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL = "gemini-3.1-pro-preview"
-OPENAI_FALLBACK_MODEL = "gpt-5.4"
+GEMINI_MODEL = "gemini-2.5-flash"
+OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
