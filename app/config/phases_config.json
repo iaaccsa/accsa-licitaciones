@@ -25,13 +25,13 @@
   },
   {
     "code": "award_check",
-    "display_name": "Chequeo de Adjudicación",
+    "display_name": "Chequeo de Admisibilidad",
     "order": 5,
     "type": "processing"
   },
   {
     "code": "award_approval",
-    "display_name": "Esperando Aprobación de Adjudicación",
+    "display_name": "Esperando Aprobación de Admisibilidad",
     "order": 6,
     "type": "approval"
   },
