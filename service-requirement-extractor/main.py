@@ -335,9 +335,9 @@ API_HEADERS = {
 }
 
 
-def api_request(method: str, path: str, json_data: dict | list | None = None) -> dict | list | None:
+def api_request(method: str, path: str, json_data: dict | list | None = None, params: dict | None = None) -> dict | list | None:
     url = f"{API_BASE_URL}{path}"
-    response = SESSION.request(method, url, json=json_data, headers=API_HEADERS, timeout=60)
+    response = SESSION.request(method, url, json=json_data, params=params, headers=API_HEADERS, timeout=60)
     response.raise_for_status()
     try:
         return response.json()
@@ -732,8 +732,8 @@ def validate_against_profile(
 # Persist
 # ---------------------------------------------------------------------------
 def post_bulk(analysis_id: str, reqs: List[FinalRequirement]):
-    payload = [{"analysis_id": analysis_id, **r.model_dump()} for r in reqs]
-    api_request("POST", f"{API_ANALYSIS_REQUIREMENTS_PATH}bulk", payload)
+    payload = [r.model_dump() for r in reqs]
+    api_request("POST", f"{API_ANALYSIS_REQUIREMENTS_PATH}bulk", payload, params={"analysis_id": analysis_id})
     logger.info(f"POST bulk: {len(reqs)} requirements saved.")
 
 
