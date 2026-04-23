@@ -1,9 +1,9 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Body, HTTPException, Query
 from typing import List, Optional
 from uuid import UUID
 
 from app.schemas.requirement import (
-    AnalysisRequirementBulkCreate,
+    AnalysisRequirementCreate,
     AnalysisRequirementRead,
     AnalysisRequirementUpdate,
     BulkReplaceResponse,
@@ -15,9 +15,12 @@ router = APIRouter()
 
 
 @router.post("/bulk", response_model=BulkReplaceResponse)
-def bulk_replace(payload: AnalysisRequirementBulkCreate):
+def bulk_replace(
+    analysis_id: UUID = Query(...),
+    requirements: List[AnalysisRequirementCreate] = Body(...),
+):
     try:
-        return analysis_requirement_service.bulk_replace(payload)
+        return analysis_requirement_service.bulk_replace(analysis_id, requirements)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

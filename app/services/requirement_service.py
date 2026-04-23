@@ -1,6 +1,5 @@
 from app.repositories.requirement_repository import analysis_requirement_repository
 from app.schemas.requirement import (
-    AnalysisRequirementBulkCreate,
     AnalysisRequirementCreate,
     AnalysisRequirementRead,
     AnalysisRequirementUpdate,
@@ -15,16 +14,16 @@ class AnalysisRequirementService:
     def __init__(self):
         self.repository = analysis_requirement_repository
 
-    def bulk_replace(self, payload: AnalysisRequirementBulkCreate) -> BulkReplaceResponse:
-        analysis_id = str(payload.analysis_id)
-        deleted = self.repository.delete_by_analysis_id(analysis_id)
+    def bulk_replace(self, analysis_id: UUID, requirements: List[AnalysisRequirementCreate]) -> BulkReplaceResponse:
+        analysis_id_str = str(analysis_id)
+        deleted = self.repository.delete_by_analysis_id(analysis_id_str)
         rows = [
-            {"analysis_id": analysis_id, **req.model_dump(mode="json", exclude={"analysis_id"})}
-            for req in payload.requirements
+            {"analysis_id": analysis_id_str, **req.model_dump(mode="json")}
+            for req in requirements
         ]
         inserted_data = self.repository.insert_batch(rows) if rows else []
         return BulkReplaceResponse(
-            analysis_id=payload.analysis_id,
+            analysis_id=analysis_id,
             inserted=len(inserted_data),
             deleted=deleted,
         )
