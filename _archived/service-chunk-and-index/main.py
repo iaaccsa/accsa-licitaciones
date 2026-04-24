@@ -23,6 +23,7 @@ Required environment variables:
 """
 
 import os
+import re
 import sys
 import uuid
 import time
@@ -133,22 +134,54 @@ def download_file_content(supabase, storage_path: str) -> str:
     return response.decode("utf-8")
 
 
+PAGE_MARKER_RE = re.compile(r"<!-- page:(\d+) -->\n?")
+
+
 def split_text_semantically(text: str) -> List[Dict[str, Any]]:
-    """Splits markdown text by headers then recursively splits large chunks."""
+    """Splits markdown text by headers then recursively splits large chunks.
+    Extracts <!-- page:N --> markers to assign page_number to each chunk."""
+
+    # 1. Extract page boundaries (position in stripped text -> page number)
+    page_boundaries: List[tuple] = []
+    offset = 0
+    for m in PAGE_MARKER_RE.finditer(text):
+        stripped_pos = m.start() - offset
+        page_boundaries.append((stripped_pos, int(m.group(1))))
+        offset += len(m.group(0))
+
+    # 2. Strip markers so they don't pollute chunk content
+    clean_text = PAGE_MARKER_RE.sub("", text)
+
+    # 3. Normal chunking on clean text
     headers_to_split_on = [
         ("#", "Header 1"),
         ("##", "Header 2"),
         ("###", "Header 3"),
     ]
     markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
-    md_header_splits = markdown_splitter.split_text(text)
+    md_header_splits = markdown_splitter.split_text(clean_text)
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=200,
         separators=["\n\n", "\n", " ", ""]
     )
     final_chunks = text_splitter.split_documents(md_header_splits)
-    return [{"text": doc.page_content, "metadata": doc.metadata} for doc in final_chunks]
+
+    # 4. Assign page_number to each chunk based on its position
+    results = []
+    for doc in final_chunks:
+        chunk_text = doc.page_content
+        meta = dict(doc.metadata)
+        if page_boundaries:
+            pos = clean_text.find(chunk_text)
+            if pos >= 0:
+                for bp, pn in reversed(page_boundaries):
+                    if bp <= pos:
+                        meta["page_number"] = pn
+                        break
+        results.append({"text": chunk_text, "metadata": meta})
+
+    return results
 
 
 def get_embeddings(client: OpenAI, texts: List[str]) -> List[List[float]]:
@@ -201,6 +234,25 @@ def upload_to_qdrant(
     logger.info(f"Upload complete for file '{file_record['file_name']}'.")
 
 
+def cleanup_previous_run(qdrant_client: QdrantClient, collection_name: str, file_id: str):
+    """Delete any Qdrant points previously indexed for this file."""
+    try:
+        if not qdrant_client.collection_exists(collection_name):
+            logger.info(f"Cleanup: collection '{collection_name}' does not exist yet; nothing to wipe.")
+            return
+        qdrant_client.delete(
+            collection_name=collection_name,
+            points_selector=models.FilterSelector(
+                filter=models.Filter(
+                    must=[models.FieldCondition(key="file_id", match=models.MatchValue(value=file_id))]
+                )
+            ),
+        )
+        logger.info(f"Cleanup: removed previous points for file_id={file_id} from '{collection_name}'.")
+    except Exception as e:
+        logger.warning(f"Cleanup: qdrant wipe failed (non-fatal): {e}")
+
+
 def process_indexing():
     logger.info(f"Starting Chunk and Index Service for ANALYSIS_ID={ANALYSIS_ID}, FILE_ID={FILE_ID}")
 
@@ -214,6 +266,9 @@ def process_indexing():
     analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
     collection_name = analysis["slug"]
     logger.info(f"Target Qdrant collection: {collection_name}")
+
+    # 1b. Cleanup points for this file from previous runs
+    cleanup_previous_run(qdrant_client, collection_name, FILE_ID)
 
     log_event(ANALYSIS_ID, "info", f"Iniciando indexación de archivo {FILE_ID}", EVENT_SOURCE)
 

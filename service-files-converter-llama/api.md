@@ -15,6 +15,11 @@ Busca archivos por filtro.
 Crea un registro de archivo (versión markdown convertida).
 - **Request:** `{id, analysis_id, file_name, storage_path, file_size, mime_type, is_processed_version, is_merged, link}`
 
+### DELETE /api/v1/files/by-analysis/{analysis_id}?is_merged=false
+Limpieza al inicio: elimina archivos procesados (no-merged) de ejecuciones previas.
+- **Estado:** pendiente de implementar en backend (ver `todo-api.md`).
+- Si el endpoint no existe, el servicio registra un warning y continúa.
+
 ### PATCH /api/v1/analyses/{analysis_id}/status
 Actualiza el estado del análisis (usado en caso de fallo).
 - **Campos usados:** `status`, `is_success`

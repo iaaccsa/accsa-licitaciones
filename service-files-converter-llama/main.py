@@ -206,6 +206,39 @@ def notify_failure(error_msg: str):
         logger.error(f"Failed to notify job callback: {e}")
 
 
+def cleanup_previous_run(supabase: Client, slug: str, source_files: list[dict]):
+    """Remove processed_files (non-merged) and their storage objects from prior runs."""
+    logger.info("Cleanup: removing processed_files from previous runs...")
+
+    try:
+        api_request("DELETE", f"{API_FILES_PATH}by-analysis/{ANALYSIS_ID}?is_merged=false")
+        logger.info("Cleanup: processed_files (is_merged=false) deleted via API.")
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 404:
+            logger.warning(
+                "Cleanup: DELETE /processed-files/by-analysis/{analysis_id} not implemented (see todo-api.md)."
+            )
+        else:
+            raise
+
+    # Wipe generated .md storage objects. Only the files whose paths we control:
+    # any object under slug/ that is NOT referenced by a source (original) file.
+    try:
+        source_paths = {f.get("storage_path") for f in (source_files or [])}
+        listed = supabase.storage.from_(STORAGE_BUCKET).list(path=slug)
+        to_remove = [
+            f"{slug}/{item['name']}"
+            for item in (listed or [])
+            if item.get("name") and f"{slug}/{item['name']}" not in source_paths
+            and item["name"].endswith(".md")
+        ]
+        if to_remove:
+            supabase.storage.from_(STORAGE_BUCKET).remove(to_remove)
+            logger.info(f"Cleanup: removed {len(to_remove)} markdown object(s) from storage.")
+    except Exception as e:
+        logger.warning(f"Cleanup: storage wipe failed (non-fatal): {e}")
+
+
 def process_conversion():
     logger.info(f"Starting files converter for analysis_id={ANALYSIS_ID}")
 
@@ -222,11 +255,14 @@ def process_conversion():
 
     logger.info("Querying files via API …")
     all_files = api_request("POST", f"{API_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
-    
+
     files_to_process = [
         f for f in all_files
         if not f.get("is_processed_version")
     ]
+
+    # 2b. Cleanup data from previous runs (processed_files + storage)
+    cleanup_previous_run(supabase, slug, files_to_process)
 
     if files_to_process:
         logger.info(f"Found {len(files_to_process)} file(s) to process")

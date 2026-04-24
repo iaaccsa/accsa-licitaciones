@@ -138,7 +138,7 @@ class RequirementWeight(BaseModel):
 
 class RequirementCitation(BaseModel):
     chunk_id: str
-    page: Optional[str] = None
+    page_number: Optional[int] = None
     snippet: str
 
 
@@ -307,7 +307,7 @@ Return ONLY a JSON object of this shape:
       "weight": {"type":"none","value":null,"formula":null,"block":null},
       "verification_method": "...",
       "temporal_scope": "...",
-      "citations": [{"chunk_id":"...","page":"...","snippet":"..."}],
+      "citations": [{"chunk_id":"...","page_number":1,"snippet":"..."}],
       "confidence": "alta",
       "notes": null,
       "extraction_batch_id": 0
@@ -440,7 +440,7 @@ def scroll_all_chunks(qdrant: QdrantClient, slug: str, analysis_id: str) -> List
                 "chunk_id": str(point.id),
                 "chunk_index": int(payload["chunk_index"]),
                 "text": payload.get("text", ""),
-                "page": payload.get("page") or payload.get("page_label"),
+                "page_number": payload.get("page_number"),
             })
         offset = next_offset
         if offset is None:
@@ -472,7 +472,7 @@ def make_batches(chunks: List[dict], size: int, overlap: int) -> List[List[dict]
 def build_user_prompt(profile: dict, batch: List[dict]) -> str:
     profile_json = json.dumps(profile, ensure_ascii=False, indent=2)
     chunks_text = "\n\n".join(
-        f'[chunk_id={c["chunk_id"]} page="{c["page"] or ""}"]'
+        f'[chunk_id={c["chunk_id"]} page_number={c["page_number"] or ""}]'
         f"\n{c['text']}"
         for c in batch
     )

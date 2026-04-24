@@ -159,6 +159,34 @@ def notify_failure(error_msg: str):
         logger.error(f"Failed to notify job callback: {e}")
 
 
+def cleanup_previous_run(supabase, slug: str, existing_files: list[dict]):
+    """Remove merged processed_files and their storage objects from prior runs."""
+    logger.info("Cleanup: removing merged files from previous runs...")
+
+    merged_paths = [
+        f.get("storage_path") for f in (existing_files or [])
+        if f.get("is_merged") and f.get("storage_path")
+    ]
+
+    try:
+        api_request("DELETE", f"{API_PROCESSED_FILES_PATH}by-analysis/{ANALYSIS_ID}?is_merged=true")
+        logger.info("Cleanup: merged processed_files deleted via API.")
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 404:
+            logger.warning(
+                "Cleanup: DELETE /processed-files/by-analysis/{analysis_id} not implemented (see todo-api.md)."
+            )
+        else:
+            raise
+
+    if merged_paths:
+        try:
+            supabase.storage.from_(STORAGE_BUCKET).remove(merged_paths)
+            logger.info(f"Cleanup: removed {len(merged_paths)} merged storage object(s).")
+        except Exception as e:
+            logger.warning(f"Cleanup: storage wipe failed (non-fatal): {e}")
+
+
 def process_joiner():
     logger.info(f"Starting {SERVICE_NAME} for ANALYSIS_ID={ANALYSIS_ID}")
 
@@ -167,8 +195,13 @@ def process_joiner():
     slug = analysis["slug"].strip()
     logger.info(f"Analysis slug: {slug}")
 
+    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+
     # 2. Fetch all files
     files = api_request("POST", f"{API_PROCESSED_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
+
+    # 2b. Cleanup merged outputs from previous runs before generating new ones
+    cleanup_previous_run(supabase, slug, files or [])
     if not files:
         logger.warning("No files found for this analysis.")
         log_event(ANALYSIS_ID, "warning", "No se encontraron archivos para unir.", EVENT_SOURCE)
@@ -186,7 +219,6 @@ def process_joiner():
     ]
     logger.info(f"Found {len(md_files)} processed markdown files with category.")
 
-    supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     merged_count = 0
 
     # 4. Generate tender_full.md (tender + normative)

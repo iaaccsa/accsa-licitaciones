@@ -14,6 +14,11 @@ Actualiza el estado del análisis.
 Crea un registro de archivo original.
 - **Request:** `{analysis_id, file_name, storage_path, category, file_size, mime_type}`
 
+### DELETE /api/v1/original-files/by-analysis/{analysis_id}
+Limpieza al inicio: elimina todos los `original_files` del análisis de ejecuciones previas.
+- **Estado:** pendiente de implementar en backend (ver `todo-api.md`).
+- Si el endpoint no existe, el servicio registra un warning y continúa.
+
 ### POST /api/v1/jobs/callback
 Notifica finalización del job.
 - **Request:** `{service_name, analysis_id, status, error_message?}`

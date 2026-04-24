@@ -26,6 +26,16 @@ Crea un nuevo tender (uno por análisis).
 - **Request:** `{"analysis_id": "uuid", "label": "string | null", "provider_name": "string | null"}`
 - **Response:** `{"id": "uuid", ...}`
 
+### DELETE /api/v1/proposals/by-analysis/{analysis_id}
+Limpieza al inicio: elimina todos los `proposals` del análisis y nullifica / cascada los FKs.
+- **Estado:** pendiente de implementar en backend (ver `todo-api.md`).
+- Si el endpoint no existe, el servicio registra un warning y continúa.
+
+### DELETE /api/v1/tenders/by-analysis/{analysis_id}
+Limpieza al inicio: elimina todos los `tenders` del análisis y nullifica / cascada los FKs.
+- **Estado:** pendiente de implementar en backend (ver `todo-api.md`).
+- Si el endpoint no existe, el servicio registra un warning y continúa.
+
 ### PATCH /api/v1/analyses/{analysis_id}
 Actualiza campos del análisis.
 - **Campos usados:** `generated_name`

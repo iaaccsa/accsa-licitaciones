@@ -204,6 +204,35 @@ def notify_failure(error_msg: str):
         logger.error(f"Failed to notify job callback: {e}")
 
 
+def cleanup_previous_run(supabase: Client, slug: str):
+    """Remove any data persisted by a previous run of this service."""
+    logger.info("Cleanup: removing data from previous runs...")
+
+    # 1. Delete original_files rows for this analysis via API
+    try:
+        api_request("DELETE", f"{API_ORIGINAL_FILES_PATH}by-analysis/{ANALYSIS_ID}")
+        logger.info("Cleanup: original_files deleted via API.")
+    except requests.exceptions.HTTPError as e:
+        if e.response is not None and e.response.status_code == 404:
+            logger.warning(
+                "Cleanup: DELETE /original-files/by-analysis/{analysis_id} not implemented in backend (see todo-api.md)."
+            )
+        else:
+            raise
+
+    # 2. Wipe Supabase Storage prefix files/{slug}/
+    try:
+        listed = supabase.storage.from_("files").list(path=slug)
+        paths = [f"{slug}/{item['name']}" for item in (listed or []) if item.get("name")]
+        if paths:
+            supabase.storage.from_("files").remove(paths)
+            logger.info(f"Cleanup: removed {len(paths)} object(s) under storage prefix {slug}/.")
+        else:
+            logger.info(f"Cleanup: storage prefix {slug}/ is empty.")
+    except Exception as e:
+        logger.warning(f"Cleanup: storage wipe failed (non-fatal): {e}")
+
+
 def process_analysis():
     logger.info(f"Starting file extractor for analysis_id={ANALYSIS_ID}")
 
@@ -216,6 +245,9 @@ def process_analysis():
 
     artifact_path: str = analysis["artifact_path"]
     logger.info(f"Found analysis — status={analysis['status']}, artifact_path={artifact_path}")
+
+    # 2b. Cleanup data from previous runs
+    cleanup_previous_run(supabase, analysis["slug"])
 
     # 3. Update status to 'processing' via API
     logger.info("Updating status to 'processing' …")

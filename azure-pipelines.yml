@@ -13,10 +13,14 @@ strategy:
   matrix:
     # service-verify-compliance: # arvhived
     #   SERVICE_NAME: "service-verify-compliance"
-    # service-file-metadata-extractor: # arvhived
-    #   SERVICE_NAME: "service-file-metadata-extractor"
+    # service-metadata-extractor: # arvhived
+    #   SERVICE_NAME: "service-metadata-extractor"
     # service-proposal-scorer: # arvhived
     #   SERVICE_NAME: "service-proposal-scorer"
+    #   service-chunk-and-index:
+    # SERVICE_NAME: "service-chunk-and-index"
+    # service-joiner:
+    #   SERVICE_NAME: "service-joiner"
 
     service-file-extractor:
       SERVICE_NAME: "service-file-extractor"
@@ -26,8 +30,6 @@ strategy:
       SERVICE_NAME: "service-files-converter-mistral"
     service-setup-qdrant:
       SERVICE_NAME: "service-setup-qdrant"
-    service-chunk-and-index:
-      SERVICE_NAME: "service-chunk-and-index"
     service-requirement-extractor:
       SERVICE_NAME: "service-requirement-extractor"
     service-metadata-extractor:
@@ -38,8 +40,6 @@ strategy:
       SERVICE_NAME: "service-documents-classifier"
     service-documents-grouper:
       SERVICE_NAME: "service-documents-grouper"
-    service-joiner:
-      SERVICE_NAME: "service-joiner"
     service-digital-sig-extractor:
       SERVICE_NAME: "service-digital-sig-extractor"
     service-tender-classifier:

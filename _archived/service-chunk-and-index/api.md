@@ -29,3 +29,9 @@ Actualiza el estado del análisis (usado en caso de fallo).
 ### POST /api/v1/jobs/callback
 Notifica finalización del job.
 - **Request:** `{service_name, analysis_id, status}`
+
+## Limpieza al inicio (no via API)
+
+Antes de indexar, el servicio elimina vía `qdrant_client` todos los puntos de la colección
+`{slug}` cuyo payload tenga `file_id == FILE_ID`. Esto garantiza re-indexación limpia si el
+job se relanza. No requiere endpoint del backend.

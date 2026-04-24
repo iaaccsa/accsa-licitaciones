@@ -15,6 +15,11 @@ Busca archivos procesados por filtro.
 Crea un registro de archivo procesado (merged).
 - **Request:** `{analysis_id, file_name, storage_path, category, file_size, mime_type, is_merged, proposal_id?}`
 
+### DELETE /api/v1/processed-files/by-analysis/{analysis_id}?is_merged=true
+Limpieza al inicio: elimina los archivos merged de ejecuciones previas.
+- **Estado:** pendiente de implementar en backend (ver `todo-api.md`).
+- Si el endpoint no existe, el servicio registra un warning y continúa.
+
 ### PATCH /api/v1/analyses/{analysis_id}/status
 Actualiza el estado del análisis (usado en caso de fallo).
 - **Campos usados:** `status`, `is_success`

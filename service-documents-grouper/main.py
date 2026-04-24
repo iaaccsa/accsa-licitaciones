@@ -397,8 +397,36 @@ def notify_failure(error_msg: str):
         logger.error(f"Failed to notify job callback: {e}")
 
 
+def cleanup_previous_run():
+    """Remove proposals and tenders created by prior runs for this analysis.
+
+    The file-side FK references (proposal_id, tender_id on processed_files /
+    original_files) are expected to be nulled or cascaded by the backend when
+    the parent row is deleted.
+    """
+    logger.info("Cleanup: removing proposals and tenders from previous runs...")
+
+    for label, path in [
+        ("proposals", f"{API_PROPOSALS_PATH}by-analysis/{ANALYSIS_ID}"),
+        ("tenders", f"{API_TENDERS_PATH}by-analysis/{ANALYSIS_ID}"),
+    ]:
+        try:
+            api_request("DELETE", path)
+            logger.info(f"Cleanup: {label} deleted via API.")
+        except requests.exceptions.HTTPError as e:
+            if e.response is not None and e.response.status_code == 404:
+                logger.warning(
+                    f"Cleanup: DELETE {path} not implemented (see todo-api.md)."
+                )
+            else:
+                raise
+
+
 def process_documents_grouping():
     logger.info(f"Starting {SERVICE_NAME} for ANALYSIS_ID={ANALYSIS_ID}")
+
+    # 0. Cleanup proposals / tenders from previous runs
+    cleanup_previous_run()
 
     # 1. Fetch all files for this analysis
     files = api_request("POST", f"{API_PROCESSED_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})

@@ -24,6 +24,7 @@ Required environment variables:
 """
 
 import os
+import re
 import sys
 import uuid
 import time
@@ -135,22 +136,54 @@ def download_file_content(supabase, storage_path: str) -> str:
     return response.decode("utf-8")
 
 
+PAGE_MARKER_RE = re.compile(r"<!-- page:(\d+) -->\n?")
+
+
 def split_text_semantically(text: str) -> List[Dict[str, Any]]:
-    """Splits markdown text by headers then recursively splits large chunks."""
+    """Splits markdown text by headers then recursively splits large chunks.
+    Extracts <!-- page:N --> markers to assign page_number to each chunk."""
+
+    # 1. Extract page boundaries (position in stripped text -> page number)
+    page_boundaries: List[tuple] = []
+    offset = 0
+    for m in PAGE_MARKER_RE.finditer(text):
+        stripped_pos = m.start() - offset
+        page_boundaries.append((stripped_pos, int(m.group(1))))
+        offset += len(m.group(0))
+
+    # 2. Strip markers so they don't pollute chunk content
+    clean_text = PAGE_MARKER_RE.sub("", text)
+
+    # 3. Normal chunking on clean text
     headers_to_split_on = [
         ("#", "Header 1"),
         ("##", "Header 2"),
         ("###", "Header 3"),
     ]
     markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
-    md_header_splits = markdown_splitter.split_text(text)
+    md_header_splits = markdown_splitter.split_text(clean_text)
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=200,
         separators=["\n\n", "\n", " ", ""]
     )
     final_chunks = text_splitter.split_documents(md_header_splits)
-    return [{"text": doc.page_content, "metadata": doc.metadata} for doc in final_chunks]
+
+    # 4. Assign page_number to each chunk based on its position
+    results = []
+    for doc in final_chunks:
+        chunk_text = doc.page_content
+        meta = dict(doc.metadata)
+        if page_boundaries:
+            pos = clean_text.find(chunk_text)
+            if pos >= 0:
+                for bp, pn in reversed(page_boundaries):
+                    if bp <= pos:
+                        meta["page_number"] = pn
+                        break
+        results.append({"text": chunk_text, "metadata": meta})
+
+    return results
 
 
 def get_embeddings(client: OpenAI, texts: List[str]) -> List[List[float]]:
@@ -182,6 +215,7 @@ def upload_to_qdrant(
             vector=vector,
             payload={
                 "text": chunk["text"],
+                "chunk_index": i,
                 "file_id": file_record["id"],
                 "analysis_id": file_record["analysis_id"],
                 "category": file_record["category"],
@@ -192,7 +226,7 @@ def upload_to_qdrant(
                 **chunk["metadata"]
             }
         )
-        for chunk, vector in zip(chunks, embeddings)
+        for i, (chunk, vector) in enumerate(zip(chunks, embeddings))
     ]
     batch_size = 100
     logger.info(f"Uploading {len(points)} points to Qdrant collection '{collection_name}'...")
@@ -235,18 +269,20 @@ def process_qdrant_by_file():
 
     logger.info(f"--- Processing file: {file_name} ---")
 
-    # 3a. Create or recreate Qdrant collection
+    # 3a. Create or recreate Qdrant collection.
+    # Cleanup: drop any pre-existing collection from a prior run so we start fresh.
+    if qdrant_client.collection_exists(collection_name):
+        logger.info(f"Cleanup: dropping existing collection '{collection_name}'.")
+        qdrant_client.delete_collection(collection_name)
+
     logger.info(f"Creating Qdrant collection: {collection_name}...")
-    if not qdrant_client.collection_exists(collection_name):
-        qdrant_client.create_collection(
-            collection_name=collection_name,
-            vectors_config=models.VectorParams(
-                size=1536,  # text-embedding-3-small uses 1536 dimensions
-                distance=models.Distance.COSINE
-            )
+    qdrant_client.create_collection(
+        collection_name=collection_name,
+        vectors_config=models.VectorParams(
+            size=1536,  # text-embedding-3-small uses 1536 dimensions
+            distance=models.Distance.COSINE
         )
-    else:
-        logger.info(f"Collection {collection_name} already exists. It will be appended or overwritten.")
+    )
 
     # 3b. Download file content from Supabase Storage
     logger.info(f"Downloading from {storage_path}...")

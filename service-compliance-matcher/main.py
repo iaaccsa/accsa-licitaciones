@@ -89,6 +89,7 @@ class ComplianceCitation(BaseModel):
     snippet: str
     header: Optional[str] = None
     chunk_index: Optional[int] = None
+    page_number: Optional[int] = None
 
 
 class LLMComplianceEntry(BaseModel):
@@ -129,8 +130,8 @@ You will receive exactly one requirement with:
   - domain (the thematic domain)
   - verification_method (how it will ultimately be verified)
   - retrieved_chunks: chunks from the bidder's proposal that may contain
-    relevant information. Each chunk includes chunk_id, header, chunk_index
-    and text.
+    relevant information. Each chunk includes chunk_id, header, chunk_index,
+    page_number and text.
 
 ### Verdicts
 
@@ -168,7 +169,7 @@ the certificate:
 - `citations`: list of citations pointing to the chunks that support your verdict.
   Every citation must use the `chunk_id` EXACTLY as provided in the input.
   Include at most 3 citations and pick the most relevant ones.
-  Each citation has: chunk_id, snippet (literal quote, <= 300 chars), header, chunk_index.
+  Each citation has: chunk_id, snippet (literal quote, <= 300 chars), header, chunk_index, page_number.
 
 ### Confidence
 
@@ -192,7 +193,8 @@ the certificate:
       "chunk_id": "qdrant_point_xyz789",
       "snippet": "Se proveerá un interruptor magnetotérmico unipolar + neutro de 20 Amperios... (Nota: El pliego exige 16 Amperios).",
       "header": "DETALLE TECNICO DE LA OFERTA",
-      "chunk_index": 2
+      "chunk_index": 2,
+      "page_number": 5
     }
   ],
   "manual_verification_required": false
@@ -432,6 +434,7 @@ def rag_search_proposal_chunks(
             "header": payload.get("Header 1"),
             "chunk_index": payload.get("chunk_index"),
             "text": payload.get("text", ""),
+            "page_number": payload.get("page_number"),
         })
     return chunks
 
@@ -441,7 +444,7 @@ def rag_search_proposal_chunks(
 # ---------------------------------------------------------------------------
 def build_user_prompt(proposal: dict, req: dict, chunks: List[dict]) -> str:
     chunks_text = "\n\n".join(
-        f'  [chunk_id={c["chunk_id"]} header="{c["header"] or ""}" chunk_index={c["chunk_index"]}]\n  {c["text"]}'
+        f'  [chunk_id={c["chunk_id"]} header="{c["header"] or ""}" chunk_index={c["chunk_index"]} page_number={c["page_number"] or ""}]\n  {c["text"]}'
         for c in chunks
     )
     return (
