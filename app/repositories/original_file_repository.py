@@ -43,4 +43,19 @@ class OriginalFileRepository(BaseRepository):
         )
         return response.data
 
+    def delete_by_analysis_id(self, analysis_id: str) -> int:
+        response = (
+            supabase.table("original_files")
+            .delete()
+            .eq("analysis_id", analysis_id)
+            .execute()
+        )
+        return len(response.data)
+
+    def null_proposal_id_by_analysis_id(self, analysis_id: str) -> None:
+        supabase.table("original_files").update({"proposal_id": None}).eq("analysis_id", analysis_id).execute()
+
+    def null_tender_id_by_analysis_id(self, analysis_id: str) -> None:
+        supabase.table("original_files").update({"tender_id": None}).eq("analysis_id", analysis_id).execute()
+
 original_file_repository = OriginalFileRepository()

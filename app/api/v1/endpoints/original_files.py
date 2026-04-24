@@ -36,3 +36,11 @@ def update_original_file(file_id: UUID, update_data: OriginalFileUpdate):
     if not result:
         raise HTTPException(status_code=404, detail="File not found")
     return result
+
+@router.delete("/by-analysis/{analysis_id}")
+def delete_original_files_by_analysis(analysis_id: UUID):
+    try:
+        deleted = original_file_service.delete_by_analysis_id(str(analysis_id))
+        return {"deleted": deleted}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

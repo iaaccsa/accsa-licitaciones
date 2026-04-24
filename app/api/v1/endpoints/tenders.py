@@ -40,3 +40,11 @@ def update_tender(tender_id: UUID, update_data: TenderUpdate):
     if not result:
         raise HTTPException(status_code=404, detail="Tender not found")
     return result
+
+@router.delete("/by-analysis/{analysis_id}")
+def delete_tenders_by_analysis(analysis_id: UUID):
+    try:
+        deleted = tender_service.delete_by_analysis_id(str(analysis_id))
+        return {"deleted": deleted}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

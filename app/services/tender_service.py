@@ -1,4 +1,6 @@
 from app.repositories.tender_repository import tender_repository
+from app.repositories.original_file_repository import original_file_repository
+from app.repositories.processed_file_repository import processed_file_repository
 from app.schemas.tender import Tender, TenderBase, TenderFilter, TenderUpdate
 from typing import List, Optional
 
@@ -26,5 +28,10 @@ class TenderService:
             update_data.model_dump(mode="json", exclude_none=True)
         )
         return Tender(**data) if data else None
+
+    def delete_by_analysis_id(self, analysis_id: str) -> int:
+        original_file_repository.null_tender_id_by_analysis_id(analysis_id)
+        processed_file_repository.null_tender_id_by_analysis_id(analysis_id)
+        return self.repository.delete_by_analysis_id(analysis_id)
 
 tender_service = TenderService()

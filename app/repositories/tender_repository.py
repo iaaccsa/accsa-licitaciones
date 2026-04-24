@@ -30,4 +30,13 @@ class TenderRepository(BaseRepository):
         response = supabase.table(self.table_name).update(data).eq("id", tender_id).execute()
         return response.data[0] if response.data else None
 
+    def delete_by_analysis_id(self, analysis_id: str) -> int:
+        response = (
+            supabase.table("tenders")
+            .delete()
+            .eq("analysis_id", analysis_id)
+            .execute()
+        )
+        return len(response.data)
+
 tender_repository = TenderRepository()

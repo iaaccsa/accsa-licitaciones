@@ -1,5 +1,7 @@
 from fastapi import HTTPException
 from app.repositories.proposal_repository import proposal_repository
+from app.repositories.original_file_repository import original_file_repository
+from app.repositories.processed_file_repository import processed_file_repository
 from app.schemas.proposal import (
     ProposalRead, ProposalCreate, ProposalUpdate,
     ProposalMatchingStart, ProposalMatchingResult, ProposalMatchingFailure,
@@ -254,5 +256,10 @@ class ProposalService:
         })
         return ProposalRead(**data)
 
+
+    def delete_by_analysis_id(self, analysis_id: str) -> int:
+        original_file_repository.null_proposal_id_by_analysis_id(analysis_id)
+        processed_file_repository.null_proposal_id_by_analysis_id(analysis_id)
+        return self.repository.delete_by_analysis_id(analysis_id)
 
 proposal_service = ProposalService()

@@ -110,3 +110,12 @@ def economic_result(proposal_id: UUID, body: ProposalEconomicResult):
 @router.patch("/{proposal_id}/economic-failure", response_model=ProposalRead)
 def economic_failure(proposal_id: UUID, body: ProposalEconomicFailure):
     return proposal_service.economic_failure(str(proposal_id), body)
+
+
+@router.delete("/by-analysis/{analysis_id}")
+def delete_proposals_by_analysis(analysis_id: UUID):
+    try:
+        deleted = proposal_service.delete_by_analysis_id(str(analysis_id))
+        return {"deleted": deleted}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

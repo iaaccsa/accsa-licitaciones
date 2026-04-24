@@ -30,4 +30,7 @@ class ProcessedFileService:
         data = self.repository.update_by_id(file_id, update_dict)
         return ProcessedFile(**data) if data else None
 
+    def delete_by_analysis_id(self, analysis_id: str, is_merged: bool | None = None) -> int:
+        return self.repository.delete_by_analysis_id(analysis_id, is_merged)
+
 processed_file_service = ProcessedFileService()

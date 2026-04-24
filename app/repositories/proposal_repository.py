@@ -40,4 +40,13 @@ class ProposalRepository(BaseRepository):
         response = supabase.table(self.table_name).update(data).eq("id", proposal_id).execute()
         return response.data[0] if response.data else None
 
+    def delete_by_analysis_id(self, analysis_id: str) -> int:
+        response = (
+            supabase.table("proposals")
+            .delete()
+            .eq("analysis_id", analysis_id)
+            .execute()
+        )
+        return len(response.data)
+
 proposal_repository = ProposalRepository()

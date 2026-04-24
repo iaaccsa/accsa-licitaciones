@@ -72,4 +72,17 @@ class ProcessedFileRepository(BaseRepository):
         )
         return response.data
 
+    def delete_by_analysis_id(self, analysis_id: str, is_merged: bool | None = None) -> int:
+        query = supabase.table("processed_files").delete().eq("analysis_id", analysis_id)
+        if is_merged is not None:
+            query = query.eq("is_merged", is_merged)
+        response = query.execute()
+        return len(response.data)
+
+    def null_proposal_id_by_analysis_id(self, analysis_id: str) -> None:
+        supabase.table("processed_files").update({"proposal_id": None}).eq("analysis_id", analysis_id).execute()
+
+    def null_tender_id_by_analysis_id(self, analysis_id: str) -> None:
+        supabase.table("processed_files").update({"tender_id": None}).eq("analysis_id", analysis_id).execute()
+
 processed_file_repository = ProcessedFileRepository()

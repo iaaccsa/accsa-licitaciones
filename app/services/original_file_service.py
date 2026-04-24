@@ -51,4 +51,7 @@ class OriginalFileService:
 
         return OriginalFile(**data)
 
+    def delete_by_analysis_id(self, analysis_id: str) -> int:
+        return self.repository.delete_by_analysis_id(analysis_id)
+
 original_file_service = OriginalFileService()
