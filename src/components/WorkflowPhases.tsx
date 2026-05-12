@@ -51,22 +51,22 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
         uiStatus === "done"
             ? "stroke-green-500"
             : uiStatus === "running"
-            ? "stroke-sky-400"
-            : "stroke-zinc-200";
+                ? "stroke-sky-400"
+                : "stroke-zinc-200";
 
     const nodeStyle =
         uiStatus === "done"
             ? "bg-green-600 text-white"
             : uiStatus === "running"
-            ? "bg-white text-sky-500 ring-4 ring-sky-100"
-            : "bg-zinc-100 text-zinc-400";
+                ? "bg-white text-sky-500 ring-4 ring-sky-100"
+                : "bg-zinc-100 text-zinc-400";
 
     const statusColor =
         uiStatus === "done"
             ? "text-green-600"
             : uiStatus === "running"
-            ? "text-sky-500"
-            : "text-zinc-400";
+                ? "text-sky-500"
+                : "text-zinc-400";
 
     return (
         <div className="flex flex-col items-center text-center w-[140px] sm:w-[170px] shrink-0">
@@ -144,7 +144,10 @@ function Connector({ prev, current, approvalPhase }: { prev: Phase; current: Pha
                 )}
                 <div className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${badgeStyle}`}>
                     <span className={`w-1.5 h-1.5 rounded-full bg-current ${state === "waiting" ? "animate-pulse" : ""}`} />
-                    <span>{label}</span>
+                    <div className="text-center">
+                        <div>Esperando</div>
+                        <div>Aprobación</div>
+                    </div>
                 </div>
             </div>
         </div>

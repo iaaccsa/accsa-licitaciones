@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Layers, Scale, GitBranch, ScanText } from "lucide-react";
+import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit } from "lucide-react";
 
 const docs = [
     {
@@ -25,6 +25,12 @@ const docs = [
         icon: ScanText,
         title: "Modelos OCR para conversión PDF a Markdown",
         description: "Análisis comparativo de los principales modelos multimodales disponibles via REST API para conversión de documentos PDF a Markdown.",
+    },
+    {
+        href: "/docs/llm-models",
+        icon: BrainCircuit,
+        title: "Modelos LLM por servicio",
+        description: "Asignación de modelos primarios y fallback según complejidad de la tarea para cada servicio del pipeline.",
     },
 ];
 

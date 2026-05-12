@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { validateUUID, invalidIdResponse, apiError, safeLogError } from "@/lib/api-utils";
 
-const MATRIX_PATH = "/api/v1/analysis-compliance-matrix";
+const MATRIX_PATH = "/api/v1/analysis-compliance-matrix/view";
 
 export async function GET(
     request: NextRequest,
@@ -20,14 +20,15 @@ export async function GET(
         const upstream = new URL(`${env.API_BASE_URL}${MATRIX_PATH}/by-proposal/${proposalId}`);
 
         // Forward supported query params
-        for (const verdict of search.getAll("verdict")) {
-            upstream.searchParams.append("verdict", verdict);
+        for (const role of search.getAll("role")) {
+            upstream.searchParams.append("role", role);
         }
-        const isVerified = search.get("is_verified");
-        if (isVerified !== null) upstream.searchParams.set("is_verified", isVerified);
+        for (const vm of search.getAll("verification_method")) {
+            upstream.searchParams.append("verification_method", vm);
+        }
 
-        const mvr = search.get("manual_verification_required");
-        if (mvr !== null) upstream.searchParams.set("manual_verification_required", mvr);
+        const order = search.get("order") ?? "asc";
+        upstream.searchParams.set("order", order);
 
         const limit = search.get("limit") ?? "50";
         const offset = search.get("offset") ?? "0";

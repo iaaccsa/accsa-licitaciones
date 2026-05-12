@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, ChevronLeft, GitBranch, CheckCircle2, XCircle, Clock, Settings, Layers } from "lucide-react";
+import { AlertCircle, ChevronLeft, GitBranch, CheckCircle2, XCircle, Clock, Settings, Layers, Play, Pause } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface WorkflowStep {
@@ -177,12 +177,9 @@ export default function AnalysisFlowPage() {
                             <thead>
                                 <tr className="border-b border-zinc-100">
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider w-10">#</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Código</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Nombre</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Tipo</th>
                                     <th className="px-4 py-3 text-center text-xs font-semibold text-zinc-400 uppercase tracking-wider">Progreso</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Inicio</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Fin</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold text-zinc-400 uppercase tracking-wider">Estado</th>
                                 </tr>
                             </thead>
@@ -190,14 +187,17 @@ export default function AnalysisFlowPage() {
                                 {phases.map((phase) => (
                                     <tr key={phase.id} className="hover:bg-zinc-50/50 transition-colors">
                                         <td className="px-4 py-3 text-xs font-mono text-zinc-400">{phase.order}</td>
-                                        <td className="px-4 py-3 font-mono text-xs text-zinc-500 whitespace-nowrap">{phase.code}</td>
                                         <td className="px-4 py-3 text-zinc-800 font-medium whitespace-nowrap">{phase.display_name}</td>
                                         <td className="px-4 py-3">
-                                            <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium ${
                                                 phase.type === "processing"
                                                     ? "bg-violet-50 text-violet-700"
                                                     : "bg-amber-50 text-amber-700"
                                             }`}>
+                                                {phase.type === "processing"
+                                                    ? <Play className="w-3 h-3" />
+                                                    : <Pause className="w-3 h-3" />
+                                                }
                                                 {phase.type === "processing" ? "Procesamiento" : "Aprobación"}
                                             </span>
                                         </td>
@@ -216,8 +216,6 @@ export default function AnalysisFlowPage() {
                                                 <span className="text-zinc-300">—</span>
                                             )}
                                         </td>
-                                        <td className="px-4 py-3 text-xs text-zinc-500 whitespace-nowrap">{formatDateTime(phase.started_at)}</td>
-                                        <td className="px-4 py-3 text-xs text-zinc-500 whitespace-nowrap">{formatDateTime(phase.ended_at)}</td>
                                         <td className="px-4 py-3 whitespace-nowrap">
                                             <StatusBadge status={phase.status} />
                                         </td>

@@ -14,6 +14,16 @@ type MatchingStatus =
     | "failed"
     | "summary_failed";
 
+type AdmissibilityStatus = "failed" | "pending" | "admitida" | "rechazada" | "evaluating";
+
+const ADMISSIBILITY_CONFIG: Record<AdmissibilityStatus, { label: string; color: string }> = {
+    pending: { label: "Pendiente", color: "bg-zinc-100 text-zinc-500" },
+    evaluating: { label: "Evaluando", color: "bg-blue-50 text-blue-600" },
+    admitida: { label: "Admitida", color: "bg-emerald-50 text-emerald-700" },
+    rechazada: { label: "Rechazada", color: "bg-red-50 text-red-600" },
+    failed: { label: "Error", color: "bg-orange-50 text-orange-600" },
+};
+
 interface Proposal {
     id: string;
     analysis_id: string;
@@ -21,6 +31,7 @@ interface Proposal {
     provider_name: string | null;
     provider_metadata: Record<string, unknown> | null;
     matching_status: MatchingStatus;
+    admissibility_status: AdmissibilityStatus | null;
     matching_started_at: string | null;
     matching_completed_at: string | null;
     matching_error: string | null;
@@ -158,6 +169,15 @@ export default function ProposalsPage() {
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className="font-semibold text-zinc-900 truncate">{proposal.label}</span>
                                             <StatusBadge status={proposal.matching_status} />
+                                            {proposal.admissibility_status && (() => {
+                                                const cfg = ADMISSIBILITY_CONFIG[proposal.admissibility_status] ?? ADMISSIBILITY_CONFIG.pending;
+                                                return (
+                                                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+                                                        <span className="opacity-70">Admisibilidad:</span>
+                                                        {cfg.label}
+                                                    </span>
+                                                );
+                                            })()}
                                         </div>
                                         <div className="flex items-center flex-wrap gap-x-4 gap-y-0.5 text-xs text-zinc-500">
                                             {proposal.provider_name && (

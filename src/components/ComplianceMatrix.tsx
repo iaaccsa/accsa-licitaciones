@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
     ChevronDown, ChevronRight, CheckCircle2, XCircle, AlertTriangle,
     MinusCircle, HelpCircle, ShieldAlert, Loader2, AlertCircle,
     FileText, Filter, Search, X, ShieldCheck, ClipboardEdit, Save,
+    ChevronLeft, ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -16,16 +17,11 @@ type ComplianceVerdict =
 
 type Confidence = "alta" | "media" | "baja" | "muy_baja";
 
-interface RequirementEmbedded {
-    id: string;
-    requirement_code: string;
-    requirement_text: string;
-    requirement_summary: string | null;
-    roles: string[];
-    domain: string;
-    weight: Record<string, unknown>;
-    verification_method: string;
-    temporal_scope: string;
+interface Citation {
+    chunk_id: string;
+    snippet: string;
+    header: string | null;
+    chunk_index: number;
 }
 
 interface ComplianceEntry {
@@ -36,16 +32,33 @@ interface ComplianceEntry {
     verdict: ComplianceVerdict;
     confidence: string;
     reasoning: string | null;
-    missing_elements: unknown[];
-    citations: unknown[];
+    missing_elements: string[];
+    citations: Citation[];
     manual_verification_required: boolean;
+    extraction_batch_id: number;
     is_verified: boolean;
     reviewed_by: string | null;
     reviewed_at: string | null;
     notes: string | null;
     created_at: string;
     updated_at: string;
-    requirement: RequirementEmbedded;
+    analysis_slug: string;
+    requirement_code: string;
+    requirement_text: string;
+    requirement_summary: string | null;
+    requirement_roles: string[];
+    requirement_mapped_factors: unknown | null;
+    requirement_domain: string;
+    requirement_weight: unknown | null;
+    requirement_verification_method: string;
+    requirement_temporal_scope: string;
+    requirement_citations: unknown[];
+    requirement_confidence: string;
+    requirement_extraction_batch_id: number;
+    requirement_is_verified: boolean;
+    requirement_notes: string | null;
+    requirement_created_at: string;
+    requirement_updated_at: string;
 }
 
 interface EditDraft {
@@ -60,6 +73,8 @@ interface EditDraft {
 
 interface Filters {
     verdicts: ComplianceVerdict[];
+    roles: string[];
+    verificationMethods: string[];
     isVerified: boolean | null;
     manualVerificationRequired: boolean | null;
 }
@@ -106,7 +121,30 @@ const CONFIDENCE_CONFIG: Record<Confidence, { label: string; color: string }> = 
     muy_baja: { label: "Muy baja", color: "text-red-600" },
 };
 
+const ROLE_LABELS: Record<string, string> = {
+    admisibilidad_obligatoria: "Adm. Obligatoria",
+    admisibilidad_subsanable: "Adm. Subsanable",
+    puntuable: "Puntuable",
+    penalizador: "Penalizador",
+    informativo: "Informativo",
+    preferencia_legal: "Preferencia Legal",
+    desconocido_pendiente_pliego_general: "Pendiente",
+};
+
+const VERIFICATION_METHOD_LABELS: Record<string, string> = {
+    documento_adjunto: "Doc. Adjunto",
+    declaracion_jurada: "Decl. Jurada",
+    certificado_externo: "Cert. Externo",
+    inspeccion: "Inspección",
+    muestra: "Muestra",
+    visita_tecnica: "Visita Técnica",
+    auto_verificable_desde_oferta: "Auto-verificable",
+    otro: "Otro",
+};
+
 const ALL_VERDICTS = Object.keys(VERDICT_CONFIG) as ComplianceVerdict[];
+const ALL_ROLES = Object.keys(ROLE_LABELS);
+const ALL_VERIFICATION_METHODS = Object.keys(VERIFICATION_METHOD_LABELS);
 
 const LIMIT = 50;
 
@@ -128,9 +166,16 @@ function ConfidenceLabel({ confidence }: { confidence: string }) {
     return <span className={`text-xs font-semibold ${cfg.color}`}>Confianza: {cfg.label}</span>;
 }
 
-function asString(val: unknown): string {
-    if (typeof val === "string") return val;
-    return JSON.stringify(val);
+function buildPageList(current: number, total: number): (number | "...")[] {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [1];
+    if (current > 3) pages.push("...");
+    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
+        pages.push(i);
+    }
+    if (current < total - 2) pages.push("...");
+    pages.push(total);
+    return pages;
 }
 
 // ---- Main component ----
@@ -143,13 +188,16 @@ interface ComplianceMatrixProps {
 export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceMatrixProps) {
     const [entries, setEntries] = useState<ComplianceEntry[]>([]);
     const [loading, setLoading] = useState(true);
-    const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [hasMore, setHasMore] = useState(false);
-    const offsetRef = useRef(0);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [lastPageConfirmed, setLastPageConfirmed] = useState(false);
 
     const [filters, setFilters] = useState<Filters>({
         verdicts: [],
+        roles: [],
+        verificationMethods: [],
         isVerified: null,
         manualVerificationRequired: null,
     });
@@ -163,65 +211,62 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
 
     const buildParams = useCallback((offset: number) => {
         const p = new URLSearchParams();
-        filters.verdicts.forEach((v) => p.append("verdict", v));
-        if (filters.isVerified !== null) p.set("is_verified", String(filters.isVerified));
-        if (filters.manualVerificationRequired !== null)
-            p.set("manual_verification_required", String(filters.manualVerificationRequired));
+        filters.roles.forEach((r) => p.append("role", r));
+        filters.verificationMethods.forEach((vm) => p.append("verification_method", vm));
+        p.set("order", "asc");
         p.set("limit", String(LIMIT));
         p.set("offset", String(offset));
         return p.toString();
-    }, [filters]);
+    }, [filters.roles, filters.verificationMethods]);
 
-    const fetchEntries = useCallback(async (reset: boolean) => {
-        const off = reset ? 0 : offsetRef.current;
-        if (reset) {
-            setLoading(true);
-            setError(null);
-        } else {
-            setLoadingMore(true);
-        }
-
+    const fetchPage = useCallback(async (page: number) => {
+        setLoading(true);
+        setError(null);
         try {
-            const qs = buildParams(off);
+            const offset = (page - 1) * LIMIT;
+            const qs = buildParams(offset);
             const res = await fetch(`/api/analyses/${analysisId}/proposals/${proposalId}/matrix?${qs}`);
             if (!res.ok) throw new Error(`Error ${res.status}`);
             const data: ComplianceEntry[] = await res.json();
-
-            if (reset) {
-                setEntries(data);
-                offsetRef.current = data.length;
+            setEntries(data);
+            setCurrentPage(page);
+            if (data.length < LIMIT) {
+                setTotalPages(page);
+                setLastPageConfirmed(true);
             } else {
-                setEntries((prev) => [...prev, ...data]);
-                offsetRef.current = off + data.length;
+                setTotalPages((prev) => Math.max(prev, page + 1));
             }
-            setHasMore(data.length === LIMIT);
         } catch {
             setError("No se pudo cargar la matriz de cumplimiento.");
         } finally {
             setLoading(false);
-            setLoadingMore(false);
         }
     }, [analysisId, proposalId, buildParams]);
 
-    // Refetch when filters change
+    // Reset to page 1 when filters (server-side) change
     useEffect(() => {
-        offsetRef.current = 0;
-        fetchEntries(true);
-    }, [fetchEntries]);
+        setCurrentPage(1);
+        setTotalPages(1);
+        setLastPageConfirmed(false);
+        fetchPage(1);
+    }, [fetchPage]);
 
-    // Client-side search filter
-    const visible = search.trim()
-        ? entries.filter((e) => {
+    // Client-side filtering
+    const visible = entries.filter((e) => {
+        if (filters.verdicts.length > 0 && !filters.verdicts.includes(e.verdict)) return false;
+        if (filters.isVerified !== null && e.is_verified !== filters.isVerified) return false;
+        if (filters.manualVerificationRequired !== null && e.manual_verification_required !== filters.manualVerificationRequired) return false;
+        if (search.trim()) {
             const q = search.toLowerCase();
-            return (
-                e.requirement.requirement_code.toLowerCase().includes(q) ||
-                e.requirement.requirement_text.toLowerCase().includes(q) ||
-                (e.requirement.requirement_summary ?? "").toLowerCase().includes(q)
-            );
-        })
-        : entries;
+            if (
+                !e.requirement_code.toLowerCase().includes(q) &&
+                !e.requirement_text.toLowerCase().includes(q) &&
+                !(e.requirement_summary ?? "").toLowerCase().includes(q)
+            ) return false;
+        }
+        return true;
+    });
 
-    // Optimistic update helper — merges so embedded `requirement` is preserved
     function patchLocal(entryId: string, updated: Partial<ComplianceEntry>) {
         setEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...updated } : e)));
     }
@@ -271,7 +316,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
         }
     }
 
-    // Quick-verify action (no full edit form)
     async function quickVerify(entry: ComplianceEntry) {
         try {
             const res = await fetch(`/api/compliance-matrix/${entry.id}`, {
@@ -288,6 +332,11 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
     }
 
     // ---- Render ----
+
+    const pageList = buildPageList(currentPage, totalPages);
+    const canPrev = currentPage > 1;
+    const canNext = !lastPageConfirmed || currentPage < totalPages;
+    const canLast = lastPageConfirmed && currentPage < totalPages;
 
     return (
         <div className="space-y-4">
@@ -348,12 +397,84 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                     )}
                 </div>
 
-                {/* is_verified / manual_verification_required toggles */}
+                {/* Role filter chips (server-side) */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-zinc-400 shrink-0">Rol:</span>
+                    {ALL_ROLES.map((r) => {
+                        const active = filters.roles.includes(r);
+                        return (
+                            <button
+                                key={r}
+                                onClick={() =>
+                                    setFilters((f) => ({
+                                        ...f,
+                                        roles: active
+                                            ? f.roles.filter((x) => x !== r)
+                                            : [...f.roles, r],
+                                    }))
+                                }
+                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                                    active
+                                        ? "bg-zinc-800 text-white border-zinc-800"
+                                        : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
+                                }`}
+                            >
+                                {ROLE_LABELS[r]}
+                            </button>
+                        );
+                    })}
+                    {filters.roles.length > 0 && (
+                        <button
+                            onClick={() => setFilters((f) => ({ ...f, roles: [] }))}
+                            className="text-xs text-zinc-400 hover:text-zinc-700 underline"
+                        >
+                            Limpiar
+                        </button>
+                    )}
+                </div>
+
+                {/* Verification method filter chips (server-side) */}
+                <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-zinc-400 shrink-0">Método:</span>
+                    {ALL_VERIFICATION_METHODS.map((vm) => {
+                        const active = filters.verificationMethods.includes(vm);
+                        return (
+                            <button
+                                key={vm}
+                                onClick={() =>
+                                    setFilters((f) => ({
+                                        ...f,
+                                        verificationMethods: active
+                                            ? f.verificationMethods.filter((x) => x !== vm)
+                                            : [...f.verificationMethods, vm],
+                                    }))
+                                }
+                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                                    active
+                                        ? "bg-zinc-800 text-white border-zinc-800"
+                                        : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
+                                }`}
+                            >
+                                {VERIFICATION_METHOD_LABELS[vm]}
+                            </button>
+                        );
+                    })}
+                    {filters.verificationMethods.length > 0 && (
+                        <button
+                            onClick={() => setFilters((f) => ({ ...f, verificationMethods: [] }))}
+                            className="text-xs text-zinc-400 hover:text-zinc-700 underline"
+                        >
+                            Limpiar
+                        </button>
+                    )}
+                </div>
+
+                {/* isVerified / manualVerificationRequired toggles */}
                 <div className="flex items-center gap-3 flex-wrap text-xs">
                     {(
                         [
-                            { key: "isVerified", label: "Verificados", trueLabel: "Solo verificados", falseLabel: "Sin verificar" },
-                            { key: "manualVerificationRequired", label: "Requieren revisión", trueLabel: "Requieren revisión", falseLabel: "No requieren revisión" },
+                            { key: "isVerified", trueLabel: "Solo verificados", falseLabel: "Sin verificar" },
+                            { key: "manualVerificationRequired", trueLabel: "Requieren revisión", falseLabel: "No requieren revisión" },
                         ] as const
                     ).map(({ key, trueLabel, falseLabel }) => {
                         const val = filters[key];
@@ -383,7 +504,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                 <p className="text-sm text-zinc-500 px-1">
                     {visible.length} resultado{visible.length !== 1 ? "s" : ""}
                     {search ? ` para "${search}"` : ""}
-                    {entries.length !== visible.length ? ` (de ${entries.length} cargados)` : ""}
+                    {entries.length !== visible.length ? ` (de ${entries.length} en esta página)` : ""}
                 </p>
             )}
 
@@ -416,7 +537,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                     {visible.map((entry) => {
                         const isExpanded = expandedId === entry.id;
                         const isEditing = editingId === entry.id;
-                        const req = entry.requirement;
 
                         return (
                             <div
@@ -437,17 +557,14 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                         }
                                     </span>
 
-                                    {/* Code */}
                                     <span className="font-mono text-xs bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded shrink-0">
-                                        {req.requirement_code}
+                                        {entry.requirement_code}
                                     </span>
 
-                                    {/* Summary */}
                                     <span className="flex-1 text-sm text-zinc-700 truncate min-w-0">
-                                        {req.requirement_summary ?? req.requirement_text.slice(0, 100)}
+                                        {entry.requirement_summary ?? entry.requirement_text.slice(0, 100)}
                                     </span>
 
-                                    {/* Flags */}
                                     <div className="flex items-center gap-2 shrink-0">
                                         {entry.is_verified && (
                                             <span title="Verificado">
@@ -466,18 +583,18 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <Badge variant="outline" className="text-xs font-normal">
-                                                    {req.domain}
+                                                    {entry.requirement_domain}
                                                 </Badge>
-                                                {req.roles.map((r) => (
+                                                {entry.requirement_roles.map((r) => (
                                                     <Badge key={r} variant="secondary" className="text-xs font-normal">
-                                                        {r}
+                                                        {ROLE_LABELS[r] ?? r}
                                                     </Badge>
                                                 ))}
-                                                <span className="text-xs text-zinc-400">{req.verification_method}</span>
-                                                <span className="text-xs text-zinc-400">{req.temporal_scope}</span>
+                                                <span className="text-xs text-zinc-400">{entry.requirement_verification_method}</span>
+                                                <span className="text-xs text-zinc-400">{entry.requirement_temporal_scope}</span>
                                             </div>
                                             <p className="text-sm text-zinc-800 bg-zinc-50 rounded-lg p-3 leading-relaxed">
-                                                {req.requirement_text}
+                                                {entry.requirement_text}
                                             </p>
                                         </div>
 
@@ -501,8 +618,11 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                 </p>
                                                 <ul className="space-y-1.5">
                                                     {entry.citations.map((c, i) => (
-                                                        <li key={i} className="text-sm text-zinc-600 bg-amber-50 border border-amber-100 rounded-lg p-2.5 italic">
-                                                            &ldquo;{asString(c)}&rdquo;
+                                                        <li key={i} className="text-sm text-zinc-600 bg-amber-50 border border-amber-100 rounded-lg p-2.5">
+                                                            {c.header && (
+                                                                <span className="block text-xs font-semibold text-zinc-500 mb-1">{c.header}</span>
+                                                            )}
+                                                            <span className="italic">&ldquo;{c.snippet}&rdquo;</span>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -519,7 +639,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                     {entry.missing_elements.map((m, i) => (
                                                         <li key={i} className="flex items-start gap-2 text-sm text-red-700">
                                                             <XCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-red-400" />
-                                                            {asString(m)}
+                                                            {m}
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -556,7 +676,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                 </p>
 
                                                 <div className="grid grid-cols-2 gap-3">
-                                                    {/* Verdict */}
                                                     <div>
                                                         <label className="block text-xs font-medium text-zinc-600 mb-1">Veredicto</label>
                                                         <select
@@ -570,7 +689,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                         </select>
                                                     </div>
 
-                                                    {/* Confidence */}
                                                     <div>
                                                         <label className="block text-xs font-medium text-zinc-600 mb-1">Confianza</label>
                                                         <select
@@ -585,7 +703,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                     </div>
                                                 </div>
 
-                                                {/* Reasoning */}
                                                 <div>
                                                     <label className="block text-xs font-medium text-zinc-600 mb-1">Razonamiento</label>
                                                     <textarea
@@ -596,7 +713,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                     />
                                                 </div>
 
-                                                {/* Notes */}
                                                 <div>
                                                     <label className="block text-xs font-medium text-zinc-600 mb-1">Notas internas</label>
                                                     <textarea
@@ -607,7 +723,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                     />
                                                 </div>
 
-                                                {/* Reviewed by */}
                                                 <div>
                                                     <label className="block text-xs font-medium text-zinc-600 mb-1">Revisado por</label>
                                                     <input
@@ -619,7 +734,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                     />
                                                 </div>
 
-                                                {/* Toggles */}
                                                 <div className="flex items-center gap-6">
                                                     <label className="flex items-center gap-2 cursor-pointer">
                                                         <input
@@ -667,7 +781,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                 </div>
                                             </div>
                                         ) : (
-                                            /* HITL action buttons */
                                             <div className="flex items-center gap-2 pt-1">
                                                 {!entry.is_verified && (
                                                     <button
@@ -698,20 +811,70 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                             </div>
                         );
                     })}
+                </div>
+            )}
 
-                    {/* Load more */}
-                    {hasMore && !search && (
-                        <div className="flex justify-center pt-2">
+            {/* Pagination */}
+            {!loading && !error && totalPages > 1 && (
+                <div className="flex items-center justify-center gap-1 pt-2">
+                    {/* Primera */}
+                    <button
+                        onClick={() => fetchPage(1)}
+                        disabled={!canPrev}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        title="Primera página"
+                    >
+                        <ChevronsLeft className="w-4 h-4" />
+                    </button>
+
+                    {/* Anterior */}
+                    <button
+                        onClick={() => fetchPage(currentPage - 1)}
+                        disabled={!canPrev}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        title="Página anterior"
+                    >
+                        <ChevronLeft className="w-4 h-4" />
+                    </button>
+
+                    {/* Números de página */}
+                    {pageList.map((item, i) =>
+                        item === "..." ? (
+                            <span key={`ellipsis-${i}`} className="px-1 text-sm text-zinc-400 select-none">...</span>
+                        ) : (
                             <button
-                                onClick={() => fetchEntries(false)}
-                                disabled={loadingMore}
-                                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-zinc-600 border border-zinc-200 rounded-lg hover:bg-zinc-50 disabled:opacity-50 transition-colors"
+                                key={item}
+                                onClick={() => item !== currentPage && fetchPage(item)}
+                                className={`min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium transition-colors ${
+                                    item === currentPage
+                                        ? "bg-zinc-900 text-white"
+                                        : "text-zinc-600 hover:bg-zinc-100"
+                                }`}
                             >
-                                {loadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
-                                Cargar más
+                                {item}
                             </button>
-                        </div>
+                        )
                     )}
+
+                    {/* Siguiente */}
+                    <button
+                        onClick={() => fetchPage(currentPage + 1)}
+                        disabled={!canNext}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        title="Página siguiente"
+                    >
+                        <ChevronRight className="w-4 h-4" />
+                    </button>
+
+                    {/* Última */}
+                    <button
+                        onClick={() => fetchPage(totalPages)}
+                        disabled={!canLast}
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                        title="Última página"
+                    >
+                        <ChevronsRight className="w-4 h-4" />
+                    </button>
                 </div>
             )}
         </div>
