@@ -90,6 +90,7 @@ class ComplianceCitation(BaseModel):
     header: Optional[str] = None
     chunk_index: Optional[int] = None
     page_number: Optional[int] = None
+    filename: Optional[str] = None
 
 
 class LLMComplianceEntry(BaseModel):
@@ -435,6 +436,7 @@ def rag_search_proposal_chunks(
             "chunk_index": payload.get("chunk_index"),
             "text": payload.get("text", ""),
             "page_number": payload.get("page_number"),
+            "filename": payload.get("filename"),
         })
     return chunks
 
@@ -444,7 +446,7 @@ def rag_search_proposal_chunks(
 # ---------------------------------------------------------------------------
 def build_user_prompt(proposal: dict, req: dict, chunks: List[dict]) -> str:
     chunks_text = "\n\n".join(
-        f'  [chunk_id={c["chunk_id"]} header="{c["header"] or ""}" chunk_index={c["chunk_index"]} page_number={c["page_number"] or ""}]\n  {c["text"]}'
+        f'  [chunk_id={c["chunk_id"]} header="{c["header"] or ""}" chunk_index={c["chunk_index"]} page_number={c["page_number"] or ""} filename="{c.get("filename") or ""}"]\n  {c["text"]}'
         for c in chunks
     )
     return (
@@ -501,17 +503,36 @@ def _call_openai_sync(
     return LLMComplianceEntry.model_validate_json(response.choices[0].message.content)
 
 
-def post_process_single(llm_entry: LLMComplianceEntry, req: dict) -> FinalComplianceEntry:
+def post_process_single(
+    llm_entry: LLMComplianceEntry,
+    req: dict,
+    chunks: List[dict],
+) -> FinalComplianceEntry:
     manual = llm_entry.manual_verification_required
     if req.get("verification_method") == "external_certificate" and llm_entry.verdict == "cumple":
         manual = True
+
+    chunk_info_map = {c["chunk_id"]: c for c in chunks}
+    enriched_citations = []
+    for cit in llm_entry.citations:
+        info = chunk_info_map.get(cit.chunk_id)
+        if info:
+            cit.filename = info.get("filename")
+            if cit.page_number is None:
+                cit.page_number = info.get("page_number")
+            if cit.header is None:
+                cit.header = info.get("header")
+            if cit.chunk_index is None:
+                cit.chunk_index = info.get("chunk_index")
+        enriched_citations.append(cit)
+
     return FinalComplianceEntry(
         requirement_id=llm_entry.requirement_id,
         verdict=llm_entry.verdict,
         confidence=llm_entry.confidence,
         reasoning=llm_entry.reasoning,
         missing_elements=llm_entry.missing_elements,
-        citations=llm_entry.citations,
+        citations=enriched_citations,
         manual_verification_required=manual,
     )
 
@@ -537,14 +558,14 @@ async def evaluate_and_persist(
         for attempt in range(LLM_RETRY_ATTEMPTS + 1):
             try:
                 llm_entry = await asyncio.to_thread(_call_gemini_sync, gemini, user_prompt)
-                entry = post_process_single(llm_entry, req)
+                entry = post_process_single(llm_entry, req, chunks)
                 await asyncio.to_thread(post_matrix_entries, analysis_id, proposal_id, [entry])
                 return entry
             except Exception as e_gemini:
                 logger.warning(f"req {req_id} attempt {attempt}: Gemini failed ({e_gemini}), trying OpenAI...")
                 try:
                     llm_entry = await asyncio.to_thread(_call_openai_sync, openai_client, user_prompt)
-                    entry = post_process_single(llm_entry, req)
+                    entry = post_process_single(llm_entry, req, chunks)
                     await asyncio.to_thread(post_matrix_entries, analysis_id, proposal_id, [entry])
                     return entry
                 except Exception as e_openai:

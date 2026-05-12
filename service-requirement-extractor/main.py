@@ -139,6 +139,7 @@ class RequirementWeight(BaseModel):
 class RequirementCitation(BaseModel):
     chunk_id: str
     page_number: Optional[int] = None
+    filename: Optional[str] = None
     snippet: str
 
 
@@ -441,6 +442,7 @@ def scroll_all_chunks(qdrant: QdrantClient, slug: str, analysis_id: str) -> List
                 "chunk_index": int(payload["chunk_index"]),
                 "text": payload.get("text", ""),
                 "page_number": payload.get("page_number"),
+                "filename": payload.get("filename"),
             })
         offset = next_offset
         if offset is None:
@@ -472,7 +474,7 @@ def make_batches(chunks: List[dict], size: int, overlap: int) -> List[List[dict]
 def build_user_prompt(profile: dict, batch: List[dict]) -> str:
     profile_json = json.dumps(profile, ensure_ascii=False, indent=2)
     chunks_text = "\n\n".join(
-        f'[chunk_id={c["chunk_id"]} page_number={c["page_number"] or ""}]'
+        f'[chunk_id={c["chunk_id"]} page_number={c["page_number"] or ""} filename={c.get("filename") or ""}]'
         f"\n{c['text']}"
         for c in batch
     )
@@ -771,6 +773,7 @@ def process_extraction():
         return
 
     chunk_index_map = {c["chunk_id"]: c["chunk_index"] for c in chunks}
+    chunk_info_map = {c["chunk_id"]: c for c in chunks}
 
     # 4. Build batches
     batches = make_batches(chunks, BATCH_SIZE, BATCH_OVERLAP)
@@ -843,6 +846,15 @@ def process_extraction():
         if req.is_admissibility:
             admissibility_count += 1
     logger.info(f"Admissibility requirements flagged: {admissibility_count}/{len(cleaned)}.")
+
+    # 8c. Enrich citations with canonical filename + page_number from Qdrant
+    for req in cleaned:
+        for cit in req.citations:
+            info = chunk_info_map.get(cit.chunk_id)
+            if info:
+                cit.filename = info.get("filename")
+                if cit.page_number is None:
+                    cit.page_number = info.get("page_number")
 
     # 9. Post bulk
     post_bulk(ANALYSIS_ID, cleaned)

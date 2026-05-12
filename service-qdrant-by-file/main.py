@@ -140,48 +140,46 @@ PAGE_MARKER_RE = re.compile(r"<!-- page:(\d+) -->\n?")
 
 
 def split_text_semantically(text: str) -> List[Dict[str, Any]]:
-    """Splits markdown text by headers then recursively splits large chunks.
-    Extracts <!-- page:N --> markers to assign page_number to each chunk."""
+    """Splits markdown text per page, then by headers, then recursively.
+    Each chunk inherits page_number from its source page marker (<!-- page:N -->)."""
 
-    # 1. Extract page boundaries (position in stripped text -> page number)
-    page_boundaries: List[tuple] = []
-    offset = 0
-    for m in PAGE_MARKER_RE.finditer(text):
-        stripped_pos = m.start() - offset
-        page_boundaries.append((stripped_pos, int(m.group(1))))
-        offset += len(m.group(0))
+    parts = PAGE_MARKER_RE.split(text)
+    pages: List[tuple] = []
+    if parts and parts[0].strip():
+        pages.append((None, parts[0]))
+    for i in range(1, len(parts), 2):
+        page_num = int(parts[i])
+        body = parts[i + 1] if i + 1 < len(parts) else ""
+        if body.strip():
+            pages.append((page_num, body))
 
-    # 2. Strip markers so they don't pollute chunk content
-    clean_text = PAGE_MARKER_RE.sub("", text)
-
-    # 3. Normal chunking on clean text
     headers_to_split_on = [
         ("#", "Header 1"),
         ("##", "Header 2"),
         ("###", "Header 3"),
     ]
     markdown_splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
-    md_header_splits = markdown_splitter.split_text(clean_text)
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
         chunk_overlap=200,
         separators=["\n\n", "\n", " ", ""]
     )
-    final_chunks = text_splitter.split_documents(md_header_splits)
 
-    # 4. Assign page_number to each chunk based on its position
     results = []
-    for doc in final_chunks:
-        chunk_text = doc.page_content
-        meta = dict(doc.metadata)
-        if page_boundaries:
-            pos = clean_text.find(chunk_text)
-            if pos >= 0:
-                for bp, pn in reversed(page_boundaries):
-                    if bp <= pos:
-                        meta["page_number"] = pn
-                        break
-        results.append({"text": chunk_text, "metadata": meta})
+    missing_page = 0
+    for page_num, body in pages:
+        header_docs = markdown_splitter.split_text(body)
+        chunks = text_splitter.split_documents(header_docs)
+        for doc in chunks:
+            meta = dict(doc.metadata)
+            if page_num is not None:
+                meta["page_number"] = page_num
+            else:
+                missing_page += 1
+            results.append({"text": doc.page_content, "metadata": meta})
+
+    if missing_page:
+        logger.warning(f"{missing_page} chunks without page_number (content before first page marker).")
 
     return results
 
