@@ -64,9 +64,10 @@ class RequirementWeight(BaseModel):
 
 
 class RequirementCitation(BaseModel):
-    chunk_id: str
-    page:     Optional[str] = None
-    snippet:  str
+    chunk_id:    str
+    page_number: Optional[int] = None
+    filename:    Optional[str] = None
+    snippet:     str
 
 
 class AnalysisRequirementCreate(BaseModel):

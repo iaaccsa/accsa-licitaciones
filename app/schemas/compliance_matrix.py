@@ -22,6 +22,8 @@ class ComplianceCitation(BaseModel):
     snippet:     str
     header:      Optional[str] = None
     chunk_index: Optional[int] = None
+    page_number: Optional[int] = None
+    filename:    Optional[str] = None
 
 
 class ComplianceEntryCreate(BaseModel):
