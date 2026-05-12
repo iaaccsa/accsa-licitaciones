@@ -15,18 +15,15 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    monitor_task = None
-    if settings.APP_ENV != "production":
-        monitor_task = asyncio.create_task(job_monitor_service.run_forever(), name="job_monitor")
+    monitor_task = asyncio.create_task(job_monitor_service.run_forever(), name="job_monitor")
     yield
-    if monitor_task:
-        job_monitor_service.stop()
-        monitor_task.cancel()
-        try:
-            await monitor_task
-        except asyncio.CancelledError:
-            pass
-        logger.info("[Lifespan] Job monitor detenido.")
+    job_monitor_service.stop()
+    monitor_task.cancel()
+    try:
+        await monitor_task
+    except asyncio.CancelledError:
+        pass
+    logger.info("[Lifespan] Job monitor detenido.")
 
 
 _is_prod = settings.APP_ENV == "production"
