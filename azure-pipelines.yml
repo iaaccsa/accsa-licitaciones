@@ -11,6 +11,7 @@ variables:
 
 strategy:
   matrix:
+    # Deprecated services, kept here for historical reasons and to avoid losing the context of the project. They can be safely removed in the future if we are sure they won't be needed again.
     # service-verify-compliance: # arvhived
     #   SERVICE_NAME: "service-verify-compliance"
     # service-metadata-extractor: # arvhived
