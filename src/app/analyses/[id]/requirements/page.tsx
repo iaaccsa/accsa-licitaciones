@@ -22,7 +22,8 @@ interface MappedFactor {
 
 interface Citation {
     chunk_id: string;
-    page: string;
+    page_number: number | null;
+    filename: string | null;
     snippet: string;
 }
 
@@ -115,7 +116,10 @@ function CitationsToggle({ citations }: { citations: Citation[] }) {
                 <div className="mt-2 space-y-2">
                     {citations.map((c, i) => (
                         <div key={i} className="bg-zinc-50 border border-zinc-200 rounded-md px-3 py-2">
-                            <div className="text-xs text-zinc-400 mb-1">Página {c.page}</div>
+                            <div className="text-xs text-zinc-400 mb-1">
+                                {c.filename ?? "Documento desconocido"}
+                                {c.page_number != null && ` — Página ${c.page_number}`}
+                            </div>
                             <p className="text-xs text-zinc-600 italic leading-relaxed">"{c.snippet}"</p>
                         </div>
                     ))}

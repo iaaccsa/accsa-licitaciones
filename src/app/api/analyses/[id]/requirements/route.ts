@@ -17,8 +17,12 @@ export async function GET(
         const searchParams = request.nextUrl.searchParams;
         const limit = searchParams.get("limit") ?? "50";
         const offset = searchParams.get("offset") ?? "0";
+        const isAdmissibility = searchParams.get("is_admissibility");
 
-        const url = `${env.API_BASE_URL}${env.API_REQUIREMENTS_PATH}/${id}?limit=${limit}&offset=${offset}`;
+        const qs = new URLSearchParams({ limit, offset });
+        if (isAdmissibility !== null) qs.set("is_admissibility", isAdmissibility);
+
+        const url = `${env.API_BASE_URL}${env.API_REQUIREMENTS_PATH}/${id}?${qs.toString()}`;
 
         const response = await fetch(url, {
             method: "GET",

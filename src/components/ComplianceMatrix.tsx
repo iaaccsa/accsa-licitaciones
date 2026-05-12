@@ -22,6 +22,8 @@ interface Citation {
     snippet: string;
     header: string | null;
     chunk_index: number;
+    page_number: number | null;
+    filename: string | null;
 }
 
 interface ComplianceEntry {
@@ -619,6 +621,12 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                                 <ul className="space-y-1.5">
                                                     {entry.citations.map((c, i) => (
                                                         <li key={i} className="text-sm text-zinc-600 bg-amber-50 border border-amber-100 rounded-lg p-2.5">
+                                                            {(c.filename || c.page_number != null) && (
+                                                                <span className="block text-xs text-zinc-500 mb-1">
+                                                                    {c.filename ?? "Documento desconocido"}
+                                                                    {c.page_number != null && ` — Página ${c.page_number}`}
+                                                                </span>
+                                                            )}
                                                             {c.header && (
                                                                 <span className="block text-xs font-semibold text-zinc-500 mb-1">{c.header}</span>
                                                             )}

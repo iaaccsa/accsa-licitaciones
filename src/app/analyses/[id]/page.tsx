@@ -222,23 +222,6 @@ export default function AnalysisDetailPage() {
                 </a>
 
                 <a
-                    href={`/analyses/${id}/evaluation_system`}
-                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group text-center"
-                >
-                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
-                        <Scale className="w-8 h-8" />
-                    </div>
-                    <div className="flex-1 space-y-1">
-                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-purple-600 transition-colors">
-                            Evaluación
-                        </h3>
-                        <p className="text-sm text-zinc-500">
-                            Sistema de evaluación
-                        </p>
-                    </div>
-                </a>
-
-                <a
                     href={`/analyses/${id}/requirements`}
                     className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-green-300 hover:shadow-md transition-all group text-center"
                 >
@@ -280,6 +263,23 @@ export default function AnalysisDetailPage() {
                         </h3>
                         <p className="text-sm text-zinc-500">
                             Ver propuestas y cumplimiento
+                        </p>
+                    </div>
+                </a>
+
+                <a
+                    href={`/analyses/${id}/evaluation_system`}
+                    className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group text-center"
+                >
+                    <div className="p-3 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <Scale className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-purple-600 transition-colors">
+                            Evaluación
+                        </h3>
+                        <p className="text-sm text-zinc-500">
+                            Sistema de evaluación
                         </p>
                     </div>
                 </a>
