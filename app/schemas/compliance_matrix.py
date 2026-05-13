@@ -122,6 +122,7 @@ class ComplianceMatrixViewEntry(BaseModel):
     requirement_notes:                Optional[str]      = None
     requirement_created_at:           Optional[datetime] = None
     requirement_updated_at:           Optional[datetime] = None
+    requirement_is_admissibility:     bool               = False
 
     model_config = ConfigDict(from_attributes=True)
 

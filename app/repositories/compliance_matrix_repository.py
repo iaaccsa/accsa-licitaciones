@@ -69,6 +69,7 @@ class ComplianceMatrixRepository(BaseRepository):
         proposal_id: UUID,
         verification_method: Optional[str] = None,
         role: Optional[str] = None,
+        is_admissibility: Optional[bool] = None,
         order: str = "asc",
         limit: int = 50,
         offset: int = 0,
@@ -83,6 +84,8 @@ class ComplianceMatrixRepository(BaseRepository):
             q = q.eq("requirement_verification_method", verification_method)
         if role:
             q = q.contains("requirement_roles", [role])
+        if is_admissibility is not None:
+            q = q.eq("requirement_is_admissibility", is_admissibility)
         q = q.range(offset, offset + limit - 1)
         return q.execute().data
 
