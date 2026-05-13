@@ -18,6 +18,7 @@ VALID_SERVICES=(
   "service-compliance-matcher"
   "service-admissibility-gate"
   "service-compliance-summarizer"
+  "service-economic-offer-extractor"
 )
 
 if [ -z "$1" ]; then

@@ -54,6 +54,8 @@ strategy:
       SERVICE_NAME: "service-file-metadata-extractor"
     service-admissibility-gate:
       SERVICE_NAME: "service-admissibility-gate"
+    service-economic-offer-extractor:
+      SERVICE_NAME: "service-economic-offer-extractor"
 
 steps:
   - script: |
@@ -98,3 +100,4 @@ steps:
       API_TENDER_CLASSIFICATIONS_PATH: $(API_TENDER_CLASSIFICATIONS_PATH)
       API_ANALYSIS_REQUIREMENTS_PATH: $(API_ANALYSIS_REQUIREMENTS_PATH)
       API_COMPLIANCE_MATRIX_PATH: $(API_COMPLIANCE_MATRIX_PATH)
+      API_PROPOSAL_ECONOMIC_OFFERS_PATH: $(API_PROPOSAL_ECONOMIC_OFFERS_PATH)
