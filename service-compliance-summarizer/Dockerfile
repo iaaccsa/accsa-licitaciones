@@ -54,6 +54,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-compliance-summarizer/main.py .
+COPY service-compliance-summarizer/main.py service-compliance-summarizer/prompt_compliance_summary.md .
 
 CMD ["python", "main.py"]

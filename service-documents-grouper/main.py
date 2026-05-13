@@ -23,6 +23,7 @@ Required environment variables:
 import json
 import os
 import sys
+from pathlib import Path
 
 from google import genai
 from google.genai import types as genai_types
@@ -103,53 +104,10 @@ def validate_env():
 # ---------------------------------------------------------------------------
 # LLM prompts and helpers
 # ---------------------------------------------------------------------------
-GROUPING_PROMPT = """You are a document analyst for public procurement processes.
-You will receive a list of file metadata entries for documents classified as proposals.
-NOTE: You are receiving ONLY metadata (not file contents).
-
-Task: group these files by the entity (company/bidder) they belong to.
-
-Grouping rules:
-- Match by company_name (exact or fuzzy match)
-- Use tax_id or representative_name from key_identifiers as secondary signals
-- Use digital_signatures.signers: signer tax_id and organization are strong identity signals — use them to confirm or override metadata when company_name is null or ambiguous
-- If metadata and signatures are both insufficient, place the file in its own group
-- Generate a descriptive label for each group (use the company or consortium name when possible)
-
-Return JSON:
-{{"groups": [
-  {{"label": "Descriptive label", "provider_name": "Company name or null", "file_ids": ["id1", "id2"]}}
-]}}
-
-FILE METADATA ENTRIES:
-{files_json}"""
+GROUPING_PROMPT = (Path(__file__).parent / "prompt_proposal_grouping.md").read_text(encoding="utf-8")
 
 
-NAMING_PROMPT = """You are a document analyst for public procurement processes.
-You will receive metadata from tender documents of a procurement process.
-NOTE: You are receiving ONLY metadata (not file contents).
-
-Tasks:
-1. Generate a short, descriptive name for this procurement process.
-2. Identify the contracting entity (the organization issuing the tender).
-
-Rules for generated_name:
-- Identify the procurement process clearly (what is being procured and by whom)
-- Keep it concise: 5-15 words maximum
-- Use the original language of the documents
-- Focus on the contracting entity and the object of the procurement
-
-Rules for contracting_entity:
-- The specific name of the organization issuing the tender (government body, company, institution)
-- Use the official name as it appears in the documents
-- Use digital_signatures.signers[].organization as a secondary signal if metadata is insufficient
-- Return null if it cannot be determined with confidence
-
-Return JSON:
-{{"generated_name": "Short descriptive name", "contracting_entity": "Name of the contracting entity or null"}}
-
-TENDER FILE METADATA:
-{files_json}"""
+NAMING_PROMPT = (Path(__file__).parent / "prompt_tender_naming.md").read_text(encoding="utf-8")
 
 
 def call_llm_json(gemini_client: genai.Client, openai_client: OpenAI, prompt: str) -> dict:

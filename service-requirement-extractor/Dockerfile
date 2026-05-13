@@ -64,7 +64,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-requirement-extractor/main.py .
+COPY service-requirement-extractor/main.py service-requirement-extractor/prompt_requirements_extractor.md .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

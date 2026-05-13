@@ -60,7 +60,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-tender-classifier/main.py .
+COPY service-tender-classifier/main.py service-tender-classifier/prompt_tender_evaluation_profile.md .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

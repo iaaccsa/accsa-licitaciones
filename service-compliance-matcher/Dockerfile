@@ -68,7 +68,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-compliance-matcher/main.py .
+COPY service-compliance-matcher/main.py service-compliance-matcher/prompt_compliance_evaluator.md .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

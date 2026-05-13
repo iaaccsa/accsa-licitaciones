@@ -49,7 +49,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-documents-grouper/main.py .
+COPY service-documents-grouper/main.py service-documents-grouper/prompt_proposal_grouping.md service-documents-grouper/prompt_tender_naming.md .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

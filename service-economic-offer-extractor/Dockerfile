@@ -64,7 +64,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-economic-offer-extractor/main.py .
+COPY service-economic-offer-extractor/main.py service-economic-offer-extractor/prompt_economic_offer_extractor.md .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

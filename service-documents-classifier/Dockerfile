@@ -43,7 +43,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-documents-classifier/main.py .
+COPY service-documents-classifier/main.py service-documents-classifier/prompt_document_category_classifier.md .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

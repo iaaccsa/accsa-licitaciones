@@ -46,7 +46,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-file-metadata-extractor/main.py .
+COPY service-file-metadata-extractor/main.py service-file-metadata-extractor/prompt_file_metadata_extractor.md .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

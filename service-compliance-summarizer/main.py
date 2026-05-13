@@ -3,6 +3,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from decimal import Decimal
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from google import genai
@@ -69,31 +70,7 @@ class SummaryMetrics(BaseModel):
 # ---------------------------------------------------------------------------
 # LLM prompts
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = (
-    "You are an evaluator of public procurement proposals in Uruguay. "
-    "Generate a concise executive summary (3-5 paragraphs) of a proposal's compliance "
-    "with the tender requirements, addressed to a human evaluation committee.\n\n"
-    "Input data provided:\n"
-    "- Bidder metadata\n"
-    "- Verdict counts and compliance rate\n"
-    "- Critical failures count (admissibility requirements not met)\n"
-    "- Critical failures with text and reasoning\n"
-    "- Other non-compliances\n"
-    "- Partial compliances\n"
-    "- Strengths (scorable requirements met)\n\n"
-    "Rules:\n"
-    "1. If critical_failures_count > 0: first paragraph MUST explicitly state the proposal "
-    "risks formal rejection due to unmet mandatory admissibility requirements. List those failures briefly.\n"
-    "2. If critical_failures_count == 0: start with overall assessment (rate and compliance count).\n"
-    "3. Following paragraphs: describe main strengths and non-critical weaknesses. "
-    "Cite concrete values, deadlines, materials when present. Do not cite chunk IDs.\n"
-    "4. Do not invent information. Only use data from the input.\n"
-    "5. Avoid empty adjectives. Use neutral, technical language.\n"
-    "6. No markdown, no bullets, no headers. Plain paragraphs separated by double newlines.\n"
-    "7. Length: 3-5 paragraphs, 150-500 words.\n"
-    "8. Language: neutral Spanish.\n"
-    "Return ONLY the summary text, no JSON wrapper or metadata."
-)
+SYSTEM_PROMPT = (Path(__file__).parent / "prompt_compliance_summary.md").read_text(encoding="utf-8")
 
 
 def build_user_prompt(
