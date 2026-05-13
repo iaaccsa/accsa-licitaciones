@@ -86,6 +86,7 @@ export default function ProposalsPage() {
     const [proposals, setProposals] = useState<Proposal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [overridingId, setOverridingId] = useState<string | null>(null);
 
     useEffect(() => {
         const load = async () => {
@@ -102,6 +103,40 @@ export default function ProposalsPage() {
         };
         load();
     }, [id]);
+
+    const handleOverride = async (
+        e: React.MouseEvent,
+        proposal: Proposal,
+        next: "admitida" | "rechazada",
+    ) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (overridingId) return;
+        setOverridingId(proposal.id);
+        const prev = proposal.admissibility_status;
+        setProposals(list =>
+            list.map(p => (p.id === proposal.id ? { ...p, admissibility_status: next } : p)),
+        );
+        try {
+            const res = await fetch(
+                `/api/analyses/${id}/proposals/${proposal.id}/admissibility-override`,
+                {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ admissibility_status: next }),
+                },
+            );
+            if (!res.ok) throw new Error(`Error ${res.status}`);
+            const updated = await res.json();
+            setProposals(list => list.map(p => (p.id === proposal.id ? { ...p, ...updated } : p)));
+        } catch {
+            setProposals(list =>
+                list.map(p => (p.id === proposal.id ? { ...p, admissibility_status: prev } : p)),
+            );
+        } finally {
+            setOverridingId(null);
+        }
+    };
 
     return (
         <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
@@ -233,6 +268,36 @@ export default function ProposalsPage() {
                                                 </div>
                                             )}
                                         </div>
+                                        {proposal.admissibility_status === "admitida" && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleOverride(e, proposal, "rechazada")}
+                                                disabled={overridingId === proposal.id}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                {overridingId === proposal.id ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                    <XCircle className="w-3.5 h-3.5" />
+                                                )}
+                                                Rechazar
+                                            </button>
+                                        )}
+                                        {proposal.admissibility_status === "rechazada" && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleOverride(e, proposal, "admitida")}
+                                                disabled={overridingId === proposal.id}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                {overridingId === proposal.id ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : (
+                                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                                )}
+                                                Admitir
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </Link>
