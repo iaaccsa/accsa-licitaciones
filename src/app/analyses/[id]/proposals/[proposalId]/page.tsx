@@ -114,7 +114,7 @@ export default function ProposalDetailPage() {
     }
 
     return (
-        <div className="container mx-auto max-w-5xl py-8 space-y-6">
+        <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
             {/* Header */}
             <div className="flex flex-col gap-3">
                 <Button
@@ -191,9 +191,9 @@ export default function ProposalDetailPage() {
                 </div>
             </div>
 
-            <div className="grid gap-6">
+            <div className="grid gap-6 min-w-0">
                 {proposal.provider_metadata && (
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle>Información del Proveedor</CardTitle>
                         </CardHeader>
@@ -206,7 +206,7 @@ export default function ProposalDetailPage() {
                 )}
 
                 {proposal.compliance_summary && (
-                    <Card>
+                    <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle>Resumen de Auditoría</CardTitle>
                         </CardHeader>
@@ -216,7 +216,7 @@ export default function ProposalDetailPage() {
                     </Card>
                 )}
 
-                <div>
+                <div className="min-w-0">
                     <h2 className="text-lg font-semibold text-zinc-900 mb-3">Matriz de Cumplimiento</h2>
                     <ComplianceMatrix analysisId={analysisId} proposalId={proposalId} />
                 </div>

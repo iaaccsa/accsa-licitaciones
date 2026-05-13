@@ -61,6 +61,7 @@ interface ComplianceEntry {
     requirement_notes: string | null;
     requirement_created_at: string;
     requirement_updated_at: string;
+    requirement_is_admissibility: boolean;
 }
 
 interface EditDraft {
@@ -79,6 +80,7 @@ interface Filters {
     verificationMethods: string[];
     isVerified: boolean | null;
     manualVerificationRequired: boolean | null;
+    isAdmissibility: boolean | null;
 }
 
 // ---- Config ----
@@ -202,6 +204,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
         verificationMethods: [],
         isVerified: null,
         manualVerificationRequired: null,
+        isAdmissibility: null,
     });
     const [search, setSearch] = useState("");
 
@@ -215,11 +218,14 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
         const p = new URLSearchParams();
         filters.roles.forEach((r) => p.append("role", r));
         filters.verificationMethods.forEach((vm) => p.append("verification_method", vm));
+        if (filters.isAdmissibility !== null) {
+            p.set("is_admissibility", String(filters.isAdmissibility));
+        }
         p.set("order", "asc");
         p.set("limit", String(LIMIT));
         p.set("offset", String(offset));
         return p.toString();
-    }, [filters.roles, filters.verificationMethods]);
+    }, [filters.roles, filters.verificationMethods, filters.isAdmissibility]);
 
     const fetchPage = useCallback(async (page: number) => {
         setLoading(true);
@@ -475,6 +481,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                 <div className="flex items-center gap-3 flex-wrap text-xs">
                     {(
                         [
+                            { key: "isAdmissibility", trueLabel: "Admisibilidad", falseLabel: "Otros" },
                             { key: "isVerified", trueLabel: "Solo verificados", falseLabel: "Sin verificar" },
                             { key: "manualVerificationRequired", trueLabel: "Requieren revisión", falseLabel: "No requieren revisión" },
                         ] as const

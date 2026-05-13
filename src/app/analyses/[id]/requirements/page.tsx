@@ -135,7 +135,7 @@ export default function RequirementsPage() {
     const id = params.id as string;
 
     const [requirements, setRequirements] = useState<AnalysisRequirementRead[]>([]);
-    const [analysis, setAnalysis] = useState<{ slug: string } | null>(null);
+    const [analysis, setAnalysis] = useState<{ slug: string; user_name?: string; generated_name?: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
@@ -303,7 +303,7 @@ export default function RequirementsPage() {
                 </div>
                 {analysis && (
                     <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase">
-                        {analysis.slug}
+                        {analysis.user_name || analysis.generated_name || analysis.slug}
                     </span>
                 )}
             </div>
