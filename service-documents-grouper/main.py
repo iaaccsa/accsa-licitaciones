@@ -48,7 +48,7 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 SERVICE_NAME = "service-documents-grouper"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-3.1-pro-preview"
 OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 
 logger = setup_logger(SERVICE_NAME)
@@ -66,7 +66,8 @@ API_HEADERS = {
 def api_request(method: str, path: str, json_data: dict | list | None = None) -> dict | list | None:
     """Make an authenticated request to the backend API."""
     url = f"{API_BASE_URL}{path}"
-    response = SESSION.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
+    response = SESSION.request(
+        method, url, json=json_data, headers=API_HEADERS, timeout=30)
     response.raise_for_status()
     try:
         return response.json()
@@ -94,7 +95,8 @@ def validate_env():
         if not val
     ]
     if missing:
-        logger.error(f"Missing required environment variables: {', '.join(missing)}")
+        logger.error(
+            f"Missing required environment variables: {', '.join(missing)}")
         sys.exit(1)
 
 
@@ -162,7 +164,8 @@ def call_llm_json(gemini_client: genai.Client, openai_client: OpenAI, prompt: st
         )
         return json.loads(response.text)
     except Exception as e:
-        logger.warning(f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
+        logger.warning(
+            f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
         response = openai_client.chat.completions.create(
             model=OPENAI_FALLBACK_MODEL,
             messages=[{"role": "user", "content": prompt}],
@@ -202,7 +205,8 @@ def group_proposal_files(gemini_client: genai.Client, openai_client: OpenAI, pro
             },
         })
 
-    prompt = GROUPING_PROMPT.format(files_json=json.dumps(files_for_prompt, ensure_ascii=False, indent=2))
+    prompt = GROUPING_PROMPT.format(files_json=json.dumps(
+        files_for_prompt, ensure_ascii=False, indent=2))
 
     result = call_llm_json(gemini_client, openai_client, prompt)
 
@@ -221,14 +225,16 @@ def group_proposal_files(gemini_client: genai.Client, openai_client: OpenAI, pro
 
 def create_proposals_and_update_files(gemini_client: genai.Client, openai_client: OpenAI, files: list[dict]):
     """Group proposal files, create proposal records, and update file proposal_id."""
-    proposal_files = [f for f in files if f.get("category") == "proposal" and f.get("metadata")]
+    proposal_files = [f for f in files if f.get(
+        "category") == "proposal" and f.get("metadata")]
 
     if not proposal_files:
         logger.info("No proposal files to group.")
         return
 
     logger.info(f"Grouping {len(proposal_files)} proposal files...")
-    log_event(ANALYSIS_ID, "info", f"Agrupando {len(proposal_files)} archivos de propuesta.", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info",
+              f"Agrupando {len(proposal_files)} archivos de propuesta.", EVENT_SOURCE)
 
     groups = group_proposal_files(gemini_client, openai_client, proposal_files)
     logger.info(f"Gemini identified {len(groups)} proposal groups.")
@@ -253,20 +259,25 @@ def create_proposals_and_update_files(gemini_client: genai.Client, openai_client
             "provider_name": provider_name,
         })
         proposal_id = proposal["id"]
-        logger.info(f"Created proposal '{label}' (id={proposal_id}) with {len(file_ids)} files.")
+        logger.info(
+            f"Created proposal '{label}' (id={proposal_id}) with {len(file_ids)} files.")
 
         # Update each file with proposal_id
         for file_id in file_ids:
-            api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{file_id}", {"proposal_id": proposal_id})
+            api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{file_id}", {
+                        "proposal_id": proposal_id})
 
             # Propagate to linked source file
             file_record = file_lookup.get(file_id)
-            link_id = file_record.get("original_file_id") if file_record else None
+            link_id = file_record.get(
+                "original_file_id") if file_record else None
             if link_id:
-                api_request("PATCH", f"{API_ORIGINAL_FILES_PATH}{link_id}", {"proposal_id": proposal_id})
+                api_request("PATCH", f"{API_ORIGINAL_FILES_PATH}{link_id}", {
+                            "proposal_id": proposal_id})
                 logger.info(f"Propagated proposal_id to linked file {link_id}")
 
-        log_event(ANALYSIS_ID, "info", f"Propuesta '{label}' creada con {len(file_ids)} archivos.", EVENT_SOURCE)
+        log_event(ANALYSIS_ID, "info",
+                  f"Propuesta '{label}' creada con {len(file_ids)} archivos.", EVENT_SOURCE)
         proposals_created += 1
 
     log_event(
@@ -274,7 +285,8 @@ def create_proposals_and_update_files(gemini_client: genai.Client, openai_client
         f"Se crearon {proposals_created} propuestas a partir de {len(proposal_files)} archivos de propuesta.",
         EVENT_SOURCE,
     )
-    logger.info(f"Proposal grouping complete — {proposals_created} proposals created.")
+    logger.info(
+        f"Proposal grouping complete — {proposals_created} proposals created.")
 
 
 def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, files: list[dict]) -> tuple[str | None, str | None]:
@@ -286,10 +298,12 @@ def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, fil
     ]
 
     if not tender_files:
-        logger.info("No processed tender files available — skipping tender info generation.")
+        logger.info(
+            "No processed tender files available — skipping tender info generation.")
         return None, None
 
-    logger.info(f"Generating tender info from {len(tender_files)} tender files...")
+    logger.info(
+        f"Generating tender info from {len(tender_files)} tender files...")
 
     files_for_prompt = []
     for f in tender_files:
@@ -317,16 +331,20 @@ def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, fil
             },
         })
 
-    prompt = NAMING_PROMPT.format(files_json=json.dumps(files_for_prompt, ensure_ascii=False, indent=2))
+    prompt = NAMING_PROMPT.format(files_json=json.dumps(
+        files_for_prompt, ensure_ascii=False, indent=2))
 
     result = call_llm_json(gemini_client, openai_client, prompt)
     generated_name = (result.get("generated_name") or "").strip() or None
-    contracting_entity = (result.get("contracting_entity") or "").strip() or None
+    contracting_entity = (result.get("contracting_entity")
+                          or "").strip() or None
 
     if generated_name:
-        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}", {"generated_name": generated_name})
+        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}", {
+                    "generated_name": generated_name})
         logger.info(f"Analysis name set to: '{generated_name}'")
-        log_event(ANALYSIS_ID, "info", f"Nombre del análisis generado: '{generated_name}'.", EVENT_SOURCE)
+        log_event(ANALYSIS_ID, "info",
+                  f"Nombre del análisis generado: '{generated_name}'.", EVENT_SOURCE)
     else:
         logger.warning("Gemini returned empty generated_name.")
 
@@ -335,10 +353,12 @@ def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, fil
 
 def create_tender_and_update_files(files: list[dict], generated_name: str | None, contracting_entity: str | None):
     """Create one tender record for the analysis and link tender/normative files to it."""
-    tender_normative_files = [f for f in files if f.get("category") in ("tender", "normative")]
+    tender_normative_files = [f for f in files if f.get(
+        "category") in ("tender", "normative")]
 
     if not tender_normative_files:
-        logger.info("No tender/normative files to link — skipping tender creation.")
+        logger.info(
+            "No tender/normative files to link — skipping tender creation.")
         return
 
     logger.info(f"Creating tender for analysis {ANALYSIS_ID}...")
@@ -350,7 +370,8 @@ def create_tender_and_update_files(files: list[dict], generated_name: str | None
         "provider_name": contracting_entity,
     })
     tender_id = tender["id"]
-    logger.info(f"Created tender (id={tender_id}, label='{generated_name}', provider='{contracting_entity}')")
+    logger.info(
+        f"Created tender (id={tender_id}, label='{generated_name}', provider='{contracting_entity}')")
 
     file_lookup = {f["id"]: f for f in files}
     linked = 0
@@ -358,14 +379,17 @@ def create_tender_and_update_files(files: list[dict], generated_name: str | None
     for file_record in tender_normative_files:
         file_id = file_record["id"]
         file_name = file_record.get("file_name", "unknown")
-        api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{file_id}", {"tender_id": tender_id})
+        api_request("PATCH", f"{API_PROCESSED_FILES_PATH}{file_id}", {
+                    "tender_id": tender_id})
 
         link_id = file_record.get("original_file_id")
         if link_id:
-            api_request("PATCH", f"{API_ORIGINAL_FILES_PATH}{link_id}", {"tender_id": tender_id})
+            api_request("PATCH", f"{API_ORIGINAL_FILES_PATH}{link_id}", {
+                        "tender_id": tender_id})
             logger.info(f"Propagated tender_id to linked file {link_id}")
 
-        logger.info(f"Linked '{file_name}' (category={file_record.get('category')}) to tender {tender_id}")
+        logger.info(
+            f"Linked '{file_name}' (category={file_record.get('category')}) to tender {tender_id}")
         linked += 1
 
     log_event(
@@ -383,7 +407,8 @@ def notify_failure(error_msg: str):
     logger.error(f"notify_failure called with: {error_msg}")
     log_event(ANALYSIS_ID, "error", error_msg, EVENT_SOURCE)
     try:
-        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "ready", "is_success": False})
+        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status",
+                    {"status": "ready", "is_success": False})
     except Exception as e:
         logger.error(f"Failed to update analysis status: {e}")
     try:
@@ -429,11 +454,13 @@ def process_documents_grouping():
     cleanup_previous_run()
 
     # 1. Fetch all files for this analysis
-    files = api_request("POST", f"{API_PROCESSED_FILES_PATH}search", {"analysis_id": ANALYSIS_ID})
+    files = api_request("POST", f"{API_PROCESSED_FILES_PATH}search", {
+                        "analysis_id": ANALYSIS_ID})
 
     if not files:
         logger.warning("No files found for this analysis.")
-        log_event(ANALYSIS_ID, "warning", "No se encontraron archivos para agrupar.", EVENT_SOURCE)
+        log_event(ANALYSIS_ID, "warning",
+                  "No se encontraron archivos para agrupar.", EVENT_SOURCE)
         api_request("POST", API_JOBS_CALLBACK, {
             "service_name": SERVICE_NAME,
             "analysis_id": ANALYSIS_ID,
@@ -442,7 +469,8 @@ def process_documents_grouping():
         return
 
     logger.info(f"Found {len(files)} files for analysis.")
-    log_event(ANALYSIS_ID, "info", f"Agrupando archivos de {len(files)} archivos clasificados.", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info",
+              f"Agrupando archivos de {len(files)} archivos clasificados.", EVENT_SOURCE)
 
     # 2. Initialize LLM clients
     gemini = genai.Client(api_key=GOOGLE_API_KEY)
@@ -452,7 +480,8 @@ def process_documents_grouping():
     create_proposals_and_update_files(gemini, openai_client, files)
 
     # 4. Generate analysis name + contracting entity from tender metadata
-    generated_name, contracting_entity = generate_tender_info(gemini, openai_client, files)
+    generated_name, contracting_entity = generate_tender_info(
+        gemini, openai_client, files)
 
     # 5. Create tender record and link tender/normative files
     create_tender_and_update_files(files, generated_name, contracting_entity)
