@@ -15,7 +15,7 @@ import { Check } from "lucide-react";
  *      order: number
  *    }>
  *  - title?: string               // default: "Progreso del análisis"
- *  - showApproval?: boolean       // default: true (muestra "Esperando aprobación" entre etapas)
+ *  - showApproval?: boolean       // default: true (muestra "Esperando Aprovación" entre etapas)
  *  - approvalLabels?: { idle, waiting, done }
  *  - className?: string           // clases extra para el contenedor raíz
  */
@@ -24,8 +24,8 @@ export default function AnalysisProgress({
     title = "Progreso del análisis",
     showApproval = true,
     approvalLabels = {
-        idle: "Esperando aprobación",
-        waiting: "Esperando aprobación",
+        idle: "Esperando Aprovación",
+        waiting: "Esperando Aprovación",
         done: "Aprobado",
     },
     className = "",

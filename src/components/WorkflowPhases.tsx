@@ -128,7 +128,7 @@ function Connector({ prev, current, approvalPhase }: { prev: Phase; current: Pha
         done: "text-green-600 border-green-300 bg-green-50",
     }[state];
 
-    const pendingLabel = approvalPhase?.display_name ?? "Esperando aprobación";
+    const pendingLabel = approvalPhase?.display_name ?? "Esperando Aprovación";
     const label = state === "done" ? "Aprobado" : pendingLabel;
 
     return (
