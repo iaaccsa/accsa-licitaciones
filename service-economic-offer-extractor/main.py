@@ -40,7 +40,6 @@ from google.genai import types as genai_types
 from openai import OpenAI
 from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient
-from qdrant_client.http import models
 
 from supabase_logger import setup_logger, log_event, make_session
 
@@ -270,14 +269,6 @@ def rag_retrieve_economic_chunks(
     analysis_id: str,
     proposal_id: str,
 ) -> List[Dict]:
-    search_filter = models.Filter(
-        must=[
-            models.FieldCondition(key="analysis_id", match=models.MatchValue(value=analysis_id)),
-            models.FieldCondition(key="category", match=models.MatchValue(value="proposal")),
-            models.FieldCondition(key="proposal_id", match=models.MatchValue(value=proposal_id)),
-        ]
-    )
-
     dedup: Dict[str, Dict] = {}
     for query in RAG_QUERIES:
         query_vector = get_embedding(openai_client, query)
@@ -285,7 +276,6 @@ def rag_retrieve_economic_chunks(
             collection_name=collection_name,
             query=query_vector,
             limit=RAG_TOP_K_PER_QUERY,
-            query_filter=search_filter,
         )
         for point in result.points:
             cid = str(point.id)
