@@ -17,15 +17,15 @@ Grouping rules (priority order):
 5) Generate a descriptive label per group (prefer company or consortium name).
 
 Expected output JSON:
-{
+{{
   "groups": [
-    {
+    {{
       "label": "Acme SA + Partner",
       "provider_name": "Acme SA",
       "file_ids": ["file-123", "file-987"]
-    }
+    }}
   ]
-}
+}}
 
 FILE METADATA ENTRIES:
 {files_json}

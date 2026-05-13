@@ -28,34 +28,34 @@ strategy:
     #   SERVICE_NAME: "service-files-converter-llama"
 
     # Active services
-    service-file-extractor:
-      SERVICE_NAME: "service-file-extractor"
-    service-files-converter-mistral:
-      SERVICE_NAME: "service-files-converter-mistral"
-    service-requirement-extractor:
-      SERVICE_NAME: "service-requirement-extractor"
-    service-qdrant-by-file:
-      SERVICE_NAME: "service-qdrant-by-file"
-    service-documents-classifier:
-      SERVICE_NAME: "service-documents-classifier"
+    # service-file-extractor:
+    #   SERVICE_NAME: "service-file-extractor"
+    # service-files-converter-mistral:
+    #   SERVICE_NAME: "service-files-converter-mistral"
+    # service-requirement-extractor:
+    #   SERVICE_NAME: "service-requirement-extractor"
+    # service-qdrant-by-file:
+    #   SERVICE_NAME: "service-qdrant-by-file"
+    # service-documents-classifier:
+    #   SERVICE_NAME: "service-documents-classifier"
     service-documents-grouper:
       SERVICE_NAME: "service-documents-grouper"
-    service-digital-sig-extractor:
-      SERVICE_NAME: "service-digital-sig-extractor"
-    service-tender-classifier:
-      SERVICE_NAME: "service-tender-classifier"
-    service-compliance-matcher:
-      SERVICE_NAME: "service-compliance-matcher"
-    service-build-proposal-index:
-      SERVICE_NAME: "service-build-proposal-index"
-    service-compliance-summarizer:
-      SERVICE_NAME: "service-compliance-summarizer"
-    service-file-metadata-extractor:
-      SERVICE_NAME: "service-file-metadata-extractor"
-    service-admissibility-gate:
-      SERVICE_NAME: "service-admissibility-gate"
-    service-economic-offer-extractor:
-      SERVICE_NAME: "service-economic-offer-extractor"
+    # service-digital-sig-extractor:
+    #   SERVICE_NAME: "service-digital-sig-extractor"
+    # service-tender-classifier:
+    #   SERVICE_NAME: "service-tender-classifier"
+    # service-compliance-matcher:
+    #   SERVICE_NAME: "service-compliance-matcher"
+    # service-build-proposal-index:
+    #   SERVICE_NAME: "service-build-proposal-index"
+    # service-compliance-summarizer:
+    #   SERVICE_NAME: "service-compliance-summarizer"
+    # service-file-metadata-extractor:
+    #   SERVICE_NAME: "service-file-metadata-extractor"
+    # service-admissibility-gate:
+    #   SERVICE_NAME: "service-admissibility-gate"
+    # service-economic-offer-extractor:
+    #   SERVICE_NAME: "service-economic-offer-extractor"
 
 steps:
   - script: |
