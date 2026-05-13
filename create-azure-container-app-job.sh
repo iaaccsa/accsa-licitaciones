@@ -6,20 +6,18 @@ set -e
 
 VALID_SERVICES=(
   "service-file-extractor"
-  "service-files-converter-llama"
-  "service-files-converter-mistral"  
-  "service-setup-qdrant"
-  "service-requirement-extractor"  
+  "service-files-converter-mistral"
   "service-qdrant-by-file"
   "service-file-metadata-extractor"
-  "service-documents-classifier"
-  "service-documents-grouper"  
-  "service-tender-classifier"
-  "service-compliance-matcher"
-  "service-compliance-summarizer"
   "service-digital-sig-extractor"
+  "service-documents-classifier"
+  "service-documents-grouper"
+  "service-tender-classifier"
+  "service-requirement-extractor"
+  "service-build-proposal-index"
+  "service-compliance-matcher"
   "service-admissibility-gate"
-  "service-copy-indexs"
+  "service-compliance-summarizer"
 )
 
 if [ -z "$1" ]; then
