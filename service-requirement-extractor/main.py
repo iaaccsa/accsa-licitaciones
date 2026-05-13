@@ -296,6 +296,14 @@ of at most 300 characters.
 - baja:    inferred from context
 - muy_baja: very unclear, likely needs human review
 
+### Language
+
+`requirement_text`, `requirement_summary`, and `notes` MUST be written in Spanish
+(Spanish from Uruguay, matching the pliego's wording). The source documents are
+in Spanish; preserve technical terms verbatim. Do NOT translate to English or any
+other language. The `snippet` inside citations must be a literal quote from the
+source chunk (also in Spanish).
+
 ### Output
 Return ONLY a JSON object of this shape:
 
