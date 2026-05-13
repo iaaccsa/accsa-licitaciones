@@ -37,8 +37,8 @@
   },
   {
     "code": "final_compliance_check",
-    "display_name": "Chequeo de Cumplimiento",
-    "order": 9,
+    "display_name": "Chequeo Final",
+    "order": 7,
     "type": "processing"
   }
 ]

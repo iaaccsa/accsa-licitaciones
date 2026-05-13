@@ -174,7 +174,8 @@
   {
     "service": "service-admissibility-gate",
     "next_services": [
-      "service-compliance-summarizer"
+      "service-compliance-summarizer",
+      "service-economic-offer-extractor"
     ],
     "code": "admissibility_gate",
     "display_name": "Chequeo de Admisibilidad",
@@ -195,7 +196,21 @@
     "require_admitida": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": true,
+    "is_final": false,
+    "pause_after": false,
+    "fan_out_by": "proposal",
+    "phase": "final_compliance_check"
+  },
+  {
+    "service": "service-economic-offer-extractor",
+    "next_services": [],
+    "code": "economic_offer_extractor",
+    "display_name": "Extracción de Oferta Económica",
+    "parent": "admissibility_gate",
+    "require_admitida": true,
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false,
     "pause_after": false,
     "fan_out_by": "proposal",
     "phase": "final_compliance_check"
