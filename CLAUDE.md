@@ -94,16 +94,21 @@ The pipeline is a DAG of Azure Container Apps Jobs defined in `pipeline_config.j
 ```
 service-file-extractor
   → service-files-converter-mistral
-    → service-qdrant-by-file (fan-out per file → FILE_{slug}_{file_id} collections)
+    → service-qdrant-by-file (fan-out per file → FILE_{slug}_{file_id})
         ├─ service-file-metadata-extractor (fan-out per file)
         └─ service-digital-sig-extractor (fan-out per original file)
-            → service-documents-classifier (fan-in: waits for both parents)
+            → service-documents-classifier (fan-in)
               → service-documents-grouper
-                → service-tender-classifier
-                  → service-requirement-extractor
-                    → service-compliance-matcher (fan-out per proposal)
-                      → service-admissibility-gate
-                        → service-compliance-summarizer
+                  ├─ service-tender-classifier
+                  │     → service-requirement-extractor ─┐
+                  └─ service-build-proposal-index ───────┤
+                       (fan-out per proposal →           │
+                        PROPOSAL_{slug}_{proposal_id})   │
+                                                         ↓
+                                          service-compliance-matcher
+                                          (fan-in; fan-out per proposal)
+                                            → service-admissibility-gate
+                                              → service-compliance-summarizer
 ```
 
 **Orchestration flow:**
