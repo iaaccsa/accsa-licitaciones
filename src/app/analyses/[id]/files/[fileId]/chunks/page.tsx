@@ -16,7 +16,8 @@ interface Chunk {
         proposal_id: string;
         proposal_provider_name: string | null;
         filename: string;
-        [key: string]: string | null; // For dynamic headers (Header 1, Header 2, etc.)
+        page_number?: number | null;
+        [key: string]: string | number | null | undefined;
     };
 }
 
@@ -44,8 +45,7 @@ interface AnalysisFile {
 
 interface ChunksPayload {
     slug: string;
-    category: string;
-    label: string;
+    file_id: string;
     offset?: string;
 }
 
@@ -120,8 +120,7 @@ export default function ChunksPage() {
         try {
             const payload: ChunksPayload = {
                 slug: analysis.slug,
-                category: file.category,
-                label: file.proposal_label || "tender",
+                file_id: fileId,
             };
 
             if (currentOffset) {
@@ -400,7 +399,7 @@ export default function ChunksPage() {
                                 </p>
                                 <div className="mt-4 pt-4 border-t border-zinc-100 text-xs text-zinc-400 font-mono flex justify-between">
                                     <span>ID: {chunk.id}</span>
-                                    <span>Página: {chunk.payload.page || 'No disponible'}</span>
+                                    <span>Página: {chunk.payload.page_number ?? 'No disponible'}</span>
                                 </div>
                             </div>
                         );
