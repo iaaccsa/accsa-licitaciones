@@ -131,9 +131,7 @@
   },
   {
     "service": "service-build-proposal-index",
-    "next_services": [
-      "service-compliance-matcher"
-    ],
+    "next_services": [],
     "code": "build_proposal_index",
     "display_name": "Indexación por Propuesta",
     "parent": "documents_grouper",
