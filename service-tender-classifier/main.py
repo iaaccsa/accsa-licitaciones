@@ -27,6 +27,7 @@ Required environment variables:
   - API_KEY
   - API_EVENTS_PATH
   - API_ANALYSES_PATH
+  - API_PROCESSED_FILES_PATH
   - API_TENDER_CLASSIFICATIONS_PATH
   - API_JOBS_CALLBACK
   - ANALYSIS_ID
@@ -57,6 +58,7 @@ API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
+API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
 API_TENDER_CLASSIFICATIONS_PATH = os.environ.get("API_TENDER_CLASSIFICATIONS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
@@ -432,6 +434,7 @@ def validate_env():
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
+            ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
             ("API_TENDER_CLASSIFICATIONS_PATH", API_TENDER_CLASSIFICATIONS_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
@@ -569,38 +572,46 @@ def notify_failure(error_msg: str):
 def retrieve_classification_chunks(
     qdrant: QdrantClient,
     openai_client: OpenAI,
-    collection_name: str,
+    slug: str,
     analysis_id: str,
     top_k_per_query: int = 3,
 ) -> List[str]:
     """
     Retrieves the most relevant tender chunks for classification AND profile
-    extraction. Uses the targeted semantic queries above, deduplicates by
-    point ID, and returns them ordered by relevance score.
+    extraction by querying each per-file FILE_{slug}_{file_id} collection of
+    category=tender. Aggregates results across files by best score per point.
     """
-    logger.info(f"Retrieving classification chunks from '{collection_name}'...")
-
-    query_filter = models.Filter(
-        must=[
-            models.FieldCondition(key="analysis_id", match=models.MatchValue(value=analysis_id)),
-            models.FieldCondition(key="category", match=models.MatchValue(value="tender")),
-        ]
+    tender_files = api_request(
+        "POST",
+        f"{API_PROCESSED_FILES_PATH}search",
+        {"analysis_id": analysis_id, "category": "tender"},
     )
+    if not isinstance(tender_files, list):
+        raise RuntimeError(f"Unexpected response from processed-files search: {type(tender_files)}")
+
+    collections: List[str] = []
+    for f in tender_files:
+        col = f"FILE_{slug}_{f['id']}"
+        if qdrant.collection_exists(col):
+            collections.append(col)
+        else:
+            logger.warning(f"Collection '{col}' missing; skipping file '{f.get('file_name')}'.")
+
+    logger.info(f"Retrieving classification chunks from {len(collections)} per-file collections...")
 
     seen: Dict[str, Tuple[float, str]] = {}  # point_id -> (best_score, text)
-
     for query_text in CLASSIFICATION_QUERIES:
         query_vector = get_embedding(openai_client, query_text)
-        search_result = qdrant.query_points(
-            collection_name=collection_name,
-            query=query_vector,
-            limit=top_k_per_query,
-            query_filter=query_filter,
-        )
-        for point in search_result.points:
-            pid = str(point.id)
-            if pid not in seen or point.score > seen[pid][0]:
-                seen[pid] = (point.score, point.payload["text"])
+        for col in collections:
+            search_result = qdrant.query_points(
+                collection_name=col,
+                query=query_vector,
+                limit=top_k_per_query,
+            )
+            for point in search_result.points:
+                pid = str(point.id)
+                if pid not in seen or point.score > seen[pid][0]:
+                    seen[pid] = (point.score, point.payload["text"])
 
     chunks = [text for _, text in sorted(seen.values(), key=lambda x: -x[0])]
     logger.info(f"Retrieved {len(chunks)} unique chunks from {len(CLASSIFICATION_QUERIES)} queries.")

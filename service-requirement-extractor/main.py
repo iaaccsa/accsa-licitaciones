@@ -16,6 +16,7 @@ Required environment variables:
   - API_KEY
   - API_EVENTS_PATH
   - API_ANALYSES_PATH
+  - API_PROCESSED_FILES_PATH
   - API_TENDER_CLASSIFICATIONS_PATH
   - API_ANALYSIS_REQUIREMENTS_PATH
   - API_JOBS_CALLBACK
@@ -51,6 +52,7 @@ API_BASE_URL = os.environ.get("API_BASE_URL")
 API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
+API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
 API_TENDER_CLASSIFICATIONS_PATH = os.environ.get("API_TENDER_CLASSIFICATIONS_PATH")
 API_ANALYSIS_REQUIREMENTS_PATH = os.environ.get("API_ANALYSIS_REQUIREMENTS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
@@ -357,6 +359,7 @@ def validate_env():
             ("API_KEY", API_KEY),
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
+            ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
             ("API_TENDER_CLASSIFICATIONS_PATH", API_TENDER_CLASSIFICATIONS_PATH),
             ("API_ANALYSIS_REQUIREMENTS_PATH", API_ANALYSIS_REQUIREMENTS_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
@@ -412,44 +415,65 @@ def get_evaluation_profile(analysis_id: str) -> dict:
 # Qdrant
 # ---------------------------------------------------------------------------
 def scroll_all_chunks(qdrant: QdrantClient, slug: str, analysis_id: str) -> List[dict]:
-    logger.info(f"Scrolling all tender chunks from collection '{slug}'...")
-    chunks = []
-    offset = None
-    scroll_filter = models.Filter(
-        must=[
-            models.FieldCondition(key="analysis_id", match=models.MatchValue(value=analysis_id)),
-            models.FieldCondition(key="category", match=models.MatchValue(value="tender")),
-        ]
-    )
-    while True:
-        points, next_offset = qdrant.scroll(
-            collection_name=slug,
-            scroll_filter=scroll_filter,
-            limit=SCROLL_PAGE_SIZE,
-            offset=offset,
-            with_payload=True,
-            with_vectors=False,
-        )
-        for point in points:
-            payload = point.payload or {}
-            if "chunk_index" not in payload:
-                raise RuntimeError(
-                    f"Point {point.id} in collection '{slug}' has no 'chunk_index' field in its payload. "
-                    "Please re-index this analysis with chunk_index in the payload before running the extractor."
-                )
-            chunks.append({
-                "chunk_id": str(point.id),
-                "chunk_index": int(payload["chunk_index"]),
-                "text": payload.get("text", ""),
-                "page_number": payload.get("page_number"),
-                "filename": payload.get("filename"),
-            })
-        offset = next_offset
-        if offset is None:
-            break
+    """Aggregate all tender chunks across per-file collections FILE_{slug}_{file_id}.
 
-    chunks.sort(key=lambda c: c["chunk_index"])
-    logger.info(f"Fetched {len(chunks)} tender chunks, ordered by chunk_index.")
+    Order: alphabetical by filename, then by chunk_index within each file.
+    """
+    logger.info(f"Listing tender files for analysis_id={analysis_id}...")
+    tender_files = api_request(
+        "POST",
+        f"{API_PROCESSED_FILES_PATH}search",
+        {"analysis_id": analysis_id, "category": "tender"},
+    )
+    if not isinstance(tender_files, list):
+        raise RuntimeError(f"Unexpected response from processed-files search: {type(tender_files)}")
+
+    tender_files.sort(key=lambda f: (f.get("file_name") or ""))
+    logger.info(f"Found {len(tender_files)} tender files.")
+
+    chunks: List[dict] = []
+    for file_order, f in enumerate(tender_files):
+        file_id = f["id"]
+        file_name = f.get("file_name") or ""
+        collection_name = f"FILE_{slug}_{file_id}"
+
+        if not qdrant.collection_exists(collection_name):
+            logger.warning(f"Collection '{collection_name}' missing; skipping file '{file_name}'.")
+            continue
+
+        offset = None
+        file_chunk_count = 0
+        while True:
+            points, next_offset = qdrant.scroll(
+                collection_name=collection_name,
+                limit=SCROLL_PAGE_SIZE,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            for point in points:
+                payload = point.payload or {}
+                if "chunk_index" not in payload:
+                    raise RuntimeError(
+                        f"Point {point.id} in collection '{collection_name}' has no 'chunk_index' field."
+                    )
+                chunks.append({
+                    "chunk_id": str(point.id),
+                    "file_order": file_order,
+                    "chunk_index": int(payload["chunk_index"]),
+                    "text": payload.get("text", ""),
+                    "page_number": payload.get("page_number"),
+                    "filename": payload.get("filename") or file_name,
+                    "file_id": file_id,
+                })
+                file_chunk_count += 1
+            offset = next_offset
+            if offset is None:
+                break
+        logger.info(f"  '{file_name}': {file_chunk_count} chunks from '{collection_name}'.")
+
+    chunks.sort(key=lambda c: (c["file_order"], c["chunk_index"]))
+    logger.info(f"Fetched {len(chunks)} total tender chunks across {len(tender_files)} files.")
     return chunks
 
 

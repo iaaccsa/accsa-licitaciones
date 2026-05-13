@@ -8,7 +8,7 @@ if [[ "$ENV_TYPE" != "local" && "$ENV_TYPE" != "azure" ]]; then
   exit 1
 fi
 
-APP_NAME="service-requirement-extractor"
+APP_NAME="service-build-proposal-index"
 APP_TAG="latest"
 APP_PATH="services"
 REGISTRY="accsalicitaciones.azurecr.io"
@@ -31,8 +31,6 @@ fi
 echo "Building Docker image for $APP_NAME targeting $ENV_TYPE..."
 
 docker build $BUILD_ARGS --platform linux/amd64 \
-  --build-arg GOOGLE_API_KEY="$GOOGLE_API_KEY" \
-  --build-arg OPENAI_API_KEY="$OPENAI_API_KEY" \
   --build-arg QDRANT_URL="$QDRANT_URL" \
   --build-arg QDRANT_API_KEY="$QDRANT_API_KEY" \
   --build-arg API_BASE_URL="$API_BASE_URL" \
@@ -40,8 +38,6 @@ docker build $BUILD_ARGS --platform linux/amd64 \
   --build-arg API_EVENTS_PATH="$API_EVENTS_PATH" \
   --build-arg API_ANALYSES_PATH="$API_ANALYSES_PATH" \
   --build-arg API_PROCESSED_FILES_PATH="$API_PROCESSED_FILES_PATH" \
-  --build-arg API_TENDER_CLASSIFICATIONS_PATH="$API_TENDER_CLASSIFICATIONS_PATH" \
-  --build-arg API_ANALYSIS_REQUIREMENTS_PATH="$API_ANALYSIS_REQUIREMENTS_PATH" \
   --build-arg API_JOBS_CALLBACK="$API_JOBS_CALLBACK" \
   -t "$IMAGE" -f Dockerfile ..
 

@@ -4,22 +4,47 @@ Python microservices for automated analysis of public tenders. Each service is a
 
 **Processing pipeline:**
 ```
-file-extractor → files-converter → setup-qdrant → chunk-and-index
-  → iterative-requirement-extractor → verify-compliance
+file-extractor → files-converter-mistral → qdrant-by-file (fan-out per file)
+  ├─ file-metadata-extractor (fan-out per file)
+  └─ digital-sig-extractor (fan-out per original file)
+      → documents-classifier (fan-in: waits both parents)
+        → documents-grouper
+            ├─ tender-classifier → requirement-extractor ─┐
+            └─ build-proposal-index (fan-out per proposal) ┤
+                                                           → compliance-matcher (fan-in;
+                                                              fan-out per proposal)
+                                                              → admissibility-gate
+                                                                → compliance-summarizer
 ```
+
+Qdrant model:
+- `FILE_{analysis_slug}_{file_id}` — source of truth; one per processed file (created by
+  `service-qdrant-by-file`). Tender services (tender-classifier, requirement-extractor)
+  iterate these directly.
+- `PROPOSAL_{analysis_slug}_{proposal_id}` — built by `service-build-proposal-index` (one
+  job per proposal). Copies all points (vectors + payload) from the proposal's
+  `FILE_{...}` collections. Compliance-matcher issues a single ANN query per requirement
+  against this collection.
 
 See root `CLAUDE.md` for cross-project context and common rules.
 
 ## Services
 
-| Service | ACA Job | CPU | Mem | Purpose |
-|---------|---------|-----|-----|---------|
-| `service-file-extractor` | `file-extractor` | 1 | 2Gi | Downloads ZIP from API, extracts files, uploads to Supabase |
-| `service-files-converter-llama` | `files-converter` | 2 | 4Gi | Converts PDFs to Markdown via LlamaParse |
-| `service-setup-qdrant` | `setup-qdrant` | 0.5 | 1Gi | Creates/recreates Qdrant collections for the analysis |
-| `service-chunk-and-index` | `chunk-and-index` | 1 | 2Gi | Chunks Markdown, generates OpenAI embeddings, indexes into Qdrant |
-| `service-iterative-requirement-extractor` | `iterative-requirement-extractor` | 1 | 2Gi | Extracts requirements via Qdrant + GPT |
-| `service-verify-compliance` | `verify-compliance` | 1 | 2Gi | Verifies proposal compliance via Qdrant + Cohere + GPT-4 |
+| Service | Purpose |
+|---------|---------|
+| `service-file-extractor` | Downloads ZIP from API, extracts files, uploads to Supabase |
+| `service-files-converter-mistral` | Converts PDFs to Markdown via Mistral OCR; inserts `<!-- page:N -->` markers |
+| `service-qdrant-by-file` | Per-file chunking + indexing into `FILE_{slug}_{file_id}` collections (filename, page_number, file_id in payload) |
+| `service-file-metadata-extractor` | Extracts metadata from each processed file |
+| `service-digital-sig-extractor` | Extracts digital signatures from original PDFs |
+| `service-documents-classifier` | Classifies each file into category (tender, proposal, ...) |
+| `service-documents-grouper` | Groups files into proposals |
+| `service-tender-classifier` | Determines evaluation system; queries per-file tender collections |
+| `service-requirement-extractor` | Extracts requirements; scrolls per-file tender collections, sorts by filename + chunk_index |
+| `service-build-proposal-index` | Per proposal, copies all points from `FILE_{slug}_{file_id}` of that proposal into `PROPOSAL_{slug}_{proposal_id}` |
+| `service-compliance-matcher` | Verdict per requirement vs proposal; single ANN query against `PROPOSAL_{slug}_{proposal_id}` |
+| `service-admissibility-gate` | Admissibility check from compliance results |
+| `service-compliance-summarizer` | Summarizes compliance per proposal |
 
 **Naming constraint:** Service name must be < 32 characters (Azure ACA Job limit).
 
@@ -29,7 +54,7 @@ See root `CLAUDE.md` for cross-project context and common rules.
 - Docker: `FROM python:3.12-slim`, built with `--platform linux/amd64` (required for Azure, esp. Apple Silicon)
 - LLMs: OpenAI GPT-4 / GPT-4o
 - Parsing: LlamaParse (LlamaCloud)
-- Vector DB: Qdrant (AWS sa-east-1), collections named by `analysis_slug`, 1536-dim vectors (`text-embedding-3-small`)
+- Vector DB: Qdrant (AWS sa-east-1). Per-file `FILE_{analysis_slug}_{file_id}` + per-proposal `PROPOSAL_{analysis_slug}_{proposal_id}`. 1536-dim vectors (`text-embedding-3-small`).
 - Reranking: Cohere
 
 ## Development Commands

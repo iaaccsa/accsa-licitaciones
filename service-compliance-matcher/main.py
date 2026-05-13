@@ -413,19 +413,13 @@ def rag_search_proposal_chunks(
     requirement_text: str,
     top_k: int,
 ) -> List[Dict]:
+    """Query the proposal's unified collection PROPOSAL_{slug}_{proposal_id}."""
     query_vector = get_embedding(openai_client, requirement_text)
-    search_filter = models.Filter(
-        must=[
-            models.FieldCondition(key="analysis_id", match=models.MatchValue(value=analysis_id)),
-            models.FieldCondition(key="category", match=models.MatchValue(value="proposal")),
-            models.FieldCondition(key="proposal_id", match=models.MatchValue(value=proposal_id)),
-        ]
-    )
+    collection_name = f"PROPOSAL_{slug}_{proposal_id}"
     result = qdrant.query_points(
-        collection_name=slug,
+        collection_name=collection_name,
         query=query_vector,
         limit=top_k,
-        query_filter=search_filter,
     )
     chunks = []
     for point in result.points:
@@ -652,7 +646,7 @@ async def process_compliance_matching_async():
         # Write auto-filtered entries immediately
         post_matrix_entries(ANALYSIS_ID, PROPOSAL_ID, auto_na + auto_mn)
 
-        # RAG search per requirement (synchronous, not the bottleneck)
+        # RAG search per requirement against PROPOSAL_{slug}_{proposal_id}
         chunks_by_req: Dict[str, List[dict]] = {}
         for req in needs_llm:
             req_id = str(req["id"])
