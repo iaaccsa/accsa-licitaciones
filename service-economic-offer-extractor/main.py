@@ -266,7 +266,7 @@ def load_evaluation_profile(analysis_id: str) -> Optional[dict]:
 def rag_retrieve_economic_chunks(
     qdrant: QdrantClient,
     openai_client: OpenAI,
-    slug: str,
+    collection_name: str,
     analysis_id: str,
     proposal_id: str,
 ) -> List[Dict]:
@@ -282,7 +282,7 @@ def rag_retrieve_economic_chunks(
     for query in RAG_QUERIES:
         query_vector = get_embedding(openai_client, query)
         result = qdrant.query_points(
-            collection_name=slug,
+            collection_name=collection_name,
             query=query_vector,
             limit=RAG_TOP_K_PER_QUERY,
             query_filter=search_filter,
@@ -453,13 +453,14 @@ def process_economic_extraction():
 
         analysis = load_analysis(ANALYSIS_ID)
         slug = analysis["slug"]
-        logger.info(f"Target Qdrant collection: {slug}")
+        collection_name = f"PROPOSAL_{slug}_{PROPOSAL_ID}"
+        logger.info(f"Target Qdrant collection: {collection_name}")
 
         proposal = load_proposal(PROPOSAL_ID)
         profile = load_evaluation_profile(ANALYSIS_ID)
 
         chunks = rag_retrieve_economic_chunks(
-            qdrant, openai_client, slug, ANALYSIS_ID, PROPOSAL_ID,
+            qdrant, openai_client, collection_name, ANALYSIS_ID, PROPOSAL_ID,
         )
         logger.info(f"Retrieved {len(chunks)} unique chunks from proposal for economic extraction.")
 
