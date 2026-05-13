@@ -208,7 +208,7 @@ class ProposalService:
 
     # --- Economic state machine ---
 
-    _VALID_MATCHING_FOR_ECONOMIC = {"matrix_ready", "completed", "summary_failed"}
+    _VALID_MATCHING_FOR_ECONOMIC = {"matrix_ready", "summarizing", "completed", "summary_failed"}
 
     def economic_start(self, proposal_id: str, body: ProposalEconomicStart, force: bool = False) -> ProposalRead:
         current = self._get_or_404(proposal_id)
