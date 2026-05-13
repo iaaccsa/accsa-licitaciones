@@ -26,7 +26,8 @@ export async function PATCH(
 
     try {
         const env = getEnv();
-        const url = `${env.API_BASE_URL}${env.API_PROPOSALS_PATH}/${proposalId}/admissibility-override`;
+        const proposalsBase = env.API_PROPOSALS_PATH.replace(/\/search$/, "");
+        const url = `${env.API_BASE_URL}${proposalsBase}/${proposalId}/admissibility-override`;
 
         const response = await fetch(url, {
             method: "PATCH",
