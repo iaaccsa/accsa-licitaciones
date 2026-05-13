@@ -10,6 +10,7 @@ class QdrantSearchRequest(BaseModel):
 
 class QdrantScrollRequest(BaseModel):
     slug: str
+    file_id: Optional[str] = None
     category: Optional[str] = None
     label: Optional[str] = None
     offset: Optional[str] = None

@@ -14,7 +14,12 @@ class ProcessedFileService:
         if filter_params.original_file_id is not None:
             data = self.repository.get_by_original_file_id(str(filter_params.original_file_id))
         else:
-            data = self.repository.get_by_analysis_id(filter_params.analysis_id)
+            data = self.repository.search(
+                analysis_id=filter_params.analysis_id,
+                category=filter_params.category,
+                proposal_id=filter_params.proposal_id,
+                is_merged=filter_params.is_merged,
+            )
         return [ProcessedFile(**item) for item in data]
 
     def get_merged(self, filter_params: ProcessedFileFilter) -> List[ProcessedFile]:

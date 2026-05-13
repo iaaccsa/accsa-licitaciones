@@ -31,6 +31,9 @@ class ProcessedFile(ProcessedFileBase):
 class ProcessedFileFilter(BaseModel):
     analysis_id: Optional[UUID] = None
     original_file_id: Optional[UUID] = None
+    category: Optional[str] = None
+    proposal_id: Optional[UUID] = None
+    is_merged: Optional[bool] = None
 
 class ProcessedFileUpdate(BaseModel):
     metadata: Optional[Dict[str, Any]] = None

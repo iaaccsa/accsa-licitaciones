@@ -58,7 +58,7 @@
   {
     "service": "service-file-metadata-extractor",
     "next_services": [
-      "service-setup-qdrant"
+      "service-documents-classifier"
     ],
     "code": "file_metadata_extractor",
     "display_name": "Extracción de Metadatos",
@@ -73,7 +73,7 @@
   {
     "service": "service-digital-sig-extractor",
     "next_services": [
-      "service-setup-qdrant"
+      "service-documents-classifier"
     ],
     "code": "digital_signature_extractor",
     "display_name": "Extracción de Firmas Digitales",
@@ -86,26 +86,13 @@
     "phase": "document_processing"
   },
   {
-    "service": "service-setup-qdrant",
-    "next_services": [
-      "service-documents-classifier"
-    ],
-    "code": "setup_qdrant",
-    "display_name": "Configuración RAG",
-    "parent": "file_metadata_extractor",
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false,
-    "phase": "document_processing"
-  },
-  {
     "service": "service-documents-classifier",
     "next_services": [
       "service-documents-grouper"
     ],
     "code": "documents_classifier",
     "display_name": "Clasificación de Documentos",
-    "parent": "setup_qdrant",
+    "parent": "file_metadata_extractor",
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
@@ -116,7 +103,7 @@
   {
     "service": "service-documents-grouper",
     "next_services": [
-      "service-joiner"
+      "service-tender-classifier"
     ],
     "code": "documents_grouper",
     "display_name": "Agrupación de Documentos",
@@ -128,42 +115,13 @@
     "phase": "document_processing"
   },
   {
-    "service": "service-joiner",
-    "next_services": [
-      "service-chunk-and-index"
-    ],
-    "code": "joiner",
-    "display_name": "Uniendo Documentos",
-    "parent": "documents_grouper",
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false,
-    "pause_after": false,
-    "phase": "requirement_extraction"
-  },
-  {
-    "service": "service-chunk-and-index",
-    "next_services": [
-      "service-tender-classifier"
-    ],
-    "code": "chunk_and_index",
-    "display_name": "Chunking e Indexación",
-    "parent": "joiner",
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false,
-    "fan_out_by": "merged_file",
-    "pause_after": false,
-    "phase": "requirement_extraction"
-  },
-  {
     "service": "service-tender-classifier",
     "next_services": [
       "service-requirement-extractor"
     ],
     "code": "tender_classifier",
     "display_name": "Determinación Sistema de Evaluación",
-    "parent": "chunk_and_index",
+    "parent": "documents_grouper",
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,

@@ -26,29 +26,31 @@ class QdrantService:
         )
 
     def scroll_points(self, scroll_params: QdrantScrollRequest) -> QdrantScrollResponse:
-        must_filters = []
-        if scroll_params.category:
-            must_filters.append(
-                models.FieldCondition(
-                    key="category",
-                    match=models.MatchValue(value=scroll_params.category)
+        if scroll_params.file_id:
+            collection_name = f"FILE_{scroll_params.slug}_{scroll_params.file_id}"
+            query_filter = None
+        else:
+            collection_name = scroll_params.slug
+            must_filters = []
+            if scroll_params.category:
+                must_filters.append(
+                    models.FieldCondition(
+                        key="category",
+                        match=models.MatchValue(value=scroll_params.category)
+                    )
                 )
-            )
-        if scroll_params.label:
-            must_filters.append(
-                models.FieldCondition(
-                    key="label",
-                    match=models.MatchValue(value=scroll_params.label)
+            if scroll_params.label:
+                must_filters.append(
+                    models.FieldCondition(
+                        key="label",
+                        match=models.MatchValue(value=scroll_params.label)
+                    )
                 )
-            )
-        
-        query_filter = None
-        if must_filters:
-            query_filter = models.Filter(must=must_filters)
+            query_filter = models.Filter(must=must_filters) if must_filters else None
 
         # qdrant_client.scroll returns (points, next_page_offset)
         points, next_page_offset = qdrant_client.scroll(
-            collection_name=scroll_params.slug,
+            collection_name=collection_name,
             scroll_filter=query_filter,
             limit=scroll_params.limit,
             offset=scroll_params.offset,

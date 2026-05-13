@@ -26,6 +26,24 @@ class ProcessedFileRepository(BaseRepository):
         )
         return response.data
 
+    def search(
+        self,
+        analysis_id: UUID | None = None,
+        category: str | None = None,
+        proposal_id: UUID | None = None,
+        is_merged: bool | None = None,
+    ) -> List[Dict[str, Any]]:
+        query = supabase.table(self.table_name).select("*")
+        if analysis_id is not None:
+            query = query.eq("analysis_id", str(analysis_id))
+        if category is not None:
+            query = query.eq("category", category)
+        if proposal_id is not None:
+            query = query.eq("proposal_id", str(proposal_id))
+        if is_merged is not None:
+            query = query.eq("is_merged", is_merged)
+        return query.execute().data
+
     def get_merged_by_analysis_id(self, analysis_id: UUID) -> List[Dict[str, Any]]:
         response = (
             supabase.table(self.table_name)
