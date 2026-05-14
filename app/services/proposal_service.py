@@ -18,7 +18,7 @@ VALID_TRANSITIONS = {
     "matching-start":    ([ProposalMatchingStatus.pending, ProposalMatchingStatus.failed],         ProposalMatchingStatus.matching),
     "matching-result":   ([ProposalMatchingStatus.matching],                                        ProposalMatchingStatus.matrix_ready),
     "matching-failure":  ([ProposalMatchingStatus.matching],                                        ProposalMatchingStatus.failed),
-    "summary-start":     ([ProposalMatchingStatus.matrix_ready, ProposalMatchingStatus.summary_failed], ProposalMatchingStatus.summarizing),
+    "summary-start":     ([ProposalMatchingStatus.matrix_ready, ProposalMatchingStatus.summary_failed, ProposalMatchingStatus.completed], ProposalMatchingStatus.summarizing),
     "summary-result":    ([ProposalMatchingStatus.summarizing],                                     ProposalMatchingStatus.completed),
     "summary-failure":   ([ProposalMatchingStatus.summarizing],                                     ProposalMatchingStatus.summary_failed),
 }

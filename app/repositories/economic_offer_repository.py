@@ -15,7 +15,7 @@ class EconomicOfferRepository(BaseRepository):
             .maybe_single()
             .execute()
         )
-        return response.data
+        return response.data if response else None
 
     def get_by_id(self, offer_id: str) -> Optional[Dict[str, Any]]:
         response = (
@@ -25,7 +25,7 @@ class EconomicOfferRepository(BaseRepository):
             .maybe_single()
             .execute()
         )
-        return response.data
+        return response.data if response else None
 
     def get_by_analysis_id(
         self,
@@ -46,20 +46,14 @@ class EconomicOfferRepository(BaseRepository):
         return q.range(offset, offset + limit - 1).execute().data
 
     def upsert_by_proposal_id(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        existing = self.get_by_proposal_id(data["proposal_id"])
-        if existing:
-            update_data = {k: v for k, v in data.items() if k not in ("analysis_id", "proposal_id")}
-            update_data["is_verified"] = False
-            update_data["reviewed_by"] = None
-            update_data["reviewed_at"] = None
-            response = (
-                supabase.table(self.table_name)
-                .update(update_data)
-                .eq("proposal_id", data["proposal_id"])
-                .execute()
-            )
-            return response.data[0]
-        response = supabase.table(self.table_name).insert(data).execute()
+        data["is_verified"] = False
+        data["reviewed_by"] = None
+        data["reviewed_at"] = None
+        response = (
+            supabase.table(self.table_name)
+            .upsert(data, on_conflict="proposal_id")
+            .execute()
+        )
         return response.data[0]
 
     def update_by_id(self, offer_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
