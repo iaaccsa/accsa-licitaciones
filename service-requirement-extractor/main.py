@@ -26,11 +26,13 @@ Required environment variables:
 import hashlib
 import json
 import os
+import random
 import re
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import Annotated, Dict, List, Literal, Optional, Tuple, Union
+from typing import Annotated, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import requests
 from google import genai
@@ -68,6 +70,8 @@ BATCH_OVERLAP = 2
 MAX_PARALLEL_BATCHES = 3
 SCROLL_PAGE_SIZE = 256
 MAX_FAILED_BATCH_RATIO = 0.20
+MAX_LLM_RETRIES = 3
+LLM_RETRY_BASE_DELAY = 1.0
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -358,6 +362,31 @@ def build_user_prompt(profile: dict, batch: List[dict]) -> str:
     )
 
 
+def _call_with_retry(
+    label: str,
+    batch_id: int,
+    fn: Callable[[], BatchResponse],
+) -> Tuple[Optional[BatchResponse], Optional[Exception]]:
+    last_err: Optional[Exception] = None
+    for attempt in range(1, MAX_LLM_RETRIES + 1):
+        try:
+            return fn(), None
+        except Exception as err:
+            last_err = err
+            if attempt < MAX_LLM_RETRIES:
+                delay = LLM_RETRY_BASE_DELAY * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
+                logger.warning(
+                    f"Batch {batch_id}: {label} attempt {attempt}/{MAX_LLM_RETRIES} failed "
+                    f"({type(err).__name__}: {err}). Retrying in {delay:.1f}s..."
+                )
+                time.sleep(delay)
+    logger.error(
+        f"Batch {batch_id}: {label} exhausted {MAX_LLM_RETRIES} attempts "
+        f"({type(last_err).__name__}: {last_err})."
+    )
+    return None, last_err
+
+
 def extract_batch(
     gemini_client: genai.Client,
     openai_client: OpenAI,
@@ -367,7 +396,7 @@ def extract_batch(
 ) -> List[RawRequirement]:
     user_prompt = build_user_prompt(profile, batch)
 
-    try:
+    def call_gemini() -> BatchResponse:
         response = gemini_client.models.generate_content(
             model=GEMINI_MODEL,
             contents=[
@@ -380,21 +409,30 @@ def extract_batch(
                 response_schema=BatchResponse,
             ),
         )
-        result = BatchResponse.model_validate_json(response.text)
-    except Exception as gemini_err:
-        logger.warning(f"Batch {batch_id}: Gemini failed ({gemini_err}), falling back to OpenAI...")
-        try:
-            oai_response = openai_client.chat.completions.create(
-                model=OPENAI_FALLBACK_MODEL,
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_prompt},
-                ],
-                response_format={"type": "json_object"},
+        return BatchResponse.model_validate_json(response.text)
+
+    def call_openai() -> BatchResponse:
+        oai_response = openai_client.chat.completions.create(
+            model=OPENAI_FALLBACK_MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+        )
+        return BatchResponse.model_validate_json(oai_response.choices[0].message.content)
+
+    result, gemini_err = _call_with_retry("Gemini", batch_id, call_gemini)
+    if result is None:
+        logger.warning(f"Batch {batch_id}: falling back to OpenAI after Gemini retries exhausted.")
+        result, openai_err = _call_with_retry("OpenAI", batch_id, call_openai)
+        if result is None:
+            final_err = openai_err or gemini_err
+            err_msg = (
+                f"Batch {batch_id} failed after retries on Gemini and OpenAI: "
+                f"{type(final_err).__name__}: {str(final_err)[:300]}"
             )
-            result = BatchResponse.model_validate_json(oai_response.choices[0].message.content)
-        except Exception as oai_err:
-            logger.error(f"Batch {batch_id}: OpenAI also failed ({oai_err}). Skipping batch.")
+            log_event(ANALYSIS_ID, "warning", err_msg, EVENT_SOURCE)
             return []
 
     for req in result.requirements:
@@ -668,7 +706,9 @@ def process_extraction():
                 else:
                     raw_results.extend(result)
             except Exception as e:
-                logger.error(f"Batch {batch_id} raised unexpected exception: {e}")
+                msg = f"Batch {batch_id} raised unexpected exception: {type(e).__name__}: {e}"
+                logger.error(msg)
+                log_event(ANALYSIS_ID, "warning", msg[:500], EVENT_SOURCE)
                 failed_batches += 1
 
     logger.info(f"Extraction complete: {len(raw_results)} raw requirements, {failed_batches}/{len(batches)} batches failed.")
