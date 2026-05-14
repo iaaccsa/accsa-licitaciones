@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building2, Calendar, AlertTriangle, Loader2, AlertCircle, FileText, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { ArrowLeft, Building2, Calendar, AlertTriangle, Loader2, AlertCircle, FileText, CheckCircle2, XCircle, Clock, Coins } from "lucide-react";
 import Link from "next/link";
+import { formatAmount, type EconomicOffer } from "@/components/EconomicOfferCard";
 
 type MatchingStatus =
     | "pending"
@@ -84,6 +85,7 @@ export default function ProposalsPage() {
     const id = params.id as string;
 
     const [proposals, setProposals] = useState<Proposal[]>([]);
+    const [economicByProposal, setEconomicByProposal] = useState<Record<string, EconomicOffer>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [overridingId, setOverridingId] = useState<string | null>(null);
@@ -91,10 +93,24 @@ export default function ProposalsPage() {
     useEffect(() => {
         const load = async () => {
             try {
-                const res = await fetch(`/api/analyses/${id}/proposals`);
-                if (!res.ok) throw new Error(`Error ${res.status}`);
-                const data = await res.json();
+                const [proposalsRes, offersRes] = await Promise.all([
+                    fetch(`/api/analyses/${id}/proposals`),
+                    fetch(`/api/analyses/${id}/economic-offers`),
+                ]);
+                if (!proposalsRes.ok) throw new Error(`Error ${proposalsRes.status}`);
+                const data = await proposalsRes.json();
                 setProposals(Array.isArray(data) ? data : []);
+                if (offersRes.ok) {
+                    const offers = (await offersRes.json()) as EconomicOffer[];
+                    if (Array.isArray(offers)) {
+                        setEconomicByProposal(
+                            offers.reduce(
+                                (acc, o) => ({ ...acc, [o.proposal_id]: o }),
+                                {} as Record<string, EconomicOffer>,
+                            ),
+                        );
+                    }
+                }
             } catch {
                 setError("No se pudo cargar la lista de propuestas.");
             } finally {
@@ -233,6 +249,26 @@ export default function ProposalsPage() {
 
                                     {/* Metrics */}
                                     <div className="flex items-center gap-5 shrink-0">
+                                        {economicByProposal[proposal.id] && (
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 justify-end">
+                                                    <Coins className="w-3 h-3" />
+                                                    Oferta
+                                                </p>
+                                                <p className="text-sm font-bold text-emerald-700 tabular-nums">
+                                                    {formatAmount(
+                                                        economicByProposal[proposal.id].total_amount,
+                                                        economicByProposal[proposal.id].currency,
+                                                    )}
+                                                </p>
+                                                {economicByProposal[proposal.id].requires_manual_review && (
+                                                    <p className="text-[10px] text-amber-600 flex items-center gap-0.5 justify-end mt-0.5">
+                                                        <AlertTriangle className="w-3 h-3" />
+                                                        Revisar
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
                                         {proposal.compliance_rate != null && (
                                             <div className="w-32">
                                                 <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Cumplimiento</p>

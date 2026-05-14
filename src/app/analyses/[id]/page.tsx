@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowPhases from "@/components/WorkflowPhases";
 import ProposalsSummary from "@/components/ProposalsSummary";
+import EconomicComparisonTable from "@/components/EconomicComparisonTable";
 
 interface Analysis {
     id: string;
@@ -286,6 +287,8 @@ export default function AnalysisDetailPage() {
             </div>
 
             <ProposalsSummary analysisId={id} />
+
+            <EconomicComparisonTable analysisId={id} />
         </div>
     );
 }

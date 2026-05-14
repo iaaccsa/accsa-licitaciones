@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, ArrowLeft, Calendar, FileText, AlertCircle, Building2 } from "lucide-react";
+import { Loader2, ArrowLeft, Calendar, FileText, AlertCircle, Building2, Sparkles, Clock, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ComplianceMatrix from "@/components/ComplianceMatrix";
+import EconomicOfferCard from "@/components/EconomicOfferCard";
 
 interface Analysis {
     id: string;
@@ -31,12 +32,93 @@ interface Proposal {
     matching_status: MatchingStatus;
     matching_error: string | null;
     summary_error: string | null;
+    summarizing_started_at: string | null;
+    summarizing_completed_at: string | null;
     compliance_rate: number | null;
     compliance_counts: Record<string, number> | null;
     compliance_summary: string | null;
     critical_failures_count: number | null;
     created_at: string;
     updated_at: string;
+}
+
+function SummaryStatusBadge({ proposal }: { proposal: Proposal }) {
+    if (proposal.summary_error) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-600">
+                <XCircle className="w-3.5 h-3.5" />
+                Resumen con error
+            </span>
+        );
+    }
+    if (proposal.compliance_summary) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700">
+                <Sparkles className="w-3.5 h-3.5" />
+                Resumen listo
+            </span>
+        );
+    }
+    if (proposal.summarizing_started_at && !proposal.summarizing_completed_at) {
+        return (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-violet-50 text-violet-700">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Generando resumen
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-zinc-100 text-zinc-500">
+            <Clock className="w-3.5 h-3.5" />
+            Resumen pendiente
+        </span>
+    );
+}
+
+function ComplianceBreakdownBar({ counts }: { counts: Record<string, number> }) {
+    const cumple = counts.compliant ?? counts.cumple ?? 0;
+    const parcial = counts.partial ?? counts.cumple_parcial ?? 0;
+    const noCumple = counts.non_compliant ?? counts.no_cumple ?? 0;
+    const sinInfo = counts.missing_info ?? counts.no_aplica ?? counts.missing ?? 0;
+    const total = cumple + parcial + noCumple + sinInfo;
+    if (total === 0) return null;
+    const pct = (n: number) => (n / total) * 100;
+    return (
+        <div className="space-y-2 mb-4">
+            <div className="flex h-2.5 rounded-full overflow-hidden bg-zinc-100">
+                {cumple > 0 && <div className="bg-emerald-500" style={{ width: `${pct(cumple)}%` }} />}
+                {parcial > 0 && <div className="bg-amber-500" style={{ width: `${pct(parcial)}%` }} />}
+                {noCumple > 0 && <div className="bg-red-500" style={{ width: `${pct(noCumple)}%` }} />}
+                {sinInfo > 0 && <div className="bg-zinc-300" style={{ width: `${pct(sinInfo)}%` }} />}
+            </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-600">
+                {cumple > 0 && (
+                    <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        Cumple <span className="tabular-nums font-semibold">{cumple}</span>
+                    </span>
+                )}
+                {parcial > 0 && (
+                    <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        Parcial <span className="tabular-nums font-semibold">{parcial}</span>
+                    </span>
+                )}
+                {noCumple > 0 && (
+                    <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-500" />
+                        No cumple <span className="tabular-nums font-semibold">{noCumple}</span>
+                    </span>
+                )}
+                {sinInfo > 0 && (
+                    <span className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-zinc-300" />
+                        Sin info <span className="tabular-nums font-semibold">{sinInfo}</span>
+                    </span>
+                )}
+            </div>
+        </div>
+    );
 }
 
 
@@ -133,10 +215,11 @@ export default function ProposalDetailPage() {
                             <FileText className="w-6 h-6" />
                         </div>
                         <div className="min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <span className="font-bold text-zinc-900 truncate">
                                     {proposal.label || "Propuesta"}
                                 </span>
+                                <SummaryStatusBadge proposal={proposal} />
                             </div>
                             <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
                                 <span className="flex items-center gap-1">
@@ -205,16 +288,23 @@ export default function ProposalDetailPage() {
                     </Card>
                 )}
 
-                {proposal.compliance_summary && (
+                {(proposal.compliance_summary || proposal.compliance_counts) && (
                     <Card className="min-w-0">
                         <CardHeader>
                             <CardTitle>Resumen de Auditoría</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{proposal.compliance_summary}</p>
+                            {proposal.compliance_counts && (
+                                <ComplianceBreakdownBar counts={proposal.compliance_counts} />
+                            )}
+                            {proposal.compliance_summary && (
+                                <p className="text-sm text-zinc-700 leading-relaxed whitespace-pre-wrap">{proposal.compliance_summary}</p>
+                            )}
                         </CardContent>
                     </Card>
                 )}
+
+                <EconomicOfferCard analysisId={analysisId} proposalId={proposalId} />
 
                 <div className="min-w-0">
                     <h2 className="text-lg font-semibold text-zinc-900 mb-3">Matriz de Cumplimiento</h2>
