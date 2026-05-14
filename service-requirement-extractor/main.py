@@ -31,14 +31,15 @@ import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Annotated, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Annotated, Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import requests
 from google import genai
 from google.genai import types as genai_types
 from openai import OpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
@@ -64,15 +65,18 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 SERVICE_NAME = "service-requirement-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 GEMINI_MODEL = "gemini-2.5-flash"
-OPENAI_FALLBACK_MODEL = "gpt-4.1-nano"
+GEMINI_THINKING_BUDGET = 4096
+OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 BATCH_SIZE = 15
 BATCH_OVERLAP = 2
-MAX_PARALLEL_BATCHES = 3
+MAX_PARALLEL_BATCHES = 5
 SCROLL_PAGE_SIZE = 256
-MAX_FAILED_BATCH_RATIO = 0.20
+MAX_FAILED_BATCH_RATIO = 0.05
 MAX_LLM_RETRIES = 3
 LLM_RETRY_BASE_DELAY = 1.0
 PROVIDER_UNAVAILABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+UNAVAILABLE_MAX_ATTEMPTS = 2
+UNAVAILABLE_RETRY_DELAY = 10.0
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -254,8 +258,6 @@ def get_evaluation_profile(analysis_id: str) -> dict:
             f"evaluation_profile version mismatch: expected 2, got {profile_version}. "
             "Re-run service-tender-classifier for this analysis before extracting requirements."
         )
-    if profile_version is None:
-        logger.warning("profile_version field not present in tender-classifications response; proceeding anyway.")
     if not profile.get("enabled_roles"):
         raise RuntimeError("evaluation_profile has no enabled_roles. Cannot extract requirements without a valid profile.")
     logger.info(f"Loaded evaluation profile: system_type={profile.get('system_type')}, factors={len(profile.get('factors', []))}")
@@ -363,9 +365,26 @@ def build_user_prompt(profile: dict, batch: List[dict]) -> str:
     )
 
 
-def _is_provider_unavailable(err: Exception) -> bool:
+def _is_provider_unavailable(err: Optional[Exception]) -> bool:
+    if err is None:
+        return False
     status = getattr(err, "status_code", None) or getattr(err, "code", None)
     return isinstance(status, int) and status in PROVIDER_UNAVAILABLE_STATUS_CODES
+
+
+def _is_malformed_response(err: Optional[Exception]) -> bool:
+    return isinstance(err, (ValidationError, json.JSONDecodeError))
+
+
+@dataclass
+class BatchOutcome:
+    requirements: List["RawRequirement"] = field(default_factory=list)
+    duration_seconds: float = 0.0
+    gemini_used: bool = False
+    gemini_unavailable: bool = False
+    openai_used: bool = False
+    openai_failed: bool = False
+    failure_reason: Optional[str] = None
 
 
 def _call_with_retry(
@@ -374,18 +393,33 @@ def _call_with_retry(
     fn: Callable[[], BatchResponse],
 ) -> Tuple[Optional[BatchResponse], Optional[Exception]]:
     last_err: Optional[Exception] = None
+    unavailable_attempts = 0
     for attempt in range(1, MAX_LLM_RETRIES + 1):
         try:
             return fn(), None
         except Exception as err:
             last_err = err
-            if _is_provider_unavailable(err):
+            if _is_malformed_response(err):
                 logger.warning(
-                    f"Batch {batch_id}: {label} provider unavailable on attempt "
-                    f"{attempt}/{MAX_LLM_RETRIES} ({type(err).__name__}: {err}). "
-                    f"Skipping remaining retries, falling back."
+                    f"Batch {batch_id}: {label} returned malformed JSON on attempt "
+                    f"{attempt} ({type(err).__name__}). Aborting retries for this provider."
                 )
                 return None, err
+            if _is_provider_unavailable(err):
+                unavailable_attempts += 1
+                if unavailable_attempts >= UNAVAILABLE_MAX_ATTEMPTS:
+                    logger.warning(
+                        f"Batch {batch_id}: {label} unavailable after {unavailable_attempts} "
+                        f"attempts ({type(err).__name__}: {err}). Falling back."
+                    )
+                    return None, err
+                delay = UNAVAILABLE_RETRY_DELAY + random.uniform(0, 1.0)
+                logger.warning(
+                    f"Batch {batch_id}: {label} unavailable on attempt {attempt} "
+                    f"({type(err).__name__}: {err}). Retrying in {delay:.1f}s..."
+                )
+                time.sleep(delay)
+                continue
             if attempt < MAX_LLM_RETRIES:
                 delay = LLM_RETRY_BASE_DELAY * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
                 logger.warning(
@@ -406,8 +440,11 @@ def extract_batch(
     profile: dict,
     batch: List[dict],
     batch_id: int,
-) -> List[RawRequirement]:
+) -> BatchOutcome:
     user_prompt = build_user_prompt(profile, batch)
+    raw_capture = {"gemini": "", "openai": ""}
+    outcome = BatchOutcome(gemini_used=True)
+    start = time.time()
 
     def call_gemini() -> BatchResponse:
         response = gemini_client.models.generate_content(
@@ -420,8 +457,10 @@ def extract_batch(
             config=genai_types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=BatchResponse,
+                thinking_config=genai_types.ThinkingConfig(thinking_budget=GEMINI_THINKING_BUDGET),
             ),
         )
+        raw_capture["gemini"] = response.text or ""
         return BatchResponse.model_validate_json(response.text)
 
     def call_openai() -> BatchResponse:
@@ -433,25 +472,43 @@ def extract_batch(
             ],
             response_format={"type": "json_object"},
         )
-        return BatchResponse.model_validate_json(oai_response.choices[0].message.content)
+        content = oai_response.choices[0].message.content or ""
+        raw_capture["openai"] = content
+        return BatchResponse.model_validate_json(content)
 
     result, gemini_err = _call_with_retry("Gemini", batch_id, call_gemini)
+    openai_err: Optional[Exception] = None
     if result is None:
-        logger.warning(f"Batch {batch_id}: falling back to OpenAI after Gemini retries exhausted.")
+        if _is_provider_unavailable(gemini_err):
+            outcome.gemini_unavailable = True
+        logger.warning(f"Batch {batch_id}: falling back to OpenAI ({type(gemini_err).__name__}).")
+        outcome.openai_used = True
         result, openai_err = _call_with_retry("OpenAI", batch_id, call_openai)
         if result is None:
+            outcome.openai_failed = True
             final_err = openai_err or gemini_err
-            err_msg = (
+            outcome.failure_reason = f"{type(final_err).__name__}: {str(final_err)[:200]}"
+            raw_snippet = (raw_capture["openai"] or raw_capture["gemini"])[:1000]
+            log_event(ANALYSIS_ID, "warning",
                 f"Batch {batch_id} failed after retries on Gemini and OpenAI: "
-                f"{type(final_err).__name__}: {str(final_err)[:300]}"
+                f"{type(final_err).__name__}: {str(final_err)[:300]}",
+                EVENT_SOURCE,
+                {
+                    "batch_id": batch_id,
+                    "gemini_error": f"{type(gemini_err).__name__}: {str(gemini_err)[:200]}" if gemini_err else None,
+                    "openai_error": f"{type(openai_err).__name__}: {str(openai_err)[:200]}" if openai_err else None,
+                    "raw_response_snippet": raw_snippet,
+                },
             )
-            log_event(ANALYSIS_ID, "warning", err_msg, EVENT_SOURCE)
-            return []
+            outcome.duration_seconds = time.time() - start
+            return outcome
 
     for req in result.requirements:
         req.extraction_batch_id = batch_id
+    outcome.requirements = result.requirements
+    outcome.duration_seconds = time.time() - start
     logger.info(f"Batch {batch_id}: extracted {len(result.requirements)} requirements.")
-    return result.requirements
+    return outcome
 
 
 # ---------------------------------------------------------------------------
@@ -704,6 +761,7 @@ def process_extraction():
     # 5. Parallel batch extraction
     raw_results: List[RawRequirement] = []
     failed_batches = 0
+    outcomes: Dict[int, BatchOutcome] = {}
 
     with ThreadPoolExecutor(max_workers=MAX_PARALLEL_BATCHES) as executor:
         futures = {
@@ -713,23 +771,25 @@ def process_extraction():
         for future in as_completed(futures):
             batch_id = futures[future]
             try:
-                result = future.result()
-                if not result:
+                outcome = future.result()
+                outcomes[batch_id] = outcome
+                if not outcome.requirements:
                     failed_batches += 1
                 else:
-                    raw_results.extend(result)
+                    raw_results.extend(outcome.requirements)
             except Exception as e:
                 msg = f"Batch {batch_id} raised unexpected exception: {type(e).__name__}: {e}"
                 logger.error(msg)
                 log_event(ANALYSIS_ID, "warning", msg[:500], EVENT_SOURCE)
+                outcomes[batch_id] = BatchOutcome(failure_reason=msg[:200])
                 failed_batches += 1
 
     logger.info(f"Extraction complete: {len(raw_results)} raw requirements, {failed_batches}/{len(batches)} batches failed.")
 
-    if len(batches) > 0 and (failed_batches / len(batches)) > MAX_FAILED_BATCH_RATIO:
+    if failed_batches > 0 and (failed_batches / max(len(batches), 1)) > MAX_FAILED_BATCH_RATIO:
         raise RuntimeError(
-            f"Too many failed batches: {failed_batches}/{len(batches)} "
-            f"({100 * failed_batches // len(batches)}% > {int(MAX_FAILED_BATCH_RATIO * 100)}% threshold). "
+            f"Failed batches: {failed_batches}/{len(batches)} "
+            f"(threshold {int(MAX_FAILED_BATCH_RATIO * 100)}%). "
             "Aborting to avoid incomplete results."
         )
 
@@ -790,6 +850,15 @@ def process_extraction():
         for role in r.roles:
             role_counts[role] = role_counts.get(role, 0) + 1
 
+    gemini_unavailable_count = sum(1 for o in outcomes.values() if o.gemini_unavailable)
+    openai_fallbacks_succeeded = sum(1 for o in outcomes.values() if o.openai_used and not o.openai_failed)
+    openai_fallbacks_failed = sum(1 for o in outcomes.values() if o.openai_failed)
+    failed_batch_ids = sorted(bid for bid, o in outcomes.items() if not o.requirements)
+    durations = sorted(((bid, o.duration_seconds) for bid, o in outcomes.items()), key=lambda x: -x[1])
+    slowest_batch_id, slowest_batch_seconds = (durations[0] if durations else (None, 0.0))
+    duration_values = sorted(o.duration_seconds for o in outcomes.values())
+    p95_batch_seconds = duration_values[int(len(duration_values) * 0.95) - 1] if duration_values else 0.0
+
     summary = (
         f"Extraccion completada: {len(cleaned)} requerimientos | "
         f"batches fallidos: {failed_batches}/{len(batches)} | "
@@ -801,6 +870,13 @@ def process_extraction():
         "raw_count": len(raw_results),
         "batch_count": len(batches),
         "failed_batches": failed_batches,
+        "failed_batch_ids": failed_batch_ids,
+        "gemini_unavailable_batches": gemini_unavailable_count,
+        "openai_fallbacks_succeeded": openai_fallbacks_succeeded,
+        "openai_fallbacks_failed": openai_fallbacks_failed,
+        "slowest_batch_id": slowest_batch_id,
+        "slowest_batch_seconds": round(slowest_batch_seconds, 2),
+        "p95_batch_seconds": round(p95_batch_seconds, 2),
         "validation_warnings": len(validation_warnings),
         "domain_distribution": domain_counts,
         "role_distribution": role_counts,
