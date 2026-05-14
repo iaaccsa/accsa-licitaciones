@@ -72,6 +72,7 @@ SCROLL_PAGE_SIZE = 256
 MAX_FAILED_BATCH_RATIO = 0.20
 MAX_LLM_RETRIES = 3
 LLM_RETRY_BASE_DELAY = 1.0
+PROVIDER_UNAVAILABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -362,6 +363,11 @@ def build_user_prompt(profile: dict, batch: List[dict]) -> str:
     )
 
 
+def _is_provider_unavailable(err: Exception) -> bool:
+    status = getattr(err, "status_code", None) or getattr(err, "code", None)
+    return isinstance(status, int) and status in PROVIDER_UNAVAILABLE_STATUS_CODES
+
+
 def _call_with_retry(
     label: str,
     batch_id: int,
@@ -373,6 +379,13 @@ def _call_with_retry(
             return fn(), None
         except Exception as err:
             last_err = err
+            if _is_provider_unavailable(err):
+                logger.warning(
+                    f"Batch {batch_id}: {label} provider unavailable on attempt "
+                    f"{attempt}/{MAX_LLM_RETRIES} ({type(err).__name__}: {err}). "
+                    f"Skipping remaining retries, falling back."
+                )
+                return None, err
             if attempt < MAX_LLM_RETRIES:
                 delay = LLM_RETRY_BASE_DELAY * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
                 logger.warning(
