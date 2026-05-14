@@ -42,8 +42,8 @@ strategy:
     #   SERVICE_NAME: "service-documents-grouper"
     # service-digital-sig-extractor:
     #   SERVICE_NAME: "service-digital-sig-extractor"
-    # service-tender-classifier:
-    #   SERVICE_NAME: "service-tender-classifier"
+    service-tender-classifier:
+      SERVICE_NAME: "service-tender-classifier"
     # service-compliance-matcher:
     #   SERVICE_NAME: "service-compliance-matcher"
     # service-build-proposal-index:

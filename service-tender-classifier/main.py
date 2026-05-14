@@ -35,6 +35,7 @@ Required environment variables:
 
 import os
 import sys
+import unicodedata
 from pathlib import Path
 from typing import List, Optional, Literal, Dict, Tuple, Set
 
@@ -44,7 +45,7 @@ from google import genai
 from google.genai import types as genai_types
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from supabase_logger import setup_logger, log_event, make_session
 
@@ -68,7 +69,8 @@ SERVICE_NAME = "service-tender-classifier"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 EMBEDDING_MODEL = "text-embedding-3-small"
 GEMINI_MODEL = "gemini-2.5-flash"
-OPENAI_FALLBACK_MODEL = "gpt-4.1-nano"
+GEMINI_THINKING_BUDGET = 4096
+OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -83,6 +85,84 @@ VALID_SYSTEM_TYPES = [
     "precio_con_incremento_multas", "delegado_pliego_general",
     "indeterminado",
 ]
+
+
+# ---------------------------------------------------------------------------
+# Literal alias normalizer (Spanish variants -> canonical)
+# ---------------------------------------------------------------------------
+def _strip_accents(s: str) -> str:
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+
+
+def _make_normalizer(aliases: Dict[str, str], allowed: Set[str]):
+    def _normalize(value):
+        if not isinstance(value, str):
+            return value
+        norm = _strip_accents(value).lower().strip()
+        if norm in allowed:
+            return norm
+        if norm in aliases:
+            return aliases[norm]
+        return value
+    return _normalize
+
+
+SYSTEM_TYPE_ALIASES: Dict[str, str] = {
+    "puntaje": "puntos", "puntajes": "puntos", "por_puntos": "puntos",
+    "porcentaje": "porcentajes", "por_porcentaje": "porcentajes",
+    "mixto": "mixto_cualitativo_cuantitativo", "mixto_cuali_cuanti": "mixto_cualitativo_cuantitativo",
+    "solo_precio": "solo_precio_exclusivo", "precio_exclusivo": "solo_precio_exclusivo",
+    "precio": "solo_precio_exclusivo", "precio_unico": "solo_precio_exclusivo",
+    "precio_con_an": "solo_precio_con_AN", "solo_precio_an": "solo_precio_con_AN",
+    "precio_con_multas": "precio_con_incremento_multas", "incremento_multas": "precio_con_incremento_multas",
+    "delegado": "delegado_pliego_general", "pliego_general": "delegado_pliego_general",
+    "indeterminada": "indeterminado", "desconocido": "indeterminado", "n_a": "indeterminado", "na": "indeterminado",
+}
+SYSTEM_TYPE_ALLOWED = {
+    "puntos", "porcentajes", "mixto_cualitativo_cuantitativo",
+    "solo_precio_con_AN", "solo_precio_exclusivo",
+    "precio_con_incremento_multas", "delegado_pliego_general",
+    "indeterminado",
+}
+CONFIDENCE_ALIASES: Dict[str, str] = {
+    "high": "alta", "medium": "media", "med": "media",
+    "low": "baja", "very_low": "muy_baja",
+}
+CONFIDENCE_ALLOWED = {"alta", "media", "baja", "muy_baja"}
+WEIGHT_TYPE_ALIASES: Dict[str, str] = {
+    "puntos": "points", "puntaje": "points", "puntajes": "points",
+    "porcentaje": "percent", "porcentajes": "percent", "porciento": "percent",
+    "formula": "formula", "fórmula": "formula",
+    "ninguno": "none", "sin": "none", "n_a": "none", "na": "none",
+}
+WEIGHT_TYPE_ALLOWED = {"points", "percent", "formula", "none"}
+BLOCK_ALIASES: Dict[str, str] = {
+    "cualitativo": "cualitativo", "calidad": "cualitativo",
+    "cuantitativo": "cuantitativo", "cantidad": "cuantitativo",
+}
+BLOCK_ALLOWED = {"cualitativo", "cuantitativo"}
+
+# SYSTEM_TYPE allows mixed case (e.g. "solo_precio_con_AN"). Map needs to
+# preserve canonical casing — our normalizer strips case, so we patch:
+SYSTEM_TYPE_ALLOWED_LOWER = {v.lower() for v in SYSTEM_TYPE_ALLOWED}
+
+
+def _normalize_system_type(v):
+    if not isinstance(v, str):
+        return v
+    norm = _strip_accents(v).lower().strip()
+    # Canonical match (case-insensitive)
+    for canon in SYSTEM_TYPE_ALLOWED:
+        if canon.lower() == norm:
+            return canon
+    if norm in SYSTEM_TYPE_ALIASES:
+        return SYSTEM_TYPE_ALIASES[norm]
+    return v
+
+
+_normalize_confidence = _make_normalizer(CONFIDENCE_ALIASES, CONFIDENCE_ALLOWED)
+_normalize_weight_type = _make_normalizer(WEIGHT_TYPE_ALIASES, WEIGHT_TYPE_ALLOWED)
+_normalize_block = _make_normalizer(BLOCK_ALIASES, BLOCK_ALLOWED)
 
 # Canonical Eje-1 role vocabulary. Kept as a module-level constant so other
 # services (requirements extractor, scoring engine) can import it as the
@@ -124,6 +204,16 @@ class EvaluationFactor(BaseModel):
     is_negative: bool = False
     citations: List[str] = Field(default_factory=list)
 
+    @field_validator("weight_type", mode="before")
+    @classmethod
+    def _norm_weight_type(cls, v):
+        return _normalize_weight_type(v)
+
+    @field_validator("block", mode="before")
+    @classmethod
+    def _norm_block(cls, v):
+        return _normalize_block(v) if v is not None else v
+
 
 class RoleSignal(BaseModel):
     """Textual evidence that a given Eje-1 role is invoked by the pliego."""
@@ -162,6 +252,16 @@ class EvaluationProfile(BaseModel):
     discarded: Discarded
     sufficient_chunks: bool
     additional_chunks_recommendation: Optional[str] = None
+
+    @field_validator("system_type", mode="before")
+    @classmethod
+    def _norm_system_type(cls, v):
+        return _normalize_system_type(v)
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def _norm_confidence(cls, v):
+        return _normalize_confidence(v)
 
 
 # ---------------------------------------------------------------------------
@@ -513,6 +613,7 @@ def classify_tender(
             config=genai_types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=EvaluationProfile,
+                thinking_config=genai_types.ThinkingConfig(thinking_budget=GEMINI_THINKING_BUDGET),
             ),
         )
         return EvaluationProfile.model_validate_json(response.text)

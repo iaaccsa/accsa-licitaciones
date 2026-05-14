@@ -30,6 +30,7 @@ import random
 import re
 import sys
 import time
+import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -39,7 +40,7 @@ import requests
 from google import genai
 from google.genai import types as genai_types
 from openai import OpenAI
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
@@ -128,6 +129,114 @@ RequirementTemporalScope = Literal[
 
 
 # ---------------------------------------------------------------------------
+# Literal alias maps (Spanish/variants -> canonical) and normalizer
+# ---------------------------------------------------------------------------
+def _strip_accents(s: str) -> str:
+    return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+
+
+def _make_normalizer(aliases: Dict[str, str], allowed: set):
+    def _normalize(value):
+        if not isinstance(value, str):
+            return value
+        norm = _strip_accents(value).lower().strip()
+        if norm in allowed:
+            return norm
+        if norm in aliases:
+            return aliases[norm]
+        return value
+    return _normalize
+
+
+ROLE_ALIASES: Dict[str, str] = {
+    "obligatorio": "admisibilidad_obligatoria",
+    "obligatoria": "admisibilidad_obligatoria",
+    "admisibilidad": "admisibilidad_obligatoria",
+    "subsanable": "admisibilidad_subsanable",
+    "puntua": "puntuable",
+    "puntuado": "puntuable",
+    "penaliza": "penalizador",
+    "informacion": "informativo",
+    "informativa": "informativo",
+    "preferencia": "preferencia_legal",
+    "pliego_general": "desconocido_pendiente_pliego_general",
+    "desconocido": "desconocido_pendiente_pliego_general",
+}
+ROLE_ALLOWED = {
+    "admisibilidad_obligatoria", "admisibilidad_subsanable", "puntuable",
+    "penalizador", "informativo", "preferencia_legal",
+    "desconocido_pendiente_pliego_general",
+}
+DOMAIN_ALIASES: Dict[str, str] = {
+    "tecnico": "technical", "tecnica": "technical", "tecnicos": "technical",
+    "administrativo": "administrative", "administrativa": "administrative", "administrativos": "administrative",
+    "legal": "legal", "juridico": "legal", "juridica": "legal",
+    "financiero": "financial", "financiera": "financial", "economico": "financial", "economica": "financial",
+    "rrhh": "hr", "recursos_humanos": "hr", "personal": "hr", "humanos": "hr",
+    "logistica": "logistics", "logistico": "logistics",
+    "ambiental": "environmental", "medioambiental": "environmental", "medio_ambiente": "environmental",
+    "calidad": "quality",
+    "seguridad": "safety", "seguridad_e_higiene": "safety",
+    "otro": "other", "otros": "other",
+}
+DOMAIN_ALLOWED = {
+    "technical", "administrative", "legal", "financial", "hr",
+    "logistics", "environmental", "quality", "safety", "other",
+}
+VERIFICATION_ALIASES: Dict[str, str] = {
+    "documento_adjunto": "attached_document", "adjunto": "attached_document", "documento": "attached_document",
+    "declaracion_jurada": "sworn_statement", "declaracion": "sworn_statement", "jurada": "sworn_statement",
+    "certificado_externo": "external_certificate", "certificado": "external_certificate",
+    "inspeccion": "inspection",
+    "muestra": "sample", "muestreo": "sample",
+    "visita_sitio": "site_visit", "visita": "site_visit", "site": "site_visit",
+    "auto_verificable": "auto_verifiable_from_offer", "autoverificable": "auto_verifiable_from_offer", "oferta": "auto_verifiable_from_offer",
+    "otro": "other", "otros": "other",
+}
+VERIFICATION_ALLOWED = {
+    "attached_document", "sworn_statement", "external_certificate",
+    "inspection", "sample", "site_visit", "auto_verifiable_from_offer", "other",
+}
+TEMPORAL_ALIASES: Dict[str, str] = {
+    "al_presentar": "at_bid_time", "en_oferta": "at_bid_time", "al_ofertar": "at_bid_time", "oferta": "at_bid_time",
+    "pre_adjudicacion": "pre_award", "previa_adjudicacion": "pre_award", "antes_adjudicacion": "pre_award",
+    "durante_ejecucion": "during_execution", "ejecucion": "during_execution",
+    "post_venta": "post_sale", "posventa": "post_sale", "postventa": "post_sale",
+    "otro": "other", "otros": "other",
+}
+TEMPORAL_ALLOWED = {
+    "at_bid_time", "pre_award", "during_execution", "post_sale", "other",
+}
+CONFIDENCE_ALIASES: Dict[str, str] = {
+    "high": "alta", "alta_confianza": "alta",
+    "medium": "media", "med": "media",
+    "low": "baja",
+    "very_low": "muy_baja", "muy_low": "muy_baja",
+}
+CONFIDENCE_ALLOWED = {"alta", "media", "baja", "muy_baja"}
+WEIGHT_TYPE_ALIASES: Dict[str, str] = {
+    "puntos": "points", "puntaje": "points", "puntajes": "points",
+    "porcentaje": "percent", "porcentajes": "percent", "porciento": "percent", "percentual": "percent",
+    "formula": "formula", "fórmula": "formula",
+    "ninguno": "none", "sin": "none", "n_a": "none", "na": "none",
+}
+WEIGHT_TYPE_ALLOWED = {"points", "percent", "formula", "none"}
+BLOCK_ALIASES: Dict[str, str] = {
+    "cualitativo": "cualitativo", "calidad": "cualitativo",
+    "cuantitativo": "cuantitativo", "cantidad": "cuantitativo",
+}
+BLOCK_ALLOWED = {"cualitativo", "cuantitativo"}
+
+_normalize_role = _make_normalizer(ROLE_ALIASES, ROLE_ALLOWED)
+_normalize_domain = _make_normalizer(DOMAIN_ALIASES, DOMAIN_ALLOWED)
+_normalize_verification = _make_normalizer(VERIFICATION_ALIASES, VERIFICATION_ALLOWED)
+_normalize_temporal = _make_normalizer(TEMPORAL_ALIASES, TEMPORAL_ALLOWED)
+_normalize_confidence = _make_normalizer(CONFIDENCE_ALIASES, CONFIDENCE_ALLOWED)
+_normalize_weight_type = _make_normalizer(WEIGHT_TYPE_ALIASES, WEIGHT_TYPE_ALLOWED)
+_normalize_block = _make_normalizer(BLOCK_ALIASES, BLOCK_ALLOWED)
+
+
+# ---------------------------------------------------------------------------
 # Data Models
 # ---------------------------------------------------------------------------
 CONFIDENCE_ORDER = {"alta": 3, "media": 2, "baja": 1, "muy_baja": 0}
@@ -140,12 +249,32 @@ class MappedFactor(BaseModel):
     formula: Optional[str] = None
     block: Optional[Literal["cualitativo", "cuantitativo"]] = None
 
+    @field_validator("weight_type", mode="before")
+    @classmethod
+    def _norm_weight_type(cls, v):
+        return _normalize_weight_type(v)
+
+    @field_validator("block", mode="before")
+    @classmethod
+    def _norm_block(cls, v):
+        return _normalize_block(v) if v is not None else v
+
 
 class RequirementWeight(BaseModel):
     type: Literal["points", "percent", "formula", "none"] = "none"
     value: Optional[float] = None
     formula: Optional[str] = None
     block: Optional[Literal["cualitativo", "cuantitativo"]] = None
+
+    @field_validator("type", mode="before")
+    @classmethod
+    def _norm_type(cls, v):
+        return _normalize_weight_type(v)
+
+    @field_validator("block", mode="before")
+    @classmethod
+    def _norm_block(cls, v):
+        return _normalize_block(v) if v is not None else v
 
 
 class RequirementCitation(BaseModel):
@@ -168,6 +297,33 @@ class RawRequirement(BaseModel):
     confidence: Literal["alta", "media", "baja", "muy_baja"] = "media"
     notes: Optional[str] = None
     extraction_batch_id: int = 0
+
+    @field_validator("roles", mode="before")
+    @classmethod
+    def _norm_roles(cls, v):
+        if isinstance(v, list):
+            return [_normalize_role(x) for x in v]
+        return v
+
+    @field_validator("domain", mode="before")
+    @classmethod
+    def _norm_domain(cls, v):
+        return _normalize_domain(v)
+
+    @field_validator("verification_method", mode="before")
+    @classmethod
+    def _norm_verification(cls, v):
+        return _normalize_verification(v)
+
+    @field_validator("temporal_scope", mode="before")
+    @classmethod
+    def _norm_temporal(cls, v):
+        return _normalize_temporal(v)
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def _norm_confidence(cls, v):
+        return _normalize_confidence(v)
 
 
 class BatchResponse(BaseModel):
