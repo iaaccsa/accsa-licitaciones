@@ -14,6 +14,9 @@ export async function GET(
 
     try {
         const env = getEnv();
+        if (!env.API_PROPOSAL_ECONOMIC_OFFERS_PATH) {
+            return apiError("API_PROPOSAL_ECONOMIC_OFFERS_PATH not configured", 503);
+        }
         const url = `${env.API_BASE_URL}${env.API_PROPOSAL_ECONOMIC_OFFERS_PATH}by-proposal/${proposalId}`;
 
         const res = await fetch(url, {
