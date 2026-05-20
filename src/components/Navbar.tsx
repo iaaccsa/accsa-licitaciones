@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Upload, ListChecks, ShieldCheck, BookOpen } from "lucide-react";
+import { LogoutButton } from "@/components/LogoutButton";
 
 const navItems = [
     { href: "/", label: "Iniciar", icon: Upload },
@@ -14,6 +15,8 @@ const navItems = [
 
 export function Navbar() {
     const pathname = usePathname();
+
+    if (pathname === "/login") return null;
 
     return (
         <nav className="bg-white border-b border-zinc-200 shadow-sm sticky top-0 z-50">
@@ -37,7 +40,7 @@ export function Navbar() {
                     </Link>
 
                     {/* Navigation Links */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-1">
                         {navItems.map(({ href, label, icon: Icon }) => {
                             const isActive =
                                 href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -61,6 +64,8 @@ export function Navbar() {
                             );
                         })}
                     </div>
+
+                    <LogoutButton />
                 </div>
             </div>
         </nav>
