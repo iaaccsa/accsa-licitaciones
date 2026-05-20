@@ -111,7 +111,7 @@ const ejes: EjeData[] = [
     {
         number: 1,
         name: "Rol en la evaluación",
-        question: "¿Qué le hace este requerimiento a una oferta?",
+        question: "¿Qué le hace este requisito a una oferta?",
         required: "Obligatorio",
         requiredVariant: "obligatorio",
         color: {
@@ -120,15 +120,15 @@ const ejes: EjeData[] = [
             valueBg: "bg-blue-50",
             valueCode: "bg-blue-100 text-blue-800",
         },
-        description: "Es el eje más importante del esquema. Un requerimiento puede tener más de un rol simultáneamente — por ejemplo, ser a la vez un filtro de admisibilidad y un factor puntuable.",
+        description: "Es el eje más importante del esquema. Un requisito puede tener más de un rol simultáneamente — por ejemplo, ser a la vez un filtro de admisibilidad y un factor puntuable.",
         values: [
             { name: "admisibilidad_obligatoria", description: "Requisito de cumplimiento obligatorio. Si la oferta no lo cumple, queda automáticamente fuera de evaluación. No genera puntaje.", example: "El oferente deberá presentar certificado vigente del BPS al momento de la apertura de ofertas." },
             { name: "admisibilidad_subsanable", description: "Requisito obligatorio que admite ser subsanado dentro de un plazo definido por el pliego (típicamente 24 a 72 horas). Si el oferente regulariza, no es causal de rechazo.", example: "La omisión de la firma en la planilla de cotización podrá subsanarse dentro del plazo de 48 horas." },
-            { name: "puntuable", description: "Requerimiento que entra en la fórmula de puntaje del pliego. Su cumplimiento contribuye al puntaje total de la oferta.", example: "Se otorgarán 15 puntos a quienes acrediten antecedentes positivos con organismos públicos." },
+            { name: "puntuable", description: "Requisito que entra en la fórmula de puntaje del pliego. Su cumplimiento contribuye al puntaje total de la oferta.", example: "Se otorgarán 15 puntos a quienes acrediten antecedentes positivos con organismos públicos." },
             { name: "penalizador", description: "Su incumplimiento o situación negativa resta puntos o incrementa el valor de comparación de la oferta. No rechaza la oferta, la castiga.", example: "Los antecedentes negativos en RUPE se restarán del puntaje total hasta un máximo de 12 puntos." },
             { name: "informativo", description: "Información que el pliego pide declarar pero que no afecta ni la admisibilidad ni el puntaje. Suele usarse para fines estadísticos.", example: "A efectos meramente informativos, el oferente declarará la cantidad de empleados de la empresa." },
             { name: "preferencia_legal", description: "Activa un régimen de preferencia previsto por la normativa vigente (PIN, MIPYMES, margen de preferencia nacional). La ley aplica una corrección sobre el resultado final.", example: "Las ofertas de productos calificados como PIN gozarán del margen de preferencia previsto en la Ley 18.362." },
-            { name: "desconocido_pendiente_pliego_general", description: "Solo se usa cuando la estrategia es 'delegado_pliego_general' y el documento general todavía no está disponible. Marca al requerimiento como pendiente de clasificación definitiva." },
+            { name: "desconocido_pendiente_pliego_general", description: "Solo se usa cuando la estrategia es 'delegado_pliego_general' y el documento general todavía no está disponible. Marca al requisito como pendiente de clasificación definitiva." },
         ],
         extra: (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
@@ -151,7 +151,7 @@ const ejes: EjeData[] = [
             valueBg: "bg-violet-50",
             valueCode: "bg-violet-100 text-violet-800",
         },
-        description: "Ata el requerimiento al factor concreto del pliego que lo evalúa. Los factores no son genéricos: los instancia el servicio de clasificación leyendo el pliego en cuestión. Si el extractor no logra atar un requerimiento a ningún factor existente, no puede inventar uno: el sistema lo degrada automáticamente y registra la situación para revisión humana.",
+        description: "Ata el requisito al factor concreto del pliego que lo evalúa. Los factores no son genéricos: los instancia el servicio de clasificación leyendo el pliego en cuestión. Si el extractor no logra atar un requisito a ningún factor existente, no puede inventar uno: el sistema lo degrada automáticamente y registra la situación para revisión humana.",
         extra: (
             <div className="space-y-3">
                 <div>
@@ -196,7 +196,7 @@ const ejes: EjeData[] = [
             valueBg: "bg-emerald-50",
             valueCode: "bg-emerald-100 text-emerald-800",
         },
-        description: "Describe el requerimiento desde el punto de vista temático. Es una taxonomía descriptiva, útil para navegar la lista, asignar revisiones a equipos especializados o filtrar reportes. No tiene efecto sobre el cálculo del puntaje.",
+        description: "Describe el requisito desde el punto de vista temático. Es una taxonomía descriptiva, útil para navegar la lista, asignar revisiones a equipos especializados o filtrar reportes. No tiene efecto sobre el cálculo del puntaje.",
         values: [
             { name: "tecnico", description: "Especificaciones técnicas del bien o servicio: características físicas, normas, procesos, capacidades, parámetros de calidad técnica." },
             { name: "administrativo", description: "Documentación, formularios, declaraciones juradas, inscripciones registrales, certificados de organismos públicos, formato de la oferta." },
@@ -207,7 +207,7 @@ const ejes: EjeData[] = [
             { name: "ambiental", description: "Cumplimiento de normativa ambiental, certificaciones, gestión de residuos, eficiencia energética." },
             { name: "calidad", description: "Sistemas de gestión de calidad, certificaciones ISO, controles de calidad, trazabilidad." },
             { name: "seguridad", description: "Seguridad e higiene laboral, planes de contingencia, equipos de protección, normativa de prevención de riesgos." },
-            { name: "otro", description: "Cualquier requerimiento que no encaje claramente en las categorías anteriores." },
+            { name: "otro", description: "Cualquier requisito que no encaje claramente en las categorías anteriores." },
         ],
     },
     {
@@ -222,7 +222,7 @@ const ejes: EjeData[] = [
             valueBg: "bg-amber-50",
             valueCode: "bg-amber-100 text-amber-800",
         },
-        description: "Captura cuánto suma o resta el requerimiento al puntaje total de la oferta. Es el reflejo numérico del Eje 2 a nivel del requerimiento individual. Para requerimientos no puntuables queda en {type: 'none', value: null, formula: null, block: null}.",
+        description: "Captura cuánto suma o resta el requisito al puntaje total de la oferta. Es el reflejo numérico del Eje 2 a nivel del requisito individual. Para requisitos no puntuables queda en {type: 'none', value: null, formula: null, block: null}.",
         values: [
             { name: "type", description: "Cómo se expresa el peso: points (puntos absolutos), percent (porcentaje del total), formula (cálculo literal del pliego), o none." },
             { name: "value", description: "Valor numérico del peso, si es extraíble. Puede ser negativo en penalizadores (ej: -12 para 'se restarán hasta 12 puntos')." },
@@ -232,7 +232,7 @@ const ejes: EjeData[] = [
     },
     {
         number: 5,
-        name: "Fuente del requerimiento",
+        name: "Fuente del requisito",
         question: "¿De qué documento proviene?",
         required: "No implementado",
         requiredVariant: "no_implementado",
@@ -243,7 +243,7 @@ const ejes: EjeData[] = [
             valueBg: "bg-zinc-50",
             valueCode: "bg-zinc-200 text-zinc-600",
         },
-        description: "La intención es identificar de qué documento proviene cada requerimiento (pliego particular, anexo, pliego general, ley, decreto). En la implementación actual, todos los archivos se unifican en un único documento markdown antes de indexarlos, perdiendo la pertenencia de cada fragmento a su documento original. La trazabilidad se mantiene a través de las citas.",
+        description: "La intención es identificar de qué documento proviene cada requisito (pliego particular, anexo, pliego general, ley, decreto). En la implementación actual, todos los archivos se unifican en un único documento markdown antes de indexarlos, perdiendo la pertenencia de cada fragmento a su documento original. La trazabilidad se mantiene a través de las citas.",
     },
     {
         number: 6,
@@ -257,7 +257,7 @@ const ejes: EjeData[] = [
             valueBg: "bg-cyan-50",
             valueCode: "bg-cyan-100 text-cyan-800",
         },
-        description: "Describe cómo se va a comprobar el cumplimiento del requerimiento al evaluar las propuestas. Alimenta directamente el checklist que el evaluador (humano o automatizado) debe seguir.",
+        description: "Describe cómo se va a comprobar el cumplimiento del requisito al evaluar las propuestas. Alimenta directamente el checklist que el evaluador (humano o automatizado) debe seguir.",
         values: [
             { name: "documento_adjunto", description: "Se verifica revisando un documento que el oferente debe adjuntar a la propuesta (folleto técnico, ficha de producto, certificado privado, planilla, etc.)." },
             { name: "declaracion_jurada", description: "Se verifica con una declaración jurada firmada por el oferente. La responsabilidad recae sobre quien declara." },
@@ -281,7 +281,7 @@ const ejes: EjeData[] = [
             valueBg: "bg-indigo-50",
             valueCode: "bg-indigo-100 text-indigo-800",
         },
-        description: "Describe cuándo debe cumplirse el requerimiento. La distinción importa porque cambia la naturaleza de la verificación: un requisito al momento de ofertar se evalúa sobre la propuesta, uno durante la ejecución solo puede verificarse contra el contrato firmado.",
+        description: "Describe cuándo debe cumplirse el requisito. La distinción importa porque cambia la naturaleza de la verificación: un requisito al momento de ofertar se evalúa sobre la propuesta, uno durante la ejecución solo puede verificarse contra el contrato firmado.",
         values: [
             { name: "al_momento_ofertar", description: "Debe cumplirse en el momento mismo de presentar la oferta. Es el caso más común: certificados vigentes, formularios completos, garantías de mantenimiento, etc." },
             { name: "previo_adjudicacion", description: "Debe cumplirse antes de que el organismo formalice la adjudicación, pero no necesariamente al momento de ofertar." },
@@ -308,10 +308,10 @@ export default function RequirementsEdgesPage() {
             <div className="mb-6">
                 <div className="flex items-center gap-3 mb-2">
                     <Layers className="w-6 h-6 text-zinc-400 shrink-0" />
-                    <h1 className="text-2xl font-semibold text-zinc-800 font-serif italic">Ejes de clasificación de requerimientos</h1>
+                    <h1 className="text-2xl font-semibold text-zinc-800 font-serif italic">Ejes de clasificación de requisitos</h1>
                 </div>
                 <p className="text-sm text-zinc-500">
-                    Cada requerimiento extraído de un pliego de licitación se describe usando un esquema multi-eje.
+                    Cada requisito extraído de un pliego de licitación se describe usando un esquema multi-eje.
                     Una sola etiqueta no alcanza: hace falta describirlo en varias dimensiones ortogonales para que
                     el motor de evaluación pueda usarlo correctamente.
                 </p>
@@ -342,14 +342,14 @@ export default function RequirementsEdgesPage() {
                     </div>
                     <div className="p-5 space-y-3">
                         <p className="text-sm text-zinc-600">
-                            Cada requerimiento conserva una o más citas que lo conectan con el texto literal del pliego.
-                            Son condición necesaria para que el sistema sea auditable: ningún requerimiento puede existir sin al menos una cita.
+                            Cada requisito conserva una o más citas que lo conectan con el texto literal del pliego.
+                            Son condición necesaria para que el sistema sea auditable: ningún requisito puede existir sin al menos una cita.
                         </p>
                         <div className="space-y-2">
                             {[
                                 { name: "chunk_id", description: "Identificador del chunk en la base vectorial. Permite recuperar el fragmento exacto del documento original." },
-                                { name: "page", description: "Referencia textual a la página, sección o artículo del pliego donde aparece el requerimiento (ej: 'Pliego particular, art. 12.1')." },
-                                { name: "snippet", description: "Cita literal corta (hasta 300 caracteres) tomada del texto original. Es la huella textual del requerimiento." },
+                                { name: "page", description: "Referencia textual a la página, sección o artículo del pliego donde aparece el requisito (ej: 'Pliego particular, art. 12.1')." },
+                                { name: "snippet", description: "Cita literal corta (hasta 300 caracteres) tomada del texto original. Es la huella textual del requisito." },
                             ].map(({ name, description }) => (
                                 <ValueRow key={name} name={name} description={description} color={{ valueBg: "bg-rose-50", valueCode: "bg-rose-100 text-rose-800", badge: "", border: "" }} />
                             ))}

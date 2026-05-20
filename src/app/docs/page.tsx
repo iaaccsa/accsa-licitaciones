@@ -5,8 +5,8 @@ const docs = [
     {
         href: "/docs/requirements_edges",
         icon: Layers,
-        title: "Ejes de clasificación de requerimientos",
-        description: "Esquema multi-eje para describir requerimientos extraídos de pliegos de licitación.",
+        title: "Ejes de clasificación de requisitos",
+        description: "Esquema multi-eje para describir requisitos extraídos de pliegos de licitación.",
     },
     {
         href: "/docs/tender_evaluation_types",

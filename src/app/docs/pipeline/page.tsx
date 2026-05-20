@@ -271,23 +271,23 @@ export default function PipelinePage() {
                     <p className="text-xs text-zinc-500">Persiste en <code className="font-mono bg-zinc-100 px-1 rounded">tender_classifications</code> con <code className="font-mono bg-zinc-100 px-1 rounded">profile_version = 2</code>.</p>
                 </StageCard>
 
-                <StageCard code="service-requirement-extractor" label="Extracción de Requerimientos" number={12} variant="implemented" tags={["pause_after (HITL)"]}>
-                    <p>Recorre todos los chunks del pliego unificado, extrae requerimientos atómicos y los clasifica según el esquema multi-eje (Eje 1 rol, Eje 2 factor, Eje 3 dominio, Eje 4 peso, Eje 6 método de verificación, Eje 7 obligatoriedad temporal; Eje 5 diferido).</p>
+                <StageCard code="service-requirement-extractor" label="Extracción de Requisitos" number={12} variant="implemented" tags={["pause_after (HITL)"]}>
+                    <p>Recorre todos los chunks del pliego unificado, extrae requisitos atómicos y los clasifica según el esquema multi-eje (Eje 1 rol, Eje 2 factor, Eje 3 dominio, Eje 4 peso, Eje 6 método de verificación, Eje 7 obligatoriedad temporal; Eje 5 diferido).</p>
                     <p>Persiste en <code className="font-mono text-xs bg-zinc-100 px-1 rounded">analysis_requirements</code> con código <code className="font-mono text-xs bg-zinc-100 px-1 rounded">REQ-001</code>, <code className="font-mono text-xs bg-zinc-100 px-1 rounded">REQ-002</code>, etc.</p>
-                    <p>Pausa después para que el evaluador humano revise y marque como <code className="font-mono text-xs bg-zinc-100 px-1 rounded">is_verified</code> los requerimientos críticos antes de avanzar a la evaluación de propuestas.</p>
+                    <p>Pausa después para que el evaluador humano revise y marque como <code className="font-mono text-xs bg-zinc-100 px-1 rounded">is_verified</code> los requisitos críticos antes de avanzar a la evaluación de propuestas.</p>
                 </StageCard>
             </div>
 
             <BlockTitle>Bloque D — Evaluación de propuestas</BlockTitle>
             <div className="space-y-3">
                 <StageCard code="service-compliance-matcher" label="Matcher de Cumplimiento" number={13} variant="implemented" tags={["pause_after (HITL)", "fan_out: propuesta"]}>
-                    <p>Por cada propuesta lanza un job que, para cada requerimiento del pliego, decide si la propuesta cumple usando RAG focalizado sobre los chunks de esa propuesta y una llamada LLM dedicada por requerimiento.</p>
+                    <p>Por cada propuesta lanza un job que, para cada requisito del pliego, decide si la propuesta cumple usando RAG focalizado sobre los chunks de esa propuesta y una llamada LLM dedicada por requisito.</p>
                     <FieldList fields={[
-                        { name: "cumple", description: "La propuesta satisface el requerimiento." },
+                        { name: "cumple", description: "La propuesta satisface el requisito." },
                         { name: "cumple_parcial", description: "Cumplimiento parcial documentado." },
-                        { name: "no_cumple", description: "La propuesta no satisface el requerimiento." },
+                        { name: "no_cumple", description: "La propuesta no satisface el requisito." },
                         { name: "no_evidencia", description: "No se encontró evidencia en la propuesta." },
-                        { name: "no_aplica", description: "El requerimiento no aplica a esta propuesta." },
+                        { name: "no_aplica", description: "El requisito no aplica a esta propuesta." },
                         { name: "requiere_verificacion_manual", description: "Se requiere revisión humana." },
                     ]} />
                     <p className="text-xs text-zinc-500">Escribe <code className="font-mono bg-zinc-100 px-1 rounded">analysis_compliance_matrix</code>. El gate permite al evaluador revisar y ajustar veredictos vía HITL.</p>
@@ -298,7 +298,7 @@ export default function PipelinePage() {
                     <FieldList fields={[
                         { name: "compliance_rate", description: "Tasa de cumplimiento global de la propuesta." },
                         { name: "compliance_counts", description: "Conteos por veredicto." },
-                        { name: "critical_failures_count", description: "Cantidad de fallas en requerimientos críticos." },
+                        { name: "critical_failures_count", description: "Cantidad de fallas en requisitos críticos." },
                     ]} />
                     <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 text-xs text-zinc-500">
                         Este es hoy el <strong>nodo final</strong> del grafo de servicios. Después de que todas las propuestas están en <code className="font-mono bg-zinc-100 px-1 rounded">completed</code>, el pipeline se detiene. La decisión de adjudicación queda fuera del sistema automatizado.
@@ -411,7 +411,7 @@ export default function PipelinePage() {
                     variant="optional"
                     tags={["fan_out: propuesta"]}
                 >
-                    <p>Reemplaza parte del flujo HITL consultando fuentes externas para validar requerimientos marcados como <code className="font-mono text-xs bg-zinc-100 px-1 rounded">requiere_verificacion_manual</code> o con <code className="font-mono text-xs bg-zinc-100 px-1 rounded">verification_method = certificado_externo</code>.</p>
+                    <p>Reemplaza parte del flujo HITL consultando fuentes externas para validar requisitos marcados como <code className="font-mono text-xs bg-zinc-100 px-1 rounded">requiere_verificacion_manual</code> o con <code className="font-mono text-xs bg-zinc-100 px-1 rounded">verification_method = certificado_externo</code>.</p>
                     <p className="mt-1">Integraciones candidatas: <strong>RUPE</strong>, <strong>BPS</strong>, <strong>DGI</strong>, <strong>BSE</strong>.</p>
                     <p className="text-xs text-zinc-500 mt-2">
                         <strong>Por qué es opcional:</strong> depende de que las integraciones estén disponibles, autenticadas y tengan SLAs aceptables. Sin este servicio, la pipeline sigue funcionando con HITL.<br />

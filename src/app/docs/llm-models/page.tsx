@@ -42,7 +42,7 @@ const services = [
     },
     {
         code: "service-requirement-extractor",
-        task: "Extraer requerimientos atómicos del pliego vía RAG iterativo",
+        task: "Extraer requisitos atómicos del pliego vía RAG iterativo",
         complexity: "Alta" as const,
         primary: "gemini-2.5-flash",
         fallback: "gpt-4.1-nano",
@@ -50,11 +50,11 @@ const services = [
     },
     {
         code: "service-compliance-matcher",
-        task: "Evaluar cumplimiento de cada requerimiento por propuesta",
+        task: "Evaluar cumplimiento de cada requisito por propuesta",
         complexity: "Media" as const,
         primary: "gemini-2.5-flash",
         fallback: "gpt-4.1-mini",
-        reason: "Evaluación individual por requerimiento con RAG. Volumen alto (1 llamada por requerimiento por propuesta).",
+        reason: "Evaluación individual por requisito con RAG. Volumen alto (1 llamada por requisito por propuesta).",
     },
     {
         code: "service-compliance-summarizer",

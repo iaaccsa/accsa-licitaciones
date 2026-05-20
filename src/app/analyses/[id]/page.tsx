@@ -237,7 +237,7 @@ export default function AnalysisDetailPage() {
                     </div>
                     <div className="flex-1 space-y-1">
                         <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-green-600 transition-colors">
-                            Requerimientos
+                            Requisitos
                         </h3>
                         <p className="text-sm text-zinc-500">
                             Ver matriz de cumplimiento

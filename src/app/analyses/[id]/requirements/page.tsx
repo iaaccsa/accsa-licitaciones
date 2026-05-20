@@ -162,7 +162,7 @@ export default function RequirementsPage() {
         else setIsLoading(true);
         try {
             const response = await fetch(buildUrl(off, admissibility));
-            if (!response.ok) throw new Error("Error al cargar los requerimientos");
+            if (!response.ok) throw new Error("Error al cargar los requisitos");
             const data: AnalysisRequirementRead[] = await response.json();
             const items = Array.isArray(data) ? data : [];
             setRequirements(prev => append ? [...prev, ...items] : items);
@@ -298,7 +298,7 @@ export default function RequirementsPage() {
                     </button>
                     <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
                         <ClipboardList className="w-6 h-6 text-green-600" />
-                        Requerimientos
+                        Requisitos
                     </h1>
                 </div>
                 {analysis && (
@@ -321,13 +321,13 @@ export default function RequirementsPage() {
                     onClick={() => handleFilterAdmissibility(true)}
                     className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterAdmissibility === true ? "bg-violet-600 text-white border-violet-600" : "bg-white text-violet-700 border-violet-200 hover:bg-violet-50"}`}
                 >
-                    Admisibilidad
+                    Excluyentes (Admisibilidad)
                 </button>
                 <button
                     onClick={() => handleFilterAdmissibility(false)}
                     className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterAdmissibility === false ? "bg-zinc-700 text-white border-zinc-700" : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100"}`}
                 >
-                    No admisibilidad
+                    No Excluyentes (Otros requisitos)
                 </button>
             </div>
 
@@ -490,7 +490,7 @@ export default function RequirementsPage() {
                                                 }`}
                                             >
                                                 <CheckCircle2 className={`w-3.5 h-3.5 ${req.is_verified ? "text-green-600" : "text-zinc-400"}`} />
-                                                {req.is_verified ? "Confirmado" : "Confirmar requerimiento"}
+                                                {req.is_verified ? "Confirmado" : "Confirmar requisito"}
                                             </button>
                                         </div>
                                     </div>
@@ -502,8 +502,8 @@ export default function RequirementsPage() {
                             <div className="bg-zinc-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                                 <ClipboardList className="w-6 h-6 text-zinc-400" />
                             </div>
-                            <p className="text-zinc-500 font-medium">No se encontraron requerimientos</p>
-                            <p className="text-zinc-400 text-sm mt-1">Este análisis no tiene requerimientos asociados.</p>
+                            <p className="text-zinc-500 font-medium">No se encontraron requisitos</p>
+                            <p className="text-zinc-400 text-sm mt-1">Este análisis no tiene requisitos asociados.</p>
                         </div>
                     )}
 
@@ -527,7 +527,7 @@ export default function RequirementsPage() {
                         )}
                         {!hasMore && requirements.length > 0 && (
                             <p className="text-center text-xs text-zinc-400 py-4">
-                                {requirements.length} requerimientos cargados
+                                {requirements.length} requisitos cargados
                             </p>
                         )}
                     </div>
