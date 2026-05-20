@@ -883,7 +883,7 @@ def process_extraction():
     gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
-    log_event(ANALYSIS_ID, "info", "Iniciando extracción de requerimientos con clasificación multi-eje...", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", "Iniciando extracción de requisitos con clasificación multi-eje...", EVENT_SOURCE)
 
     # 1. Get analysis slug
     analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
@@ -1016,7 +1016,7 @@ def process_extraction():
     p95_batch_seconds = duration_values[int(len(duration_values) * 0.95) - 1] if duration_values else 0.0
 
     summary = (
-        f"Extraccion completada: {len(cleaned)} requerimientos | "
+        f"Extraccion completada: {len(cleaned)} requisitos | "
         f"batches fallidos: {failed_batches}/{len(batches)} | "
         f"warnings de validacion: {len(validation_warnings)}"
     )

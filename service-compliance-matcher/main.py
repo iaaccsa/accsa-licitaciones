@@ -293,7 +293,7 @@ def apply_auto_filters(requirements: List[dict]):
                 requirement_id=req_id,
                 verdict="no_aplica",
                 confidence="alta",
-                reasoning="Requerimiento de rol informativo/preferencia_legal/pendiente; no requiere evaluacion automatica.",
+                reasoning="Requisito de rol informativo/preferencia_legal/pendiente; no requiere evaluacion automatica.",
             ))
         elif _is_auto_manual(req):
             auto_manual.append(FinalComplianceEntry(
@@ -487,7 +487,7 @@ async def evaluate_and_persist(
             requirement_id=req_id,
             verdict="requiere_verificacion_manual",
             confidence="muy_baja",
-            reasoning="El modelo LLM no pudo procesar este requerimiento automaticamente. Requiere evaluacion manual.",
+            reasoning="El modelo LLM no pudo procesar este requisito automaticamente. Requiere evaluacion manual.",
             manual_verification_required=True,
             notes=f"LLM_FAILURE: {last_error}",
         )
@@ -541,7 +541,7 @@ async def process_compliance_matching_async():
         requirements = load_requirements(ANALYSIS_ID)
 
         if not requirements:
-            msg = "No se encontraron requerimientos verificados (is_verified=true). Verificar que los requerimientos hayan sido validados antes de iniciar el matching."
+            msg = "No se encontraron requisitos verificados (is_verified=true). Verificar que los requisitos hayan sido validados antes de iniciar el matching."
             log_event(ANALYSIS_ID, "warning", msg, EVENT_SOURCE)
             mark_failed(ANALYSIS_ID, msg, EVENT_SOURCE)
             raise RuntimeError(msg)
@@ -549,7 +549,7 @@ async def process_compliance_matching_async():
         _profile = load_evaluation_profile(ANALYSIS_ID)  # context, not blocking
 
         logger.info(f"Loaded {len(requirements)} requirements.")
-        log_event(ANALYSIS_ID, "info", f"Evaluando {len(requirements)} requerimientos contra propuesta {proposal.get('label', PROPOSAL_ID)}...", EVENT_SOURCE)
+        log_event(ANALYSIS_ID, "info", f"Evaluando {len(requirements)} requisitos contra propuesta {proposal.get('label', PROPOSAL_ID)}...", EVENT_SOURCE)
 
         auto_na, auto_mn, needs_llm = apply_auto_filters(requirements)
 

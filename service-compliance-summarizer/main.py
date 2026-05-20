@@ -88,7 +88,7 @@ def build_user_prompt(
     rate_str = (
         f"{metrics.compliance_rate} %"
         if metrics.compliance_rate is not None
-        else "N/A (sin requerimientos aplicables)"
+        else "N/A (sin requisitos aplicables)"
     )
     counts = metrics.compliance_counts
 

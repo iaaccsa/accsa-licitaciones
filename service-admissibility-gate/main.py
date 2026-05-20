@@ -235,7 +235,7 @@ def evaluate_admissibility(
                 "requirement_id": req_id,
                 "requirement_code": req_code,
                 "verdict": None,
-                "reasoning": "No se encontro entrada en la matriz de cumplimiento para este requerimiento de admisibilidad obligatoria.",
+                "reasoning": "No se encontro entrada en la matriz de cumplimiento para este requisito de admisibilidad obligatoria.",
             })
             continue
 
@@ -279,7 +279,7 @@ def process_admissibility_gate():
             # No admissibility requirements -> auto-admit
             logger.info("No admissibility requirements found. Proposal auto-admitted.")
             log_event(ANALYSIS_ID, "info",
-                      f"Propuesta {label}: no hay requerimientos de admisibilidad. Admitida automaticamente.",
+                      f"Propuesta {label}: no hay requisitos de admisibilidad. Admitida automaticamente.",
                       EVENT_SOURCE)
             mark_admissibility_result(PROPOSAL_ID, "admitida", [])
             notify_success()
