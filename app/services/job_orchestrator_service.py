@@ -4,7 +4,7 @@ from uuid import UUID
 
 from app.core.azure import azure_container_apps_client
 from app.core.config import get_settings
-from app.config.jobs_config import get_root_jobs, get_next_jobs, get_parent_jobs, is_valid_job, is_final_job, is_fan_out_job, get_fan_out_type, is_pause_after_job, get_requires_admitida, get_step_code_for_service
+from app.config.jobs_config import get_root_jobs, get_next_jobs, get_parent_jobs, is_valid_job, is_final_job, get_final_jobs, is_fan_out_job, get_fan_out_type, is_pause_after_job, get_requires_admitida, get_step_code_for_service
 from app.repositories.original_file_repository import original_file_repository
 from app.repositories.processed_file_repository import processed_file_repository
 from app.repositories.proposal_repository import proposal_repository
@@ -182,12 +182,7 @@ class JobOrchestratorService:
                 analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
 
         if is_final_job(service_name):
-            analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": True})
-            logger.info(
-                f"Pipeline completed for analysis_id={analysis_id}. "
-                f"Last job was: {service_name}"
-            )
-            self._notify_by_email(analysis_id, "completed")
+            self._maybe_finalize_pipeline(analysis_id, service_name)
 
         return launched
 
@@ -218,6 +213,13 @@ class JobOrchestratorService:
                 items = processed_file_repository.get_by_analysis_id(analysis_id)
             if not items:
                 logger.warning(f"No {fan_out_type} items found for analysis_id={analysis_id}, skipping fan-out job {next_job}")
+                if is_final_job(next_job):
+                    try:
+                        workflow_step_service.start_step_by_service(str(analysis_id), next_job, instances_count=0)
+                        workflow_step_service.complete_step_by_service(str(analysis_id), next_job)
+                    except Exception as e:
+                        logger.error(f"Failed to auto-complete empty terminal {next_job}: {e}")
+                    self._maybe_finalize_pipeline(analysis_id, next_job)
                 return []
 
             logger.info(f"Fan-out: launching {len(items)} instances of {next_job} for analysis_id={analysis_id}")
@@ -514,6 +516,30 @@ class JobOrchestratorService:
             f"Análisis cancelado por timeout. Steps timed-out: {timed_out_step_codes}",
             {"timed_out_steps": timed_out_step_codes, "source": "job_monitor"},
         )
+
+    def _maybe_finalize_pipeline(self, analysis_id: UUID, completed_service: str) -> None:
+        """If every is_final service has its workflow step completed, flip analysis to ready."""
+        final_services = get_final_jobs()
+        all_done = all(
+            workflow_step_service.is_step_completed_by_service(str(analysis_id), s)
+            for s in final_services
+        )
+        if not all_done:
+            logger.info(
+                f"Final job {completed_service} done, but other finals still pending "
+                f"for analysis_id={analysis_id}. Waiting."
+            )
+            return
+
+        analysis_repository.update_by_id(
+            str(analysis_id),
+            {"status": "ready", "is_success": True},
+        )
+        logger.info(
+            f"Pipeline completed for analysis_id={analysis_id}. "
+            f"All final jobs done: {final_services}"
+        )
+        self._notify_by_email(analysis_id, "completed")
 
     def _notify_by_email(self, analysis_id: UUID, reason: str) -> None:
         """Send email notification if user_email is set and belongs to the allowed domain."""

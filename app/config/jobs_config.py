@@ -63,6 +63,11 @@ def is_final_job(job_name: str) -> bool:
     return any(entry["service"] == job_name and entry.get("is_final", False) for entry in _jobs_config)
 
 
+def get_final_jobs() -> List[str]:
+    """Return all service names marked is_final=true in pipeline config."""
+    return [entry["service"] for entry in _jobs_config if entry.get("is_final", False)]
+
+
 def is_fan_out_job(job_name: str) -> bool:
     """Return True if the job has a fan_out_by field in the pipeline config."""
     return any(entry["service"] == job_name and entry.get("fan_out_by") for entry in _jobs_config)

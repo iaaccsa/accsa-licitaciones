@@ -196,7 +196,7 @@
     "require_admitida": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": false,
+    "is_final": true,
     "pause_after": false,
     "fan_out_by": "proposal",
     "phase": "final_compliance_check"
@@ -210,7 +210,7 @@
     "require_admitida": true,
     "initial_status": "pending",
     "is_initial": false,
-    "is_final": false,
+    "is_final": true,
     "pause_after": false,
     "fan_out_by": "proposal",
     "phase": "final_compliance_check"
