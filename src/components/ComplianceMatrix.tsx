@@ -384,11 +384,10 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                             : [...f.verdicts, v],
                                     }))
                                 }
-                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                                    active
-                                        ? cfg.color
-                                        : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
-                                }`}
+                                className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${active
+                                    ? cfg.color
+                                    : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
+                                    }`}
                             >
                                 {cfg.icon}
                                 {cfg.label}
@@ -421,11 +420,10 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                             : [...f.roles, r],
                                     }))
                                 }
-                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                                    active
-                                        ? "bg-zinc-800 text-white border-zinc-800"
-                                        : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
-                                }`}
+                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${active
+                                    ? "bg-zinc-800 text-white border-zinc-800"
+                                    : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
+                                    }`}
                             >
                                 {ROLE_LABELS[r]}
                             </button>
@@ -457,11 +455,10 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                             : [...f.verificationMethods, vm],
                                     }))
                                 }
-                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
-                                    active
-                                        ? "bg-zinc-800 text-white border-zinc-800"
-                                        : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
-                                }`}
+                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${active
+                                    ? "bg-zinc-800 text-white border-zinc-800"
+                                    : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
+                                    }`}
                             >
                                 {VERIFICATION_METHOD_LABELS[vm]}
                             </button>
@@ -481,7 +478,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                 <div className="flex items-center gap-3 flex-wrap text-xs">
                     {(
                         [
-                            { key: "isAdmissibility", trueLabel: "Admisibilidad", falseLabel: "Otros" },
+                            { key: "isAdmissibility", trueLabel: "Excluyentes (Admisibilidad)", falseLabel: "No excluyentes (Otros)" },
                             { key: "isVerified", trueLabel: "Solo verificados", falseLabel: "Sin verificar" },
                             { key: "manualVerificationRequired", trueLabel: "Requieren revisión", falseLabel: "No requieren revisión" },
                         ] as const
@@ -493,11 +490,10 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                     <button
                                         key={String(opt)}
                                         onClick={() => setFilters((f) => ({ ...f, [key]: opt }))}
-                                        className={`px-2.5 py-1 transition-colors ${
-                                            val === opt
-                                                ? "bg-zinc-800 text-white font-medium"
-                                                : "text-zinc-500 hover:bg-zinc-50"
-                                        }`}
+                                        className={`px-2.5 py-1 transition-colors ${val === opt
+                                            ? "bg-zinc-800 text-white font-medium"
+                                            : "text-zinc-500 hover:bg-zinc-50"
+                                            }`}
                                     >
                                         {opt === null ? "Todos" : opt ? trueLabel : falseLabel}
                                     </button>
@@ -550,9 +546,8 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                         return (
                             <div
                                 key={entry.id}
-                                className={`bg-white rounded-xl border transition-all ${
-                                    isExpanded ? "border-zinc-300 shadow-sm" : "border-zinc-200 hover:border-zinc-300"
-                                }`}
+                                className={`bg-white rounded-xl border transition-all ${isExpanded ? "border-zinc-300 shadow-sm" : "border-zinc-200 hover:border-zinc-300"
+                                    }`}
                             >
                                 {/* Row header */}
                                 <button
@@ -860,11 +855,10 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                             <button
                                 key={item}
                                 onClick={() => item !== currentPage && fetchPage(item)}
-                                className={`min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium transition-colors ${
-                                    item === currentPage
-                                        ? "bg-zinc-900 text-white"
-                                        : "text-zinc-600 hover:bg-zinc-100"
-                                }`}
+                                className={`min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium transition-colors ${item === currentPage
+                                    ? "bg-zinc-900 text-white"
+                                    : "text-zinc-600 hover:bg-zinc-100"
+                                    }`}
                             >
                                 {item}
                             </button>

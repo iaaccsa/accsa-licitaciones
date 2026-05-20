@@ -327,7 +327,7 @@ export default function RequirementsPage() {
                     onClick={() => handleFilterAdmissibility(false)}
                     className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterAdmissibility === false ? "bg-zinc-700 text-white border-zinc-700" : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100"}`}
                 >
-                    No Excluyentes (Otros requisitos)
+                    No Excluyentes (Otros)
                 </button>
             </div>
 
@@ -473,21 +473,19 @@ export default function RequirementsPage() {
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => handleAdmissibilityToggle(req)}
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                                                    req.is_admissibility
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${req.is_admissibility
                                                         ? "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100"
                                                         : "bg-zinc-50 text-zinc-500 border-zinc-200 hover:bg-zinc-100"
-                                                }`}
+                                                    }`}
                                             >
                                                 {req.is_admissibility ? "Quitar admisibilidad" : "Marcar admisibilidad"}
                                             </button>
                                             <button
                                                 onClick={() => handleVerifyToggle(req)}
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-                                                    req.is_verified
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${req.is_verified
                                                         ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
                                                         : "bg-zinc-50 text-zinc-500 border-zinc-200 hover:bg-zinc-100"
-                                                }`}
+                                                    }`}
                                             >
                                                 <CheckCircle2 className={`w-3.5 h-3.5 ${req.is_verified ? "text-green-600" : "text-zinc-400"}`} />
                                                 {req.is_verified ? "Confirmado" : "Confirmar requisito"}
