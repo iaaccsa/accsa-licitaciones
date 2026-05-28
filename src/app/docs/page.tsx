@@ -1,7 +1,13 @@
 import Link from "next/link";
-import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit } from "lucide-react";
+import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit, Network } from "lucide-react";
 
 const docs = [
+    {
+        href: "/docs/architecture",
+        icon: Network,
+        title: "Arquitectura del sistema",
+        description: "Vision general de los tres proyectos, pipeline de procesamiento, infraestructura compartida y flujo de datos.",
+    },
     {
         href: "/docs/requirements_edges",
         icon: Layers,
