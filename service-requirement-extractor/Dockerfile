@@ -14,6 +14,7 @@ ARG API_ANALYSES_PATH
 ARG API_PROCESSED_FILES_PATH
 ARG API_TENDER_CLASSIFICATIONS_PATH
 ARG API_ANALYSIS_REQUIREMENTS_PATH
+ARG API_ADMISSIBILITY_REQUIREMENTS_PATH
 ARG API_JOBS_CALLBACK
 
 # Environment variables
@@ -28,6 +29,7 @@ ENV API_ANALYSES_PATH=$API_ANALYSES_PATH
 ENV API_PROCESSED_FILES_PATH=$API_PROCESSED_FILES_PATH
 ENV API_TENDER_CLASSIFICATIONS_PATH=$API_TENDER_CLASSIFICATIONS_PATH
 ENV API_ANALYSIS_REQUIREMENTS_PATH=$API_ANALYSIS_REQUIREMENTS_PATH
+ENV API_ADMISSIBILITY_REQUIREMENTS_PATH=$API_ADMISSIBILITY_REQUIREMENTS_PATH
 ENV API_JOBS_CALLBACK=$API_JOBS_CALLBACK
 
 # Validate required build arguments
@@ -42,6 +44,7 @@ RUN test -n "$API_ANALYSES_PATH" || (echo "ERROR: API_ANALYSES_PATH is required"
 RUN test -n "$API_PROCESSED_FILES_PATH" || (echo "ERROR: API_PROCESSED_FILES_PATH is required" && exit 1)
 RUN test -n "$API_TENDER_CLASSIFICATIONS_PATH" || (echo "ERROR: API_TENDER_CLASSIFICATIONS_PATH is required" && exit 1)
 RUN test -n "$API_ANALYSIS_REQUIREMENTS_PATH" || (echo "ERROR: API_ANALYSIS_REQUIREMENTS_PATH is required" && exit 1)
+RUN test -n "$API_ADMISSIBILITY_REQUIREMENTS_PATH" || (echo "ERROR: API_ADMISSIBILITY_REQUIREMENTS_PATH is required" && exit 1)
 RUN test -n "$API_JOBS_CALLBACK" || (echo "ERROR: API_JOBS_CALLBACK is required" && exit 1)
 
 # Validate API path formats (must start with /api/)
@@ -51,6 +54,7 @@ RUN for entry in \
       "API_PROCESSED_FILES_PATH=$API_PROCESSED_FILES_PATH" \
       "API_TENDER_CLASSIFICATIONS_PATH=$API_TENDER_CLASSIFICATIONS_PATH" \
       "API_ANALYSIS_REQUIREMENTS_PATH=$API_ANALYSIS_REQUIREMENTS_PATH" \
+      "API_ADMISSIBILITY_REQUIREMENTS_PATH=$API_ADMISSIBILITY_REQUIREMENTS_PATH" \
       "API_JOBS_CALLBACK=$API_JOBS_CALLBACK"; do \
     name="${entry%%=*}"; val="${entry#*=}"; \
     case "$val" in /api/*) ;; *) echo "ERROR: $name must start with /api/ (got: $val)" && exit 1 ;; esac; \
@@ -64,7 +68,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY global/supabase_logger.py .
 
 # Copy application code
-COPY service-requirement-extractor/main.py service-requirement-extractor/prompt_requirements_extractor.md .
+COPY service-requirement-extractor/main.py service-requirement-extractor/prompt_requirements_extractor.md service-requirement-extractor/prompt_admissibility_extractor.md .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

@@ -20,6 +20,8 @@ Required environment variables:
   - API_ANALYSES_PATH
   - API_PROPOSALS_PATH
   - API_ANALYSIS_REQUIREMENTS_PATH
+  - API_ADMISSIBILITY_REQUIREMENTS_PATH
+  - API_ADMISSIBILITY_RESULTS_PATH
   - API_TENDER_CLASSIFICATIONS_PATH
   - API_COMPLIANCE_MATRIX_PATH
   - API_JOBS_CALLBACK
@@ -32,7 +34,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Literal, Optional
+from typing import Callable, Dict, List, Literal, Optional
 
 import requests
 from google import genai
@@ -57,6 +59,8 @@ API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
 API_ANALYSIS_REQUIREMENTS_PATH = os.environ.get("API_ANALYSIS_REQUIREMENTS_PATH")
+API_ADMISSIBILITY_REQUIREMENTS_PATH = os.environ.get("API_ADMISSIBILITY_REQUIREMENTS_PATH")
+API_ADMISSIBILITY_RESULTS_PATH = os.environ.get("API_ADMISSIBILITY_RESULTS_PATH")
 API_TENDER_CLASSIFICATIONS_PATH = os.environ.get("API_TENDER_CLASSIFICATIONS_PATH")
 API_COMPLIANCE_MATRIX_PATH = os.environ.get("API_COMPLIANCE_MATRIX_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
@@ -156,6 +160,8 @@ def validate_env():
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
             ("API_PROPOSALS_PATH", API_PROPOSALS_PATH),
             ("API_ANALYSIS_REQUIREMENTS_PATH", API_ANALYSIS_REQUIREMENTS_PATH),
+            ("API_ADMISSIBILITY_REQUIREMENTS_PATH", API_ADMISSIBILITY_REQUIREMENTS_PATH),
+            ("API_ADMISSIBILITY_RESULTS_PATH", API_ADMISSIBILITY_RESULTS_PATH),
             ("API_TENDER_CLASSIFICATIONS_PATH", API_TENDER_CLASSIFICATIONS_PATH),
             ("API_COMPLIANCE_MATRIX_PATH", API_COMPLIANCE_MATRIX_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
@@ -253,6 +259,21 @@ def load_requirements(analysis_id: str) -> List[dict]:
         result = api_request("GET", f"{API_ANALYSIS_REQUIREMENTS_PATH}{analysis_id}", params={"limit": limit, "offset": offset, "is_verified": "true"})
         if not isinstance(result, list):
             raise RuntimeError(f"Unexpected response from analysis-requirements: {type(result)}")
+        all_requirements.extend(result)
+        if len(result) < limit:
+            break
+        offset += limit
+    return all_requirements
+
+
+def load_admissibility_requirements(analysis_id: str) -> List[dict]:
+    all_requirements = []
+    limit = 100
+    offset = 0
+    while True:
+        result = api_request("GET", f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}{analysis_id}", params={"limit": limit, "offset": offset})
+        if not isinstance(result, list):
+            raise RuntimeError(f"Unexpected response from admissibility-requirements: {type(result)}")
         all_requirements.extend(result)
         if len(result) < limit:
             break
@@ -456,6 +477,7 @@ async def evaluate_and_persist(
     semaphore: asyncio.Semaphore,
     analysis_id: str,
     proposal_id: str,
+    persist_fn: Callable[[str, str, List[FinalComplianceEntry]], None],
 ) -> FinalComplianceEntry:
     async with semaphore:
         req_id = str(req["id"])
@@ -466,14 +488,14 @@ async def evaluate_and_persist(
             try:
                 llm_entry = await asyncio.to_thread(_call_gemini_sync, gemini, user_prompt)
                 entry = post_process_single(llm_entry, req, chunks)
-                await asyncio.to_thread(post_matrix_entries, analysis_id, proposal_id, [entry])
+                await asyncio.to_thread(persist_fn, analysis_id, proposal_id, [entry])
                 return entry
             except Exception as e_gemini:
                 logger.warning(f"req {req_id} attempt {attempt}: Gemini failed ({e_gemini}), trying OpenAI...")
                 try:
                     llm_entry = await asyncio.to_thread(_call_openai_sync, openai_client, user_prompt)
                     entry = post_process_single(llm_entry, req, chunks)
-                    await asyncio.to_thread(post_matrix_entries, analysis_id, proposal_id, [entry])
+                    await asyncio.to_thread(persist_fn, analysis_id, proposal_id, [entry])
                     return entry
                 except Exception as e_openai:
                     last_error = e_openai
@@ -491,8 +513,63 @@ async def evaluate_and_persist(
             manual_verification_required=True,
             notes=f"LLM_FAILURE: {last_error}",
         )
-        await asyncio.to_thread(post_matrix_entries, analysis_id, proposal_id, [entry])
+        await asyncio.to_thread(persist_fn, analysis_id, proposal_id, [entry])
         return entry
+
+
+async def run_matching_pass(
+    gemini: genai.Client,
+    openai_client: OpenAI,
+    qdrant: QdrantClient,
+    proposal: dict,
+    requirements: List[dict],
+    slug: str,
+    analysis_id: str,
+    proposal_id: str,
+    persist_fn: Callable[[str, str, List[FinalComplianceEntry]], None],
+    label: str,
+) -> List[FinalComplianceEntry]:
+    """Match a set of requirements against PROPOSAL_{slug}_{proposal_id} and persist verdicts."""
+    auto_na, auto_mn, needs_llm = apply_auto_filters(requirements)
+
+    await asyncio.to_thread(persist_fn, analysis_id, proposal_id, auto_na + auto_mn)
+
+    chunks_by_req: Dict[str, List[dict]] = {}
+    for req in needs_llm:
+        req_id = str(req["id"])
+        chunks_by_req[req_id] = rag_search_proposal_chunks(
+            qdrant, openai_client, slug,
+            analysis_id, proposal_id,
+            req["requirement_text"], RAG_TOP_K,
+        )
+
+    semaphore = asyncio.Semaphore(MAX_CONCURRENT_LLM_CALLS)
+    coros = [
+        evaluate_and_persist(
+            gemini, openai_client, proposal,
+            req, chunks_by_req[str(req["id"])], semaphore,
+            analysis_id, proposal_id, persist_fn,
+        )
+        for req in needs_llm
+    ]
+    llm_entries: List[FinalComplianceEntry] = await asyncio.gather(*coros)
+
+    failure_count = sum(
+        1 for e in llm_entries
+        if e.notes and e.notes.startswith("LLM_FAILURE")
+    )
+    if needs_llm and (failure_count / len(needs_llm)) > MAX_LLM_FAILURE_RATIO:
+        raise RuntimeError(
+            f"{label}: LLM failure ratio exceeded threshold: {failure_count}/{len(needs_llm)} "
+            f"({100 * failure_count // len(needs_llm)}% > {int(MAX_LLM_FAILURE_RATIO * 100)}%)"
+        )
+
+    all_entries = list(auto_na) + list(auto_mn) + list(llm_entries)
+    logger.info(
+        f"{label}: {len(all_entries)} entries | no_aplica: {len(auto_na)} | "
+        f"manual: {len(auto_mn)} | llm: {len(llm_entries)} (fallos: {failure_count})"
+    )
+    return all_entries
 
 
 # ---------------------------------------------------------------------------
@@ -516,6 +593,26 @@ def post_matrix_entries(analysis_id: str, proposal_id: str, entries: List[FinalC
     ]
     api_request("POST", f"{API_COMPLIANCE_MATRIX_PATH}batch", payload)
     logger.info(f"POST matrix batch: {len(entries)} entries saved.")
+
+
+def delete_admissibility_results_for_proposal(proposal_id: str):
+    api_request("DELETE", f"{API_ADMISSIBILITY_RESULTS_PATH}by-proposal/{proposal_id}")
+    logger.info(f"Deleted existing admissibility results for proposal {proposal_id}.")
+
+
+def post_admissibility_results(analysis_id: str, proposal_id: str, entries: List[FinalComplianceEntry]):
+    if not entries:
+        return
+    payload = [
+        {
+            "analysis_id": analysis_id,
+            "proposal_id": proposal_id,
+            **e.model_dump(),
+        }
+        for e in entries
+    ]
+    api_request("POST", f"{API_ADMISSIBILITY_RESULTS_PATH}bulk", payload)
+    logger.info(f"POST admissibility results bulk: {len(entries)} entries saved.")
 
 
 # ---------------------------------------------------------------------------
@@ -548,66 +645,43 @@ async def process_compliance_matching_async():
 
         _profile = load_evaluation_profile(ANALYSIS_ID)  # context, not blocking
 
-        logger.info(f"Loaded {len(requirements)} requirements.")
+        logger.info(f"Loaded {len(requirements)} analysis requirements.")
         log_event(ANALYSIS_ID, "info", f"Evaluando {len(requirements)} requisitos contra propuesta {proposal.get('label', PROPOSAL_ID)}...", EVENT_SOURCE)
 
-        auto_na, auto_mn, needs_llm = apply_auto_filters(requirements)
-
-        # Delete existing matrix entries for this proposal
+        # --- Pass 1: analysis_requirements → analysis_compliance_matrix ---
         delete_matrix_for_proposal(PROPOSAL_ID)
-
-        # Write auto-filtered entries immediately
-        post_matrix_entries(ANALYSIS_ID, PROPOSAL_ID, auto_na + auto_mn)
-
-        # RAG search per requirement against PROPOSAL_{slug}_{proposal_id}
-        chunks_by_req: Dict[str, List[dict]] = {}
-        for req in needs_llm:
-            req_id = str(req["id"])
-            chunks_by_req[req_id] = rag_search_proposal_chunks(
-                qdrant, openai_client, slug,
-                ANALYSIS_ID, PROPOSAL_ID,
-                req["requirement_text"], RAG_TOP_K,
-            )
-
-        # Parallel LLM evaluation with semaphore — each result is persisted immediately
-        semaphore = asyncio.Semaphore(MAX_CONCURRENT_LLM_CALLS)
-        coros = [
-            evaluate_and_persist(
-                gemini_client, openai_client, proposal,
-                req, chunks_by_req[str(req["id"])], semaphore,
-                ANALYSIS_ID, PROPOSAL_ID,
-            )
-            for req in needs_llm
-        ]
-        llm_entries: List[FinalComplianceEntry] = await asyncio.gather(*coros)
-
-        # Check global failure ratio
-        failure_count = sum(
-            1 for e in llm_entries
-            if e.notes and e.notes.startswith("LLM_FAILURE")
+        general_entries = await run_matching_pass(
+            gemini_client, openai_client, qdrant,
+            proposal, requirements, slug,
+            ANALYSIS_ID, PROPOSAL_ID,
+            post_matrix_entries,
+            label="analysis_requirements",
         )
-        if needs_llm and (failure_count / len(needs_llm)) > MAX_LLM_FAILURE_RATIO:
-            raise RuntimeError(
-                f"LLM failure ratio exceeded threshold: {failure_count}/{len(needs_llm)} "
-                f"({100 * failure_count // len(needs_llm)}% > {int(MAX_LLM_FAILURE_RATIO * 100)}%)"
-            )
 
-        all_entries = list(auto_na) + list(auto_mn) + list(llm_entries)
+        # --- Pass 2: admissibility_requirements → admissibility_results ---
+        admissibility_requirements = load_admissibility_requirements(ANALYSIS_ID)
+        logger.info(f"Loaded {len(admissibility_requirements)} admissibility requirements.")
+        delete_admissibility_results_for_proposal(PROPOSAL_ID)
+        admissibility_entries = await run_matching_pass(
+            gemini_client, openai_client, qdrant,
+            proposal, admissibility_requirements, slug,
+            ANALYSIS_ID, PROPOSAL_ID,
+            post_admissibility_results,
+            label="admissibility_requirements",
+        )
+
+        # Mark matching_status exactly once, after both passes complete
         mark_matching_result(PROPOSAL_ID)
 
         summary = (
-            f"Compliance matching completado: {len(all_entries)} entradas | "
-            f"no_aplica: {len(auto_na)} | manual: {len(auto_mn)} | "
-            f"llm: {len(llm_entries)} (fallos: {failure_count})"
+            f"Compliance matching completado: {len(general_entries)} entradas analisis | "
+            f"{len(admissibility_entries)} entradas admisibilidad"
         )
         logger.info(summary)
         log_event(ANALYSIS_ID, "info", summary, EVENT_SOURCE, {
             "proposal_id": PROPOSAL_ID,
-            "total_entries": len(all_entries),
-            "auto_no_aplica": len(auto_na),
-            "auto_manual": len(auto_mn),
-            "llm_evaluated": len(llm_entries),
-            "llm_failures": failure_count,
+            "analysis_entries": len(general_entries),
+            "admissibility_entries": len(admissibility_entries),
         })
 
         notify_success()

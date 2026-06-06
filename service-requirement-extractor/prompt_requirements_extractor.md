@@ -32,8 +32,7 @@ You will receive:
 
 You must extract every atomic requirement present in the batch. ATOMIC means
 one obligation per requirement: do NOT group several obligations into a single
-record. If a paragraph lists three documents to present, that is THREE separate
-requirements.
+record. If a paragraph lists three documents to present, that is THREE separate requirements.
 
 For each requirement, classify it using ALL the following axes:
 

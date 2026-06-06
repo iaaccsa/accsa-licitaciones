@@ -4,10 +4,9 @@ Admissibility Gate Service (partial)
 Given an ANALYSIS_ID and a PROPOSAL_ID, evaluates whether the proposal
 passes the formal admissibility check by cross-referencing:
 
-  - Requirements with `is_admissibility = true` (calculated by the
-    requirement-extractor as: admisibilidad_obligatoria in roles AND
-    verification_method == auto_verifiable_from_offer)
-  - Their verdict in the compliance matrix
+  - All rows in admissibility_requirements for this analysis (dedicated table,
+    every row is already an admissibility requirement).
+  - Their verdict in admissibility_results.
 
 This is a PARTIAL gate that runs right after the compliance-matcher
 (before summarizer and economic-offer-extractor). Its purpose is to
@@ -16,8 +15,8 @@ let the user decide early which proposals continue in the pipeline.
 The service is 100% DETERMINISTIC — no LLM, no Qdrant, no embeddings.
 
 Verdicts:
-  - admitida:  all auto-verifiable admisibilidad requirements have verdict `cumple`.
-  - rechazada: at least one such requirement has a verdict other than `cumple`.
+  - admitida:  all admissibility requirements have verdict `cumple`.
+  - rechazada: at least one requirement has a verdict other than `cumple`.
 
 The user can override the verdict via HITL (PATCH .../admissibility-override)
 before the pipeline continues.
@@ -28,8 +27,8 @@ Required environment variables:
   - API_EVENTS_PATH
   - API_ANALYSES_PATH
   - API_PROPOSALS_PATH
-  - API_ANALYSIS_REQUIREMENTS_PATH
-  - API_COMPLIANCE_MATRIX_PATH
+  - API_ADMISSIBILITY_REQUIREMENTS_PATH
+  - API_ADMISSIBILITY_RESULTS_PATH
   - API_JOBS_CALLBACK
   - ANALYSIS_ID        (runtime)
   - PROPOSAL_ID        (runtime)
@@ -52,8 +51,8 @@ API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
-API_ANALYSIS_REQUIREMENTS_PATH = os.environ.get("API_ANALYSIS_REQUIREMENTS_PATH")
-API_COMPLIANCE_MATRIX_PATH = os.environ.get("API_COMPLIANCE_MATRIX_PATH")
+API_ADMISSIBILITY_REQUIREMENTS_PATH = os.environ.get("API_ADMISSIBILITY_REQUIREMENTS_PATH")
+API_ADMISSIBILITY_RESULTS_PATH = os.environ.get("API_ADMISSIBILITY_RESULTS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 PROPOSAL_ID = os.environ.get("PROPOSAL_ID")
@@ -92,8 +91,8 @@ def validate_env():
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
             ("API_PROPOSALS_PATH", API_PROPOSALS_PATH),
-            ("API_ANALYSIS_REQUIREMENTS_PATH", API_ANALYSIS_REQUIREMENTS_PATH),
-            ("API_COMPLIANCE_MATRIX_PATH", API_COMPLIANCE_MATRIX_PATH),
+            ("API_ADMISSIBILITY_REQUIREMENTS_PATH", API_ADMISSIBILITY_REQUIREMENTS_PATH),
+            ("API_ADMISSIBILITY_RESULTS_PATH", API_ADMISSIBILITY_RESULTS_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
             ("PROPOSAL_ID", PROPOSAL_ID),
@@ -192,16 +191,14 @@ def load_proposal(proposal_id: str) -> dict:
 
 
 def load_admissibility_requirements(analysis_id: str) -> List[dict]:
-    """Load requirements flagged as is_admissibility=true by the extractor."""
     return load_all_paginated(
-        f"{API_ANALYSIS_REQUIREMENTS_PATH}{analysis_id}",
-        params={"is_admissibility": "true", "is_verified": "true"},
+        f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}{analysis_id}",
     )
 
 
 def load_compliance_matrix(proposal_id: str) -> List[dict]:
     return load_all_paginated(
-        f"{API_COMPLIANCE_MATRIX_PATH}by-proposal/{proposal_id}",
+        f"{API_ADMISSIBILITY_RESULTS_PATH}by-proposal/{proposal_id}",
     )
 
 
@@ -271,7 +268,7 @@ def process_admissibility_gate():
 
         log_event(ANALYSIS_ID, "info", f"Evaluando admisibilidad de propuesta {label}...", EVENT_SOURCE)
 
-        # Load requirements flagged as is_admissibility=true
+        # Load all admissibility requirements (dedicated table)
         requirements = load_admissibility_requirements(ANALYSIS_ID)
         logger.info(f"Loaded {len(requirements)} admissibility requirements.")
 

@@ -60,6 +60,7 @@ API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
 API_TENDER_CLASSIFICATIONS_PATH = os.environ.get("API_TENDER_CLASSIFICATIONS_PATH")
 API_ANALYSIS_REQUIREMENTS_PATH = os.environ.get("API_ANALYSIS_REQUIREMENTS_PATH")
+API_ADMISSIBILITY_REQUIREMENTS_PATH = os.environ.get("API_ADMISSIBILITY_REQUIREMENTS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
@@ -330,15 +331,67 @@ class BatchResponse(BaseModel):
     requirements: List[RawRequirement]
 
 
+AdmissibilityRole = Literal["admisibilidad_obligatoria", "admisibilidad_subsanable"]
+
+
+class AdmissibilityRawRequirement(BaseModel):
+    requirement_text: str
+    requirement_summary: Optional[str] = None
+    roles: Annotated[List[AdmissibilityRole], Field(min_length=1)]
+    domain: RequirementDomain = "other"
+    verification_method: RequirementVerificationMethod = "auto_verifiable_from_offer"
+    temporal_scope: RequirementTemporalScope = "at_bid_time"
+    citations: Annotated[List[RequirementCitation], Field(min_length=1)]
+    confidence: Literal["alta", "media", "baja", "muy_baja"] = "media"
+    notes: Optional[str] = None
+    extraction_batch_id: int = 0
+
+    @field_validator("roles", mode="before")
+    @classmethod
+    def _norm_roles(cls, v):
+        if isinstance(v, list):
+            return [_normalize_role(x) for x in v]
+        return v
+
+    @field_validator("domain", mode="before")
+    @classmethod
+    def _norm_domain(cls, v):
+        return _normalize_domain(v)
+
+    @field_validator("verification_method", mode="before")
+    @classmethod
+    def _norm_verification(cls, v):
+        return _normalize_verification(v)
+
+    @field_validator("temporal_scope", mode="before")
+    @classmethod
+    def _norm_temporal(cls, v):
+        return _normalize_temporal(v)
+
+    @field_validator("confidence", mode="before")
+    @classmethod
+    def _norm_confidence(cls, v):
+        return _normalize_confidence(v)
+
+
+class AdmissibilityBatchResponse(BaseModel):
+    requirements: List[AdmissibilityRawRequirement]
+
+
+class FinalAdmissibilityRequirement(AdmissibilityRawRequirement):
+    requirement_code: str
+
+
 class FinalRequirement(RawRequirement):
     requirement_code: str
     is_admissibility: bool = False
 
 
 # ---------------------------------------------------------------------------
-# System Prompt
+# System Prompts
 # ---------------------------------------------------------------------------
 SYSTEM_PROMPT = (Path(__file__).parent / "prompt_requirements_extractor.md").read_text(encoding="utf-8")
+ADMISSIBILITY_SYSTEM_PROMPT = (Path(__file__).parent / "prompt_admissibility_extractor.md").read_text(encoding="utf-8")
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -373,6 +426,7 @@ def validate_env():
             ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
             ("API_TENDER_CLASSIFICATIONS_PATH", API_TENDER_CLASSIFICATIONS_PATH),
             ("API_ANALYSIS_REQUIREMENTS_PATH", API_ANALYSIS_REQUIREMENTS_PATH),
+            ("API_ADMISSIBILITY_REQUIREMENTS_PATH", API_ADMISSIBILITY_REQUIREMENTS_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
         ]
@@ -521,6 +575,20 @@ def build_user_prompt(profile: dict, batch: List[dict]) -> str:
     )
 
 
+def build_admissibility_user_prompt(batch: List[dict]) -> str:
+    chunks_text = "\n\n".join(
+        f'[chunk_id={c["chunk_id"]} page_number={c["page_number"] or ""} filename={c.get("filename") or ""}]'
+        f"\n{c['text']}"
+        for c in batch
+    )
+    return (
+        f"BATCH (chunks from the unified pliego document, ordered by position):\n"
+        f"<chunks>\n{chunks_text}\n</chunks>\n\n"
+        "Extract every admissibility requirement from these chunks following the rules above "
+        "and respond with a single JSON object."
+    )
+
+
 def _is_provider_unavailable(err: Optional[Exception]) -> bool:
     if err is None:
         return False
@@ -535,12 +603,20 @@ def _is_malformed_response(err: Optional[Exception]) -> bool:
 @dataclass
 class BatchOutcome:
     requirements: List["RawRequirement"] = field(default_factory=list)
+    admissibility_requirements: List["AdmissibilityRawRequirement"] = field(default_factory=list)
     duration_seconds: float = 0.0
     gemini_used: bool = False
     gemini_unavailable: bool = False
     openai_used: bool = False
     openai_failed: bool = False
-    failure_reason: Optional[str] = None
+    # per-pass failure tracking
+    general_failure_reason: Optional[str] = None
+    admissibility_failure_reason: Optional[str] = None
+
+    @property
+    def failure_reason(self) -> Optional[str]:
+        """Backward-compatible: primary failure reason."""
+        return self.general_failure_reason
 
 
 def _call_with_retry(
@@ -590,6 +666,83 @@ def _call_with_retry(
     return None, last_err
 
 
+def _run_llm_pass(
+    gemini_client: genai.Client,
+    openai_client: OpenAI,
+    system_prompt: str,
+    user_prompt: str,
+    response_model,
+    batch_id: int,
+    label: str,
+) -> Tuple[Optional[Any], Optional[Exception], bool, bool, bool]:
+    """Run a single LLM pass with Gemini->OpenAI fallback.
+
+    Returns (result, final_err, gemini_unavailable, openai_used, openai_failed).
+    """
+    raw_capture = {"gemini": "", "openai": ""}
+
+    def call_gemini():
+        response = gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[
+                genai_types.Content(role="user", parts=[genai_types.Part(text=system_prompt)]),
+                genai_types.Content(role="model", parts=[genai_types.Part(text="Understood. I will return only a JSON object with the requirements list.")]),
+                genai_types.Content(role="user", parts=[genai_types.Part(text=user_prompt)]),
+            ],
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=response_model,
+                thinking_config=genai_types.ThinkingConfig(thinking_budget=GEMINI_THINKING_BUDGET),
+            ),
+        )
+        raw_capture["gemini"] = response.text or ""
+        return response_model.model_validate_json(response.text)
+
+    def call_openai():
+        oai_response = openai_client.chat.completions.create(
+            model=OPENAI_FALLBACK_MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            response_format={"type": "json_object"},
+        )
+        content = oai_response.choices[0].message.content or ""
+        raw_capture["openai"] = content
+        return response_model.model_validate_json(content)
+
+    gemini_unavailable = False
+    openai_used = False
+    openai_failed = False
+
+    result, gemini_err = _call_with_retry(f"Gemini[{label}]", batch_id, call_gemini)
+    final_err: Optional[Exception] = None
+    if result is None:
+        if _is_provider_unavailable(gemini_err):
+            gemini_unavailable = True
+        logger.warning(f"Batch {batch_id}[{label}]: falling back to OpenAI ({type(gemini_err).__name__}).")
+        openai_used = True
+        result, openai_err = _call_with_retry(f"OpenAI[{label}]", batch_id, call_openai)
+        if result is None:
+            openai_failed = True
+            final_err = openai_err or gemini_err
+            raw_snippet = (raw_capture["openai"] or raw_capture["gemini"])[:1000]
+            log_event(ANALYSIS_ID, "warning",
+                f"Batch {batch_id}[{label}] failed after retries on Gemini and OpenAI: "
+                f"{type(final_err).__name__}: {str(final_err)[:300]}",
+                EVENT_SOURCE,
+                {
+                    "batch_id": batch_id,
+                    "pass": label,
+                    "gemini_error": f"{type(gemini_err).__name__}: {str(gemini_err)[:200]}" if gemini_err else None,
+                    "openai_error": f"{type(openai_err).__name__}: {str(openai_err)[:200]}" if openai_err else None,
+                    "raw_response_snippet": raw_snippet,
+                },
+            )
+
+    return result, final_err, gemini_unavailable, openai_used, openai_failed
+
+
 def extract_batch(
     gemini_client: genai.Client,
     openai_client: OpenAI,
@@ -597,73 +750,53 @@ def extract_batch(
     batch: List[dict],
     batch_id: int,
 ) -> BatchOutcome:
-    user_prompt = build_user_prompt(profile, batch)
-    raw_capture = {"gemini": "", "openai": ""}
     outcome = BatchOutcome(gemini_used=True)
     start = time.time()
 
-    def call_gemini() -> BatchResponse:
-        response = gemini_client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=[
-                genai_types.Content(role="user", parts=[genai_types.Part(text=SYSTEM_PROMPT)]),
-                genai_types.Content(role="model", parts=[genai_types.Part(text="Understood. I will return only a JSON object with the requirements list.")]),
-                genai_types.Content(role="user", parts=[genai_types.Part(text=user_prompt)]),
-            ],
-            config=genai_types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=BatchResponse,
-                thinking_config=genai_types.ThinkingConfig(thinking_budget=GEMINI_THINKING_BUDGET),
-            ),
-        )
-        raw_capture["gemini"] = response.text or ""
-        return BatchResponse.model_validate_json(response.text)
-
-    def call_openai() -> BatchResponse:
-        oai_response = openai_client.chat.completions.create(
-            model=OPENAI_FALLBACK_MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            response_format={"type": "json_object"},
-        )
-        content = oai_response.choices[0].message.content or ""
-        raw_capture["openai"] = content
-        return BatchResponse.model_validate_json(content)
-
-    result, gemini_err = _call_with_retry("Gemini", batch_id, call_gemini)
-    openai_err: Optional[Exception] = None
-    if result is None:
-        if _is_provider_unavailable(gemini_err):
-            outcome.gemini_unavailable = True
-        logger.warning(f"Batch {batch_id}: falling back to OpenAI ({type(gemini_err).__name__}).")
+    # Pass A: admissibility (no profile)
+    adm_user_prompt = build_admissibility_user_prompt(batch)
+    adm_result, adm_err, adm_gem_unavail, adm_oai_used, adm_oai_failed = _run_llm_pass(
+        gemini_client, openai_client,
+        ADMISSIBILITY_SYSTEM_PROMPT, adm_user_prompt,
+        AdmissibilityBatchResponse, batch_id, "admissibility",
+    )
+    if adm_gem_unavail:
+        outcome.gemini_unavailable = True
+    if adm_oai_used:
         outcome.openai_used = True
-        result, openai_err = _call_with_retry("OpenAI", batch_id, call_openai)
-        if result is None:
-            outcome.openai_failed = True
-            final_err = openai_err or gemini_err
-            outcome.failure_reason = f"{type(final_err).__name__}: {str(final_err)[:200]}"
-            raw_snippet = (raw_capture["openai"] or raw_capture["gemini"])[:1000]
-            log_event(ANALYSIS_ID, "warning",
-                f"Batch {batch_id} failed after retries on Gemini and OpenAI: "
-                f"{type(final_err).__name__}: {str(final_err)[:300]}",
-                EVENT_SOURCE,
-                {
-                    "batch_id": batch_id,
-                    "gemini_error": f"{type(gemini_err).__name__}: {str(gemini_err)[:200]}" if gemini_err else None,
-                    "openai_error": f"{type(openai_err).__name__}: {str(openai_err)[:200]}" if openai_err else None,
-                    "raw_response_snippet": raw_snippet,
-                },
-            )
-            outcome.duration_seconds = time.time() - start
-            return outcome
+    if adm_oai_failed:
+        outcome.openai_failed = True
+    if adm_result is not None:
+        for req in adm_result.requirements:
+            req.extraction_batch_id = batch_id
+        outcome.admissibility_requirements = adm_result.requirements
+        logger.info(f"Batch {batch_id}[admissibility]: extracted {len(adm_result.requirements)} requirements.")
+    else:
+        outcome.admissibility_failure_reason = f"{type(adm_err).__name__}: {str(adm_err)[:200]}" if adm_err else "unknown"
+        logger.warning(f"Batch {batch_id}[admissibility]: pass failed, continuing with general pass.")
 
-    for req in result.requirements:
-        req.extraction_batch_id = batch_id
-    outcome.requirements = result.requirements
+    # Pass B: general (with profile) — exactly as before
+    gen_user_prompt = build_user_prompt(profile, batch)
+    gen_result, gen_err, gen_gem_unavail, gen_oai_used, gen_oai_failed = _run_llm_pass(
+        gemini_client, openai_client,
+        SYSTEM_PROMPT, gen_user_prompt,
+        BatchResponse, batch_id, "general",
+    )
+    if gen_gem_unavail:
+        outcome.gemini_unavailable = True
+    if gen_oai_used:
+        outcome.openai_used = True
+    if gen_oai_failed:
+        outcome.openai_failed = True
+    if gen_result is not None:
+        for req in gen_result.requirements:
+            req.extraction_batch_id = batch_id
+        outcome.requirements = gen_result.requirements
+        logger.info(f"Batch {batch_id}[general]: extracted {len(gen_result.requirements)} requirements.")
+    else:
+        outcome.general_failure_reason = f"{type(gen_err).__name__}: {str(gen_err)[:200]}" if gen_err else "unknown"
+
     outcome.duration_seconds = time.time() - start
-    logger.info(f"Batch {batch_id}: extracted {len(result.requirements)} requirements.")
     return outcome
 
 
@@ -763,6 +896,61 @@ def deduplicate(raw_reqs: List[RawRequirement]) -> List[RawRequirement]:
 
 
 # ---------------------------------------------------------------------------
+# Admissibility deduplication
+# ---------------------------------------------------------------------------
+def deduplicate_admissibility(raw_reqs: List[AdmissibilityRawRequirement]) -> List[AdmissibilityRawRequirement]:
+    groups: Dict[str, List[AdmissibilityRawRequirement]] = {}
+    for req in raw_reqs:
+        key = hashlib.sha1(normalize_text(req.requirement_text).encode()).hexdigest()
+        groups.setdefault(key, []).append(req)
+
+    merged = []
+    for group in groups.values():
+        if len(group) == 1:
+            merged.append(group[0])
+            continue
+
+        req_text = max((r.requirement_text for r in group), key=len)
+        req_summary = next((r.requirement_summary for r in group if r.requirement_summary), None)
+
+        seen_roles: Dict[str, None] = {}
+        for r in group:
+            for role in r.roles:
+                seen_roles[role] = None
+        roles = list(seen_roles)
+
+        seen_cids: Dict[str, RequirementCitation] = {}
+        for r in group:
+            for c in r.citations:
+                if c.chunk_id not in seen_cids:
+                    seen_cids[c.chunk_id] = c
+        citations = list(seen_cids.values())
+
+        domain = _best_by_confidence(group, "domain")
+        verification_method = _best_by_confidence(group, "verification_method")
+        temporal_scope = _best_by_confidence(group, "temporal_scope")
+        confidence = max((r.confidence for r in group), key=_confidence_rank)
+        all_notes = [r.notes for r in group if r.notes]
+        notes = " | ".join(dict.fromkeys(all_notes)) if all_notes else None
+        extraction_batch_id = group[0].extraction_batch_id
+
+        merged.append(AdmissibilityRawRequirement(
+            requirement_text=req_text,
+            requirement_summary=req_summary,
+            roles=roles,
+            domain=domain,
+            verification_method=verification_method,
+            temporal_scope=temporal_scope,
+            citations=citations,
+            confidence=confidence,
+            notes=notes,
+            extraction_batch_id=extraction_batch_id,
+        ))
+
+    return merged
+
+
+# ---------------------------------------------------------------------------
 # Code assignment
 # ---------------------------------------------------------------------------
 def assign_codes(reqs: List[RawRequirement], chunk_index_map: Dict[str, int]) -> List[FinalRequirement]:
@@ -778,6 +966,18 @@ def assign_codes(reqs: List[RawRequirement], chunk_index_map: Dict[str, int]) ->
             requirement_code=f"REQ-{i:03d}",
         ))
     return result
+
+
+def assign_codes_admissibility(reqs: List[AdmissibilityRawRequirement], chunk_index_map: Dict[str, int]) -> List[FinalAdmissibilityRequirement]:
+    def first_position(req: AdmissibilityRawRequirement) -> int:
+        positions = [chunk_index_map.get(c.chunk_id, 999999) for c in req.citations]
+        return min(positions) if positions else 999999
+
+    sorted_reqs = sorted(reqs, key=first_position)
+    return [
+        FinalAdmissibilityRequirement(**req.model_dump(), requirement_code=f"ADM-{i:03d}")
+        for i, req in enumerate(sorted_reqs, start=1)
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -873,6 +1073,12 @@ def post_bulk(analysis_id: str, reqs: List[FinalRequirement]):
     logger.info(f"POST bulk: {len(reqs)} requirements saved.")
 
 
+def post_admissibility_bulk(analysis_id: str, reqs: List[FinalAdmissibilityRequirement]):
+    payload = [r.model_dump() for r in reqs]
+    api_request("POST", f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}bulk", payload, params={"analysis_id": analysis_id})
+    logger.info(f"POST admissibility bulk: {len(reqs)} requirements saved.")
+
+
 # ---------------------------------------------------------------------------
 # Main flow
 # ---------------------------------------------------------------------------
@@ -916,6 +1122,7 @@ def process_extraction():
 
     # 5. Parallel batch extraction
     raw_results: List[RawRequirement] = []
+    raw_admissibility_results: List[AdmissibilityRawRequirement] = []
     failed_batches = 0
     outcomes: Dict[int, BatchOutcome] = {}
 
@@ -933,14 +1140,21 @@ def process_extraction():
                     failed_batches += 1
                 else:
                     raw_results.extend(outcome.requirements)
+                if outcome.admissibility_requirements:
+                    raw_admissibility_results.extend(outcome.admissibility_requirements)
             except Exception as e:
                 msg = f"Batch {batch_id} raised unexpected exception: {type(e).__name__}: {e}"
                 logger.error(msg)
                 log_event(ANALYSIS_ID, "warning", msg[:500], EVENT_SOURCE)
-                outcomes[batch_id] = BatchOutcome(failure_reason=msg[:200])
+                outcomes[batch_id] = BatchOutcome()
+                outcomes[batch_id].general_failure_reason = msg[:200]
                 failed_batches += 1
 
-    logger.info(f"Extraction complete: {len(raw_results)} raw requirements, {failed_batches}/{len(batches)} batches failed.")
+    logger.info(
+        f"Extraction complete: {len(raw_results)} raw general requirements, "
+        f"{len(raw_admissibility_results)} raw admissibility requirements, "
+        f"{failed_batches}/{len(batches)} batches failed."
+    )
 
     if failed_batches > 0 and (failed_batches / max(len(batches), 1)) > MAX_FAILED_BATCH_RATIO:
         raise RuntimeError(
@@ -960,22 +1174,19 @@ def process_extraction():
         })
         return
 
-    # 6. Deduplicate
+    # 6. General bucket: deduplicate -> assign codes -> validate against profile
     deduped = deduplicate(raw_results)
     logger.info(f"After deduplication: {len(deduped)} requirements (from {len(raw_results)} raw).")
 
-    # 7. Assign codes
     with_codes = assign_codes(deduped, chunk_index_map)
 
-    # 8. Validate against profile
     cleaned, validation_warnings = validate_against_profile(with_codes, profile)
     for w in validation_warnings:
         logger.warning(f"profile_validation: {w}")
         log_event(ANALYSIS_ID, "warning", w, EVENT_SOURCE)
-
     logger.info(f"After validation: {len(cleaned)} requirements remain ({len(with_codes) - len(cleaned)} discarded).")
 
-    # 8b. Calculate is_admissibility
+    # Flag is_admissibility on general bucket (legacy field)
     admissibility_count = 0
     for req in cleaned:
         req.is_admissibility = (
@@ -986,7 +1197,7 @@ def process_extraction():
             admissibility_count += 1
     logger.info(f"Admissibility requirements flagged: {admissibility_count}/{len(cleaned)}.")
 
-    # 8c. Enrich citations with canonical filename + page_number from Qdrant
+    # Enrich citations with canonical filename + page_number from Qdrant
     for req in cleaned:
         for cit in req.citations:
             info = chunk_info_map.get(cit.chunk_id)
@@ -995,10 +1206,29 @@ def process_extraction():
                 if cit.page_number is None:
                     cit.page_number = info.get("page_number")
 
-    # 9. Post bulk
-    post_bulk(ANALYSIS_ID, cleaned)
+    # 7. Admissibility bucket: deduplicate -> assign codes (no profile validation)
+    adm_deduped = deduplicate_admissibility(raw_admissibility_results)
+    logger.info(f"Admissibility: {len(adm_deduped)} requirements after dedup (from {len(raw_admissibility_results)} raw).")
 
-    # 10. Summary + notify success
+    adm_with_codes = assign_codes_admissibility(adm_deduped, chunk_index_map)
+
+    # Enrich citations for admissibility bucket
+    for req in adm_with_codes:
+        for cit in req.citations:
+            info = chunk_info_map.get(cit.chunk_id)
+            if info:
+                cit.filename = info.get("filename")
+                if cit.page_number is None:
+                    cit.page_number = info.get("page_number")
+
+    # 8. Persist both buckets
+    post_bulk(ANALYSIS_ID, cleaned)
+    if adm_with_codes:
+        post_admissibility_bulk(ANALYSIS_ID, adm_with_codes)
+    else:
+        logger.warning("No admissibility requirements to persist.")
+
+    # 9. Summary + notify success
     domain_counts: Dict[str, int] = {}
     role_counts: Dict[str, int] = {}
     for r in cleaned:
@@ -1016,14 +1246,17 @@ def process_extraction():
     p95_batch_seconds = duration_values[int(len(duration_values) * 0.95) - 1] if duration_values else 0.0
 
     summary = (
-        f"Extraccion completada: {len(cleaned)} requisitos | "
+        f"Extraccion completada: {len(cleaned)} requisitos generales | "
+        f"{len(adm_with_codes)} requisitos admisibilidad | "
         f"batches fallidos: {failed_batches}/{len(batches)} | "
         f"warnings de validacion: {len(validation_warnings)}"
     )
     logger.info(summary)
     log_event(ANALYSIS_ID, "info", summary, EVENT_SOURCE, {
         "requirement_count": len(cleaned),
+        "admissibility_requirement_count": len(adm_with_codes),
         "raw_count": len(raw_results),
+        "raw_admissibility_count": len(raw_admissibility_results),
         "batch_count": len(batches),
         "failed_batches": failed_batches,
         "failed_batch_ids": failed_batch_ids,
