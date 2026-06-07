@@ -55,6 +55,10 @@ STORAGE_BUCKET = "files"
 MAX_FILE_SIZE_MB = 45  # Mistral OCR proxy limit (~50 MB); reject before upload
 OCR_MAX_RETRIES = 3
 OCR_RETRY_DELAYS = [10, 30, 60]  # seconds
+# After files.upload, the file_id can 404 on get_signed_url until Mistral
+# finishes propagating it (eventual consistency). Retry on 404 with short backoff.
+SIGNED_URL_MAX_RETRIES = 6
+SIGNED_URL_RETRY_DELAYS = [2, 4, 8, 16, 32]  # seconds
 
 logger = setup_logger("files-converter-mistral")
 SESSION = make_session()
@@ -111,6 +115,30 @@ def get_client() -> Mistral:
     return Mistral(api_key=MISTRAL_API_KEY)
 
 
+def _is_file_not_found(exc: Exception) -> bool:
+    """True if the exception is Mistral's 404 'file not found' (propagation lag)."""
+    if getattr(exc, "status_code", None) == 404:
+        return True
+    return "No file matches the given query" in str(exc)
+
+
+def get_signed_url_with_retry(client: Mistral, file_id: str):
+    """get_signed_url, retrying on 404 while the uploaded file is still propagating."""
+    for attempt in range(SIGNED_URL_MAX_RETRIES):
+        try:
+            return client.files.get_signed_url(file_id=file_id)
+        except Exception as e:
+            if _is_file_not_found(e) and attempt < SIGNED_URL_MAX_RETRIES - 1:
+                delay = SIGNED_URL_RETRY_DELAYS[attempt]
+                logger.warning(
+                    f"get_signed_url 404 (file {file_id} not propagated yet), "
+                    f"attempt {attempt + 1}/{SIGNED_URL_MAX_RETRIES}, retrying in {delay}s"
+                )
+                time.sleep(delay)
+                continue
+            raise
+
+
 def parse_file(client: Mistral, file_path: str) -> str:
     """Upload and parse a single file via Mistral OCR, returning Markdown content."""
     logger.info(f"Parsing file: {file_path} ...")
@@ -124,8 +152,8 @@ def parse_file(client: Mistral, file_path: str) -> str:
     logger.info(f"Subido a Mistral Files API, file_id={uploaded.id}")
 
     try:
-        # Step 2: Get a signed URL for the uploaded file
-        signed = client.files.get_signed_url(file_id=uploaded.id)
+        # Step 2: Get a signed URL for the uploaded file (retry on propagation 404)
+        signed = get_signed_url_with_retry(client, uploaded.id)
 
         # Step 3: Run OCR with retry on transient errors
         last_exc = None
