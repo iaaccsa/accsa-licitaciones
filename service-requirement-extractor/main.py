@@ -40,7 +40,7 @@ import requests
 from google import genai
 from google.genai import types as genai_types
 from openai import OpenAI
-from pydantic import BaseModel, Field, ValidationError, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from supabase_logger import log_event, make_session, setup_logger
@@ -403,8 +403,33 @@ class RawRequirement(BaseModel):
         return _normalize_confidence(v)
 
 
+def _drop_uncited_requirements(data):
+    """Drop requirements the model returned without citations.
+
+    gpt-4.1-mini occasionally emits a requirement with empty `citations`. Such a
+    requirement is ungrounded and could never pass `min_length=1` downstream, so
+    dropping just that item lets the rest of the batch validate instead of failing
+    the whole batch and falling back to Gemini.
+    """
+    if isinstance(data, dict):
+        reqs = data.get("requirements")
+        if isinstance(reqs, list):
+            data = {
+                **data,
+                "requirements": [
+                    r for r in reqs if not isinstance(r, dict) or r.get("citations")
+                ],
+            }
+    return data
+
+
 class BatchResponse(BaseModel):
     requirements: List[RawRequirement]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _filter_uncited(cls, data):
+        return _drop_uncited_requirements(data)
 
 
 AdmissibilityRole = Literal["admisibilidad_obligatoria", "admisibilidad_subsanable"]
@@ -452,6 +477,11 @@ class AdmissibilityRawRequirement(BaseModel):
 
 class AdmissibilityBatchResponse(BaseModel):
     requirements: List[AdmissibilityRawRequirement]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _filter_uncited(cls, data):
+        return _drop_uncited_requirements(data)
 
 
 class FinalAdmissibilityRequirement(AdmissibilityRawRequirement):
@@ -714,6 +744,42 @@ def _is_malformed_response(err: Optional[Exception]) -> bool:
     return isinstance(err, (ValidationError, json.JSONDecodeError))
 
 
+def _count_raw_requirements(raw: str) -> Optional[int]:
+    try:
+        data = json.loads(raw)
+    except (json.JSONDecodeError, TypeError):
+        return None
+    reqs = data.get("requirements") if isinstance(data, dict) else None
+    return len(reqs) if isinstance(reqs, list) else None
+
+
+def _log_dropped_uncited(batch_id, label, provider, raw, result) -> None:
+    raw_count = _count_raw_requirements(raw)
+    if raw_count is None:
+        return
+    dropped = raw_count - len(result.requirements)
+    if dropped <= 0:
+        return
+    logger.warning(
+        f"Batch {batch_id}[{label}]: dropped {dropped} requirement(s) with empty "
+        f"citations from {provider} ({raw_count} -> {len(result.requirements)})."
+    )
+    log_event(
+        ANALYSIS_ID,
+        "warning",
+        f"Batch {batch_id}[{label}]: dropped {dropped} uncited requirement(s) ({provider}).",
+        EVENT_SOURCE,
+        {
+            "batch_id": batch_id,
+            "pass": label,
+            "provider": provider,
+            "dropped_uncited": dropped,
+            "raw_count": raw_count,
+            "kept_count": len(result.requirements),
+        },
+    )
+
+
 @dataclass
 class BatchOutcome:
     requirements: List["RawRequirement"] = field(default_factory=list)
@@ -846,7 +912,10 @@ def _run_llm_pass(
     fallback_used = False
     fallback_failed = False
 
+    source: Optional[str] = None
     result, openai_err = _call_with_retry(f"OpenAI[{label}]", batch_id, call_openai)
+    if result is not None:
+        source = "openai"
     final_err: Optional[Exception] = None
     if result is None:
         if _is_provider_unavailable(openai_err):
@@ -856,6 +925,8 @@ def _run_llm_pass(
         )
         fallback_used = True
         result, gemini_err = _call_with_retry(f"Gemini[{label}]", batch_id, call_gemini)
+        if result is not None:
+            source = "gemini"
         if result is None:
             fallback_failed = True
             final_err = gemini_err or openai_err
@@ -878,6 +949,9 @@ def _run_llm_pass(
                     "raw_response_snippet": raw_snippet,
                 },
             )
+
+    if result is not None and source is not None:
+        _log_dropped_uncited(batch_id, label, source, raw_capture[source], result)
 
     return result, final_err, primary_unavailable, fallback_used, fallback_failed
 
