@@ -30,7 +30,7 @@ Si algo falla irrecuperablemente: `PATCH .../economic-failure` con el `error_mes
 ## Salida
 - Una fila en `proposal_economic_offers` (1:1 con la propuesta) con total, moneda, impuestos, plazos, formula, line_items y citas.
 - La propuesta queda en `economic_status=ready` con `economic_completed_at` seteado.
-- Eventos de log en `events` documentando el total extraido y si requiere revision manual.
+- Eventos de log en `events` documentando el total extraido y si requiere revisión manual.
 
 ## Configuracion clave (env vars nivel servicio)
 
