@@ -213,14 +213,17 @@ class JobOrchestratorService:
                 items = processed_file_repository.get_by_analysis_id(analysis_id)
             if not items:
                 logger.warning(f"No {fan_out_type} items found for analysis_id={analysis_id}, skipping fan-out job {next_job}")
+                try:
+                    workflow_step_service.start_step_by_service(str(analysis_id), next_job, instances_count=0)
+                    workflow_step_service.complete_step_by_service(str(analysis_id), next_job)
+                except Exception as e:
+                    logger.error(f"Failed to auto-complete empty {next_job}: {e}")
                 if is_final_job(next_job):
-                    try:
-                        workflow_step_service.start_step_by_service(str(analysis_id), next_job, instances_count=0)
-                        workflow_step_service.complete_step_by_service(str(analysis_id), next_job)
-                    except Exception as e:
-                        logger.error(f"Failed to auto-complete empty terminal {next_job}: {e}")
                     self._maybe_finalize_pipeline(analysis_id, next_job)
-                return []
+                else:
+                    for downstream in get_next_jobs(next_job):
+                        launched += self._launch_next_job(downstream, analysis_id, proposal_id, next_job)
+                return launched
 
             logger.info(f"Fan-out: launching {len(items)} instances of {next_job} for analysis_id={analysis_id}")
 

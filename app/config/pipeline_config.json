@@ -145,7 +145,7 @@
   {
     "service": "service-requirement-extractor",
     "next_services": [
-      "service-compliance-matcher"
+      "service-admissibility-matcher"
     ],
     "code": "requirement_extraction",
     "display_name": "Extracción de Requisitos",
@@ -157,13 +157,30 @@
     "phase": "requirement_extraction"
   },
   {
-    "service": "service-compliance-matcher",
+    "service": "service-admissibility-matcher",
     "next_services": [
       "service-admissibility-gate"
     ],
+    "code": "admissibility_matcher",
+    "display_name": "Match de Admisibilidad",
+    "parent": "requirement_extraction",
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false,
+    "pause_after": false,
+    "fan_out_by": "proposal",
+    "phase": "award_check"
+  },
+  {
+    "service": "service-compliance-matcher",
+    "next_services": [
+      "service-compliance-summarizer",
+      "service-economic-offer-extractor"
+    ],
     "code": "compliance_matcher",
     "display_name": "Matcher de Cumplimiento",
-    "parent": "requirement_extraction",
+    "parent": "admissibility_gate",
+    "require_admitida": true,
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
@@ -174,12 +191,11 @@
   {
     "service": "service-admissibility-gate",
     "next_services": [
-      "service-compliance-summarizer",
-      "service-economic-offer-extractor"
+      "service-compliance-matcher"
     ],
     "code": "admissibility_gate",
     "display_name": "Chequeo de Admisibilidad",
-    "parent": "compliance_matcher",
+    "parent": "admissibility_matcher",
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
@@ -192,7 +208,7 @@
     "next_services": [],
     "code": "compliance_summarizer",
     "display_name": "Resumen de Cumplimiento",
-    "parent": "admissibility_gate",
+    "parent": "compliance_matcher",
     "require_admitida": true,
     "initial_status": "pending",
     "is_initial": false,
@@ -206,7 +222,7 @@
     "next_services": [],
     "code": "economic_offer_extractor",
     "display_name": "Extracción de Oferta Económica",
-    "parent": "admissibility_gate",
+    "parent": "compliance_matcher",
     "require_admitida": true,
     "initial_status": "pending",
     "is_initial": false,
