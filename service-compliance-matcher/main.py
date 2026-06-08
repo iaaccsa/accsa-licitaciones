@@ -208,6 +208,7 @@ def notify_success():
         api_request("POST", API_JOBS_CALLBACK, {
             "service_name": SERVICE_NAME,
             "analysis_id": ANALYSIS_ID,
+            "proposal_id": PROPOSAL_ID,
             "status": "success",
         })
     except Exception as e:
@@ -221,6 +222,7 @@ def notify_failure(error_msg: str):
         api_request("POST", API_JOBS_CALLBACK, {
             "service_name": SERVICE_NAME,
             "analysis_id": ANALYSIS_ID,
+            "proposal_id": PROPOSAL_ID,
             "status": "failed",
             "error_message": error_msg,
         })
