@@ -13,9 +13,7 @@
   },
   {
     "service": "service-file-extractor",
-    "next_services": [
-      "service-files-converter-mistral"
-    ],
+    "next_services": ["service-files-converter-mistral"],
     "code": "extractor",
     "display_name": "Extracción de Archivos",
     "parent": "queue",
@@ -27,9 +25,7 @@
   },
   {
     "service": "service-files-converter-mistral",
-    "next_services": [
-      "service-qdrant-by-file"
-    ],
+    "next_services": ["service-qdrant-by-file"],
     "code": "converter",
     "display_name": "Preparación de Documentos",
     "parent": "extractor",
@@ -57,9 +53,7 @@
   },
   {
     "service": "service-file-metadata-extractor",
-    "next_services": [
-      "service-documents-classifier"
-    ],
+    "next_services": ["service-documents-classifier"],
     "code": "file_metadata_extractor",
     "display_name": "Extracción de Metadatos",
     "parent": "qdrant_by_file",
@@ -72,9 +66,7 @@
   },
   {
     "service": "service-digital-sig-extractor",
-    "next_services": [
-      "service-documents-classifier"
-    ],
+    "next_services": ["service-documents-classifier"],
     "code": "digital_signature_extractor",
     "display_name": "Extracción de Firmas Digitales",
     "parent": "qdrant_by_file",
@@ -87,9 +79,7 @@
   },
   {
     "service": "service-documents-classifier",
-    "next_services": [
-      "service-documents-grouper"
-    ],
+    "next_services": ["service-documents-grouper"],
     "code": "documents_classifier",
     "display_name": "Clasificación de Documentos",
     "parent": "file_metadata_extractor",
@@ -117,9 +107,7 @@
   },
   {
     "service": "service-tender-classifier",
-    "next_services": [
-      "service-requirement-extractor"
-    ],
+    "next_services": ["service-requirement-extractor"],
     "code": "tender_classifier",
     "display_name": "Determinación Sistema de Evaluación",
     "parent": "documents_grouper",
@@ -144,9 +132,7 @@
   },
   {
     "service": "service-requirement-extractor",
-    "next_services": [
-      "service-admissibility-matcher"
-    ],
+    "next_services": ["service-admissibility-matcher"],
     "code": "requirement_extraction",
     "display_name": "Extracción de Requisitos",
     "parent": "tender_classifier",
@@ -158,9 +144,7 @@
   },
   {
     "service": "service-admissibility-matcher",
-    "next_services": [
-      "service-admissibility-gate"
-    ],
+    "next_services": ["service-admissibility-gate"],
     "code": "admissibility_matcher",
     "display_name": "Match de Admisibilidad",
     "parent": "requirement_extraction",
@@ -168,6 +152,19 @@
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
+    "fan_out_by": "proposal",
+    "phase": "award_check"
+  },
+  {
+    "service": "service-admissibility-gate",
+    "next_services": ["service-compliance-matcher"],
+    "code": "admissibility_gate",
+    "display_name": "Chequeo de Admisibilidad",
+    "parent": "admissibility_matcher",
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false,
+    "pause_after": true,
     "fan_out_by": "proposal",
     "phase": "award_check"
   },
@@ -186,22 +183,7 @@
     "is_final": false,
     "pause_after": false,
     "fan_out_by": "proposal",
-    "phase": "award_check"
-  },
-  {
-    "service": "service-admissibility-gate",
-    "next_services": [
-      "service-compliance-matcher"
-    ],
-    "code": "admissibility_gate",
-    "display_name": "Chequeo de Admisibilidad",
-    "parent": "admissibility_matcher",
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false,
-    "pause_after": true,
-    "fan_out_by": "proposal",
-    "phase": "award_check"
+    "phase": "final_compliance_check"
   },
   {
     "service": "service-compliance-summarizer",
