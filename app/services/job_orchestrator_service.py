@@ -151,6 +151,11 @@ class JobOrchestratorService:
             analysis = analysis_repository.get_by_id(str(analysis_id))
             if analysis and analysis.get("hitl") is False:
                 should_pause = False
+                self._log_event(
+                    analysis_id, "info",
+                    f"Se continua automaticamente: no hitl (después de {service_name}).",
+                    {"service": service_name, "hitl": False}
+                )
 
         if should_pause:
             analysis_repository.update_by_id(
