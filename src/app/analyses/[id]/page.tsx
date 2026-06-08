@@ -269,7 +269,7 @@ export default function AnalysisDetailPage() {
       <WorkflowPhases analysisId={id} />
 
       {/* Navigation Buttons */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
         <a
           href={`/analyses/${id}/files`}
           className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all group text-center"
