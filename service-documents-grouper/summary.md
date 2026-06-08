@@ -43,6 +43,6 @@ Agrupa los archivos ya clasificados de un análisis: crea registros de proposals
 
 | Servicio | Uso |
 |----------|-----|
-| **Gemini** | Agrupación de proposals, generación de nombre y entidad contratante |
-| **OpenAI** | Fallback cuando Gemini falla |
+| **OpenAI** | Agrupación de proposals, generación de nombre y entidad contratante |
+| **Gemini** | Fallback cuando OpenAI falla |
 | **Backend API** | Buscar archivos, actualizar archivos, crear proposals, crear tender, actualizar análisis, callback |

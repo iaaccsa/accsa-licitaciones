@@ -2,12 +2,12 @@
 Documents Grouper Service
 ===========================
 Groups already-classified files of an analysis into proposals and a tender record.
-Uses Google Gemini to group proposal files by company/bidder, generate a descriptive
-name for the procurement process, and identify the contracting entity.
+Uses OpenAI (Gemini fallback) to group proposal files by company/bidder, generate a
+descriptive name for the procurement process, and identify the contracting entity.
 
 Required environment variables:
-  - GOOGLE_API_KEY         : Google Gemini API key (primary model)
-  - OPENAI_API_KEY         : OpenAI API key (fallback model)
+  - OPENAI_API_KEY         : OpenAI API key (primary model)
+  - GOOGLE_API_KEY         : Google Gemini API key (fallback model)
   - API_BASE_URL           : Backend API base URL
   - API_KEY                : API key for backend authentication
   - API_EVENTS_PATH        : Path for events endpoint
@@ -49,8 +49,8 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 SERVICE_NAME = "service-documents-grouper"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL = "gemini-3.1-pro-preview"
-OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
+OPENAI_MODEL = "gpt-4.1-mini"
+GEMINI_FALLBACK_MODEL = "gemini-3.1-pro-preview"
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -111,25 +111,25 @@ NAMING_PROMPT = (Path(__file__).parent / "prompt_tender_naming.md").read_text(en
 
 
 def call_llm_json(gemini_client: genai.Client, openai_client: OpenAI, prompt: str) -> dict:
-    """Call Gemini for JSON generation; fall back to OpenAI on failure."""
+    """Call OpenAI for JSON generation; fall back to Gemini on failure."""
     try:
+        response = openai_client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+        )
+        return json.loads(response.choices[0].message.content)
+    except Exception as e:
+        logger.warning(
+            f"OpenAI failed ({e}), falling back to Gemini ({GEMINI_FALLBACK_MODEL})...")
         response = gemini_client.models.generate_content(
-            model=GEMINI_MODEL,
+            model=GEMINI_FALLBACK_MODEL,
             contents=prompt,
             config=genai_types.GenerateContentConfig(
                 response_mime_type="application/json",
             ),
         )
         return json.loads(response.text)
-    except Exception as e:
-        logger.warning(
-            f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
-        response = openai_client.chat.completions.create(
-            model=OPENAI_FALLBACK_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-        )
-        return json.loads(response.choices[0].message.content)
 
 
 # ---------------------------------------------------------------------------
