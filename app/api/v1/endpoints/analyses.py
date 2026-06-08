@@ -4,9 +4,11 @@ from uuid import UUID
 from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
 from app.schemas.job import CancelPipelineResponse, ResumePipelineResponse, RetryJobRequest
 from app.schemas.proposal import ProposalRead
+from app.schemas.model_tier import AnalysisModelConfig
 from app.services.analysis_service import analysis_service
 from app.services.job_orchestrator_service import job_orchestrator_service
 from app.services.proposal_service import proposal_service
+from app.services.model_tier_service import model_tier_service
 
 router = APIRouter()
 
@@ -93,6 +95,31 @@ def list_proposals_by_analysis(analysis_id: UUID):
 def get_analysis_sources(analysis_id: UUID):
     try:
         return analysis_service.get_sources(analysis_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{analysis_id}/model-config", response_model=AnalysisModelConfig)
+def get_analysis_model_config(analysis_id: UUID):
+    """
+    Resolve which LLM model an analysis should use, from its selected
+    primary_model + intelligence_level via the model_tiers table.
+    """
+    try:
+        analysis = analysis_service.get_analysis_by_id(analysis_id)
+        if not analysis:
+            raise HTTPException(status_code=404, detail="Analysis not found")
+        tier = model_tier_service.get_tier(analysis.primary_model, analysis.intelligence_level)
+        if not tier:
+            raise HTTPException(status_code=404, detail="No active model tier for selection")
+        return AnalysisModelConfig(
+            analysis_id=analysis.id,
+            provider=tier.provider,
+            level=tier.level,
+            model_id=tier.model_id,
+            fallback_model_id=tier.fallback_model_id,
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
