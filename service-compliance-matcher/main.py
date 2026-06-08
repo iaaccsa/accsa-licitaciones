@@ -20,8 +20,6 @@ Required environment variables:
   - API_ANALYSES_PATH
   - API_PROPOSALS_PATH
   - API_ANALYSIS_REQUIREMENTS_PATH
-  - API_ADMISSIBILITY_REQUIREMENTS_PATH
-  - API_ADMISSIBILITY_RESULTS_PATH
   - API_TENDER_CLASSIFICATIONS_PATH
   - API_COMPLIANCE_MATRIX_PATH
   - API_JOBS_CALLBACK
@@ -59,8 +57,6 @@ API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
 API_ANALYSIS_REQUIREMENTS_PATH = os.environ.get("API_ANALYSIS_REQUIREMENTS_PATH")
-API_ADMISSIBILITY_REQUIREMENTS_PATH = os.environ.get("API_ADMISSIBILITY_REQUIREMENTS_PATH")
-API_ADMISSIBILITY_RESULTS_PATH = os.environ.get("API_ADMISSIBILITY_RESULTS_PATH")
 API_TENDER_CLASSIFICATIONS_PATH = os.environ.get("API_TENDER_CLASSIFICATIONS_PATH")
 API_COMPLIANCE_MATRIX_PATH = os.environ.get("API_COMPLIANCE_MATRIX_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
@@ -160,8 +156,6 @@ def validate_env():
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
             ("API_PROPOSALS_PATH", API_PROPOSALS_PATH),
             ("API_ANALYSIS_REQUIREMENTS_PATH", API_ANALYSIS_REQUIREMENTS_PATH),
-            ("API_ADMISSIBILITY_REQUIREMENTS_PATH", API_ADMISSIBILITY_REQUIREMENTS_PATH),
-            ("API_ADMISSIBILITY_RESULTS_PATH", API_ADMISSIBILITY_RESULTS_PATH),
             ("API_TENDER_CLASSIFICATIONS_PATH", API_TENDER_CLASSIFICATIONS_PATH),
             ("API_COMPLIANCE_MATRIX_PATH", API_COMPLIANCE_MATRIX_PATH),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
@@ -259,21 +253,6 @@ def load_requirements(analysis_id: str) -> List[dict]:
         result = api_request("GET", f"{API_ANALYSIS_REQUIREMENTS_PATH}{analysis_id}", params={"limit": limit, "offset": offset, "is_verified": "true"})
         if not isinstance(result, list):
             raise RuntimeError(f"Unexpected response from analysis-requirements: {type(result)}")
-        all_requirements.extend(result)
-        if len(result) < limit:
-            break
-        offset += limit
-    return all_requirements
-
-
-def load_admissibility_requirements(analysis_id: str) -> List[dict]:
-    all_requirements = []
-    limit = 100
-    offset = 0
-    while True:
-        result = api_request("GET", f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}{analysis_id}", params={"limit": limit, "offset": offset})
-        if not isinstance(result, list):
-            raise RuntimeError(f"Unexpected response from admissibility-requirements: {type(result)}")
         all_requirements.extend(result)
         if len(result) < limit:
             break
@@ -595,26 +574,6 @@ def post_matrix_entries(analysis_id: str, proposal_id: str, entries: List[FinalC
     logger.info(f"POST matrix batch: {len(entries)} entries saved.")
 
 
-def delete_admissibility_results_for_proposal(proposal_id: str):
-    api_request("DELETE", f"{API_ADMISSIBILITY_RESULTS_PATH}by-proposal/{proposal_id}")
-    logger.info(f"Deleted existing admissibility results for proposal {proposal_id}.")
-
-
-def post_admissibility_results(analysis_id: str, proposal_id: str, entries: List[FinalComplianceEntry]):
-    if not entries:
-        return
-    payload = [
-        {
-            "analysis_id": analysis_id,
-            "proposal_id": proposal_id,
-            **e.model_dump(),
-        }
-        for e in entries
-    ]
-    api_request("POST", f"{API_ADMISSIBILITY_RESULTS_PATH}bulk", payload)
-    logger.info(f"POST admissibility results bulk: {len(entries)} entries saved.")
-
-
 # ---------------------------------------------------------------------------
 # Main async flow
 # ---------------------------------------------------------------------------
@@ -658,30 +617,14 @@ async def process_compliance_matching_async():
             label="analysis_requirements",
         )
 
-        # --- Pass 2: admissibility_requirements → admissibility_results ---
-        admissibility_requirements = load_admissibility_requirements(ANALYSIS_ID)
-        logger.info(f"Loaded {len(admissibility_requirements)} admissibility requirements.")
-        delete_admissibility_results_for_proposal(PROPOSAL_ID)
-        admissibility_entries = await run_matching_pass(
-            gemini_client, openai_client, qdrant,
-            proposal, admissibility_requirements, slug,
-            ANALYSIS_ID, PROPOSAL_ID,
-            post_admissibility_results,
-            label="admissibility_requirements",
-        )
-
-        # Mark matching_status exactly once, after both passes complete
+        # Mark matching_status exactly once, after the pass completes
         mark_matching_result(PROPOSAL_ID)
 
-        summary = (
-            f"Compliance matching completado: {len(general_entries)} entradas analisis | "
-            f"{len(admissibility_entries)} entradas admisibilidad"
-        )
+        summary = f"Compliance matching completado: {len(general_entries)} entradas analisis"
         logger.info(summary)
         log_event(ANALYSIS_ID, "info", summary, EVENT_SOURCE, {
             "proposal_id": PROPOSAL_ID,
             "analysis_entries": len(general_entries),
-            "admissibility_entries": len(admissibility_entries),
         })
 
         notify_success()
