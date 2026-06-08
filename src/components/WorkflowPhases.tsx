@@ -117,9 +117,14 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
 function Connector({ prev, current, approvalPhase }: { prev: Phase; current: Phase; approvalPhase?: Phase }) {
     const prevDone = prev.status === "completed" || prev.progress >= 100;
     const currStarted = current.status !== "pending" || current.progress > 0;
+    const isAuto = approvalPhase?.display_name?.startsWith("Sin aprobación") ?? false;
+    const approvalDone = approvalPhase
+        ? approvalPhase.status === "completed" || approvalPhase.progress >= 100
+        : false;
 
     let state: "idle" | "waiting" | "done" = "idle";
-    if (prevDone && currStarted) state = "done";
+    if (isAuto || approvalDone) state = "done";
+    else if (prevDone && currStarted) state = "done";
     else if (prevDone && !currStarted) state = "waiting";
 
     const badgeStyle = {
@@ -128,8 +133,11 @@ function Connector({ prev, current, approvalPhase }: { prev: Phase; current: Pha
         done: "text-green-600 border-green-300 bg-green-50",
     }[state];
 
-    const pendingLabel = approvalPhase?.display_name ?? "Esperando Aprovación";
-    const label = state === "done" ? "Aprobado" : pendingLabel;
+    const label = isAuto
+        ? "Sin aprobación"
+        : state === "done"
+            ? "Aprobado"
+            : "Esperando Aprobación";
 
     return (
         <div className="flex-1 flex flex-col items-center pt-[22px] min-w-[60px]">
@@ -144,10 +152,7 @@ function Connector({ prev, current, approvalPhase }: { prev: Phase; current: Pha
                 )}
                 <div className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${badgeStyle}`}>
                     <span className={`w-1.5 h-1.5 rounded-full bg-current ${state === "waiting" ? "animate-pulse" : ""}`} />
-                    <div className="text-center">
-                        <div>Esperando</div>
-                        <div>Aprobación</div>
-                    </div>
+                    <span>{label}</span>
                 </div>
             </div>
         </div>
