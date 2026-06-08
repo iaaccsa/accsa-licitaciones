@@ -174,6 +174,17 @@ class JobOrchestratorService:
             self._notify_by_email(analysis_id, "awaiting_approval")
             return []
 
+        # After the admissibility gate: if no proposal is admitida there is nothing
+        # left to match/summarize, so skip the remaining jobs and finalize.
+        if service_name == "service-admissibility-gate" and not proposal_repository.get_admitidas_by_analysis_id(analysis_id):
+            self._log_event(
+                analysis_id, "info",
+                "Sin propuestas admitidas tras el chequeo de admisibilidad: se omiten los jobs restantes y se finaliza el análisis.",
+                {"admitidas": 0}
+            )
+            self._complete_downstream_and_finalize(analysis_id, service_name)
+            return []
+
         # Find and launch next jobs
         next_jobs = get_next_jobs(service_name)
         launched = []
@@ -530,6 +541,29 @@ class JobOrchestratorService:
             f"Análisis cancelado por timeout. Steps timed-out: {timed_out_step_codes}",
             {"timed_out_steps": timed_out_step_codes, "source": "job_monitor"},
         )
+
+    def _complete_downstream_and_finalize(self, analysis_id: UUID, from_service: str) -> None:
+        """Auto-complete every job downstream of from_service (0 instances) and mark the analysis ready."""
+        visited = set()
+        queue = list(get_next_jobs(from_service))
+        while queue:
+            svc = queue.pop(0)
+            if svc in visited:
+                continue
+            visited.add(svc)
+            try:
+                workflow_step_service.start_step_by_service(str(analysis_id), svc, instances_count=0)
+                workflow_step_service.complete_step_by_service(str(analysis_id), svc)
+            except Exception as e:
+                logger.error(f"Failed to auto-complete downstream step {svc} for analysis_id={analysis_id}: {e}")
+            queue.extend(get_next_jobs(svc))
+
+        analysis_repository.update_by_id(
+            str(analysis_id),
+            {"status": "ready", "is_success": True},
+        )
+        logger.info(f"Pipeline finalized (no admitida proposals) for analysis_id={analysis_id}.")
+        self._notify_by_email(analysis_id, "completed")
 
     def _maybe_finalize_pipeline(self, analysis_id: UUID, completed_service: str) -> None:
         """If every is_final service has its workflow step completed, flip analysis to ready."""
