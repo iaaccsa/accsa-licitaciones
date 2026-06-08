@@ -74,6 +74,16 @@ def delete_by_proposal(proposal_id: UUID):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/batch", response_model=BatchInsertResponse)
+def batch_insert(items: List[AdmissibilityResultEntryFlatCreate]):
+    if not items:
+        raise HTTPException(status_code=422, detail="items list must not be empty")
+    try:
+        return admissibility_result_service.batch_insert(items)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.patch("/{entry_id}", response_model=AdmissibilityResultEntryRead)
 def patch_entry(entry_id: UUID, patch: AdmissibilityResultEntryPatch):
     return admissibility_result_service.patch_entry(str(entry_id), patch)
