@@ -4,16 +4,78 @@ import { useState, useCallback, useTransition } from "react";
 import Link from "next/link";
 import { FileUploadZone } from "@/components/FileUploadZone";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle, XCircle, UserCheck, Bot } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle,
+  XCircle,
+  UserCheck,
+  Bot,
+  Sparkles,
+  Cpu,
+  Zap,
+  Gauge,
+  Brain,
+  type LucideIcon,
+} from "lucide-react";
 
 type UploadStatus = "idle" | "success" | "error";
 type AnalysisResult = Record<string, unknown> | null;
+type PrimaryModel = "gemini" | "openai";
+type IntelligenceLevel = "low" | "medium" | "high";
+
+const MODELS: { value: PrimaryModel; label: string; desc: string; Icon: LucideIcon }[] = [
+  { value: "gemini", label: "Gemini", desc: "Modelos de Google.", Icon: Sparkles },
+  { value: "openai", label: "OpenAI", desc: "Modelos GPT de OpenAI.", Icon: Cpu },
+];
+
+const LEVELS: { value: IntelligenceLevel; label: string; desc: string; Icon: LucideIcon }[] = [
+  { value: "low", label: "Bajo", desc: "Más rápido y económico.", Icon: Zap },
+  { value: "medium", label: "Medio", desc: "Equilibrio velocidad/calidad.", Icon: Gauge },
+  { value: "high", label: "Alto", desc: "Más capaz, más lento.", Icon: Brain },
+];
+
+function SelectableCard({
+  active,
+  onClick,
+  Icon,
+  label,
+  desc,
+}: {
+  active: boolean;
+  onClick: () => void;
+  Icon: LucideIcon;
+  label: string;
+  desc: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${
+        active
+          ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500"
+          : "border-zinc-200 hover:border-zinc-300"
+      }`}
+    >
+      <Icon
+        className={`h-5 w-5 mt-0.5 shrink-0 ${active ? "text-blue-600" : "text-zinc-400"}`}
+      />
+      <span>
+        <span className="block text-sm font-medium text-zinc-700">{label}</span>
+        <span className="block text-xs text-zinc-500 mt-0.5">{desc}</span>
+      </span>
+    </button>
+  );
+}
 
 export function UploadSection() {
   const [files, setFiles] = useState<File[]>([]);
   const [analysisName, setAnalysisName] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [hitl, setHitl] = useState(false);
+  const [primaryModel, setPrimaryModel] = useState<PrimaryModel>("openai");
+  const [intelligenceLevel, setIntelligenceLevel] =
+    useState<IntelligenceLevel>("medium");
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult>(null);
@@ -82,6 +144,8 @@ export function UploadSection() {
       const body: Record<string, string | boolean> = {
         storage_path: fileName,
         hitl,
+        primary_model: primaryModel,
+        intelligence_level: intelligenceLevel,
       };
       if (analysisName.trim()) body.user_name = analysisName.trim();
       if (userEmail.trim()) body.user_email = userEmail.trim();
@@ -102,6 +166,8 @@ export function UploadSection() {
         setAnalysisName("");
         setUserEmail("");
         setHitl(false);
+        setPrimaryModel("openai");
+        setIntelligenceLevel("medium");
         setUploadKey((prev) => prev + 1);
       } else {
         setErrorMessage(data.error || "No se pudo iniciar el análisis");
@@ -112,7 +178,15 @@ export function UploadSection() {
       setErrorMessage("Error de conexión. Inténtelo después.");
       setStatus("error");
     }
-  }, [files, hasMinFiles, analysisName, userEmail, hitl]);
+  }, [
+    files,
+    hasMinFiles,
+    analysisName,
+    userEmail,
+    hitl,
+    primaryModel,
+    intelligenceLevel,
+  ]);
 
   const handleAnalysisWithTransition = useCallback(() => {
     startTransition(async () => {
@@ -126,41 +200,43 @@ export function UploadSection() {
         Subir Documentos
       </h2>
 
-      <div className="mb-6">
-        <label
-          htmlFor="analysis-name"
-          className="block text-sm font-medium text-zinc-600 mb-2"
-        >
-          Nombre del análisis{" "}
-          <span className="text-zinc-400 font-normal">(opcional)</span>
-        </label>
-        <input
-          id="analysis-name"
-          type="text"
-          value={analysisName}
-          onChange={(e) => setAnalysisName(e.target.value)}
-          maxLength={200}
-          placeholder="Ej: Licitación Obra Pública 2026"
-          className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-        />
-      </div>
+      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="analysis-name"
+            className="block text-sm font-medium text-zinc-600 mb-2"
+          >
+            Nombre del análisis{" "}
+            <span className="text-zinc-400 font-normal">(opcional)</span>
+          </label>
+          <input
+            id="analysis-name"
+            type="text"
+            value={analysisName}
+            onChange={(e) => setAnalysisName(e.target.value)}
+            maxLength={200}
+            placeholder="Ej: Licitación Obra Pública 2026"
+            className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+          />
+        </div>
 
-      <div className="mb-6">
-        <label
-          htmlFor="user-email"
-          className="block text-sm font-medium text-zinc-600 mb-2"
-        >
-          Correo <span className="text-zinc-400 font-normal">(opcional)</span>
-        </label>
-        <input
-          id="user-email"
-          type="email"
-          value={userEmail}
-          onChange={(e) => setUserEmail(e.target.value)}
-          maxLength={200}
-          placeholder="Ej: contacto@empresa.cl"
-          className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-        />
+        <div>
+          <label
+            htmlFor="user-email"
+            className="block text-sm font-medium text-zinc-600 mb-2"
+          >
+            Correo <span className="text-zinc-400 font-normal">(opcional)</span>
+          </label>
+          <input
+            id="user-email"
+            type="email"
+            value={userEmail}
+            onChange={(e) => setUserEmail(e.target.value)}
+            maxLength={200}
+            placeholder="Ej: contacto@empresa.cl"
+            className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
+          />
+        </div>
       </div>
 
       <div className="mb-6">
@@ -210,6 +286,42 @@ export function UploadSection() {
               </span>
             </span>
           </button>
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <span className="block text-sm font-medium text-zinc-600 mb-2">
+          Modelo principal
+        </span>
+        <div className="grid grid-cols-2 gap-4">
+          {MODELS.map(({ value, label, desc, Icon }) => (
+            <SelectableCard
+              key={value}
+              active={primaryModel === value}
+              onClick={() => setPrimaryModel(value)}
+              Icon={Icon}
+              label={label}
+              desc={desc}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-6">
+        <span className="block text-sm font-medium text-zinc-600 mb-2">
+          Nivel de inteligencia
+        </span>
+        <div className="grid grid-cols-3 gap-4">
+          {LEVELS.map(({ value, label, desc, Icon }) => (
+            <SelectableCard
+              key={value}
+              active={intelligenceLevel === value}
+              onClick={() => setIntelligenceLevel(value)}
+              Icon={Icon}
+              label={label}
+              desc={desc}
+            />
+          ))}
         </div>
       </div>
 

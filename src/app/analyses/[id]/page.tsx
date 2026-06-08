@@ -20,6 +20,9 @@ import {
   ShieldCheck,
   UserCheck,
   Bot,
+  Cpu,
+  Gauge,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,9 +46,53 @@ interface Analysis {
   is_success: boolean | null;
   paused_at_service: string | null;
   hitl: boolean;
+  primary_model: "gemini" | "openai" | null;
+  intelligence_level: "low" | "medium" | "high" | null;
   created_at: string;
   updated_at: string;
 }
+
+const MODEL_LABELS: Record<string, string> = {
+  gemini: "Gemini",
+  openai: "OpenAI",
+};
+
+const LEVEL_LABELS: Record<string, string> = {
+  low: "Baja",
+  medium: "Media",
+  high: "Alta",
+};
+
+const CHIP_TONES = {
+  neutral: "bg-zinc-50 text-zinc-600 border-zinc-200",
+  indigo: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  violet: "bg-violet-50 text-violet-700 border-violet-200",
+  amber: "bg-amber-50 text-amber-700 border-amber-200",
+} as const;
+
+function InfoChip({
+  icon: Icon,
+  label,
+  value,
+  tone = "neutral",
+}: {
+  icon: LucideIcon;
+  label?: string;
+  value: string;
+  tone?: keyof typeof CHIP_TONES;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs ${CHIP_TONES[tone]}`}
+    >
+      <Icon className="w-3.5 h-3.5 shrink-0" />
+      {label && <span className="opacity-60">{label}</span>}
+      <span className="font-medium">{value}</span>
+    </span>
+  );
+}
+
+const FINISHED_STATUSES = ["ready", "failed", "cancelled"];
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleString("es-ES", {
@@ -176,53 +223,27 @@ export default function AnalysisDetailPage() {
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
       <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="text-2xl font-bold text-zinc-900">
-              {analysis.user_name || analysis.generated_name || (
-                <span className="font-mono uppercase">{analysis.slug}</span>
-              )}
-            </h1>
-            <StatusBadge
-              status={analysis.status}
-              isSuccess={analysis.is_success}
-            />
-          </div>
-          <div className="flex items-center justify-between text-sm text-zinc-500 gap-4">
-            <div className="flex items-center gap-4 flex-wrap">
-              <span className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                {formatDate(analysis.created_at)}
-              </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                Finalizado: {formatDate(analysis.updated_at)}
-              </span>
-              <span className="flex items-center gap-1">
-                {analysis.hitl ? (
-                  <UserCheck className="w-4 h-4" />
-                ) : (
-                  <Bot className="w-4 h-4" />
+        <div className="flex flex-col gap-5">
+          {/* Top: title block + status / actions */}
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 space-y-1.5">
+              <h1 className="text-2xl font-bold text-zinc-900 truncate">
+                {analysis.user_name || analysis.generated_name || (
+                  <span className="font-mono uppercase">{analysis.slug}</span>
                 )}
-                {analysis.hitl
-                  ? "Con validación humana"
-                  : "Sin validación humana"}
-              </span>
+              </h1>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="font-mono uppercase text-xs bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded">
+                  {analysis.slug}
+                </span>
+                {analysis.user_name && analysis.generated_name && (
+                  <span className="text-sm text-zinc-400 truncate">
+                    {analysis.generated_name}
+                  </span>
+                )}
+              </div>
             </div>
-            <span className="flex items-center gap-1 font-mono text-xs bg-zinc-100 px-2 py-0.5 rounded uppercase">
-              {analysis.slug}
-            </span>
-          </div>
-          {analysis.user_email && (
-            <div className="flex items-center gap-1 text-sm text-zinc-500">
-              <Mail className="w-4 h-4" />
-              {analysis.user_email}
-            </div>
-          )}
-          {(analysis.status === "pending" ||
-            analysis.status === "processing" ||
-            analysis.status === "awaiting_approval") && (
-            <div className="flex items-center justify-end gap-2 pt-1">
+            <div className="flex items-center gap-2 shrink-0">
               {analysis.status === "awaiting_approval" && (
                 <Button
                   size="sm"
@@ -238,22 +259,81 @@ export default function AnalysisDetailPage() {
                   Continuar
                 </Button>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancel}
-                disabled={isCancelling}
-                className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
-              >
-                {isCancelling ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Ban className="h-3.5 w-3.5" />
-                )}
-                Cancelar
-              </Button>
+              {(analysis.status === "pending" ||
+                analysis.status === "processing" ||
+                analysis.status === "awaiting_approval") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancel}
+                  disabled={isCancelling}
+                  className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                >
+                  {isCancelling ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Ban className="h-3.5 w-3.5" />
+                  )}
+                  Cancelar
+                </Button>
+              )}
+              <StatusBadge
+                status={analysis.status}
+                isSuccess={analysis.is_success}
+              />
             </div>
-          )}
+          </div>
+
+          <div className="h-px bg-zinc-100" />
+
+          {/* Metadata chips */}
+          <div className="flex flex-wrap items-center gap-2">
+            <InfoChip
+              icon={Calendar}
+              label="Creado"
+              value={formatDate(analysis.created_at)}
+            />
+            <InfoChip
+              icon={Clock}
+              label={
+                FINISHED_STATUSES.includes(analysis.status)
+                  ? "Finalizado"
+                  : "Actualizado"
+              }
+              value={formatDate(analysis.updated_at)}
+            />
+            <InfoChip
+              icon={analysis.hitl ? UserCheck : Bot}
+              value={
+                analysis.hitl ? "Con validación humana" : "Sin validación humana"
+              }
+              tone={analysis.hitl ? "amber" : "neutral"}
+            />
+            {analysis.primary_model && (
+              <InfoChip
+                icon={Cpu}
+                label="Modelo"
+                value={
+                  MODEL_LABELS[analysis.primary_model] ?? analysis.primary_model
+                }
+                tone="indigo"
+              />
+            )}
+            {analysis.intelligence_level && (
+              <InfoChip
+                icon={Gauge}
+                label="Inteligencia"
+                value={
+                  LEVEL_LABELS[analysis.intelligence_level] ??
+                  analysis.intelligence_level
+                }
+                tone="violet"
+              />
+            )}
+            {analysis.user_email && (
+              <InfoChip icon={Mail} value={analysis.user_email} />
+            )}
+          </div>
         </div>
       </div>
 

@@ -1,7 +1,13 @@
 import Link from "next/link";
-import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit, Network, Braces } from "lucide-react";
+import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit, Network, Braces, Coins } from "lucide-react";
 
 const docs = [
+    {
+        href: "/docs/model-tiers",
+        icon: Coins,
+        title: "Niveles de modelo y precios",
+        description: "Modelos asignados según el proveedor y nivel de inteligencia elegidos por el usuario, con precios por millón de tokens.",
+    },
     {
         href: "/docs/architecture",
         icon: Network,
