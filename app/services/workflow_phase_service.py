@@ -1,9 +1,14 @@
 from app.repositories.workflow_phase_repository import workflow_phase_repository
 from app.repositories.workflow_step_repository import workflow_step_repository
+from app.repositories.analysis_repository import analysis_repository
 from app.schemas.workflow_phase import WorkflowPhase, WorkflowPhaseFilter
 from app.config.jobs_config import get_phases, get_phase_for_step, get_steps_for_phase, get_next_phase, get_step_code_for_service
 from datetime import datetime
 from typing import List
+
+
+def _auto_approval_label(display_name: str) -> str:
+    return display_name.replace("Esperando Aprobación de ", "Sin aprobación: ")
 
 
 class WorkflowPhaseService:
@@ -15,13 +20,17 @@ class WorkflowPhaseService:
         data = self.repository.get_by_analysis_id(filter_params.analysis_id)
         return [WorkflowPhase(**item) for item in data]
 
-    def initialize_phases(self, analysis_id: str) -> List[WorkflowPhase]:
+    def initialize_phases(self, analysis_id: str, hitl: bool = True) -> List[WorkflowPhase]:
         phases = get_phases()
         records = [
             {
                 "analysis_id": analysis_id,
                 "code": p["code"],
-                "display_name": p["display_name"],
+                "display_name": (
+                    _auto_approval_label(p["display_name"])
+                    if not hitl and p.get("type") == "approval"
+                    else p["display_name"]
+                ),
                 "status": "pending",
                 "progress": 0,
                 "order": p["order"],
@@ -92,7 +101,11 @@ class WorkflowPhaseService:
         if new_status == "completed":
             next_phase = get_next_phase(phase_code)
             if next_phase and next_phase.get("type") == "approval":
-                self._activate_approval_phase(analysis_id, next_phase, now)
+                analysis = analysis_repository.get_by_id(analysis_id)
+                if analysis and analysis.get("hitl") is False:
+                    self._autocomplete_approval_phase(analysis_id, next_phase, now)
+                else:
+                    self._activate_approval_phase(analysis_id, next_phase, now)
 
     def complete_approval_phase_after_service(self, analysis_id: str, service_name: str) -> None:
         """Complete the approval phase activated after service_name's processing phase."""
@@ -115,6 +128,22 @@ class WorkflowPhaseService:
             "progress": 100,
             "order": next_phase["order"],
             "type": "approval",
+            "started_at": existing.get("started_at") if existing else now,
+            "ended_at": now,
+        })
+
+    def _autocomplete_approval_phase(self, analysis_id: str, phase_meta: dict, now: str) -> None:
+        existing = self.repository.get_by_analysis_and_code(analysis_id, phase_meta["code"])
+        if existing and existing.get("status") == "completed":
+            return
+        self.repository.upsert({
+            "analysis_id": analysis_id,
+            "code": phase_meta["code"],
+            "display_name": _auto_approval_label(phase_meta["display_name"]),
+            "status": "completed",
+            "progress": 100,
+            "order": phase_meta["order"],
+            "type": phase_meta.get("type", "approval"),
             "started_at": existing.get("started_at") if existing else now,
             "ended_at": now,
         })

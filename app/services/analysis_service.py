@@ -75,6 +75,7 @@ class AnalysisService:
         analysis_data = {
             "status": "pending",
             "artifact_path": data.storage_path,
+            "hitl": data.hitl,
         }
         if data.user_name:
             analysis_data["user_name"] = data.user_name
@@ -95,7 +96,7 @@ class AnalysisService:
 
         # 3. Initialize Workflow Steps
         workflow_step_service.initialize_steps(analysis.id)
-        workflow_phase_service.initialize_phases(str(analysis.id))
+        workflow_phase_service.initialize_phases(str(analysis.id), data.hitl)
 
         # 4. Start Jobs Pipeline
         try:

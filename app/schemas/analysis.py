@@ -13,6 +13,7 @@ class AnalysisBase(BaseModel):
     user_email: Optional[str] = None
     generated_name: Optional[str] = None
     paused_at_service: Optional[str] = None
+    hitl: Optional[bool] = None
 
 class Analysis(AnalysisBase):
     id: UUID
@@ -29,6 +30,7 @@ class AnalysisFromStoragePath(BaseModel):
     storage_path: str
     user_name: Optional[str] = None
     user_email: Optional[str] = None
+    hitl: bool = False
 
 class AnalysisUpdate(BaseModel):
     generated_name: Optional[str] = None

@@ -145,8 +145,14 @@ class JobOrchestratorService:
             )
             return []
 
-        # Check if pipeline should pause for user approval
-        if is_pause_after_job(service_name):
+        # Check if pipeline should pause for user approval (skip when hitl is disabled)
+        should_pause = is_pause_after_job(service_name)
+        if should_pause:
+            analysis = analysis_repository.get_by_id(str(analysis_id))
+            if analysis and analysis.get("hitl") is False:
+                should_pause = False
+
+        if should_pause:
             analysis_repository.update_by_id(
                 str(analysis_id),
                 {"status": "awaiting_approval", "paused_at_service": service_name, "is_success": None}
