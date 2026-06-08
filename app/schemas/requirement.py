@@ -86,7 +86,6 @@ class AnalysisRequirementCreate(BaseModel):
 
     confidence:          Literal["alta", "media", "baja", "muy_baja"] = "media"
     extraction_batch_id: Optional[int]  = None
-    is_admissibility:    bool           = False
     notes:               Optional[str]  = None
 
     @field_validator("roles")
@@ -122,7 +121,6 @@ class AnalysisRequirementUpdate(BaseModel):
     weight:              Optional[RequirementWeight]      = None
     verification_method: Optional[ReqVerificationMethod]  = None
     temporal_scope:      Optional[ReqTemporalScope]       = None
-    is_admissibility:    Optional[bool]                   = None
     is_verified:         Optional[bool]                   = None
     notes:               Optional[str]                   = None
 
