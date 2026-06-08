@@ -5,81 +5,9 @@ import {
     ChevronDown, ChevronRight, CheckCircle2, XCircle, AlertTriangle,
     MinusCircle, HelpCircle, ShieldAlert, Loader2, AlertCircle,
     FileText, Filter, Search, X, ShieldCheck, ClipboardEdit, Save,
-    ChevronLeft, ChevronsLeft, ChevronsRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-// ---- Types ----
-
-type ComplianceVerdict =
-    | "cumple" | "cumple_parcial" | "no_cumple"
-    | "no_evidencia" | "no_aplica" | "requiere_verificacion_manual";
-
-type Confidence = "alta" | "media" | "baja" | "muy_baja";
-
-interface Citation {
-    chunk_id: string;
-    snippet: string;
-    header: string | null;
-    chunk_index: number;
-    page_number: number | null;
-    filename: string | null;
-}
-
-interface ComplianceEntry {
-    id: string;
-    analysis_id: string;
-    requirement_id: string;
-    proposal_id: string;
-    verdict: ComplianceVerdict;
-    confidence: string;
-    reasoning: string | null;
-    missing_elements: string[];
-    citations: Citation[];
-    manual_verification_required: boolean;
-    extraction_batch_id: number;
-    is_verified: boolean;
-    reviewed_by: string | null;
-    reviewed_at: string | null;
-    notes: string | null;
-    created_at: string;
-    updated_at: string;
-    analysis_slug: string;
-    requirement_code: string;
-    requirement_text: string;
-    requirement_summary: string | null;
-    requirement_roles: string[];
-    requirement_mapped_factors: unknown | null;
-    requirement_domain: string;
-    requirement_weight: unknown | null;
-    requirement_verification_method: string;
-    requirement_temporal_scope: string;
-    requirement_citations: unknown[];
-    requirement_confidence: string;
-    requirement_extraction_batch_id: number;
-    requirement_is_verified: boolean;
-    requirement_notes: string | null;
-    requirement_created_at: string;
-    requirement_updated_at: string;
-}
-
-interface EditDraft {
-    verdict: ComplianceVerdict | null;
-    confidence: Confidence | null;
-    reasoning: string;
-    notes: string;
-    reviewed_by: string;
-    is_verified: boolean;
-    manual_verification_required: boolean;
-}
-
-interface Filters {
-    verdicts: ComplianceVerdict[];
-    roles: string[];
-    verificationMethods: string[];
-    isVerified: boolean | null;
-    manualVerificationRequired: boolean | null;
-}
+import type { AdmissibilityResult, ComplianceVerdict, Confidence } from "@/lib/admissibility-types";
 
 // ---- Config ----
 
@@ -126,29 +54,29 @@ const CONFIDENCE_CONFIG: Record<Confidence, { label: string; color: string }> = 
 const ROLE_LABELS: Record<string, string> = {
     admisibilidad_obligatoria: "Adm. Obligatoria",
     admisibilidad_subsanable: "Adm. Subsanable",
-    puntuable: "Puntuable",
-    penalizador: "Penalizador",
-    informativo: "Informativo",
-    preferencia_legal: "Preferencia Legal",
-    desconocido_pendiente_pliego_general: "Pendiente",
-};
-
-const VERIFICATION_METHOD_LABELS: Record<string, string> = {
-    documento_adjunto: "Doc. Adjunto",
-    declaracion_jurada: "Decl. Jurada",
-    certificado_externo: "Cert. Externo",
-    inspeccion: "Inspección",
-    muestra: "Muestra",
-    visita_tecnica: "Visita Técnica",
-    auto_verificable_desde_oferta: "Auto-verificable",
-    otro: "Otro",
 };
 
 const ALL_VERDICTS = Object.keys(VERDICT_CONFIG) as ComplianceVerdict[];
 const ALL_ROLES = Object.keys(ROLE_LABELS);
-const ALL_VERIFICATION_METHODS = Object.keys(VERIFICATION_METHOD_LABELS);
 
-const LIMIT = 50;
+const LIMIT = 500;
+
+interface EditDraft {
+    verdict: ComplianceVerdict | null;
+    confidence: Confidence | null;
+    reasoning: string;
+    notes: string;
+    reviewed_by: string;
+    is_verified: boolean;
+    manual_verification_required: boolean;
+}
+
+interface Filters {
+    verdicts: ComplianceVerdict[];
+    roles: string[];
+    isVerified: boolean | null;
+    manualVerificationRequired: boolean | null;
+}
 
 // ---- Helpers ----
 
@@ -168,38 +96,21 @@ function ConfidenceLabel({ confidence }: { confidence: string }) {
     return <span className={`text-xs font-semibold ${cfg.color}`}>Confianza: {cfg.label}</span>;
 }
 
-function buildPageList(current: number, total: number): (number | "...")[] {
-    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-    const pages: (number | "...")[] = [1];
-    if (current > 3) pages.push("...");
-    for (let i = Math.max(2, current - 1); i <= Math.min(total - 1, current + 1); i++) {
-        pages.push(i);
-    }
-    if (current < total - 2) pages.push("...");
-    pages.push(total);
-    return pages;
-}
-
 // ---- Main component ----
 
-interface ComplianceMatrixProps {
+interface AdmissibilityMatrixProps {
     analysisId: string;
     proposalId: string;
 }
 
-export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceMatrixProps) {
-    const [entries, setEntries] = useState<ComplianceEntry[]>([]);
+export default function AdmissibilityMatrix({ analysisId, proposalId }: AdmissibilityMatrixProps) {
+    const [entries, setEntries] = useState<AdmissibilityResult[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const [lastPageConfirmed, setLastPageConfirmed] = useState(false);
 
     const [filters, setFilters] = useState<Filters>({
         verdicts: [],
         roles: [],
-        verificationMethods: [],
         isVerified: null,
         manualVerificationRequired: null,
     });
@@ -211,47 +122,28 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
 
-    const buildParams = useCallback((offset: number) => {
-        const p = new URLSearchParams();
-        filters.roles.forEach((r) => p.append("role", r));
-        filters.verificationMethods.forEach((vm) => p.append("verification_method", vm));
-        p.set("order", "asc");
-        p.set("limit", String(LIMIT));
-        p.set("offset", String(offset));
-        return p.toString();
-    }, [filters.roles, filters.verificationMethods]);
-
-    const fetchPage = useCallback(async (page: number) => {
+    const fetchEntries = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const offset = (page - 1) * LIMIT;
-            const qs = buildParams(offset);
-            const res = await fetch(`/api/analyses/${analysisId}/proposals/${proposalId}/matrix?${qs}`);
+            const p = new URLSearchParams();
+            filters.roles.forEach((r) => p.append("role", r));
+            p.set("limit", String(LIMIT));
+            p.set("offset", "0");
+            const res = await fetch(`/api/analyses/${analysisId}/proposals/${proposalId}/admissibility-results?${p.toString()}`);
             if (!res.ok) throw new Error(`Error ${res.status}`);
-            const data: ComplianceEntry[] = await res.json();
-            setEntries(data);
-            setCurrentPage(page);
-            if (data.length < LIMIT) {
-                setTotalPages(page);
-                setLastPageConfirmed(true);
-            } else {
-                setTotalPages((prev) => Math.max(prev, page + 1));
-            }
+            const data: AdmissibilityResult[] = await res.json();
+            setEntries(Array.isArray(data) ? data : []);
         } catch {
-            setError("No se pudo cargar la matriz de cumplimiento.");
+            setError("No se pudo cargar la matriz de admisibilidad.");
         } finally {
             setLoading(false);
         }
-    }, [analysisId, proposalId, buildParams]);
+    }, [analysisId, proposalId, filters.roles]);
 
-    // Reset to page 1 when filters (server-side) change
     useEffect(() => {
-        setCurrentPage(1);
-        setTotalPages(1);
-        setLastPageConfirmed(false);
-        fetchPage(1);
-    }, [fetchPage]);
+        fetchEntries();
+    }, [fetchEntries]);
 
     // Client-side filtering
     const visible = entries.filter((e) => {
@@ -261,19 +153,19 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
         if (search.trim()) {
             const q = search.toLowerCase();
             if (
-                !e.requirement_code.toLowerCase().includes(q) &&
-                !e.requirement_text.toLowerCase().includes(q) &&
-                !(e.requirement_summary ?? "").toLowerCase().includes(q)
+                !e.requirement.requirement_code.toLowerCase().includes(q) &&
+                !e.requirement.requirement_text.toLowerCase().includes(q) &&
+                !(e.requirement.requirement_summary ?? "").toLowerCase().includes(q)
             ) return false;
         }
         return true;
     });
 
-    function patchLocal(entryId: string, updated: Partial<ComplianceEntry>) {
+    function patchLocal(entryId: string, updated: Partial<AdmissibilityResult>) {
         setEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...updated } : e)));
     }
 
-    function startEdit(entry: ComplianceEntry) {
+    function startEdit(entry: AdmissibilityResult) {
         setEditingId(entry.id);
         setSaveError(null);
         setDraft({
@@ -301,13 +193,13 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                 is_verified: draft.is_verified,
                 manual_verification_required: draft.manual_verification_required,
             };
-            const res = await fetch(`/api/compliance-matrix/${entryId}`, {
+            const res = await fetch(`/api/admissibility-results/${entryId}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body),
             });
             if (!res.ok) throw new Error(`Error ${res.status}`);
-            const updated: Partial<ComplianceEntry> = await res.json();
+            const updated: Partial<AdmissibilityResult> = await res.json();
             patchLocal(entryId, updated);
             setEditingId(null);
             setDraft(null);
@@ -318,15 +210,15 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
         }
     }
 
-    async function quickVerify(entry: ComplianceEntry) {
+    async function quickVerify(entry: AdmissibilityResult) {
         try {
-            const res = await fetch(`/api/compliance-matrix/${entry.id}`, {
+            const res = await fetch(`/api/admissibility-results/${entry.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ is_verified: true, manual_verification_required: false }),
             });
             if (!res.ok) return;
-            const updated: Partial<ComplianceEntry> = await res.json();
+            const updated: Partial<AdmissibilityResult> = await res.json();
             patchLocal(entry.id, updated);
         } catch {
             // silent - user can retry via full edit
@@ -334,11 +226,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
     }
 
     // ---- Render ----
-
-    const pageList = buildPageList(currentPage, totalPages);
-    const canPrev = currentPage > 1;
-    const canNext = !lastPageConfirmed || currentPage < totalPages;
-    const canLast = lastPageConfirmed && currentPage < totalPages;
 
     return (
         <div className="space-y-4">
@@ -433,41 +320,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                     )}
                 </div>
 
-                {/* Verification method filter chips (server-side) */}
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-zinc-400 shrink-0">Método:</span>
-                    {ALL_VERIFICATION_METHODS.map((vm) => {
-                        const active = filters.verificationMethods.includes(vm);
-                        return (
-                            <button
-                                key={vm}
-                                onClick={() =>
-                                    setFilters((f) => ({
-                                        ...f,
-                                        verificationMethods: active
-                                            ? f.verificationMethods.filter((x) => x !== vm)
-                                            : [...f.verificationMethods, vm],
-                                    }))
-                                }
-                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${active
-                                    ? "bg-zinc-800 text-white border-zinc-800"
-                                    : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
-                                    }`}
-                            >
-                                {VERIFICATION_METHOD_LABELS[vm]}
-                            </button>
-                        );
-                    })}
-                    {filters.verificationMethods.length > 0 && (
-                        <button
-                            onClick={() => setFilters((f) => ({ ...f, verificationMethods: [] }))}
-                            className="text-xs text-zinc-400 hover:text-zinc-700 underline"
-                        >
-                            Limpiar
-                        </button>
-                    )}
-                </div>
-
                 {/* isVerified / manualVerificationRequired toggles */}
                 <div className="flex items-center gap-3 flex-wrap text-xs">
                     {(
@@ -502,7 +354,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                 <p className="text-sm text-zinc-500 px-1">
                     {visible.length} resultado{visible.length !== 1 ? "s" : ""}
                     {search ? ` para "${search}"` : ""}
-                    {entries.length !== visible.length ? ` (de ${entries.length} en esta página)` : ""}
+                    {entries.length !== visible.length ? ` (de ${entries.length})` : ""}
                 </p>
             )}
 
@@ -525,7 +377,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
             {!loading && !error && visible.length === 0 && (
                 <div className="text-center py-16 text-zinc-400">
                     <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">No hay entradas que coincidan con los filtros.</p>
+                    <p className="text-sm">No hay requisitos de admisibilidad evaluados para esta propuesta.</p>
                 </div>
             )}
 
@@ -535,6 +387,7 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                     {visible.map((entry) => {
                         const isExpanded = expandedId === entry.id;
                         const isEditing = editingId === entry.id;
+                        const req = entry.requirement;
 
                         return (
                             <div
@@ -555,11 +408,11 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                     </span>
 
                                     <span className="font-mono text-xs bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded shrink-0">
-                                        {entry.requirement_code}
+                                        {req.requirement_code}
                                     </span>
 
                                     <span className="flex-1 text-sm text-zinc-700 truncate min-w-0">
-                                        {entry.requirement_summary ?? entry.requirement_text.slice(0, 100)}
+                                        {req.requirement_summary ?? req.requirement_text.slice(0, 100)}
                                     </span>
 
                                     <div className="flex items-center gap-2 shrink-0">
@@ -580,18 +433,18 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 flex-wrap">
                                                 <Badge variant="outline" className="text-xs font-normal">
-                                                    {entry.requirement_domain}
+                                                    {req.domain}
                                                 </Badge>
-                                                {entry.requirement_roles.map((r) => (
+                                                {req.roles.map((r) => (
                                                     <Badge key={r} variant="secondary" className="text-xs font-normal">
                                                         {ROLE_LABELS[r] ?? r}
                                                     </Badge>
                                                 ))}
-                                                <span className="text-xs text-zinc-400">{entry.requirement_verification_method}</span>
-                                                <span className="text-xs text-zinc-400">{entry.requirement_temporal_scope}</span>
+                                                <span className="text-xs text-zinc-400">{req.verification_method}</span>
+                                                <span className="text-xs text-zinc-400">{req.temporal_scope}</span>
                                             </div>
                                             <p className="text-sm text-zinc-800 bg-zinc-50 rounded-lg p-3 leading-relaxed">
-                                                {entry.requirement_text}
+                                                {req.requirement_text}
                                             </p>
                                         </div>
 
@@ -814,69 +667,6 @@ export default function ComplianceMatrix({ analysisId, proposalId }: ComplianceM
                             </div>
                         );
                     })}
-                </div>
-            )}
-
-            {/* Pagination */}
-            {!loading && !error && totalPages > 1 && (
-                <div className="flex items-center justify-center gap-1 pt-2">
-                    {/* Primera */}
-                    <button
-                        onClick={() => fetchPage(1)}
-                        disabled={!canPrev}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-                        title="Primera página"
-                    >
-                        <ChevronsLeft className="w-4 h-4" />
-                    </button>
-
-                    {/* Anterior */}
-                    <button
-                        onClick={() => fetchPage(currentPage - 1)}
-                        disabled={!canPrev}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-                        title="Página anterior"
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                    </button>
-
-                    {/* Números de página */}
-                    {pageList.map((item, i) =>
-                        item === "..." ? (
-                            <span key={`ellipsis-${i}`} className="px-1 text-sm text-zinc-400 select-none">...</span>
-                        ) : (
-                            <button
-                                key={item}
-                                onClick={() => item !== currentPage && fetchPage(item)}
-                                className={`min-w-[32px] h-8 px-2 rounded-lg text-sm font-medium transition-colors ${item === currentPage
-                                    ? "bg-zinc-900 text-white"
-                                    : "text-zinc-600 hover:bg-zinc-100"
-                                    }`}
-                            >
-                                {item}
-                            </button>
-                        )
-                    )}
-
-                    {/* Siguiente */}
-                    <button
-                        onClick={() => fetchPage(currentPage + 1)}
-                        disabled={!canNext}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-                        title="Página siguiente"
-                    >
-                        <ChevronRight className="w-4 h-4" />
-                    </button>
-
-                    {/* Última */}
-                    <button
-                        onClick={() => fetchPage(totalPages)}
-                        disabled={!canLast}
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-                        title="Última página"
-                    >
-                        <ChevronsRight className="w-4 h-4" />
-                    </button>
                 </div>
             )}
         </div>

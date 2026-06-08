@@ -20,9 +20,9 @@ const services = [
         code: "service-documents-grouper",
         task: "Agrupar documentos por similitud de contenido",
         complexity: "Baja" as const,
-        primary: "gemini-2.5-flash",
+        primary: "gemini-3.1-pro-preview",
         fallback: "gpt-4.1-mini",
-        reason: "Agrupación básica comparando títulos y contenido. Patrón repetitivo.",
+        reason: "Agrupación y generación de nombre de licitación. Pro por su mayor capacidad de razonamiento sobre títulos y contenido heterogéneo.",
     },
     {
         code: "service-file-metadata-extractor",
@@ -37,16 +37,16 @@ const services = [
         task: "Clasificar sistema de evaluación, factores y roles del pliego",
         complexity: "Alta" as const,
         primary: "gemini-2.5-flash",
-        fallback: "gpt-4.1-nano",
-        reason: "Requiere comprensión del marco normativo uruguayo. Flash es suficiente como primario; nano como fallback por el prompt bien estructurado.",
+        fallback: "gpt-4.1-mini",
+        reason: "Requiere comprensión del marco normativo uruguayo. Flash con thinking budget como primario; mini como fallback.",
     },
     {
         code: "service-requirement-extractor",
         task: "Extraer requisitos atómicos del pliego vía RAG iterativo",
         complexity: "Alta" as const,
         primary: "gemini-2.5-flash",
-        fallback: "gpt-4.1-nano",
-        reason: "Alto volumen de llamadas (N batches x chunks). El prompt guía la extracción con ejes definidos, lo que permite modelos más livianos.",
+        fallback: "gpt-4.1-mini",
+        reason: "Alto volumen de llamadas (N batches x chunks). Flash con thinking budget; mini como fallback por el prompt estructurado con ejes definidos.",
     },
     {
         code: "service-compliance-matcher",
@@ -167,7 +167,7 @@ export default function LlmModelsPage() {
 
             {/* Note */}
             <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-                <strong>Nota sobre modelos:</strong> <code className="font-mono text-xs bg-blue-100 px-1 rounded">gemini-2.5-flash</code> actúa como primario en todos los servicios por su balance costo/capacidad. Los fallbacks de tareas de alta complejidad usan <code className="font-mono text-xs bg-blue-100 px-1 rounded">gpt-4.1-nano</code> aprovechando el prompt estructurado que compensa el menor tamaño del modelo.
+                <strong>Nota sobre modelos:</strong> <code className="font-mono text-xs bg-blue-100 px-1 rounded">gemini-2.5-flash</code> actúa como primario en la mayoría de servicios; <code className="font-mono text-xs bg-blue-100 px-1 rounded">gemini-3.1-pro-preview</code> se usa donde se requiere mayor capacidad de razonamiento. <code className="font-mono text-xs bg-blue-100 px-1 rounded">gpt-4.1-mini</code> es el fallback universal en todos los servicios.
             </div>
         </div>
     );

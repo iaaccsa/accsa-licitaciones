@@ -27,11 +27,6 @@ export async function GET(
             upstream.searchParams.append("verification_method", vm);
         }
 
-        const isAdmissibility = search.get("is_admissibility");
-        if (isAdmissibility === "true" || isAdmissibility === "false") {
-            upstream.searchParams.set("is_admissibility", isAdmissibility);
-        }
-
         const order = search.get("order") ?? "asc";
         upstream.searchParams.set("order", order);
 

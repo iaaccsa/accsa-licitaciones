@@ -43,7 +43,6 @@ interface AnalysisRequirementRead {
     confidence: string | null;
     extraction_batch_id: number | null;
     notes: string | null;
-    is_admissibility: boolean;
     is_verified: boolean;
     created_at: string;
     updated_at: string;
@@ -141,27 +140,23 @@ export default function RequirementsPage() {
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [verifyingAll, setVerifyingAll] = useState<boolean | null>(null);
-    const [filterAdmissibility, setFilterAdmissibility] = useState<boolean | null>(null);
 
     const sentinelRef = useRef<HTMLDivElement>(null);
     const isFetchingRef = useRef(false);
     const offsetRef = useRef(0);
     const hasMoreRef = useRef(true);
-    const filterRef = useRef<boolean | null>(null);
 
-    const buildUrl = useCallback((off: number, admissibility: boolean | null) => {
-        let url = `/api/analyses/${id}/requirements?limit=${LIMIT}&offset=${off}`;
-        if (admissibility !== null) url += `&is_admissibility=${admissibility}`;
-        return url;
+    const buildUrl = useCallback((off: number) => {
+        return `/api/analyses/${id}/requirements?limit=${LIMIT}&offset=${off}`;
     }, [id]);
 
-    const fetchPage = useCallback(async (off: number, admissibility: boolean | null, append: boolean) => {
+    const fetchPage = useCallback(async (off: number, append: boolean) => {
         if (isFetchingRef.current) return;
         isFetchingRef.current = true;
         if (append) setIsFetchingMore(true);
         else setIsLoading(true);
         try {
-            const response = await fetch(buildUrl(off, admissibility));
+            const response = await fetch(buildUrl(off));
             if (!response.ok) throw new Error("Error al cargar los requisitos");
             const data: AnalysisRequirementRead[] = await response.json();
             const items = Array.isArray(data) ? data : [];
@@ -182,27 +177,12 @@ export default function RequirementsPage() {
                 if (hasMoreRef.current && sentinelRef.current && !isFetchingRef.current) {
                     const rect = sentinelRef.current.getBoundingClientRect();
                     if (rect.top < window.innerHeight) {
-                        fetchPage(offsetRef.current, filterRef.current, true);
+                        fetchPage(offsetRef.current, true);
                     }
                 }
             }, 50);
         }
     }, [buildUrl]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    const handleAdmissibilityToggle = useCallback(async (req: AnalysisRequirementRead) => {
-        const newValue = !req.is_admissibility;
-        setRequirements(prev => prev.map(r => r.id === req.id ? { ...r, is_admissibility: newValue } : r));
-        try {
-            const response = await fetch(`/api/requirements/${req.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ is_admissibility: newValue }),
-            });
-            if (!response.ok) throw new Error("Failed to update");
-        } catch {
-            setRequirements(prev => prev.map(r => r.id === req.id ? { ...r, is_admissibility: req.is_admissibility } : r));
-        }
-    }, []);
 
     const handleVerifyToggle = useCallback(async (req: AnalysisRequirementRead) => {
         const newValue = !req.is_verified;
@@ -234,15 +214,6 @@ export default function RequirementsPage() {
         }
     }, [id]);
 
-    const handleFilterAdmissibility = useCallback((value: boolean | null) => {
-        setFilterAdmissibility(value);
-        filterRef.current = value;
-        offsetRef.current = 0;
-        hasMoreRef.current = true;
-        setHasMore(true);
-        fetchPage(0, value, false);
-    }, [fetchPage]);
-
     // Infinite scroll
     useEffect(() => {
         const sentinel = sentinelRef.current;
@@ -250,7 +221,7 @@ export default function RequirementsPage() {
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting && hasMoreRef.current && !isFetchingRef.current) {
-                    fetchPage(offsetRef.current, filterRef.current, true);
+                    fetchPage(offsetRef.current, true);
                 }
             },
             { threshold: 0.1 }
@@ -261,7 +232,7 @@ export default function RequirementsPage() {
 
     // Initial load
     useEffect(() => {
-        if (id) fetchPage(0, null, false);
+        if (id) fetchPage(0, false);
     }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     useEffect(() => {
@@ -306,29 +277,6 @@ export default function RequirementsPage() {
                         {analysis.user_name || analysis.generated_name || analysis.slug}
                     </span>
                 )}
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-wrap items-center gap-2 p-3 bg-zinc-50 border border-zinc-200 rounded-xl">
-                <span className="text-xs font-medium text-zinc-500 mr-1">Filtros:</span>
-                <button
-                    onClick={() => handleFilterAdmissibility(null)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterAdmissibility === null ? "bg-zinc-800 text-white border-zinc-800" : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100"}`}
-                >
-                    Todos
-                </button>
-                <button
-                    onClick={() => handleFilterAdmissibility(true)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterAdmissibility === true ? "bg-violet-600 text-white border-violet-600" : "bg-white text-violet-700 border-violet-200 hover:bg-violet-50"}`}
-                >
-                    Excluyentes (Admisibilidad)
-                </button>
-                <button
-                    onClick={() => handleFilterAdmissibility(false)}
-                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${filterAdmissibility === false ? "bg-zinc-700 text-white border-zinc-700" : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-100"}`}
-                >
-                    No Excluyentes (Otros)
-                </button>
             </div>
 
             {/* Verify-all actions */}
@@ -430,9 +378,6 @@ export default function RequirementsPage() {
                                                 Confianza: {CONFIDENCE_LABELS[req.confidence] ?? req.confidence}
                                             </span>
                                         )}
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${req.is_admissibility ? "bg-violet-50 text-violet-700 border-violet-200" : "bg-zinc-50 text-zinc-500 border-zinc-200"}`}>
-                                            {req.is_admissibility ? "Admisibilidad" : "No admisibilidad"}
-                                        </span>
                                     </div>
 
                                     {/* Weight */}
@@ -471,15 +416,6 @@ export default function RequirementsPage() {
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => handleAdmissibilityToggle(req)}
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${req.is_admissibility
-                                                        ? "bg-violet-50 text-violet-700 border-violet-200 hover:bg-violet-100"
-                                                        : "bg-zinc-50 text-zinc-500 border-zinc-200 hover:bg-zinc-100"
-                                                    }`}
-                                            >
-                                                {req.is_admissibility ? "Quitar admisibilidad" : "Marcar admisibilidad"}
-                                            </button>
                                             <button
                                                 onClick={() => handleVerifyToggle(req)}
                                                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${req.is_verified

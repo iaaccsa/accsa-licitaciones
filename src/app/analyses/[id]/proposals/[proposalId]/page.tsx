@@ -6,6 +6,7 @@ import { Loader2, ArrowLeft, Calendar, FileText, AlertCircle, Building2, Sparkle
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import ComplianceMatrix from "@/components/ComplianceMatrix";
+import AdmissibilityMatrix from "@/components/AdmissibilityMatrix";
 import EconomicOfferCard from "@/components/EconomicOfferCard";
 
 interface Analysis {
@@ -305,6 +306,11 @@ export default function ProposalDetailPage() {
                 )}
 
                 <EconomicOfferCard analysisId={analysisId} proposalId={proposalId} />
+
+                <div className="min-w-0">
+                    <h2 className="text-lg font-semibold text-zinc-900 mb-3">Admisibilidad</h2>
+                    <AdmissibilityMatrix analysisId={analysisId} proposalId={proposalId} />
+                </div>
 
                 <div className="min-w-0">
                     <h2 className="text-lg font-semibold text-zinc-900 mb-3">Matriz de Cumplimiento</h2>

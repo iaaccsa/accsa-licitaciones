@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import { Loader2, Calendar, Mail, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play, Scale, Users } from "lucide-react";
+import { Loader2, Calendar, Mail, CheckCircle, XCircle, Clock, AlertCircle, FileText, ClipboardList, Ban, PauseCircle, Play, Scale, Users, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowPhases from "@/components/WorkflowPhases";
@@ -241,6 +241,23 @@ export default function AnalysisDetailPage() {
                         </h3>
                         <p className="text-sm text-zinc-500">
                             Ver matriz de cumplimiento
+                        </p>
+                    </div>
+                </a>
+
+                <a
+                    href={`/analyses/${id}/admissibility`}
+                    className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-violet-300 hover:shadow-md transition-all group text-center"
+                >
+                    <div className="p-3 bg-violet-50 text-violet-600 rounded-lg group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                        <ShieldCheck className="w-8 h-8" />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                        <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-violet-600 transition-colors">
+                            Admisibilidad
+                        </h3>
+                        <p className="text-sm text-zinc-500">
+                            Requisitos excluyentes dedicados
                         </p>
                     </div>
                 </a>
