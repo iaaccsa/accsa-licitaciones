@@ -14,7 +14,7 @@ Obtiene el evaluation_profile producido por service-tender-classifier.
 ### POST /api/v1/analysis-requirements/bulk?analysis_id=<uuid>
 Reemplaza atomicamente todos los requerimientos del analisis.
 - **Query param:** `analysis_id` (uuid)
-- **Request:** `[{requirement_code, requirement_text, requirement_summary, roles, mapped_factors, domain, weight, verification_method, temporal_scope, citations, confidence, extraction_batch_id, is_admissibility, notes}, ...]`
+- **Request:** `[{requirement_code, requirement_text, requirement_summary, roles, mapped_factors, domain, weight, verification_method, temporal_scope, citations, confidence, extraction_batch_id, notes}, ...]`
 - **Comportamiento:** el endpoint elimina los registros previos del analysis_id y crea los nuevos en una sola transaccion.
 
 ### PATCH /api/v1/analyses/{analysis_id}/status

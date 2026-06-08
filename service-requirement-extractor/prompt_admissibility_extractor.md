@@ -128,4 +128,4 @@ Do NOT assign requirement_code; the orchestrator does that after deduplication.
 1. `roles` must be non-empty and contain only `admisibilidad_obligatoria` or `admisibilidad_subsanable`.
 2. `citations` must be non-empty and every `chunk_id` must come from the batch.
 3. One obligation per requirement for technical specs (atomic); administrative documents may be grouped.
-4. Do NOT include `mapped_factors`, `weight`, `is_admissibility`, or any scoring fields.
+4. Do NOT include `mapped_factors`, `weight`, or any scoring fields.

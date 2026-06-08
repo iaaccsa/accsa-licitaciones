@@ -384,7 +384,6 @@ class FinalAdmissibilityRequirement(AdmissibilityRawRequirement):
 
 class FinalRequirement(RawRequirement):
     requirement_code: str
-    is_admissibility: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -1185,17 +1184,6 @@ def process_extraction():
         logger.warning(f"profile_validation: {w}")
         log_event(ANALYSIS_ID, "warning", w, EVENT_SOURCE)
     logger.info(f"After validation: {len(cleaned)} requirements remain ({len(with_codes) - len(cleaned)} discarded).")
-
-    # Flag is_admissibility on general bucket (legacy field)
-    admissibility_count = 0
-    for req in cleaned:
-        req.is_admissibility = (
-            "admisibilidad_obligatoria" in req.roles
-            and req.verification_method == "auto_verifiable_from_offer"
-        )
-        if req.is_admissibility:
-            admissibility_count += 1
-    logger.info(f"Admissibility requirements flagged: {admissibility_count}/{len(cleaned)}.")
 
     # Enrich citations with canonical filename + page_number from Qdrant
     for req in cleaned:
