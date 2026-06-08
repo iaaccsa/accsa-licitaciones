@@ -12,7 +12,7 @@ class TenderClassificationRepository(BaseRepository):
             supabase.table(self.table_name)
             .select("*")
             .eq("analysis_id", analysis_id)
-            .single()
+            .maybe_single()
             .execute()
         )
         return response.data if response.data else None
