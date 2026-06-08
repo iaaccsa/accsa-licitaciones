@@ -18,6 +18,8 @@ import {
   Scale,
   Users,
   ShieldCheck,
+  UserCheck,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -40,6 +42,7 @@ interface Analysis {
     | "cancelled";
   is_success: boolean | null;
   paused_at_service: string | null;
+  hitl: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -186,10 +189,26 @@ export default function AnalysisDetailPage() {
             />
           </div>
           <div className="flex items-center justify-between text-sm text-zinc-500 gap-4">
-            <span className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              {formatDate(analysis.created_at)}
-            </span>
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {formatDate(analysis.created_at)}
+              </span>
+              <span className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                Finalizado: {formatDate(analysis.updated_at)}
+              </span>
+              <span className="flex items-center gap-1">
+                {analysis.hitl ? (
+                  <UserCheck className="w-4 h-4" />
+                ) : (
+                  <Bot className="w-4 h-4" />
+                )}
+                {analysis.hitl
+                  ? "Con validación humana"
+                  : "Sin validación humana"}
+              </span>
+            </div>
             <span className="flex items-center gap-1 font-mono text-xs bg-zinc-100 px-2 py-0.5 rounded uppercase">
               {analysis.slug}
             </span>
