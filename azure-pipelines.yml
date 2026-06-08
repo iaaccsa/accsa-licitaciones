@@ -21,8 +21,8 @@ strategy:
     #   SERVICE_NAME: "service-qdrant-by-file"
     # service-documents-classifier:
     #   SERVICE_NAME: "service-documents-classifier"
-    service-documents-grouper:
-      SERVICE_NAME: "service-documents-grouper"
+    # service-documents-grouper:
+    #   SERVICE_NAME: "service-documents-grouper"
     # service-digital-sig-extractor:
     #   SERVICE_NAME: "service-digital-sig-extractor"
     # service-tender-classifier:
@@ -39,8 +39,8 @@ strategy:
     #   SERVICE_NAME: "service-admissibility-gate"
     # service-economic-offer-extractor:
     #   SERVICE_NAME: "service-economic-offer-extractor"
-    # service-admissibility-matcher:
-    #   SERVICE_NAME: "service-admissibility-matcher"
+    service-admissibility-matcher:
+      SERVICE_NAME: "service-admissibility-matcher"
 
 steps:
   - script: |

@@ -548,7 +548,10 @@ def delete_admissibility_results_for_proposal(proposal_id: str):
     logger.info(f"Deleted existing admissibility results for proposal {proposal_id}.")
 
 
-def post_admissibility_results(analysis_id: str, proposal_id: str, entries: List[FinalComplianceEntry]):
+def append_admissibility_results(analysis_id: str, proposal_id: str, entries: List[FinalComplianceEntry]):
+    # APPEND (does NOT replace): the proposal's prior rows are cleared once up front via
+    # delete_admissibility_results_for_proposal, then rows are appended as each requirement
+    # is processed. Using /bulk here would replace on every call and keep only the last entry.
     if not entries:
         return
     payload = [
@@ -559,8 +562,8 @@ def post_admissibility_results(analysis_id: str, proposal_id: str, entries: List
         }
         for e in entries
     ]
-    api_request("POST", f"{API_ADMISSIBILITY_RESULTS_PATH}bulk", payload)
-    logger.info(f"POST admissibility results bulk: {len(entries)} entries saved.")
+    api_request("POST", f"{API_ADMISSIBILITY_RESULTS_PATH}batch", payload)
+    logger.info(f"POST admissibility results batch: {len(entries)} entries appended.")
 
 
 # ---------------------------------------------------------------------------
@@ -592,12 +595,14 @@ async def process_admissibility_matching_async():
             EVENT_SOURCE,
         )
 
+        # Clear the proposal's prior results ONCE; rows are then appended incrementally as
+        # each requirement is matched (see append_admissibility_results).
         delete_admissibility_results_for_proposal(PROPOSAL_ID)
         admissibility_entries = await run_matching_pass(
             gemini_client, openai_client, qdrant,
             proposal, admissibility_requirements, slug,
             ANALYSIS_ID, PROPOSAL_ID,
-            post_admissibility_results,
+            append_admissibility_results,
             label="admissibility_requirements",
         )
 
