@@ -35,8 +35,8 @@ strategy:
     #   SERVICE_NAME: "service-compliance-summarizer"
     # service-file-metadata-extractor:
     #   SERVICE_NAME: "service-file-metadata-extractor"
-    # service-admissibility-gate:
-    #   SERVICE_NAME: "service-admissibility-gate"
+    service-admissibility-gate:
+      SERVICE_NAME: "service-admissibility-gate"
     # service-economic-offer-extractor:
     #   SERVICE_NAME: "service-economic-offer-extractor"
     service-admissibility-matcher:

@@ -107,14 +107,6 @@ def validate_env():
 # ---------------------------------------------------------------------------
 # State transitions
 # ---------------------------------------------------------------------------
-def mark_admissibility_start(proposal_id: str):
-    now = datetime.now(timezone.utc).isoformat()
-    api_request("PATCH", f"{API_PROPOSALS_PATH}{proposal_id}/admissibility-start", {
-        "admissibility_started_at": now,
-    })
-    logger.info(f"Proposal {proposal_id} transitioned to evaluating.")
-
-
 def mark_admissibility_result(proposal_id: str, status: str, reasons: List[dict]):
     now = datetime.now(timezone.utc).isoformat()
     api_request("PATCH", f"{API_PROPOSALS_PATH}{proposal_id}/admissibility-result", {
@@ -191,12 +183,15 @@ def load_proposal(proposal_id: str) -> dict:
 
 
 def load_admissibility_requirements(analysis_id: str) -> List[dict]:
+    # Only verified requirements count; the matcher produces results for these only,
+    # so requirements and admissibility_results line up 1:1.
     return load_all_paginated(
         f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}{analysis_id}",
+        params={"is_verified": "true"},
     )
 
 
-def load_compliance_matrix(proposal_id: str) -> List[dict]:
+def load_admissibility_results(proposal_id: str) -> List[dict]:
     return load_all_paginated(
         f"{API_ADMISSIBILITY_RESULTS_PATH}by-proposal/{proposal_id}",
     )
@@ -209,49 +204,59 @@ def evaluate_admissibility(
     requirements: List[dict],
     matrix_entries: List[dict],
 ) -> tuple:
-    """Returns (status, reasons) where status is 'admitida' or 'rechazada'."""
+    """Returns (status, reasons) where status is 'admitida' or 'rechazada'.
 
-    # Build lookup: requirement_id -> matrix entry
+    Only requirements with role 'admisibilidad_obligatoria' block admission. A
+    'subsanable' requirement that fails is recorded (non-blocking) for HITL
+    visibility but does not reject the proposal. Blocking-ness is conveyed via the
+    reason `type` (the AdmissibilityReason schema drops unknown fields).
+    """
+
+    # Build lookup: requirement_id -> result entry
     matrix_by_req: Dict[str, dict] = {}
     for entry in matrix_entries:
         req_id = str(entry.get("requirement_id", ""))
         matrix_by_req[req_id] = entry
 
     reasons: List[dict] = []
+    blocking = 0
 
     for req in requirements:
         req_id = str(req["id"])
         req_code = req.get("requirement_code", "?")
+        is_obligatoria = "admisibilidad_obligatoria" in (req.get("roles") or [])
         entry = matrix_by_req.get(req_id)
 
         if not entry:
-            # No matrix entry for this requirement. This shouldn't happen
-            # if the compliance-matcher ran correctly, but guard against it.
+            # No result row for this requirement. Shouldn't happen (the matcher emits
+            # one per verified requirement), but guard against it.
             reasons.append({
-                "type": "auto_admisibilidad_missing",
+                "type": "auto_admisibilidad_missing" if is_obligatoria else "auto_admisibilidad_subsanable_missing",
                 "requirement_id": req_id,
                 "requirement_code": req_code,
                 "verdict": None,
-                "reasoning": "No se encontro entrada en la matriz de cumplimiento para este requisito de admisibilidad obligatoria.",
+                "reasoning": "No se encontro entrada en admissibility_results para este requisito de admisibilidad.",
             })
+            if is_obligatoria:
+                blocking += 1
             continue
 
         verdict = entry.get("verdict")
-
         if verdict != "cumple":
             reasons.append({
-                "type": "auto_admisibilidad_no_cumple",
+                "type": "auto_admisibilidad_no_cumple" if is_obligatoria else "auto_admisibilidad_subsanable_no_cumple",
                 "requirement_id": req_id,
                 "requirement_code": req_code,
                 "verdict": verdict,
                 "reasoning": entry.get("reasoning"),
             })
+            if is_obligatoria:
+                blocking += 1
 
-    # Decision: any rejection reason -> rechazada
-    if reasons:
+    # Decision: only obligatoria failures reject; subsanable failures do not block.
+    if blocking:
         return "rechazada", reasons
-    else:
-        return "admitida", reasons
+    return "admitida", reasons
 
 
 # ---------------------------------------------------------------------------
@@ -260,8 +265,8 @@ def evaluate_admissibility(
 def process_admissibility_gate():
     logger.info(f"Starting admissibility-gate for ANALYSIS_ID={ANALYSIS_ID} PROPOSAL_ID={PROPOSAL_ID}")
 
-    mark_admissibility_start(PROPOSAL_ID)
-
+    # The proposal is already in "evaluating" (set by service-admissibility-matcher,
+    # which runs immediately before this gate). We go straight to the decision.
     try:
         proposal = load_proposal(PROPOSAL_ID)
         label = proposal.get("label", PROPOSAL_ID)
@@ -282,9 +287,9 @@ def process_admissibility_gate():
             notify_success()
             return
 
-        # Load compliance matrix for this proposal
-        matrix_entries = load_compliance_matrix(PROPOSAL_ID)
-        logger.info(f"Loaded {len(matrix_entries)} compliance matrix entries.")
+        # Load admissibility results for this proposal
+        matrix_entries = load_admissibility_results(PROPOSAL_ID)
+        logger.info(f"Loaded {len(matrix_entries)} admissibility result entries.")
 
         # Evaluate
         status, reasons = evaluate_admissibility(requirements, matrix_entries)

@@ -30,6 +30,7 @@ Required environment variables:
 import asyncio
 import os
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Dict, List, Literal, Optional
 
@@ -172,6 +173,30 @@ def get_embedding(client: OpenAI, text: str) -> List[float]:
 
 
 # ---------------------------------------------------------------------------
+# State transitions (proposals admissibility lifecycle)
+# ---------------------------------------------------------------------------
+def mark_admissibility_start(proposal_id: str):
+    # force=true: in the reordered DAG the matcher runs before the compliance-matcher,
+    # so matching_status is still "pending" and the start guard would otherwise reject.
+    now = datetime.now(timezone.utc).isoformat()
+    api_request("PATCH", f"{API_PROPOSALS_PATH}{proposal_id}/admissibility-start", {
+        "admissibility_started_at": now,
+    }, params={"force": "true"})
+    logger.info(f"Proposal {proposal_id} transitioned to evaluating.")
+
+
+def mark_admissibility_failure(proposal_id: str, error: str):
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        api_request("PATCH", f"{API_PROPOSALS_PATH}{proposal_id}/admissibility-failure", {
+            "admissibility_completed_at": now,
+            "admissibility_error": error,
+        })
+    except Exception as e:
+        logger.error(f"Failed to mark admissibility-failure: {e}")
+
+
+# ---------------------------------------------------------------------------
 # Job callbacks
 # ---------------------------------------------------------------------------
 def notify_success():
@@ -221,7 +246,7 @@ def load_admissibility_requirements(analysis_id: str) -> List[dict]:
     limit = 100
     offset = 0
     while True:
-        result = api_request("GET", f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}{analysis_id}", params={"limit": limit, "offset": offset})
+        result = api_request("GET", f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}{analysis_id}", params={"limit": limit, "offset": offset, "is_verified": "true"})
         if not isinstance(result, list):
             raise RuntimeError(f"Unexpected response from admissibility-requirements: {type(result)}")
         all_requirements.extend(result)
@@ -544,43 +569,52 @@ def post_admissibility_results(analysis_id: str, proposal_id: str, entries: List
 async def process_admissibility_matching_async():
     logger.info(f"Starting admissibility-matcher for ANALYSIS_ID={ANALYSIS_ID} PROPOSAL_ID={PROPOSAL_ID}")
 
+    mark_admissibility_start(PROPOSAL_ID)
+
     qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
     gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 
-    log_event(ANALYSIS_ID, "info", f"Iniciando match de admisibilidad para propuesta {PROPOSAL_ID}...", EVENT_SOURCE)
+    try:
+        log_event(ANALYSIS_ID, "info", f"Iniciando match de admisibilidad para propuesta {PROPOSAL_ID}...", EVENT_SOURCE)
 
-    analysis = load_analysis(ANALYSIS_ID)
-    slug = analysis["slug"]
-    logger.info(f"Target Qdrant collection slug: {slug}")
+        analysis = load_analysis(ANALYSIS_ID)
+        slug = analysis["slug"]
+        logger.info(f"Target Qdrant collection slug: {slug}")
 
-    proposal = load_proposal(PROPOSAL_ID)
+        proposal = load_proposal(PROPOSAL_ID)
 
-    admissibility_requirements = load_admissibility_requirements(ANALYSIS_ID)
-    logger.info(f"Loaded {len(admissibility_requirements)} admissibility requirements.")
-    log_event(
-        ANALYSIS_ID, "info",
-        f"Evaluando {len(admissibility_requirements)} requisitos de admisibilidad contra propuesta {proposal.get('label', PROPOSAL_ID)}...",
-        EVENT_SOURCE,
-    )
+        admissibility_requirements = load_admissibility_requirements(ANALYSIS_ID)
+        logger.info(f"Loaded {len(admissibility_requirements)} verified admissibility requirements.")
+        log_event(
+            ANALYSIS_ID, "info",
+            f"Evaluando {len(admissibility_requirements)} requisitos de admisibilidad contra propuesta {proposal.get('label', PROPOSAL_ID)}...",
+            EVENT_SOURCE,
+        )
 
-    delete_admissibility_results_for_proposal(PROPOSAL_ID)
-    admissibility_entries = await run_matching_pass(
-        gemini_client, openai_client, qdrant,
-        proposal, admissibility_requirements, slug,
-        ANALYSIS_ID, PROPOSAL_ID,
-        post_admissibility_results,
-        label="admissibility_requirements",
-    )
+        delete_admissibility_results_for_proposal(PROPOSAL_ID)
+        admissibility_entries = await run_matching_pass(
+            gemini_client, openai_client, qdrant,
+            proposal, admissibility_requirements, slug,
+            ANALYSIS_ID, PROPOSAL_ID,
+            post_admissibility_results,
+            label="admissibility_requirements",
+        )
 
-    summary = f"Match de admisibilidad completado: {len(admissibility_entries)} entradas de admisibilidad"
-    logger.info(summary)
-    log_event(ANALYSIS_ID, "info", summary, EVENT_SOURCE, {
-        "proposal_id": PROPOSAL_ID,
-        "admissibility_entries": len(admissibility_entries),
-    })
+        summary = f"Match de admisibilidad completado: {len(admissibility_entries)} entradas de admisibilidad"
+        logger.info(summary)
+        log_event(ANALYSIS_ID, "info", summary, EVENT_SOURCE, {
+            "proposal_id": PROPOSAL_ID,
+            "admissibility_entries": len(admissibility_entries),
+        })
 
-    notify_success()
+        # Leave admissibility_status in "evaluating"; the admissibility-gate decides the
+        # terminal admitida/rechazada after matching completes for all proposals.
+        notify_success()
+
+    except Exception as e:
+        mark_admissibility_failure(PROPOSAL_ID, str(e))
+        raise
 
 
 def main():
