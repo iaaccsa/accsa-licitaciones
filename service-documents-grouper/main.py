@@ -52,6 +52,18 @@ EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 OPENAI_MODEL = "gpt-4.1-mini"
 GEMINI_FALLBACK_MODEL = "gemini-3.1-pro-preview"
 
+# Model selection, resolved at runtime from the analysis (see resolve_model_config).
+# Defaults preserve the prior hardcoded behavior if the API is unreachable.
+PRIMARY_PROVIDER = "openai"
+PRIMARY_MODEL = OPENAI_MODEL
+FALLBACK_PROVIDER = "gemini"
+FALLBACK_MODEL = GEMINI_FALLBACK_MODEL
+
+
+def _provider_of(model_id: str) -> str:
+    return "gemini" if str(model_id).startswith("gemini") else "openai"
+
+
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
 
@@ -74,6 +86,32 @@ def api_request(method: str, path: str, json_data: dict | list | None = None) ->
         return response.json()
     except ValueError:
         return None
+
+
+def resolve_model_config():
+    """Resolve the LLM model for this analysis from the API (user selection)
+    and log a startup event. On any failure keep the hardcoded defaults."""
+    global PRIMARY_PROVIDER, PRIMARY_MODEL, FALLBACK_PROVIDER, FALLBACK_MODEL
+    level = None
+    origin = "seleccion del usuario"
+    try:
+        cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config")
+        if cfg:
+            PRIMARY_PROVIDER = cfg.get("provider") or PRIMARY_PROVIDER
+            PRIMARY_MODEL = cfg.get("model_id") or PRIMARY_MODEL
+            level = cfg.get("level")
+            fb = cfg.get("fallback_model_id")
+            if fb:
+                FALLBACK_MODEL = fb
+                FALLBACK_PROVIDER = _provider_of(fb)
+    except Exception as e:
+        origin = f"valores por defecto (model-config no disponible: {e})"
+    msg = (
+        f"Modelo LLM: {PRIMARY_MODEL} (proveedor {PRIMARY_PROVIDER}"
+        + (f", nivel {level}" if level else "")
+        + f"); fallback {FALLBACK_MODEL}. Origen: {origin}."
+    )
+    log_event(ANALYSIS_ID, "info", msg, EVENT_SOURCE)
 
 
 def validate_env():
@@ -110,26 +148,40 @@ GROUPING_PROMPT = (Path(__file__).parent / "prompt_proposal_grouping.md").read_t
 NAMING_PROMPT = (Path(__file__).parent / "prompt_tender_naming.md").read_text(encoding="utf-8")
 
 
+def _openai_json(openai_client: OpenAI, prompt: str, model: str) -> dict:
+    response = openai_client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+    )
+    return json.loads(response.choices[0].message.content)
+
+
+def _gemini_json(gemini_client: genai.Client, prompt: str, model: str) -> dict:
+    response = gemini_client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=genai_types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
+    )
+    return json.loads(response.text)
+
+
 def call_llm_json(gemini_client: genai.Client, openai_client: OpenAI, prompt: str) -> dict:
-    """Call OpenAI for JSON generation; fall back to Gemini on failure."""
-    try:
-        response = openai_client.chat.completions.create(
-            model=OPENAI_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            response_format={"type": "json_object"},
-        )
-        return json.loads(response.choices[0].message.content)
-    except Exception as e:
-        logger.warning(
-            f"OpenAI failed ({e}), falling back to Gemini ({GEMINI_FALLBACK_MODEL})...")
-        response = gemini_client.models.generate_content(
-            model=GEMINI_FALLBACK_MODEL,
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(
-                response_mime_type="application/json",
-            ),
-        )
-        return json.loads(response.text)
+    """Call the user-selected primary model for JSON generation; fall back to the other provider."""
+    last_error = None
+    for provider, model in [(PRIMARY_PROVIDER, PRIMARY_MODEL), (FALLBACK_PROVIDER, FALLBACK_MODEL)]:
+        if not model:
+            continue
+        try:
+            if provider == "gemini":
+                return _gemini_json(gemini_client, prompt, model)
+            return _openai_json(openai_client, prompt, model)
+        except Exception as e:
+            last_error = e
+            logger.warning(f"{provider}/{model} failed ({e}), trying next...")
+    raise last_error
 
 
 # ---------------------------------------------------------------------------
@@ -456,6 +508,7 @@ def process_documents_grouping():
 
 def main():
     validate_env()
+    resolve_model_config()
     try:
         process_documents_grouping()
     except requests.exceptions.HTTPError as e:

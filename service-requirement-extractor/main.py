@@ -71,6 +71,19 @@ EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 OPENAI_MODEL = "gpt-4.1-mini"
 GEMINI_FALLBACK_MODEL = "gemini-2.5-flash"
 GEMINI_THINKING_BUDGET = 4096
+
+# Model selection, resolved at runtime from the analysis (see resolve_model_config).
+# Defaults preserve the prior hardcoded behavior if the API is unreachable.
+PRIMARY_PROVIDER = "openai"
+PRIMARY_MODEL = OPENAI_MODEL
+FALLBACK_PROVIDER = "gemini"
+FALLBACK_MODEL = GEMINI_FALLBACK_MODEL
+
+
+def _provider_of(model_id: str) -> str:
+    return "gemini" if str(model_id).startswith("gemini") else "openai"
+
+
 BATCH_SIZE = 15
 BATCH_OVERLAP = 2
 MAX_PARALLEL_BATCHES = 5
@@ -528,6 +541,32 @@ def api_request(
         return None
 
 
+def resolve_model_config():
+    """Resolve the LLM model for this analysis from the API (user selection)
+    and log a startup event. On any failure keep the hardcoded defaults."""
+    global PRIMARY_PROVIDER, PRIMARY_MODEL, FALLBACK_PROVIDER, FALLBACK_MODEL
+    level = None
+    origin = "seleccion del usuario"
+    try:
+        cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config")
+        if cfg:
+            PRIMARY_PROVIDER = cfg.get("provider") or PRIMARY_PROVIDER
+            PRIMARY_MODEL = cfg.get("model_id") or PRIMARY_MODEL
+            level = cfg.get("level")
+            fb = cfg.get("fallback_model_id")
+            if fb:
+                FALLBACK_MODEL = fb
+                FALLBACK_PROVIDER = _provider_of(fb)
+    except Exception as e:
+        origin = f"valores por defecto (model-config no disponible: {e})"
+    msg = (
+        f"Modelo LLM: {PRIMARY_MODEL} (proveedor {PRIMARY_PROVIDER}"
+        + (f", nivel {level}" if level else "")
+        + f"); fallback {FALLBACK_MODEL}. Origen: {origin}."
+    )
+    log_event(ANALYSIS_ID, "info", msg, EVENT_SOURCE)
+
+
 def validate_env():
     missing = [
         var
@@ -865,9 +904,9 @@ def _run_llm_pass(
     """
     raw_capture = {"openai": "", "gemini": ""}
 
-    def call_openai():
+    def _call_openai(model: str):
         oai_response = openai_client.chat.completions.create(
-            model=OPENAI_MODEL,
+            model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -878,9 +917,9 @@ def _run_llm_pass(
         raw_capture["openai"] = content
         return response_model.model_validate_json(content)
 
-    def call_gemini():
+    def _call_gemini(model: str):
         response = gemini_client.models.generate_content(
-            model=GEMINI_FALLBACK_MODEL,
+            model=model,
             contents=[
                 genai_types.Content(
                     role="user", parts=[genai_types.Part(text=system_prompt)]
@@ -908,50 +947,60 @@ def _run_llm_pass(
         raw_capture["gemini"] = response.text or ""
         return response_model.model_validate_json(response.text)
 
+    def _make_call(provider: str, model: str):
+        if provider == "gemini":
+            return lambda: _call_gemini(model)
+        return lambda: _call_openai(model)
+
     primary_unavailable = False
     fallback_used = False
     fallback_failed = False
 
     source: Optional[str] = None
-    result, openai_err = _call_with_retry(f"OpenAI[{label}]", batch_id, call_openai)
+    result, primary_err = _call_with_retry(
+        f"{PRIMARY_PROVIDER}[{label}]", batch_id, _make_call(PRIMARY_PROVIDER, PRIMARY_MODEL)
+    )
     if result is not None:
-        source = "openai"
+        source = PRIMARY_PROVIDER
     final_err: Optional[Exception] = None
     if result is None:
-        if _is_provider_unavailable(openai_err):
+        if _is_provider_unavailable(primary_err):
             primary_unavailable = True
         logger.warning(
-            f"Batch {batch_id}[{label}]: falling back to Gemini ({type(openai_err).__name__})."
+            f"Batch {batch_id}[{label}]: primary {PRIMARY_PROVIDER}/{PRIMARY_MODEL} failed "
+            f"({type(primary_err).__name__}), falling back to {FALLBACK_PROVIDER}/{FALLBACK_MODEL}."
         )
         fallback_used = True
-        result, gemini_err = _call_with_retry(f"Gemini[{label}]", batch_id, call_gemini)
+        result, fallback_err = _call_with_retry(
+            f"{FALLBACK_PROVIDER}[{label}]", batch_id, _make_call(FALLBACK_PROVIDER, FALLBACK_MODEL)
+        )
         if result is not None:
-            source = "gemini"
+            source = FALLBACK_PROVIDER
         if result is None:
             fallback_failed = True
-            final_err = gemini_err or openai_err
-            raw_snippet = (raw_capture["gemini"] or raw_capture["openai"])[:1000]
+            final_err = fallback_err or primary_err
+            raw_snippet = (raw_capture.get(FALLBACK_PROVIDER, "") or raw_capture.get(PRIMARY_PROVIDER, ""))[:1000]
             log_event(
                 ANALYSIS_ID,
                 "warning",
-                f"Batch {batch_id}[{label}] failed after retries on OpenAI and Gemini: "
+                f"Batch {batch_id}[{label}] failed after retries on {PRIMARY_PROVIDER} and {FALLBACK_PROVIDER}: "
                 f"{type(final_err).__name__}: {str(final_err)[:300]}",
                 EVENT_SOURCE,
                 {
                     "batch_id": batch_id,
                     "pass": label,
-                    "openai_error": f"{type(openai_err).__name__}: {str(openai_err)[:200]}"
-                    if openai_err
+                    "primary_error": f"{type(primary_err).__name__}: {str(primary_err)[:200]}"
+                    if primary_err
                     else None,
-                    "gemini_error": f"{type(gemini_err).__name__}: {str(gemini_err)[:200]}"
-                    if gemini_err
+                    "fallback_error": f"{type(fallback_err).__name__}: {str(fallback_err)[:200]}"
+                    if fallback_err
                     else None,
                     "raw_response_snippet": raw_snippet,
                 },
             )
 
     if result is not None and source is not None:
-        _log_dropped_uncited(batch_id, label, source, raw_capture[source], result)
+        _log_dropped_uncited(batch_id, label, source, raw_capture.get(source, ""), result)
 
     return result, final_err, primary_unavailable, fallback_used, fallback_failed
 
@@ -1537,11 +1586,11 @@ def process_extraction():
         for role in r.roles:
             role_counts[role] = role_counts.get(role, 0) + 1
 
-    openai_unavailable_count = sum(1 for o in outcomes.values() if o.primary_unavailable)
-    gemini_fallbacks_succeeded = sum(
+    primary_unavailable_count = sum(1 for o in outcomes.values() if o.primary_unavailable)
+    fallbacks_succeeded = sum(
         1 for o in outcomes.values() if o.fallback_used and not o.fallback_failed
     )
-    gemini_fallbacks_failed = sum(1 for o in outcomes.values() if o.fallback_failed)
+    fallbacks_failed = sum(1 for o in outcomes.values() if o.fallback_failed)
     failed_batch_ids = sorted(bid for bid, o in outcomes.items() if not o.requirements)
     durations = sorted(
         ((bid, o.duration_seconds) for bid, o in outcomes.items()), key=lambda x: -x[1]
@@ -1574,9 +1623,9 @@ def process_extraction():
             "batch_count": len(batches),
             "failed_batches": failed_batches,
             "failed_batch_ids": failed_batch_ids,
-            "openai_unavailable_batches": openai_unavailable_count,
-            "gemini_fallbacks_succeeded": gemini_fallbacks_succeeded,
-            "gemini_fallbacks_failed": gemini_fallbacks_failed,
+            "primary_unavailable_batches": primary_unavailable_count,
+            "fallbacks_succeeded": fallbacks_succeeded,
+            "fallbacks_failed": fallbacks_failed,
             "slowest_batch_id": slowest_batch_id,
             "slowest_batch_seconds": round(slowest_batch_seconds, 2),
             "p95_batch_seconds": round(p95_batch_seconds, 2),
@@ -1602,6 +1651,7 @@ def process_extraction():
 
 def main():
     validate_env()
+    resolve_model_config()
     try:
         process_extraction()
     except requests.exceptions.HTTPError as e:

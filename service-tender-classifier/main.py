@@ -72,6 +72,18 @@ GEMINI_MODEL = "gemini-2.5-flash"
 GEMINI_THINKING_BUDGET = 4096
 OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 
+# Model selection, resolved at runtime from the analysis (see resolve_model_config).
+# Defaults preserve the prior hardcoded behavior if the API is unreachable.
+PRIMARY_PROVIDER = "gemini"
+PRIMARY_MODEL = GEMINI_MODEL
+FALLBACK_PROVIDER = "openai"
+FALLBACK_MODEL = OPENAI_FALLBACK_MODEL
+
+
+def _provider_of(model_id: str) -> str:
+    return "gemini" if str(model_id).startswith("gemini") else "openai"
+
+
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
 
@@ -393,6 +405,32 @@ def api_request(method: str, path: str, json_data: dict | list | None = None) ->
         return None
 
 
+def resolve_model_config():
+    """Resolve the LLM model for this analysis from the API (user selection)
+    and log a startup event. On any failure keep the hardcoded defaults."""
+    global PRIMARY_PROVIDER, PRIMARY_MODEL, FALLBACK_PROVIDER, FALLBACK_MODEL
+    level = None
+    origin = "seleccion del usuario"
+    try:
+        cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config")
+        if cfg:
+            PRIMARY_PROVIDER = cfg.get("provider") or PRIMARY_PROVIDER
+            PRIMARY_MODEL = cfg.get("model_id") or PRIMARY_MODEL
+            level = cfg.get("level")
+            fb = cfg.get("fallback_model_id")
+            if fb:
+                FALLBACK_MODEL = fb
+                FALLBACK_PROVIDER = _provider_of(fb)
+    except Exception as e:
+        origin = f"valores por defecto (model-config no disponible: {e})"
+    msg = (
+        f"Modelo LLM: {PRIMARY_MODEL} (proveedor {PRIMARY_PROVIDER}"
+        + (f", nivel {level}" if level else "")
+        + f"); fallback {FALLBACK_MODEL}. Origen: {origin}."
+    )
+    log_event(ANALYSIS_ID, "info", msg, EVENT_SOURCE)
+
+
 def validate_env():
     """Ensure all required environment variables are set."""
     missing = [
@@ -589,12 +627,41 @@ def retrieve_classification_chunks(
     return chunks
 
 
+def _gemini_classify(gemini_client: genai.Client, user_prompt: str, model: str) -> EvaluationProfile:
+    response = gemini_client.models.generate_content(
+        model=model,
+        contents=[
+            genai_types.Content(role="user", parts=[genai_types.Part(text=SYSTEM_PROMPT)]),
+            genai_types.Content(role="model", parts=[genai_types.Part(text="Understood. I will return only a JSON evaluation profile matching the schema.")]),
+            genai_types.Content(role="user", parts=[genai_types.Part(text=user_prompt)]),
+        ],
+        config=genai_types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=EvaluationProfile,
+            thinking_config=genai_types.ThinkingConfig(thinking_budget=GEMINI_THINKING_BUDGET),
+        ),
+    )
+    return EvaluationProfile.model_validate_json(response.text)
+
+
+def _openai_classify(openai_client: OpenAI, user_prompt: str, model: str) -> EvaluationProfile:
+    response = openai_client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
+        response_format={"type": "json_object"},
+    )
+    return EvaluationProfile.model_validate_json(response.choices[0].message.content)
+
+
 def classify_tender(
     gemini_client: genai.Client,
     openai_client: OpenAI,
     chunks: List[str],
 ) -> EvaluationProfile:
-    """Produces the full evaluation profile via Gemini (primary) / OpenAI (fallback)."""
+    """Produces the full evaluation profile via the user-selected primary model, falling back to the other provider."""
     chunks_text = "\n---\n".join(chunks)
     user_prompt = (
         "Analyze the following Uruguayan procurement document and produce the "
@@ -602,32 +669,18 @@ def classify_tender(
         f"<rag_context>\n{chunks_text}\n</rag_context>"
     )
 
-    try:
-        response = gemini_client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=[
-                genai_types.Content(role="user", parts=[genai_types.Part(text=SYSTEM_PROMPT)]),
-                genai_types.Content(role="model", parts=[genai_types.Part(text="Understood. I will return only a JSON evaluation profile matching the schema.")]),
-                genai_types.Content(role="user", parts=[genai_types.Part(text=user_prompt)]),
-            ],
-            config=genai_types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=EvaluationProfile,
-                thinking_config=genai_types.ThinkingConfig(thinking_budget=GEMINI_THINKING_BUDGET),
-            ),
-        )
-        return EvaluationProfile.model_validate_json(response.text)
-    except Exception as e:
-        logger.warning(f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
-        response = openai_client.chat.completions.create(
-            model=OPENAI_FALLBACK_MODEL,
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
-            ],
-            response_format={"type": "json_object"},
-        )
-        return EvaluationProfile.model_validate_json(response.choices[0].message.content)
+    last_error = None
+    for provider, model in [(PRIMARY_PROVIDER, PRIMARY_MODEL), (FALLBACK_PROVIDER, FALLBACK_MODEL)]:
+        if not model:
+            continue
+        try:
+            if provider == "gemini":
+                return _gemini_classify(gemini_client, user_prompt, model)
+            return _openai_classify(openai_client, user_prompt, model)
+        except Exception as e:
+            last_error = e
+            logger.warning(f"{provider}/{model} failed ({e}), trying next...")
+    raise last_error
 
 
 def save_classification(
@@ -731,6 +784,7 @@ def process_classification():
 
 def main():
     validate_env()
+    resolve_model_config()
     try:
         process_classification()
     except requests.exceptions.HTTPError as e:

@@ -57,6 +57,18 @@ GEMINI_MODEL = "gemini-2.5-flash"
 OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 MAX_CHARS = 10000
 
+# Model selection, resolved at runtime from the analysis (see resolve_model_config).
+# Defaults preserve the prior hardcoded behavior if the API is unreachable.
+PRIMARY_PROVIDER = "gemini"
+PRIMARY_MODEL = GEMINI_MODEL
+FALLBACK_PROVIDER = "openai"
+FALLBACK_MODEL = OPENAI_FALLBACK_MODEL
+
+
+def _provider_of(model_id: str) -> str:
+    return "gemini" if str(model_id).startswith("gemini") else "openai"
+
+
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
 
@@ -78,6 +90,32 @@ def api_request(method: str, path: str, json_data: dict | list | None = None) ->
         return response.json()
     except ValueError:
         return None
+
+
+def resolve_model_config():
+    """Resolve the LLM model for this analysis from the API (user selection)
+    and log a startup event. On any failure keep the hardcoded defaults."""
+    global PRIMARY_PROVIDER, PRIMARY_MODEL, FALLBACK_PROVIDER, FALLBACK_MODEL
+    level = None
+    origin = "seleccion del usuario"
+    try:
+        cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config")
+        if cfg:
+            PRIMARY_PROVIDER = cfg.get("provider") or PRIMARY_PROVIDER
+            PRIMARY_MODEL = cfg.get("model_id") or PRIMARY_MODEL
+            level = cfg.get("level")
+            fb = cfg.get("fallback_model_id")
+            if fb:
+                FALLBACK_MODEL = fb
+                FALLBACK_PROVIDER = _provider_of(fb)
+    except Exception as e:
+        origin = f"valores por defecto (model-config no disponible: {e})"
+    msg = (
+        f"Modelo LLM: {PRIMARY_MODEL} (proveedor {PRIMARY_PROVIDER}"
+        + (f", nivel {level}" if level else "")
+        + f"); fallback {FALLBACK_MODEL}. Origen: {origin}."
+    )
+    log_event(ANALYSIS_ID, "info", msg, EVENT_SOURCE)
 
 
 def validate_env():
@@ -138,41 +176,51 @@ def fetch_all_chunks(qdrant: QdrantClient, collection_name: str) -> List[str]:
 EXTRACTION_PROMPT = (Path(__file__).parent / "prompt_file_metadata_extractor.md").read_text(encoding="utf-8")
 
 
+def _gemini_extract(gemini_client: genai.Client, prompt: str, model: str) -> dict:
+    response = gemini_client.models.generate_content(
+        model=model,
+        contents=prompt,
+        config=genai_types.GenerateContentConfig(
+            response_mime_type="application/json",
+        ),
+    )
+    result = json.loads(response.text)
+    return result[0] if isinstance(result, list) else result
+
+
+def _openai_extract(openai_client: OpenAI, prompt: str, model: str) -> dict:
+    response = openai_client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+    )
+    result = json.loads(response.choices[0].message.content)
+    return result[0] if isinstance(result, list) else result
+
+
+def _extract_with(gemini_client: genai.Client, openai_client: OpenAI, prompt: str, provider: str, model: str) -> dict:
+    if provider == "gemini":
+        return _gemini_extract(gemini_client, prompt, model)
+    return _openai_extract(openai_client, prompt, model)
+
+
 def extract_metadata(gemini_client: genai.Client, openai_client: OpenAI, text: str, max_retries: int = 3) -> dict:
-    """Extract structured metadata from document text. Retries transient Gemini errors, then falls back to OpenAI."""
+    """Extract structured metadata. Retries transient errors on the primary model, then falls back to the other provider."""
     prompt = EXTRACTION_PROMPT.format(text=text)
 
     for attempt in range(max_retries):
         try:
-            response = gemini_client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=prompt,
-                config=genai_types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                ),
-            )
-            result = json.loads(response.text)
-            if isinstance(result, list):
-                result = result[0]
-            return result
+            return _extract_with(gemini_client, openai_client, prompt, PRIMARY_PROVIDER, PRIMARY_MODEL)
         except Exception as e:
             error_str = str(e)
             is_transient = any(code in error_str for code in ["503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED"])
             if is_transient and attempt < max_retries - 1:
                 wait = 2 ** attempt * 5  # 5s, 10s, 20s
-                logger.warning(f"Gemini transient error (attempt {attempt + 1}/{max_retries}), retrying in {wait}s: {error_str}")
+                logger.warning(f"primary {PRIMARY_PROVIDER}/{PRIMARY_MODEL} transient error (attempt {attempt + 1}/{max_retries}), retrying in {wait}s: {error_str}")
                 time.sleep(wait)
             else:
-                logger.warning(f"Gemini failed ({e}), falling back to OpenAI ({OPENAI_FALLBACK_MODEL})...")
-                response = openai_client.chat.completions.create(
-                    model=OPENAI_FALLBACK_MODEL,
-                    messages=[{"role": "user", "content": prompt}],
-                    response_format={"type": "json_object"},
-                )
-                result = json.loads(response.choices[0].message.content)
-                if isinstance(result, list):
-                    result = result[0]
-                return result
+                logger.warning(f"primary {PRIMARY_PROVIDER}/{PRIMARY_MODEL} failed ({e}), falling back to {FALLBACK_PROVIDER}/{FALLBACK_MODEL}...")
+                return _extract_with(gemini_client, openai_client, prompt, FALLBACK_PROVIDER, FALLBACK_MODEL)
 
 
 # ---------------------------------------------------------------------------
@@ -289,6 +337,7 @@ def process_file_metadata_extraction():
 
 def main():
     validate_env()
+    resolve_model_config()
     try:
         process_file_metadata_extraction()
     except requests.exceptions.HTTPError as e:
