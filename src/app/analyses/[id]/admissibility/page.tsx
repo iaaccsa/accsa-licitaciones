@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, ShieldCheck, AlertCircle, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, ShieldCheck, AlertCircle, ChevronDown, ChevronUp, CheckCircle2, CheckCheck, XCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AdmissibilityRequirement, AdmissibilityRequirementCitation } from "@/lib/admissibility-types";
 
@@ -87,6 +87,7 @@ export default function AdmissibilityRequirementsPage() {
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [verifyingAll, setVerifyingAll] = useState<boolean | null>(null);
 
     const sentinelRef = useRef<HTMLDivElement>(null);
     const isFetchingRef = useRef(false);
@@ -141,6 +142,21 @@ export default function AdmissibilityRequirementsPage() {
             setRequirements(prev => prev.map(r => r.id === req.id ? { ...r, is_verified: req.is_verified } : r));
         }
     }, []);
+
+    const handleVerifyAll = useCallback(async (isVerified: boolean) => {
+        setVerifyingAll(isVerified);
+        try {
+            const response = await fetch(`/api/analyses/${id}/admissibility-requirements/verify-all?is_verified=${isVerified}`, {
+                method: "PATCH",
+            });
+            if (!response.ok) throw new Error("Failed to update all");
+            setRequirements(prev => prev.map(r => ({ ...r, is_verified: isVerified })));
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setVerifyingAll(null);
+        }
+    }, [id]);
 
     // Infinite scroll
     useEffect(() => {
@@ -210,6 +226,26 @@ export default function AdmissibilityRequirementsPage() {
             <p className="text-sm text-zinc-500">
                 Requisitos excluyentes extraídos con la pasada dedicada de admisibilidad.
             </p>
+
+            {/* Verify-all actions */}
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => handleVerifyAll(true)}
+                    disabled={verifyingAll !== null}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <CheckCheck className="w-4 h-4" />
+                    {verifyingAll === true ? "Confirmando..." : "Marcar todos como confirmados"}
+                </button>
+                <button
+                    onClick={() => handleVerifyAll(false)}
+                    disabled={verifyingAll !== null}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <XCircle className="w-4 h-4" />
+                    {verifyingAll === false ? "Desmarcando..." : "Desmarcar todos"}
+                </button>
+            </div>
 
             {isLoading ? (
                 <div className="space-y-4">

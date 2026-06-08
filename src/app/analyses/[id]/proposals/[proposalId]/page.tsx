@@ -2,17 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, ArrowLeft, Calendar, FileText, AlertCircle, Building2, Sparkles, Clock, XCircle } from "lucide-react";
+import { Loader2, ArrowLeft, Calendar, FileText, AlertCircle, Building2, Sparkles, Clock, XCircle, ShieldCheck, ClipboardList, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ComplianceMatrix from "@/components/ComplianceMatrix";
-import AdmissibilityMatrix from "@/components/AdmissibilityMatrix";
 import EconomicOfferCard from "@/components/EconomicOfferCard";
 
 interface Analysis {
     id: string;
     slug: string;
-    status: "pending" | "processing" | "ready" | "failed";
+    status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval" | "cancelled";
+    paused_at_service: string | null;
 }
 
 type MatchingStatus =
@@ -307,14 +306,48 @@ export default function ProposalDetailPage() {
 
                 <EconomicOfferCard analysisId={analysisId} proposalId={proposalId} />
 
-                <div className="min-w-0">
-                    <h2 className="text-lg font-semibold text-zinc-900 mb-3">Admisibilidad</h2>
-                    <AdmissibilityMatrix analysisId={analysisId} proposalId={proposalId} />
-                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <a
+                        href={`/analyses/${analysisId}/proposals/${proposalId}/admissibility`}
+                        className="relative flex items-center gap-4 p-5 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-violet-300 hover:shadow-md transition-all group"
+                    >
+                        {analysis?.status === "awaiting_approval" && analysis.paused_at_service === "service-admissibility-gate" && (
+                            <span className="absolute top-2 right-2 flex h-3 w-3">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                            </span>
+                        )}
+                        <div className="p-3 bg-violet-50 text-violet-600 rounded-lg group-hover:bg-violet-600 group-hover:text-white transition-colors shrink-0">
+                            <ShieldCheck className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-base font-semibold text-zinc-900 group-hover:text-violet-600 transition-colors">
+                                Admisibilidad
+                            </h3>
+                            <p className="text-sm text-zinc-500">
+                                Requisitos excluyentes y resultados
+                            </p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-violet-600 transition-colors shrink-0" />
+                    </a>
 
-                <div className="min-w-0">
-                    <h2 className="text-lg font-semibold text-zinc-900 mb-3">Matriz de Cumplimiento</h2>
-                    <ComplianceMatrix analysisId={analysisId} proposalId={proposalId} />
+                    <a
+                        href={`/analyses/${analysisId}/proposals/${proposalId}/requirements`}
+                        className="flex items-center gap-4 p-5 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-green-300 hover:shadow-md transition-all group"
+                    >
+                        <div className="p-3 bg-green-50 text-green-600 rounded-lg group-hover:bg-green-600 group-hover:text-white transition-colors shrink-0">
+                            <ClipboardList className="w-6 h-6" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h3 className="text-base font-semibold text-zinc-900 group-hover:text-green-600 transition-colors">
+                                Matriz de Cumplimiento
+                            </h3>
+                            <p className="text-sm text-zinc-500">
+                                Requisitos y nivel de cumplimiento
+                            </p>
+                        </div>
+                        <ChevronRight className="w-5 h-5 text-zinc-400 group-hover:text-green-600 transition-colors shrink-0" />
+                    </a>
                 </div>
             </div>
         </div>
