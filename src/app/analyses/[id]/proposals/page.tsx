@@ -205,64 +205,65 @@ export default function ProposalsPage() {
                     const missing = counts.missing_info ?? counts.missing ?? null;
                     const hasError = proposal.matching_status === "failed" || proposal.matching_status === "summary_failed";
                     const errorMsg = proposal.matching_error || proposal.summary_error;
+                    const offer = economicByProposal[proposal.id];
+                    const hasCounts = compliant != null || nonCompliant != null || missing != null ||
+                        (proposal.critical_failures_count != null && proposal.critical_failures_count > 0);
 
                     return (
                         <Link
                             key={proposal.id}
                             href={`/analyses/${id}/proposals/${proposal.id}`}
-                            className="block bg-white rounded-xl border border-zinc-200 hover:border-zinc-300 hover:shadow-sm transition-all px-5 py-4"
+                            className="flex flex-col bg-white rounded-xl border border-zinc-200 hover:border-zinc-300 hover:shadow-sm transition-all p-5"
                         >
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-start gap-3">
                                 <div className="p-2 bg-blue-50 rounded-lg text-blue-500 shrink-0">
                                     <FileText className="w-5 h-5" />
                                 </div>
-
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className="font-semibold text-zinc-900 truncate">{proposal.label}</span>
-                                        <StatusBadge status={proposal.matching_status} />
-                                        {proposal.admissibility_status && (() => {
-                                            const cfg = ADMISSIBILITY_CONFIG[proposal.admissibility_status] ?? ADMISSIBILITY_CONFIG.pending;
-                                            return (
-                                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
-                                                    <span className="opacity-70">Admisibilidad:</span>
-                                                    {cfg.label}
-                                                </span>
-                                            );
-                                        })()}
-                                    </div>
-                                    <div className="flex items-center flex-wrap gap-x-4 gap-y-0.5 text-xs text-zinc-500">
-                                        {proposal.provider_name && (
-                                            <span className="flex items-center gap-1">
-                                                <Building2 className="w-3.5 h-3.5" />
-                                                {proposal.provider_name}
-                                            </span>
-                                        )}
-                                        <span className="flex items-center gap-1">
-                                            <Calendar className="w-3.5 h-3.5" />
-                                            {new Date(proposal.created_at).toLocaleDateString("es-ES")}
+                                    <span className="block font-semibold text-zinc-900 truncate">{proposal.label}</span>
+                                    {proposal.provider_name && (
+                                        <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-500 truncate">
+                                            <Building2 className="w-3.5 h-3.5 shrink-0" />
+                                            <span className="truncate">{proposal.provider_name}</span>
                                         </span>
-                                    </div>
-                                    {hasError && errorMsg && (
-                                        <p className="mt-1 text-xs text-red-500 truncate">{errorMsg}</p>
                                     )}
+                                    <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-400">
+                                        <Calendar className="w-3.5 h-3.5 shrink-0" />
+                                        {new Date(proposal.created_at).toLocaleDateString("es-ES")}
+                                    </span>
                                 </div>
+                            </div>
 
-                                <div className="flex items-center gap-5 shrink-0">
-                                    {economicByProposal[proposal.id] && (
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5 flex items-center gap-1 justify-end">
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                <StatusBadge status={proposal.matching_status} />
+                                {proposal.admissibility_status && (() => {
+                                    const cfg = ADMISSIBILITY_CONFIG[proposal.admissibility_status] ?? ADMISSIBILITY_CONFIG.pending;
+                                    return (
+                                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${cfg.color}`}>
+                                            <span className="opacity-70">Admisibilidad:</span>
+                                            {cfg.label}
+                                        </span>
+                                    );
+                                })()}
+                            </div>
+
+                            {hasError && errorMsg && (
+                                <p className="mt-2 text-xs text-red-500 line-clamp-2">{errorMsg}</p>
+                            )}
+
+                            {(offer || proposal.compliance_rate != null) && (
+                                <div className="mt-4 pt-4 border-t border-zinc-100 flex items-end justify-between gap-4">
+                                    {offer && (
+                                        <div>
+                                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
                                                 <Coins className="w-3 h-3" />
                                                 Oferta
                                             </p>
                                             <p className="text-sm font-bold text-emerald-700 tabular-nums">
-                                                {formatAmount(
-                                                    economicByProposal[proposal.id].total_amount,
-                                                    economicByProposal[proposal.id].currency,
-                                                )}
+                                                {formatAmount(offer.total_amount, offer.currency)}
                                             </p>
-                                            {economicByProposal[proposal.id].requires_manual_review && (
-                                                <p className="text-[10px] text-amber-600 flex items-center gap-0.5 justify-end mt-0.5">
+                                            {offer.requires_manual_review && (
+                                                <p className="text-[10px] text-amber-600 flex items-center gap-0.5 mt-0.5">
                                                     <AlertTriangle className="w-3 h-3" />
                                                     Revisar
                                                 </p>
@@ -270,46 +271,48 @@ export default function ProposalsPage() {
                                         </div>
                                     )}
                                     {proposal.compliance_rate != null && (
-                                        <div className="w-32">
+                                        <div className="flex-1 max-w-[160px]">
                                             <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Cumplimiento</p>
                                             <ComplianceBar rate={proposal.compliance_rate} />
                                         </div>
                                     )}
-                                    <div className="flex items-center divide-x divide-zinc-100">
-                                        {compliant != null && (
-                                            <div className="px-3 text-center">
-                                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">Cumple</p>
-                                                <p className="text-sm font-bold text-emerald-600">{compliant}</p>
-                                            </div>
-                                        )}
-                                        {nonCompliant != null && (
-                                            <div className="px-3 text-center">
-                                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">No cumple</p>
-                                                <p className="text-sm font-bold text-red-500">{nonCompliant}</p>
-                                            </div>
-                                        )}
-                                        {missing != null && (
-                                            <div className="px-3 text-center">
-                                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">Sin info</p>
-                                                <p className="text-sm font-bold text-amber-500">{missing}</p>
-                                            </div>
-                                        )}
-                                        {proposal.critical_failures_count != null && proposal.critical_failures_count > 0 && (
-                                            <div className="px-3 text-center">
-                                                <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">Criticos</p>
-                                                <p className="text-sm font-bold text-red-600 flex items-center gap-1">
-                                                    <AlertTriangle className="w-3.5 h-3.5" />
-                                                    {proposal.critical_failures_count}
-                                                </p>
-                                            </div>
-                                        )}
+                                </div>
+                            )}
+
+                            {hasCounts && (
+                                <div className="mt-3 grid grid-cols-4 divide-x divide-zinc-100 rounded-lg bg-zinc-50 py-2">
+                                    <div className="px-2 text-center">
+                                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">Cumple</p>
+                                        <p className="text-sm font-bold text-emerald-600">{compliant ?? "-"}</p>
                                     </div>
-                                    {proposal.admissibility_status === "admitida" && (
+                                    <div className="px-2 text-center">
+                                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">No cumple</p>
+                                        <p className="text-sm font-bold text-red-500">{nonCompliant ?? "-"}</p>
+                                    </div>
+                                    <div className="px-2 text-center">
+                                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">Sin info</p>
+                                        <p className="text-sm font-bold text-amber-500">{missing ?? "-"}</p>
+                                    </div>
+                                    <div className="px-2 text-center">
+                                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">Criticos</p>
+                                        <p className="text-sm font-bold text-red-600 flex items-center justify-center gap-1">
+                                            {proposal.critical_failures_count != null && proposal.critical_failures_count > 0 && (
+                                                <AlertTriangle className="w-3.5 h-3.5" />
+                                            )}
+                                            {proposal.critical_failures_count ?? "-"}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(proposal.admissibility_status === "admitida" || proposal.admissibility_status === "rechazada") && (
+                                <div className="mt-4 pt-4 border-t border-zinc-100">
+                                    {proposal.admissibility_status === "admitida" ? (
                                         <button
                                             type="button"
                                             onClick={(e) => handleOverride(e, proposal, "rechazada")}
                                             disabled={overridingId === proposal.id}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                         >
                                             {overridingId === proposal.id ? (
                                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -318,13 +321,12 @@ export default function ProposalsPage() {
                                             )}
                                             Rechazar
                                         </button>
-                                    )}
-                                    {proposal.admissibility_status === "rechazada" && (
+                                    ) : (
                                         <button
                                             type="button"
                                             onClick={(e) => handleOverride(e, proposal, "admitida")}
                                             disabled={overridingId === proposal.id}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                         >
                                             {overridingId === proposal.id ? (
                                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -335,7 +337,7 @@ export default function ProposalsPage() {
                                         </button>
                                     )}
                                 </div>
-                            </div>
+                            )}
                         </Link>
                     );
                 };
@@ -350,7 +352,7 @@ export default function ProposalsPage() {
                                     <span className="text-xs text-zinc-500">{admitidas.length}</span>
                                     <div className="flex-1 h-px bg-emerald-100 ml-2" />
                                 </div>
-                                <div className="space-y-3">{admitidas.map(renderCard)}</div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{admitidas.map(renderCard)}</div>
                             </section>
                         )}
 
@@ -362,7 +364,7 @@ export default function ProposalsPage() {
                                     <span className="text-xs text-zinc-500">{rechazadas.length}</span>
                                     <div className="flex-1 h-px bg-red-100 ml-2" />
                                 </div>
-                                <div className="space-y-3">{rechazadas.map(renderCard)}</div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{rechazadas.map(renderCard)}</div>
                             </section>
                         )}
 
@@ -374,7 +376,7 @@ export default function ProposalsPage() {
                                     <span className="text-xs text-zinc-500">{otras.length}</span>
                                     <div className="flex-1 h-px bg-zinc-100 ml-2" />
                                 </div>
-                                <div className="space-y-3">{otras.map(renderCard)}</div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{otras.map(renderCard)}</div>
                             </section>
                         )}
                     </div>
