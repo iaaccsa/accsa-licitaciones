@@ -101,8 +101,8 @@ def get_by_analysis(
 @router.get("/view/by-proposal/{proposal_id}", response_model=List[ComplianceMatrixViewEntry])
 def get_view_by_proposal(
     proposal_id: UUID,
-    verification_method: Optional[str] = Query(default=None),
-    role: Optional[str] = Query(default=None),
+    verification_method: Optional[List[str]] = Query(default=None),
+    role: Optional[List[str]] = Query(default=None),
     order: Literal["asc", "desc"] = Query(default="asc"),
     limit: int = Query(default=50, ge=1, le=50),
     offset: int = Query(default=0, ge=0),

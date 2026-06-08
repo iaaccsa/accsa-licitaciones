@@ -66,7 +66,7 @@ class AdmissibilityResultService:
         self,
         proposal_id: UUID,
         verdict: Optional[List[str]] = None,
-        role: Optional[str] = None,
+        role: Optional[List[str]] = None,
         domain: Optional[str] = None,
         is_verified: Optional[bool] = None,
         manual_verification_required: Optional[bool] = None,
@@ -84,7 +84,7 @@ class AdmissibilityResultService:
         if domain:
             rows = [r for r in rows if (r.get("admissibility_requirements") or {}).get("domain") == domain]
         if role:
-            rows = [r for r in rows if role in ((r.get("admissibility_requirements") or {}).get("roles") or [])]
+            rows = [r for r in rows if set(role) & set((r.get("admissibility_requirements") or {}).get("roles") or [])]
 
         rows = rows[offset: offset + limit]
         return [_to_entry_with_req(dict(r)) for r in rows]
@@ -94,7 +94,7 @@ class AdmissibilityResultService:
         analysis_id: UUID,
         proposal_id: Optional[UUID] = None,
         verdict: Optional[List[str]] = None,
-        role: Optional[str] = None,
+        role: Optional[List[str]] = None,
         domain: Optional[str] = None,
         is_verified: Optional[bool] = None,
         manual_verification_required: Optional[bool] = None,
@@ -112,7 +112,7 @@ class AdmissibilityResultService:
         if domain:
             rows = [r for r in rows if (r.get("admissibility_requirements") or {}).get("domain") == domain]
         if role:
-            rows = [r for r in rows if role in ((r.get("admissibility_requirements") or {}).get("roles") or [])]
+            rows = [r for r in rows if set(role) & set((r.get("admissibility_requirements") or {}).get("roles") or [])]
 
         rows = rows[offset: offset + limit]
         return [_to_entry_with_req(dict(r)) for r in rows]

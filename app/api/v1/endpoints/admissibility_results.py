@@ -41,7 +41,7 @@ def bulk_replace(items: List[AdmissibilityResultEntryFlatCreate]):
 def get_by_proposal(
     proposal_id: UUID,
     verdict: Optional[List[ComplianceVerdict]] = Query(default=None),
-    role: Optional[str]                        = Query(default=None),
+    role: Optional[List[str]]                  = Query(default=None),
     domain: Optional[str]                      = Query(default=None),
     is_verified: Optional[bool]                = Query(default=None),
     manual_verification_required: Optional[bool] = Query(default=None),

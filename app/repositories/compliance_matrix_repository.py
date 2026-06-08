@@ -67,8 +67,8 @@ class ComplianceMatrixRepository(BaseRepository):
     def get_view_by_proposal(
         self,
         proposal_id: UUID,
-        verification_method: Optional[str] = None,
-        role: Optional[str] = None,
+        verification_method: Optional[List[str]] = None,
+        role: Optional[List[str]] = None,
         order: str = "asc",
         limit: int = 50,
         offset: int = 0,
@@ -80,9 +80,9 @@ class ComplianceMatrixRepository(BaseRepository):
             .order("requirement_code", desc=(order == "desc"))
         )
         if verification_method:
-            q = q.eq("requirement_verification_method", verification_method)
+            q = q.in_("requirement_verification_method", verification_method)
         if role:
-            q = q.contains("requirement_roles", [role])
+            q = q.overlaps("requirement_roles", role)
         q = q.range(offset, offset + limit - 1)
         return q.execute().data
 

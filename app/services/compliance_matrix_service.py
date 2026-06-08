@@ -123,8 +123,8 @@ class ComplianceMatrixService:
     def get_view_by_proposal(
         self,
         proposal_id: UUID,
-        verification_method: Optional[str] = None,
-        role: Optional[str] = None,
+        verification_method: Optional[List[str]] = None,
+        role: Optional[List[str]] = None,
         order: str = "asc",
         limit: int = 50,
         offset: int = 0,
