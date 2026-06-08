@@ -20,9 +20,9 @@ const services = [
         code: "service-documents-grouper",
         task: "Agrupar documentos por similitud de contenido",
         complexity: "Baja" as const,
-        primary: "gemini-3.1-pro-preview",
-        fallback: "gpt-4.1-mini",
-        reason: "Agrupación y generación de nombre de licitación. Pro por su mayor capacidad de razonamiento sobre títulos y contenido heterogéneo.",
+        primary: "gpt-4.1-mini",
+        fallback: "gemini-3.1-pro-preview",
+        reason: "Agrupación y generación de nombre de licitación. OpenAI como primario; Pro como fallback por su mayor capacidad de razonamiento sobre títulos y contenido heterogéneo.",
     },
     {
         code: "service-file-metadata-extractor",
@@ -44,9 +44,9 @@ const services = [
         code: "service-requirement-extractor",
         task: "Extraer requisitos atómicos del pliego vía RAG iterativo",
         complexity: "Alta" as const,
-        primary: "gemini-2.5-flash",
-        fallback: "gpt-4.1-mini",
-        reason: "Alto volumen de llamadas (N batches x chunks). Flash con thinking budget; mini como fallback por el prompt estructurado con ejes definidos.",
+        primary: "gpt-4.1-mini",
+        fallback: "gemini-2.5-flash",
+        reason: "Alto volumen de llamadas (N batches x chunks). OpenAI como primario por el prompt estructurado con ejes definidos; Flash con thinking budget como fallback.",
     },
     {
         code: "service-compliance-matcher",
@@ -167,7 +167,7 @@ export default function LlmModelsPage() {
 
             {/* Note */}
             <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-                <strong>Nota sobre modelos:</strong> <code className="font-mono text-xs bg-blue-100 px-1 rounded">gemini-2.5-flash</code> actúa como primario en la mayoría de servicios; <code className="font-mono text-xs bg-blue-100 px-1 rounded">gemini-3.1-pro-preview</code> se usa donde se requiere mayor capacidad de razonamiento. <code className="font-mono text-xs bg-blue-100 px-1 rounded">gpt-4.1-mini</code> es el fallback universal en todos los servicios.
+                <strong>Nota sobre modelos:</strong> <code className="font-mono text-xs bg-blue-100 px-1 rounded">gemini-2.5-flash</code> actúa como primario en la mayoría de servicios; <code className="font-mono text-xs bg-blue-100 px-1 rounded">gemini-3.1-pro-preview</code> se usa donde se requiere mayor capacidad de razonamiento. <code className="font-mono text-xs bg-blue-100 px-1 rounded">gpt-4.1-mini</code> es el primario en <code className="font-mono text-xs bg-blue-100 px-1 rounded">service-requirement-extractor</code> y <code className="font-mono text-xs bg-blue-100 px-1 rounded">service-documents-grouper</code>, y el fallback en el resto de los servicios.
             </div>
         </div>
     );

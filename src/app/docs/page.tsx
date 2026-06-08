@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit, Network } from "lucide-react";
+import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit, Network, Braces } from "lucide-react";
 
 const docs = [
     {
@@ -37,6 +37,12 @@ const docs = [
         icon: BrainCircuit,
         title: "Modelos LLM por servicio",
         description: "Asignación de modelos primarios y fallback según complejidad de la tarea para cada servicio del pipeline.",
+    },
+    {
+        href: "/docs/requirement-extractor-summary",
+        icon: Braces,
+        title: "Resumen del extractor de requisitos",
+        description: "Significado de cada campo del JSON de métricas que emite service-requirement-extractor al finalizar.",
     },
 ];
 

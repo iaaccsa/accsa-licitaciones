@@ -249,6 +249,12 @@ export default function AnalysisDetailPage() {
                     href={`/analyses/${id}/admissibility`}
                     className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-violet-300 hover:shadow-md transition-all group text-center"
                 >
+                    {analysis.status === "awaiting_approval" && analysis.paused_at_service === "service-requirement-extractor" && (
+                        <span className="absolute top-2 right-2 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+                        </span>
+                    )}
                     <div className="p-3 bg-violet-50 text-violet-600 rounded-lg group-hover:bg-violet-600 group-hover:text-white transition-colors">
                         <ShieldCheck className="w-8 h-8" />
                     </div>
