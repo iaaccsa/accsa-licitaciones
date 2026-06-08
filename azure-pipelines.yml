@@ -15,8 +15,8 @@ strategy:
     #   SERVICE_NAME: "service-file-extractor"
     # service-files-converter-mistral:
     #   SERVICE_NAME: "service-files-converter-mistral"
-    # service-requirement-extractor:
-    #   SERVICE_NAME: "service-requirement-extractor"
+    service-requirement-extractor:
+      SERVICE_NAME: "service-requirement-extractor"
     # service-qdrant-by-file:
     #   SERVICE_NAME: "service-qdrant-by-file"
     # service-documents-classifier:
@@ -35,12 +35,12 @@ strategy:
     #   SERVICE_NAME: "service-compliance-summarizer"
     # service-file-metadata-extractor:
     #   SERVICE_NAME: "service-file-metadata-extractor"
-    service-admissibility-gate:
-      SERVICE_NAME: "service-admissibility-gate"
+    # service-admissibility-gate:
+    #   SERVICE_NAME: "service-admissibility-gate"
     # service-economic-offer-extractor:
     #   SERVICE_NAME: "service-economic-offer-extractor"
-    service-admissibility-matcher:
-      SERVICE_NAME: "service-admissibility-matcher"
+    # service-admissibility-matcher:
+    #   SERVICE_NAME: "service-admissibility-matcher"
 
 steps:
   - script: |

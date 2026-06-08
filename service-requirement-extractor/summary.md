@@ -8,7 +8,7 @@ Extrae todos los requerimientos atomicos del pliego (ya indexado en Qdrant) y lo
 1. Carga el evaluation_profile via `GET /api/v1/tender-classifications/{analysis_id}` (exige profile_version=2).
 2. Scrollea TODOS los chunks de Qdrant donde `category='tender'`, ordenados por `chunk_index`.
 3. Construye batches con ventana deslizante (`BATCH_SIZE=15`, `BATCH_OVERLAP=2`).
-4. Procesa batches en paralelo (`MAX_PARALLEL_BATCHES=3`) con Gemini (fallback: OpenAI).
+4. Procesa batches en paralelo (`MAX_PARALLEL_BATCHES=3`) con OpenAI (fallback: Gemini).
 5. Deduplica por SHA1(normalize(texto)).
 6. Asigna codigos secuenciales: REQ-001, REQ-002, ...
 7. Valida roles y factores contra el evaluation_profile.
@@ -37,6 +37,6 @@ Extrae todos los requerimientos atomicos del pliego (ya indexado en Qdrant) y lo
 | Servicio | Uso |
 |----------|-----|
 | **Qdrant** | Scroll de todos los chunks tender con filtros y orden por chunk_index |
-| **Gemini** | Extraccion y clasificacion multi-eje (primary) |
-| **OpenAI** | Fallback si Gemini falla |
+| **OpenAI** | Extraccion y clasificacion multi-eje (primary) |
+| **Gemini** | Fallback si OpenAI falla |
 | **Backend API** | Obtener analisis, leer profile, guardar requerimientos, callback |

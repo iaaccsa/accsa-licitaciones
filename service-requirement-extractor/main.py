@@ -43,8 +43,7 @@ from openai import OpenAI
 from pydantic import BaseModel, Field, ValidationError, field_validator
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
-
-from supabase_logger import setup_logger, log_event, make_session
+from supabase_logger import log_event, make_session, setup_logger
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -60,20 +59,23 @@ API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
 API_TENDER_CLASSIFICATIONS_PATH = os.environ.get("API_TENDER_CLASSIFICATIONS_PATH")
 API_ANALYSIS_REQUIREMENTS_PATH = os.environ.get("API_ANALYSIS_REQUIREMENTS_PATH")
-API_ADMISSIBILITY_REQUIREMENTS_PATH = os.environ.get("API_ADMISSIBILITY_REQUIREMENTS_PATH")
+API_ADMISSIBILITY_REQUIREMENTS_PATH = os.environ.get(
+    "API_ADMISSIBILITY_REQUIREMENTS_PATH"
+)
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
 SERVICE_NAME = "service-requirement-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL = "gemini-2.5-flash"
+# Primary: OpenAI. Fallback: Gemini.
+OPENAI_MODEL = "gpt-4.1-mini"
+GEMINI_FALLBACK_MODEL = "gemini-2.5-flash"
 GEMINI_THINKING_BUDGET = 4096
-OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 BATCH_SIZE = 15
 BATCH_OVERLAP = 2
 MAX_PARALLEL_BATCHES = 5
 SCROLL_PAGE_SIZE = 256
-MAX_FAILED_BATCH_RATIO = 0.05
+MAX_FAILED_BATCH_RATIO = 0.10
 MAX_LLM_RETRIES = 3
 LLM_RETRY_BASE_DELAY = 1.0
 PROVIDER_UNAVAILABLE_STATUS_CODES = {429, 500, 502, 503, 504}
@@ -146,6 +148,7 @@ def _make_normalizer(aliases: Dict[str, str], allowed: set):
         if norm in aliases:
             return aliases[norm]
         return value
+
     return _normalize
 
 
@@ -164,67 +167,140 @@ ROLE_ALIASES: Dict[str, str] = {
     "desconocido": "desconocido_pendiente_pliego_general",
 }
 ROLE_ALLOWED = {
-    "admisibilidad_obligatoria", "admisibilidad_subsanable", "puntuable",
-    "penalizador", "informativo", "preferencia_legal",
+    "admisibilidad_obligatoria",
+    "admisibilidad_subsanable",
+    "puntuable",
+    "penalizador",
+    "informativo",
+    "preferencia_legal",
     "desconocido_pendiente_pliego_general",
 }
 DOMAIN_ALIASES: Dict[str, str] = {
-    "tecnico": "technical", "tecnica": "technical", "tecnicos": "technical",
-    "administrativo": "administrative", "administrativa": "administrative", "administrativos": "administrative",
-    "legal": "legal", "juridico": "legal", "juridica": "legal",
-    "financiero": "financial", "financiera": "financial", "economico": "financial", "economica": "financial",
-    "rrhh": "hr", "recursos_humanos": "hr", "personal": "hr", "humanos": "hr",
-    "logistica": "logistics", "logistico": "logistics",
-    "ambiental": "environmental", "medioambiental": "environmental", "medio_ambiente": "environmental",
+    "tecnico": "technical",
+    "tecnica": "technical",
+    "tecnicos": "technical",
+    "administrativo": "administrative",
+    "administrativa": "administrative",
+    "administrativos": "administrative",
+    "legal": "legal",
+    "juridico": "legal",
+    "juridica": "legal",
+    "financiero": "financial",
+    "financiera": "financial",
+    "economico": "financial",
+    "economica": "financial",
+    "rrhh": "hr",
+    "recursos_humanos": "hr",
+    "personal": "hr",
+    "humanos": "hr",
+    "logistica": "logistics",
+    "logistico": "logistics",
+    "ambiental": "environmental",
+    "medioambiental": "environmental",
+    "medio_ambiente": "environmental",
     "calidad": "quality",
-    "seguridad": "safety", "seguridad_e_higiene": "safety",
-    "otro": "other", "otros": "other",
+    "seguridad": "safety",
+    "seguridad_e_higiene": "safety",
+    "otro": "other",
+    "otros": "other",
 }
 DOMAIN_ALLOWED = {
-    "technical", "administrative", "legal", "financial", "hr",
-    "logistics", "environmental", "quality", "safety", "other",
+    "technical",
+    "administrative",
+    "legal",
+    "financial",
+    "hr",
+    "logistics",
+    "environmental",
+    "quality",
+    "safety",
+    "other",
 }
 VERIFICATION_ALIASES: Dict[str, str] = {
-    "documento_adjunto": "attached_document", "adjunto": "attached_document", "documento": "attached_document",
-    "declaracion_jurada": "sworn_statement", "declaracion": "sworn_statement", "jurada": "sworn_statement",
-    "certificado_externo": "external_certificate", "certificado": "external_certificate",
+    "documento_adjunto": "attached_document",
+    "adjunto": "attached_document",
+    "documento": "attached_document",
+    "declaracion_jurada": "sworn_statement",
+    "declaracion": "sworn_statement",
+    "jurada": "sworn_statement",
+    "certificado_externo": "external_certificate",
+    "certificado": "external_certificate",
     "inspeccion": "inspection",
-    "muestra": "sample", "muestreo": "sample",
-    "visita_sitio": "site_visit", "visita": "site_visit", "site": "site_visit",
-    "auto_verificable": "auto_verifiable_from_offer", "autoverificable": "auto_verifiable_from_offer", "oferta": "auto_verifiable_from_offer",
-    "otro": "other", "otros": "other",
+    "muestra": "sample",
+    "muestreo": "sample",
+    "visita_sitio": "site_visit",
+    "visita": "site_visit",
+    "site": "site_visit",
+    "auto_verificable": "auto_verifiable_from_offer",
+    "autoverificable": "auto_verifiable_from_offer",
+    "oferta": "auto_verifiable_from_offer",
+    "otro": "other",
+    "otros": "other",
 }
 VERIFICATION_ALLOWED = {
-    "attached_document", "sworn_statement", "external_certificate",
-    "inspection", "sample", "site_visit", "auto_verifiable_from_offer", "other",
+    "attached_document",
+    "sworn_statement",
+    "external_certificate",
+    "inspection",
+    "sample",
+    "site_visit",
+    "auto_verifiable_from_offer",
+    "other",
 }
 TEMPORAL_ALIASES: Dict[str, str] = {
-    "al_presentar": "at_bid_time", "en_oferta": "at_bid_time", "al_ofertar": "at_bid_time", "oferta": "at_bid_time",
-    "pre_adjudicacion": "pre_award", "previa_adjudicacion": "pre_award", "antes_adjudicacion": "pre_award",
-    "durante_ejecucion": "during_execution", "ejecucion": "during_execution",
-    "post_venta": "post_sale", "posventa": "post_sale", "postventa": "post_sale",
-    "otro": "other", "otros": "other",
+    "al_presentar": "at_bid_time",
+    "en_oferta": "at_bid_time",
+    "al_ofertar": "at_bid_time",
+    "oferta": "at_bid_time",
+    "pre_adjudicacion": "pre_award",
+    "previa_adjudicacion": "pre_award",
+    "antes_adjudicacion": "pre_award",
+    "durante_ejecucion": "during_execution",
+    "ejecucion": "during_execution",
+    "post_venta": "post_sale",
+    "posventa": "post_sale",
+    "postventa": "post_sale",
+    "otro": "other",
+    "otros": "other",
 }
 TEMPORAL_ALLOWED = {
-    "at_bid_time", "pre_award", "during_execution", "post_sale", "other",
+    "at_bid_time",
+    "pre_award",
+    "during_execution",
+    "post_sale",
+    "other",
 }
 CONFIDENCE_ALIASES: Dict[str, str] = {
-    "high": "alta", "alta_confianza": "alta",
-    "medium": "media", "med": "media",
+    "high": "alta",
+    "alta_confianza": "alta",
+    "medium": "media",
+    "med": "media",
     "low": "baja",
-    "very_low": "muy_baja", "muy_low": "muy_baja",
+    "very_low": "muy_baja",
+    "muy_low": "muy_baja",
 }
 CONFIDENCE_ALLOWED = {"alta", "media", "baja", "muy_baja"}
 WEIGHT_TYPE_ALIASES: Dict[str, str] = {
-    "puntos": "points", "puntaje": "points", "puntajes": "points",
-    "porcentaje": "percent", "porcentajes": "percent", "porciento": "percent", "percentual": "percent",
-    "formula": "formula", "fórmula": "formula",
-    "ninguno": "none", "sin": "none", "n_a": "none", "na": "none",
+    "puntos": "points",
+    "puntaje": "points",
+    "puntajes": "points",
+    "porcentaje": "percent",
+    "porcentajes": "percent",
+    "porciento": "percent",
+    "percentual": "percent",
+    "formula": "formula",
+    "fórmula": "formula",
+    "ninguno": "none",
+    "sin": "none",
+    "n_a": "none",
+    "na": "none",
 }
 WEIGHT_TYPE_ALLOWED = {"points", "percent", "formula", "none"}
 BLOCK_ALIASES: Dict[str, str] = {
-    "cualitativo": "cualitativo", "calidad": "cualitativo",
-    "cuantitativo": "cuantitativo", "cantidad": "cuantitativo",
+    "cualitativo": "cualitativo",
+    "calidad": "cualitativo",
+    "cuantitativo": "cuantitativo",
+    "cantidad": "cuantitativo",
 }
 BLOCK_ALLOWED = {"cualitativo", "cuantitativo"}
 
@@ -389,8 +465,12 @@ class FinalRequirement(RawRequirement):
 # ---------------------------------------------------------------------------
 # System Prompts
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = (Path(__file__).parent / "prompt_requirements_extractor.md").read_text(encoding="utf-8")
-ADMISSIBILITY_SYSTEM_PROMPT = (Path(__file__).parent / "prompt_admissibility_extractor.md").read_text(encoding="utf-8")
+SYSTEM_PROMPT = (Path(__file__).parent / "prompt_requirements_extractor.md").read_text(
+    encoding="utf-8"
+)
+ADMISSIBILITY_SYSTEM_PROMPT = (
+    Path(__file__).parent / "prompt_admissibility_extractor.md"
+).read_text(encoding="utf-8")
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -401,9 +481,16 @@ API_HEADERS = {
 }
 
 
-def api_request(method: str, path: str, json_data: dict | list | None = None, params: dict | None = None) -> dict | list | None:
+def api_request(
+    method: str,
+    path: str,
+    json_data: dict | list | None = None,
+    params: dict | None = None,
+) -> dict | list | None:
     url = f"{API_BASE_URL}{path}"
-    response = SESSION.request(method, url, json=json_data, params=params, headers=API_HEADERS, timeout=60)
+    response = SESSION.request(
+        method, url, json=json_data, params=params, headers=API_HEADERS, timeout=60
+    )
     response.raise_for_status()
     try:
         return response.json()
@@ -413,7 +500,8 @@ def api_request(method: str, path: str, json_data: dict | list | None = None, pa
 
 def validate_env():
     missing = [
-        var for var, val in [
+        var
+        for var, val in [
             ("GOOGLE_API_KEY", GOOGLE_API_KEY),
             ("OPENAI_API_KEY", OPENAI_API_KEY),
             ("QDRANT_URL", QDRANT_URL),
@@ -425,7 +513,10 @@ def validate_env():
             ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
             ("API_TENDER_CLASSIFICATIONS_PATH", API_TENDER_CLASSIFICATIONS_PATH),
             ("API_ANALYSIS_REQUIREMENTS_PATH", API_ANALYSIS_REQUIREMENTS_PATH),
-            ("API_ADMISSIBILITY_REQUIREMENTS_PATH", API_ADMISSIBILITY_REQUIREMENTS_PATH),
+            (
+                "API_ADMISSIBILITY_REQUIREMENTS_PATH",
+                API_ADMISSIBILITY_REQUIREMENTS_PATH,
+            ),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
         ]
@@ -440,16 +531,24 @@ def notify_failure(error_msg: str):
     logger.error(f"notify_failure: {error_msg}")
     log_event(ANALYSIS_ID, "error", error_msg, EVENT_SOURCE)
     try:
-        api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "ready", "is_success": False})
+        api_request(
+            "PATCH",
+            f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status",
+            {"status": "ready", "is_success": False},
+        )
     except Exception as e:
         logger.error(f"Failed to update analysis status: {e}")
     try:
-        api_request("POST", API_JOBS_CALLBACK, {
-            "service_name": SERVICE_NAME,
-            "analysis_id": ANALYSIS_ID,
-            "status": "failed",
-            "error_message": error_msg,
-        })
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "status": "failed",
+                "error_message": error_msg,
+            },
+        )
     except Exception as e:
         logger.error(f"Failed to notify job callback: {e}")
 
@@ -460,7 +559,9 @@ def notify_failure(error_msg: str):
 def get_evaluation_profile(analysis_id: str) -> dict:
     profile = api_request("GET", f"{API_TENDER_CLASSIFICATIONS_PATH}{analysis_id}")
     if not isinstance(profile, dict):
-        raise RuntimeError(f"Unexpected response type from tender-classifications: {type(profile)}")
+        raise RuntimeError(
+            f"Unexpected response type from tender-classifications: {type(profile)}"
+        )
     profile_version = profile.get("profile_version")
     if profile_version is not None and profile_version != 2:
         raise RuntimeError(
@@ -468,8 +569,12 @@ def get_evaluation_profile(analysis_id: str) -> dict:
             "Re-run service-tender-classifier for this analysis before extracting requirements."
         )
     if not profile.get("enabled_roles"):
-        raise RuntimeError("evaluation_profile has no enabled_roles. Cannot extract requirements without a valid profile.")
-    logger.info(f"Loaded evaluation profile: system_type={profile.get('system_type')}, factors={len(profile.get('factors', []))}")
+        raise RuntimeError(
+            "evaluation_profile has no enabled_roles. Cannot extract requirements without a valid profile."
+        )
+    logger.info(
+        f"Loaded evaluation profile: system_type={profile.get('system_type')}, factors={len(profile.get('factors', []))}"
+    )
     return profile
 
 
@@ -488,9 +593,11 @@ def scroll_all_chunks(qdrant: QdrantClient, slug: str, analysis_id: str) -> List
         {"analysis_id": analysis_id, "category": "tender"},
     )
     if not isinstance(tender_files, list):
-        raise RuntimeError(f"Unexpected response from processed-files search: {type(tender_files)}")
+        raise RuntimeError(
+            f"Unexpected response from processed-files search: {type(tender_files)}"
+        )
 
-    tender_files.sort(key=lambda f: (f.get("file_name") or ""))
+    tender_files.sort(key=lambda f: f.get("file_name") or "")
     logger.info(f"Found {len(tender_files)} tender files.")
 
     chunks: List[dict] = []
@@ -500,7 +607,9 @@ def scroll_all_chunks(qdrant: QdrantClient, slug: str, analysis_id: str) -> List
         collection_name = f"FILE_{slug}_{file_id}"
 
         if not qdrant.collection_exists(collection_name):
-            logger.warning(f"Collection '{collection_name}' missing; skipping file '{file_name}'.")
+            logger.warning(
+                f"Collection '{collection_name}' missing; skipping file '{file_name}'."
+            )
             continue
 
         offset = None
@@ -519,23 +628,29 @@ def scroll_all_chunks(qdrant: QdrantClient, slug: str, analysis_id: str) -> List
                     raise RuntimeError(
                         f"Point {point.id} in collection '{collection_name}' has no 'chunk_index' field."
                     )
-                chunks.append({
-                    "chunk_id": str(point.id),
-                    "file_order": file_order,
-                    "chunk_index": int(payload["chunk_index"]),
-                    "text": payload.get("text", ""),
-                    "page_number": payload.get("page_number"),
-                    "filename": payload.get("filename") or file_name,
-                    "file_id": file_id,
-                })
+                chunks.append(
+                    {
+                        "chunk_id": str(point.id),
+                        "file_order": file_order,
+                        "chunk_index": int(payload["chunk_index"]),
+                        "text": payload.get("text", ""),
+                        "page_number": payload.get("page_number"),
+                        "filename": payload.get("filename") or file_name,
+                        "file_id": file_id,
+                    }
+                )
                 file_chunk_count += 1
             offset = next_offset
             if offset is None:
                 break
-        logger.info(f"  '{file_name}': {file_chunk_count} chunks from '{collection_name}'.")
+        logger.info(
+            f"  '{file_name}': {file_chunk_count} chunks from '{collection_name}'."
+        )
 
     chunks.sort(key=lambda c: (c["file_order"], c["chunk_index"]))
-    logger.info(f"Fetched {len(chunks)} total tender chunks across {len(tender_files)} files.")
+    logger.info(
+        f"Fetched {len(chunks)} total tender chunks across {len(tender_files)} files."
+    )
     return chunks
 
 
@@ -549,7 +664,7 @@ def make_batches(chunks: List[dict], size: int, overlap: int) -> List[List[dict]
     batches = []
     start = 0
     while start < len(chunks):
-        batches.append(chunks[start: start + size])
+        batches.append(chunks[start : start + size])
         start += step
     return batches
 
@@ -560,7 +675,7 @@ def make_batches(chunks: List[dict], size: int, overlap: int) -> List[List[dict]
 def build_user_prompt(profile: dict, batch: List[dict]) -> str:
     profile_json = json.dumps(profile, ensure_ascii=False, indent=2)
     chunks_text = "\n\n".join(
-        f'[chunk_id={c["chunk_id"]} page_number={c["page_number"] or ""} filename={c.get("filename") or ""}]'
+        f"[chunk_id={c['chunk_id']} page_number={c['page_number'] or ''} filename={c.get('filename') or ''}]"
         f"\n{c['text']}"
         for c in batch
     )
@@ -576,7 +691,7 @@ def build_user_prompt(profile: dict, batch: List[dict]) -> str:
 
 def build_admissibility_user_prompt(batch: List[dict]) -> str:
     chunks_text = "\n\n".join(
-        f'[chunk_id={c["chunk_id"]} page_number={c["page_number"] or ""} filename={c.get("filename") or ""}]'
+        f"[chunk_id={c['chunk_id']} page_number={c['page_number'] or ''} filename={c.get('filename') or ''}]"
         f"\n{c['text']}"
         for c in batch
     )
@@ -602,12 +717,14 @@ def _is_malformed_response(err: Optional[Exception]) -> bool:
 @dataclass
 class BatchOutcome:
     requirements: List["RawRequirement"] = field(default_factory=list)
-    admissibility_requirements: List["AdmissibilityRawRequirement"] = field(default_factory=list)
+    admissibility_requirements: List["AdmissibilityRawRequirement"] = field(
+        default_factory=list
+    )
     duration_seconds: float = 0.0
-    gemini_used: bool = False
-    gemini_unavailable: bool = False
-    openai_used: bool = False
-    openai_failed: bool = False
+    primary_used: bool = False
+    primary_unavailable: bool = False
+    fallback_used: bool = False
+    fallback_failed: bool = False
     # per-pass failure tracking
     general_failure_reason: Optional[str] = None
     admissibility_failure_reason: Optional[str] = None
@@ -652,7 +769,9 @@ def _call_with_retry(
                 time.sleep(delay)
                 continue
             if attempt < MAX_LLM_RETRIES:
-                delay = LLM_RETRY_BASE_DELAY * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
+                delay = LLM_RETRY_BASE_DELAY * (2 ** (attempt - 1)) + random.uniform(
+                    0, 0.5
+                )
                 logger.warning(
                     f"Batch {batch_id}: {label} attempt {attempt}/{MAX_LLM_RETRIES} failed "
                     f"({type(err).__name__}: {err}). Retrying in {delay:.1f}s..."
@@ -674,32 +793,15 @@ def _run_llm_pass(
     batch_id: int,
     label: str,
 ) -> Tuple[Optional[Any], Optional[Exception], bool, bool, bool]:
-    """Run a single LLM pass with Gemini->OpenAI fallback.
+    """Run a single LLM pass with OpenAI->Gemini fallback.
 
-    Returns (result, final_err, gemini_unavailable, openai_used, openai_failed).
+    Returns (result, final_err, primary_unavailable, fallback_used, fallback_failed).
     """
-    raw_capture = {"gemini": "", "openai": ""}
-
-    def call_gemini():
-        response = gemini_client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=[
-                genai_types.Content(role="user", parts=[genai_types.Part(text=system_prompt)]),
-                genai_types.Content(role="model", parts=[genai_types.Part(text="Understood. I will return only a JSON object with the requirements list.")]),
-                genai_types.Content(role="user", parts=[genai_types.Part(text=user_prompt)]),
-            ],
-            config=genai_types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=response_model,
-                thinking_config=genai_types.ThinkingConfig(thinking_budget=GEMINI_THINKING_BUDGET),
-            ),
-        )
-        raw_capture["gemini"] = response.text or ""
-        return response_model.model_validate_json(response.text)
+    raw_capture = {"openai": "", "gemini": ""}
 
     def call_openai():
         oai_response = openai_client.chat.completions.create(
-            model=OPENAI_FALLBACK_MODEL,
+            model=OPENAI_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -710,36 +812,74 @@ def _run_llm_pass(
         raw_capture["openai"] = content
         return response_model.model_validate_json(content)
 
-    gemini_unavailable = False
-    openai_used = False
-    openai_failed = False
+    def call_gemini():
+        response = gemini_client.models.generate_content(
+            model=GEMINI_FALLBACK_MODEL,
+            contents=[
+                genai_types.Content(
+                    role="user", parts=[genai_types.Part(text=system_prompt)]
+                ),
+                genai_types.Content(
+                    role="model",
+                    parts=[
+                        genai_types.Part(
+                            text="Understood. I will return only a JSON object with the requirements list."
+                        )
+                    ],
+                ),
+                genai_types.Content(
+                    role="user", parts=[genai_types.Part(text=user_prompt)]
+                ),
+            ],
+            config=genai_types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=response_model,
+                thinking_config=genai_types.ThinkingConfig(
+                    thinking_budget=GEMINI_THINKING_BUDGET
+                ),
+            ),
+        )
+        raw_capture["gemini"] = response.text or ""
+        return response_model.model_validate_json(response.text)
 
-    result, gemini_err = _call_with_retry(f"Gemini[{label}]", batch_id, call_gemini)
+    primary_unavailable = False
+    fallback_used = False
+    fallback_failed = False
+
+    result, openai_err = _call_with_retry(f"OpenAI[{label}]", batch_id, call_openai)
     final_err: Optional[Exception] = None
     if result is None:
-        if _is_provider_unavailable(gemini_err):
-            gemini_unavailable = True
-        logger.warning(f"Batch {batch_id}[{label}]: falling back to OpenAI ({type(gemini_err).__name__}).")
-        openai_used = True
-        result, openai_err = _call_with_retry(f"OpenAI[{label}]", batch_id, call_openai)
+        if _is_provider_unavailable(openai_err):
+            primary_unavailable = True
+        logger.warning(
+            f"Batch {batch_id}[{label}]: falling back to Gemini ({type(openai_err).__name__})."
+        )
+        fallback_used = True
+        result, gemini_err = _call_with_retry(f"Gemini[{label}]", batch_id, call_gemini)
         if result is None:
-            openai_failed = True
-            final_err = openai_err or gemini_err
-            raw_snippet = (raw_capture["openai"] or raw_capture["gemini"])[:1000]
-            log_event(ANALYSIS_ID, "warning",
-                f"Batch {batch_id}[{label}] failed after retries on Gemini and OpenAI: "
+            fallback_failed = True
+            final_err = gemini_err or openai_err
+            raw_snippet = (raw_capture["gemini"] or raw_capture["openai"])[:1000]
+            log_event(
+                ANALYSIS_ID,
+                "warning",
+                f"Batch {batch_id}[{label}] failed after retries on OpenAI and Gemini: "
                 f"{type(final_err).__name__}: {str(final_err)[:300]}",
                 EVENT_SOURCE,
                 {
                     "batch_id": batch_id,
                     "pass": label,
-                    "gemini_error": f"{type(gemini_err).__name__}: {str(gemini_err)[:200]}" if gemini_err else None,
-                    "openai_error": f"{type(openai_err).__name__}: {str(openai_err)[:200]}" if openai_err else None,
+                    "openai_error": f"{type(openai_err).__name__}: {str(openai_err)[:200]}"
+                    if openai_err
+                    else None,
+                    "gemini_error": f"{type(gemini_err).__name__}: {str(gemini_err)[:200]}"
+                    if gemini_err
+                    else None,
                     "raw_response_snippet": raw_snippet,
                 },
             )
 
-    return result, final_err, gemini_unavailable, openai_used, openai_failed
+    return result, final_err, primary_unavailable, fallback_used, fallback_failed
 
 
 def extract_batch(
@@ -749,51 +889,69 @@ def extract_batch(
     batch: List[dict],
     batch_id: int,
 ) -> BatchOutcome:
-    outcome = BatchOutcome(gemini_used=True)
+    outcome = BatchOutcome(primary_used=True)
     start = time.time()
 
     # Pass A: admissibility (no profile)
     adm_user_prompt = build_admissibility_user_prompt(batch)
-    adm_result, adm_err, adm_gem_unavail, adm_oai_used, adm_oai_failed = _run_llm_pass(
-        gemini_client, openai_client,
-        ADMISSIBILITY_SYSTEM_PROMPT, adm_user_prompt,
-        AdmissibilityBatchResponse, batch_id, "admissibility",
+    adm_result, adm_err, adm_primary_unavail, adm_fb_used, adm_fb_failed = _run_llm_pass(
+        gemini_client,
+        openai_client,
+        ADMISSIBILITY_SYSTEM_PROMPT,
+        adm_user_prompt,
+        AdmissibilityBatchResponse,
+        batch_id,
+        "admissibility",
     )
-    if adm_gem_unavail:
-        outcome.gemini_unavailable = True
-    if adm_oai_used:
-        outcome.openai_used = True
-    if adm_oai_failed:
-        outcome.openai_failed = True
+    if adm_primary_unavail:
+        outcome.primary_unavailable = True
+    if adm_fb_used:
+        outcome.fallback_used = True
+    if adm_fb_failed:
+        outcome.fallback_failed = True
     if adm_result is not None:
         for req in adm_result.requirements:
             req.extraction_batch_id = batch_id
         outcome.admissibility_requirements = adm_result.requirements
-        logger.info(f"Batch {batch_id}[admissibility]: extracted {len(adm_result.requirements)} requirements.")
+        logger.info(
+            f"Batch {batch_id}[admissibility]: extracted {len(adm_result.requirements)} requirements."
+        )
     else:
-        outcome.admissibility_failure_reason = f"{type(adm_err).__name__}: {str(adm_err)[:200]}" if adm_err else "unknown"
-        logger.warning(f"Batch {batch_id}[admissibility]: pass failed, continuing with general pass.")
+        outcome.admissibility_failure_reason = (
+            f"{type(adm_err).__name__}: {str(adm_err)[:200]}" if adm_err else "unknown"
+        )
+        logger.warning(
+            f"Batch {batch_id}[admissibility]: pass failed, continuing with general pass."
+        )
 
     # Pass B: general (with profile) — exactly as before
     gen_user_prompt = build_user_prompt(profile, batch)
-    gen_result, gen_err, gen_gem_unavail, gen_oai_used, gen_oai_failed = _run_llm_pass(
-        gemini_client, openai_client,
-        SYSTEM_PROMPT, gen_user_prompt,
-        BatchResponse, batch_id, "general",
+    gen_result, gen_err, gen_primary_unavail, gen_fb_used, gen_fb_failed = _run_llm_pass(
+        gemini_client,
+        openai_client,
+        SYSTEM_PROMPT,
+        gen_user_prompt,
+        BatchResponse,
+        batch_id,
+        "general",
     )
-    if gen_gem_unavail:
-        outcome.gemini_unavailable = True
-    if gen_oai_used:
-        outcome.openai_used = True
-    if gen_oai_failed:
-        outcome.openai_failed = True
+    if gen_primary_unavail:
+        outcome.primary_unavailable = True
+    if gen_fb_used:
+        outcome.fallback_used = True
+    if gen_fb_failed:
+        outcome.fallback_failed = True
     if gen_result is not None:
         for req in gen_result.requirements:
             req.extraction_batch_id = batch_id
         outcome.requirements = gen_result.requirements
-        logger.info(f"Batch {batch_id}[general]: extracted {len(gen_result.requirements)} requirements.")
+        logger.info(
+            f"Batch {batch_id}[general]: extracted {len(gen_result.requirements)} requirements."
+        )
     else:
-        outcome.general_failure_reason = f"{type(gen_err).__name__}: {str(gen_err)[:200]}" if gen_err else "unknown"
+        outcome.general_failure_reason = (
+            f"{type(gen_err).__name__}: {str(gen_err)[:200]}" if gen_err else "unknown"
+        )
 
     outcome.duration_seconds = time.time() - start
     return outcome
@@ -833,7 +991,9 @@ def deduplicate(raw_reqs: List[RawRequirement]) -> List[RawRequirement]:
         req_text = max((r.requirement_text for r in group), key=len)
 
         # requirement_summary: first non-None
-        req_summary = next((r.requirement_summary for r in group if r.requirement_summary), None)
+        req_summary = next(
+            (r.requirement_summary for r in group if r.requirement_summary), None
+        )
 
         # roles: union, preserve first-seen order
         seen_roles: Dict[str, None] = {}
@@ -876,20 +1036,22 @@ def deduplicate(raw_reqs: List[RawRequirement]) -> List[RawRequirement]:
 
         extraction_batch_id = group[0].extraction_batch_id
 
-        merged.append(RawRequirement(
-            requirement_text=req_text,
-            requirement_summary=req_summary,
-            roles=roles,
-            mapped_factors=mapped_factors,
-            domain=domain,
-            weight=weight,
-            verification_method=verification_method,
-            temporal_scope=temporal_scope,
-            citations=citations,
-            confidence=confidence,
-            notes=notes,
-            extraction_batch_id=extraction_batch_id,
-        ))
+        merged.append(
+            RawRequirement(
+                requirement_text=req_text,
+                requirement_summary=req_summary,
+                roles=roles,
+                mapped_factors=mapped_factors,
+                domain=domain,
+                weight=weight,
+                verification_method=verification_method,
+                temporal_scope=temporal_scope,
+                citations=citations,
+                confidence=confidence,
+                notes=notes,
+                extraction_batch_id=extraction_batch_id,
+            )
+        )
 
     return merged
 
@@ -897,7 +1059,9 @@ def deduplicate(raw_reqs: List[RawRequirement]) -> List[RawRequirement]:
 # ---------------------------------------------------------------------------
 # Admissibility deduplication
 # ---------------------------------------------------------------------------
-def deduplicate_admissibility(raw_reqs: List[AdmissibilityRawRequirement]) -> List[AdmissibilityRawRequirement]:
+def deduplicate_admissibility(
+    raw_reqs: List[AdmissibilityRawRequirement],
+) -> List[AdmissibilityRawRequirement]:
     groups: Dict[str, List[AdmissibilityRawRequirement]] = {}
     for req in raw_reqs:
         key = hashlib.sha1(normalize_text(req.requirement_text).encode()).hexdigest()
@@ -910,7 +1074,9 @@ def deduplicate_admissibility(raw_reqs: List[AdmissibilityRawRequirement]) -> Li
             continue
 
         req_text = max((r.requirement_text for r in group), key=len)
-        req_summary = next((r.requirement_summary for r in group if r.requirement_summary), None)
+        req_summary = next(
+            (r.requirement_summary for r in group if r.requirement_summary), None
+        )
 
         seen_roles: Dict[str, None] = {}
         for r in group:
@@ -933,18 +1099,20 @@ def deduplicate_admissibility(raw_reqs: List[AdmissibilityRawRequirement]) -> Li
         notes = " | ".join(dict.fromkeys(all_notes)) if all_notes else None
         extraction_batch_id = group[0].extraction_batch_id
 
-        merged.append(AdmissibilityRawRequirement(
-            requirement_text=req_text,
-            requirement_summary=req_summary,
-            roles=roles,
-            domain=domain,
-            verification_method=verification_method,
-            temporal_scope=temporal_scope,
-            citations=citations,
-            confidence=confidence,
-            notes=notes,
-            extraction_batch_id=extraction_batch_id,
-        ))
+        merged.append(
+            AdmissibilityRawRequirement(
+                requirement_text=req_text,
+                requirement_summary=req_summary,
+                roles=roles,
+                domain=domain,
+                verification_method=verification_method,
+                temporal_scope=temporal_scope,
+                citations=citations,
+                confidence=confidence,
+                notes=notes,
+                extraction_batch_id=extraction_batch_id,
+            )
+        )
 
     return merged
 
@@ -952,7 +1120,9 @@ def deduplicate_admissibility(raw_reqs: List[AdmissibilityRawRequirement]) -> Li
 # ---------------------------------------------------------------------------
 # Code assignment
 # ---------------------------------------------------------------------------
-def assign_codes(reqs: List[RawRequirement], chunk_index_map: Dict[str, int]) -> List[FinalRequirement]:
+def assign_codes(
+    reqs: List[RawRequirement], chunk_index_map: Dict[str, int]
+) -> List[FinalRequirement]:
     def first_position(req: RawRequirement) -> int:
         positions = [chunk_index_map.get(c.chunk_id, 999999) for c in req.citations]
         return min(positions) if positions else 999999
@@ -960,21 +1130,27 @@ def assign_codes(reqs: List[RawRequirement], chunk_index_map: Dict[str, int]) ->
     sorted_reqs = sorted(reqs, key=first_position)
     result = []
     for i, req in enumerate(sorted_reqs, start=1):
-        result.append(FinalRequirement(
-            **req.model_dump(),
-            requirement_code=f"REQ-{i:03d}",
-        ))
+        result.append(
+            FinalRequirement(
+                **req.model_dump(),
+                requirement_code=f"REQ-{i:03d}",
+            )
+        )
     return result
 
 
-def assign_codes_admissibility(reqs: List[AdmissibilityRawRequirement], chunk_index_map: Dict[str, int]) -> List[FinalAdmissibilityRequirement]:
+def assign_codes_admissibility(
+    reqs: List[AdmissibilityRawRequirement], chunk_index_map: Dict[str, int]
+) -> List[FinalAdmissibilityRequirement]:
     def first_position(req: AdmissibilityRawRequirement) -> int:
         positions = [chunk_index_map.get(c.chunk_id, 999999) for c in req.citations]
         return min(positions) if positions else 999999
 
     sorted_reqs = sorted(reqs, key=first_position)
     return [
-        FinalAdmissibilityRequirement(**req.model_dump(), requirement_code=f"ADM-{i:03d}")
+        FinalAdmissibilityRequirement(
+            **req.model_dump(), requirement_code=f"ADM-{i:03d}"
+        )
         for i, req in enumerate(sorted_reqs, start=1)
     ]
 
@@ -987,7 +1163,9 @@ def validate_against_profile(
     profile: dict,
 ) -> Tuple[List[FinalRequirement], List[str]]:
     enabled_roles = profile.get("enabled_roles", {})
-    enabled_role_ids = {r for r, v in enabled_roles.items() if isinstance(v, dict) and v.get("enabled")}
+    enabled_role_ids = {
+        r for r, v in enabled_roles.items() if isinstance(v, dict) and v.get("enabled")
+    }
     valid_factor_ids = {f["id"] for f in profile.get("factors", [])}
     system_type = profile.get("system_type", "")
 
@@ -1019,8 +1197,14 @@ def validate_against_profile(
             valid_roles = list(dict.fromkeys(replaced))
 
         # --- Eje 2: strip invalid mapped_factors ---
-        valid_factors = [mf for mf in req.mapped_factors if mf.factor_id in valid_factor_ids]
-        invalid_fids = [mf.factor_id for mf in req.mapped_factors if mf.factor_id not in valid_factor_ids]
+        valid_factors = [
+            mf for mf in req.mapped_factors if mf.factor_id in valid_factor_ids
+        ]
+        invalid_fids = [
+            mf.factor_id
+            for mf in req.mapped_factors
+            if mf.factor_id not in valid_factor_ids
+        ]
         if invalid_fids:
             warnings.append(
                 f"{req.requirement_code}: removed mapped_factors with unknown factor_ids: {invalid_fids}."
@@ -1037,21 +1221,33 @@ def validate_against_profile(
                         f"{req.requirement_code}: role '{sr}' downgraded to 'informativo' "
                         f"because mapped_factors is empty after validation."
                     )
-                    if "informativo" not in valid_roles and "informativo" in enabled_role_ids:
+                    if (
+                        "informativo" not in valid_roles
+                        and "informativo" in enabled_role_ids
+                    ):
                         valid_roles.append("informativo")
 
         if not valid_roles:
-            warnings.append(f"{req.requirement_code}: no valid roles remain after validation. Discarded.")
+            warnings.append(
+                f"{req.requirement_code}: no valid roles remain after validation. Discarded."
+            )
             continue
 
-        cleaned.append(FinalRequirement(
-            **{**req.model_dump(), "roles": valid_roles, "mapped_factors": valid_factors},
-        ))
+        cleaned.append(
+            FinalRequirement(
+                **{
+                    **req.model_dump(),
+                    "roles": valid_roles,
+                    "mapped_factors": valid_factors,
+                },
+            )
+        )
 
     # Strategy-level cross-requirement checks
     if system_type == "solo_precio_con_AN":
         has_an_penalizador = any(
-            "penalizador" in r.roles and any(mf.factor_id == "antecedentes_negativos" for mf in r.mapped_factors)
+            "penalizador" in r.roles
+            and any(mf.factor_id == "antecedentes_negativos" for mf in r.mapped_factors)
             for r in cleaned
         )
         if not has_an_penalizador:
@@ -1068,13 +1264,25 @@ def validate_against_profile(
 # ---------------------------------------------------------------------------
 def post_bulk(analysis_id: str, reqs: List[FinalRequirement]):
     payload = [r.model_dump() for r in reqs]
-    api_request("POST", f"{API_ANALYSIS_REQUIREMENTS_PATH}bulk", payload, params={"analysis_id": analysis_id})
+    api_request(
+        "POST",
+        f"{API_ANALYSIS_REQUIREMENTS_PATH}bulk",
+        payload,
+        params={"analysis_id": analysis_id},
+    )
     logger.info(f"POST bulk: {len(reqs)} requirements saved.")
 
 
-def post_admissibility_bulk(analysis_id: str, reqs: List[FinalAdmissibilityRequirement]):
+def post_admissibility_bulk(
+    analysis_id: str, reqs: List[FinalAdmissibilityRequirement]
+):
     payload = [r.model_dump() for r in reqs]
-    api_request("POST", f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}bulk", payload, params={"analysis_id": analysis_id})
+    api_request(
+        "POST",
+        f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}bulk",
+        payload,
+        params={"analysis_id": analysis_id},
+    )
     logger.info(f"POST admissibility bulk: {len(reqs)} requirements saved.")
 
 
@@ -1088,7 +1296,12 @@ def process_extraction():
     gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
-    log_event(ANALYSIS_ID, "info", "Iniciando extracción de requisitos con clasificación multi-eje...", EVENT_SOURCE)
+    log_event(
+        ANALYSIS_ID,
+        "info",
+        "Iniciando extracción de requisitos con clasificación multi-eje...",
+        EVENT_SOURCE,
+    )
 
     # 1. Get analysis slug
     analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
@@ -1104,11 +1317,15 @@ def process_extraction():
         msg = "No tender chunks found for this analysis in Qdrant."
         logger.warning(msg)
         log_event(ANALYSIS_ID, "warning", msg, EVENT_SOURCE)
-        api_request("POST", API_JOBS_CALLBACK, {
-            "service_name": SERVICE_NAME,
-            "analysis_id": ANALYSIS_ID,
-            "status": "success",
-        })
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "status": "success",
+            },
+        )
         return
 
     chunk_index_map = {c["chunk_id"]: c["chunk_index"] for c in chunks}
@@ -1116,8 +1333,15 @@ def process_extraction():
 
     # 4. Build batches
     batches = make_batches(chunks, BATCH_SIZE, BATCH_OVERLAP)
-    logger.info(f"Processing {len(chunks)} chunks in {len(batches)} batches (size={BATCH_SIZE}, overlap={BATCH_OVERLAP}).")
-    log_event(ANALYSIS_ID, "info", f"Procesando {len(chunks)} chunks en {len(batches)} batches...", EVENT_SOURCE)
+    logger.info(
+        f"Processing {len(chunks)} chunks in {len(batches)} batches (size={BATCH_SIZE}, overlap={BATCH_OVERLAP})."
+    )
+    log_event(
+        ANALYSIS_ID,
+        "info",
+        f"Procesando {len(chunks)} chunks en {len(batches)} batches...",
+        EVENT_SOURCE,
+    )
 
     # 5. Parallel batch extraction
     raw_results: List[RawRequirement] = []
@@ -1127,7 +1351,9 @@ def process_extraction():
 
     with ThreadPoolExecutor(max_workers=MAX_PARALLEL_BATCHES) as executor:
         futures = {
-            executor.submit(extract_batch, gemini_client, openai_client, profile, batch, batch_id): batch_id
+            executor.submit(
+                extract_batch, gemini_client, openai_client, profile, batch, batch_id
+            ): batch_id
             for batch_id, batch in enumerate(batches, start=1)
         }
         for future in as_completed(futures):
@@ -1155,7 +1381,10 @@ def process_extraction():
         f"{failed_batches}/{len(batches)} batches failed."
     )
 
-    if failed_batches > 0 and (failed_batches / max(len(batches), 1)) > MAX_FAILED_BATCH_RATIO:
+    if (
+        failed_batches > 0
+        and (failed_batches / max(len(batches), 1)) > MAX_FAILED_BATCH_RATIO
+    ):
         raise RuntimeError(
             f"Failed batches: {failed_batches}/{len(batches)} "
             f"(threshold {int(MAX_FAILED_BATCH_RATIO * 100)}%). "
@@ -1166,16 +1395,22 @@ def process_extraction():
         msg = "No requirements extracted from any batch."
         logger.warning(msg)
         log_event(ANALYSIS_ID, "warning", msg, EVENT_SOURCE)
-        api_request("POST", API_JOBS_CALLBACK, {
-            "service_name": SERVICE_NAME,
-            "analysis_id": ANALYSIS_ID,
-            "status": "success",
-        })
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "status": "success",
+            },
+        )
         return
 
     # 6. General bucket: deduplicate -> assign codes -> validate against profile
     deduped = deduplicate(raw_results)
-    logger.info(f"After deduplication: {len(deduped)} requirements (from {len(raw_results)} raw).")
+    logger.info(
+        f"After deduplication: {len(deduped)} requirements (from {len(raw_results)} raw)."
+    )
 
     with_codes = assign_codes(deduped, chunk_index_map)
 
@@ -1183,7 +1418,9 @@ def process_extraction():
     for w in validation_warnings:
         logger.warning(f"profile_validation: {w}")
         log_event(ANALYSIS_ID, "warning", w, EVENT_SOURCE)
-    logger.info(f"After validation: {len(cleaned)} requirements remain ({len(with_codes) - len(cleaned)} discarded).")
+    logger.info(
+        f"After validation: {len(cleaned)} requirements remain ({len(with_codes) - len(cleaned)} discarded)."
+    )
 
     # Enrich citations with canonical filename + page_number from Qdrant
     for req in cleaned:
@@ -1196,7 +1433,9 @@ def process_extraction():
 
     # 7. Admissibility bucket: deduplicate -> assign codes (no profile validation)
     adm_deduped = deduplicate_admissibility(raw_admissibility_results)
-    logger.info(f"Admissibility: {len(adm_deduped)} requirements after dedup (from {len(raw_admissibility_results)} raw).")
+    logger.info(
+        f"Admissibility: {len(adm_deduped)} requirements after dedup (from {len(raw_admissibility_results)} raw)."
+    )
 
     adm_with_codes = assign_codes_admissibility(adm_deduped, chunk_index_map)
 
@@ -1224,14 +1463,22 @@ def process_extraction():
         for role in r.roles:
             role_counts[role] = role_counts.get(role, 0) + 1
 
-    gemini_unavailable_count = sum(1 for o in outcomes.values() if o.gemini_unavailable)
-    openai_fallbacks_succeeded = sum(1 for o in outcomes.values() if o.openai_used and not o.openai_failed)
-    openai_fallbacks_failed = sum(1 for o in outcomes.values() if o.openai_failed)
+    openai_unavailable_count = sum(1 for o in outcomes.values() if o.primary_unavailable)
+    gemini_fallbacks_succeeded = sum(
+        1 for o in outcomes.values() if o.fallback_used and not o.fallback_failed
+    )
+    gemini_fallbacks_failed = sum(1 for o in outcomes.values() if o.fallback_failed)
     failed_batch_ids = sorted(bid for bid, o in outcomes.items() if not o.requirements)
-    durations = sorted(((bid, o.duration_seconds) for bid, o in outcomes.items()), key=lambda x: -x[1])
-    slowest_batch_id, slowest_batch_seconds = (durations[0] if durations else (None, 0.0))
+    durations = sorted(
+        ((bid, o.duration_seconds) for bid, o in outcomes.items()), key=lambda x: -x[1]
+    )
+    slowest_batch_id, slowest_batch_seconds = durations[0] if durations else (None, 0.0)
     duration_values = sorted(o.duration_seconds for o in outcomes.values())
-    p95_batch_seconds = duration_values[int(len(duration_values) * 0.95) - 1] if duration_values else 0.0
+    p95_batch_seconds = (
+        duration_values[int(len(duration_values) * 0.95) - 1]
+        if duration_values
+        else 0.0
+    )
 
     summary = (
         f"Extraccion completada: {len(cleaned)} requisitos generales | "
@@ -1240,31 +1487,41 @@ def process_extraction():
         f"warnings de validacion: {len(validation_warnings)}"
     )
     logger.info(summary)
-    log_event(ANALYSIS_ID, "info", summary, EVENT_SOURCE, {
-        "requirement_count": len(cleaned),
-        "admissibility_requirement_count": len(adm_with_codes),
-        "raw_count": len(raw_results),
-        "raw_admissibility_count": len(raw_admissibility_results),
-        "batch_count": len(batches),
-        "failed_batches": failed_batches,
-        "failed_batch_ids": failed_batch_ids,
-        "gemini_unavailable_batches": gemini_unavailable_count,
-        "openai_fallbacks_succeeded": openai_fallbacks_succeeded,
-        "openai_fallbacks_failed": openai_fallbacks_failed,
-        "slowest_batch_id": slowest_batch_id,
-        "slowest_batch_seconds": round(slowest_batch_seconds, 2),
-        "p95_batch_seconds": round(p95_batch_seconds, 2),
-        "validation_warnings": len(validation_warnings),
-        "domain_distribution": domain_counts,
-        "role_distribution": role_counts,
-    })
+    log_event(
+        ANALYSIS_ID,
+        "info",
+        summary,
+        EVENT_SOURCE,
+        {
+            "requirement_count": len(cleaned),
+            "admissibility_requirement_count": len(adm_with_codes),
+            "raw_count": len(raw_results),
+            "raw_admissibility_count": len(raw_admissibility_results),
+            "batch_count": len(batches),
+            "failed_batches": failed_batches,
+            "failed_batch_ids": failed_batch_ids,
+            "openai_unavailable_batches": openai_unavailable_count,
+            "gemini_fallbacks_succeeded": gemini_fallbacks_succeeded,
+            "gemini_fallbacks_failed": gemini_fallbacks_failed,
+            "slowest_batch_id": slowest_batch_id,
+            "slowest_batch_seconds": round(slowest_batch_seconds, 2),
+            "p95_batch_seconds": round(p95_batch_seconds, 2),
+            "validation_warnings": len(validation_warnings),
+            "domain_distribution": domain_counts,
+            "role_distribution": role_counts,
+        },
+    )
 
     try:
-        api_request("POST", API_JOBS_CALLBACK, {
-            "service_name": SERVICE_NAME,
-            "analysis_id": ANALYSIS_ID,
-            "status": "success",
-        })
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "status": "success",
+            },
+        )
     except Exception as e:
         logger.error(f"Failed to notify job callback on success: {e}")
 
