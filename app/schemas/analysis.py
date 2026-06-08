@@ -4,6 +4,15 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
+class PrimaryModel(str, Enum):
+    gemini = "gemini"
+    openai = "openai"
+
+class IntelligenceLevel(str, Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
 class AnalysisBase(BaseModel):
     status: str
     slug: str
@@ -14,6 +23,8 @@ class AnalysisBase(BaseModel):
     generated_name: Optional[str] = None
     paused_at_service: Optional[str] = None
     hitl: Optional[bool] = None
+    primary_model: Optional[PrimaryModel] = None
+    intelligence_level: Optional[IntelligenceLevel] = None
 
 class Analysis(AnalysisBase):
     id: UUID
@@ -31,6 +42,8 @@ class AnalysisFromStoragePath(BaseModel):
     user_name: Optional[str] = None
     user_email: Optional[str] = None
     hitl: bool = False
+    primary_model: PrimaryModel = PrimaryModel.openai
+    intelligence_level: IntelligenceLevel = IntelligenceLevel.medium
 
 class AnalysisUpdate(BaseModel):
     generated_name: Optional[str] = None

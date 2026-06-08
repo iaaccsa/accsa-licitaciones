@@ -76,6 +76,8 @@ class AnalysisService:
             "status": "pending",
             "artifact_path": data.storage_path,
             "hitl": data.hitl,
+            "primary_model": data.primary_model.value,
+            "intelligence_level": data.intelligence_level.value,
         }
         if data.user_name:
             analysis_data["user_name"] = data.user_name
