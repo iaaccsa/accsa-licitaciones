@@ -47,6 +47,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
 COPY global/supabase_logger.py .
+COPY global/ai_usage_logger.py .
 
 # Copy application code
 COPY service-documents-grouper/main.py service-documents-grouper/prompt_proposal_grouping.md service-documents-grouper/prompt_tender_naming.md .

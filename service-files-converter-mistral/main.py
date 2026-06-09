@@ -31,6 +31,7 @@ import requests
 from mistralai import Mistral
 from supabase import create_client, Client
 from supabase_logger import setup_logger, log_event, make_session
+from ai_usage_logger import load_pricing, record_usage
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -52,6 +53,9 @@ SERVICE_NAME = "service-files-converter-mistral"
 WORKSPACE_DIR = Path("/app/workspace")
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 STORAGE_BUCKET = "files"
+
+# AI cost accounting: frozen price snapshot, loaded once in main().
+PRICING: dict = {}
 MAX_FILE_SIZE_MB = 45  # Mistral OCR proxy limit (~50 MB); reject before upload
 OCR_MAX_RETRIES = 3
 OCR_RETRY_DELAYS = [10, 30, 60]  # seconds
@@ -176,6 +180,8 @@ def parse_file(client: Mistral, file_path: str) -> str:
             raise last_exc
 
         pages = result.pages if result.pages else []
+        record_usage(ANALYSIS_ID, SERVICE_NAME, "mistral", "mistral-ocr-latest", "ocr",
+                     input_units=len(pages), pricing=PRICING)
         parts = []
         for page in pages:
             if not page.markdown:
@@ -404,7 +410,9 @@ def process_conversion():
 
 
 def main():
+    global PRICING
     validate_env()
+    PRICING = load_pricing()
     try:
         process_conversion()
     except requests.exceptions.HTTPError as e:

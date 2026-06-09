@@ -42,6 +42,7 @@ from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient
 
 from supabase_logger import setup_logger, log_event, make_session
+from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -74,6 +75,9 @@ PRIMARY_PROVIDER = "gemini"
 PRIMARY_MODEL = GEMINI_MODEL
 FALLBACK_PROVIDER = "openai"
 FALLBACK_MODEL = OPENAI_FALLBACK_MODEL
+
+# AI cost accounting: frozen price snapshot, loaded once in main().
+PRICING: dict = {}
 
 
 def _provider_of(model_id: str) -> str:
@@ -211,7 +215,12 @@ def validate_env():
 
 def get_embedding(client: OpenAI, text: str) -> List[float]:
     text = text.replace("\n", " ")
-    return client.embeddings.create(input=[text], model=EMBEDDING_MODEL).data[0].embedding
+    response = client.embeddings.create(input=[text], model=EMBEDDING_MODEL)
+    in_u, out_u, cached = openai_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", EMBEDDING_MODEL, "embedding",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached,
+                 pricing=PRICING, proposal_id=PROPOSAL_ID)
+    return response.data[0].embedding
 
 
 # ---------------------------------------------------------------------------
@@ -380,6 +389,10 @@ def _call_gemini(gemini: genai.Client, user_prompt: str, model: str) -> LLMEcono
             response_schema=LLMEconomicOffer,
         ),
     )
+    in_u, out_u, cached = gemini_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "gemini", model, "chat",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached,
+                 pricing=PRICING, proposal_id=PROPOSAL_ID)
     return LLMEconomicOffer.model_validate_json(response.text)
 
 
@@ -392,6 +405,10 @@ def _call_openai(openai_client: OpenAI, user_prompt: str, model: str) -> LLMEcon
         ],
         response_format={"type": "json_object"},
     )
+    in_u, out_u, cached = openai_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", model, "chat",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached,
+                 pricing=PRICING, proposal_id=PROPOSAL_ID)
     return LLMEconomicOffer.model_validate_json(response.choices[0].message.content)
 
 
@@ -540,8 +557,10 @@ def process_economic_extraction():
 
 
 def main():
+    global PRICING
     validate_env()
     resolve_model_config()
+    PRICING = load_pricing()
     try:
         process_economic_extraction()
     except requests.exceptions.HTTPError as e:

@@ -37,6 +37,7 @@ from qdrant_client.http import models
 from openai import OpenAI
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from supabase_logger import setup_logger, log_event, make_session
+from ai_usage_logger import load_pricing, openai_units, record_usage
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -58,6 +59,9 @@ FILE_ID = os.environ.get("FILE_ID")
 SERVICE_NAME = "service-qdrant-by-file"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 EMBEDDING_MODEL = "text-embedding-3-small"
+
+# AI cost accounting: frozen price snapshot, loaded once in main().
+PRICING: dict = {}
 
 logger = setup_logger(SERVICE_NAME)
 SESSION = make_session()
@@ -193,6 +197,9 @@ def get_embeddings(client: OpenAI, texts: List[str]) -> List[List[float]]:
         batch = [t.replace("\n", " ") for t in texts[i:i + batch_size]]
         response = client.embeddings.create(input=batch, model=EMBEDDING_MODEL)
         embeddings.extend([data.embedding for data in response.data])
+        in_u, out_u, cached = openai_units(response)
+        record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", EMBEDDING_MODEL, "embedding",
+                     input_units=in_u, output_units=out_u, cached_input_units=cached, pricing=PRICING)
         logger.info(f"  Batch {i // batch_size + 1}: {len(batch)} embeddings generated")
         time.sleep(0.1)
     return embeddings
@@ -329,7 +336,9 @@ def process_qdrant_by_file():
 
 
 def main():
+    global PRICING
     validate_env()
+    PRICING = load_pricing()
     try:
         process_qdrant_by_file()
     except requests.exceptions.HTTPError as e:

@@ -43,6 +43,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.http import models
 
 from supabase_logger import setup_logger, log_event, make_session
+from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -74,6 +75,9 @@ PRIMARY_PROVIDER = "gemini"
 PRIMARY_MODEL = GEMINI_MODEL
 FALLBACK_PROVIDER = "openai"
 FALLBACK_MODEL = OPENAI_FALLBACK_MODEL
+
+# AI cost accounting: frozen price snapshot, loaded once in main().
+PRICING: dict = {}
 
 
 def _provider_of(model_id: str) -> str:
@@ -207,7 +211,12 @@ def validate_env():
 
 def get_embedding(client: OpenAI, text: str) -> List[float]:
     text = text.replace("\n", " ")
-    return client.embeddings.create(input=[text], model=EMBEDDING_MODEL).data[0].embedding
+    response = client.embeddings.create(input=[text], model=EMBEDDING_MODEL)
+    in_u, out_u, cached = openai_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", EMBEDDING_MODEL, "embedding",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached,
+                 pricing=PRICING, proposal_id=PROPOSAL_ID)
+    return response.data[0].embedding
 
 
 # ---------------------------------------------------------------------------
@@ -422,6 +431,10 @@ def _call_gemini_sync(
             response_schema=LLMComplianceEntry,
         ),
     )
+    in_u, out_u, cached = gemini_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "gemini", model, "chat",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached,
+                 pricing=PRICING, proposal_id=PROPOSAL_ID)
     return LLMComplianceEntry.model_validate_json(response.text)
 
 
@@ -438,6 +451,10 @@ def _call_openai_sync(
         ],
         response_format={"type": "json_object"},
     )
+    in_u, out_u, cached = openai_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", model, "chat",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached,
+                 pricing=PRICING, proposal_id=PROPOSAL_ID)
     return LLMComplianceEntry.model_validate_json(response.choices[0].message.content)
 
 
@@ -677,8 +694,10 @@ async def process_admissibility_matching_async():
 
 
 def main():
+    global PRICING
     validate_env()
     resolve_model_config()
+    PRICING = load_pricing()
     try:
         asyncio.run(process_admissibility_matching_async())
     except requests.exceptions.HTTPError as e:

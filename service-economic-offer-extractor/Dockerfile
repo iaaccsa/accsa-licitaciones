@@ -62,6 +62,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
 COPY global/supabase_logger.py .
+COPY global/ai_usage_logger.py .
 
 # Copy application code
 COPY service-economic-offer-extractor/main.py service-economic-offer-extractor/prompt_economic_offer_extractor.md .

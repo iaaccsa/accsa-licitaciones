@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 try:
     from supabase_logger import setup_logger, log_event, make_session
+    from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
 except ImportError:
     import logging
 
@@ -26,6 +27,18 @@ except ImportError:
     def make_session():
         import requests
         return requests.Session()
+
+    def load_pricing():
+        return {}
+
+    def record_usage(*args, **kwargs):
+        pass
+
+    def openai_units(response):
+        return 0, 0, 0
+
+    def gemini_units(response):
+        return 0, 0, 0
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -54,6 +67,9 @@ PRIMARY_PROVIDER = "gemini"
 PRIMARY_MODEL = GEMINI_MODEL
 FALLBACK_PROVIDER = "openai"
 FALLBACK_MODEL = OPENAI_FALLBACK_MODEL
+
+# AI cost accounting: frozen price snapshot, loaded once in main().
+PRICING: dict = {}
 
 
 def _provider_of(model_id: str) -> str:
@@ -447,6 +463,10 @@ def _call_gemini_summary(gemini: genai.Client, user_prompt: str, model: str) -> 
             response_mime_type="text/plain",
         ),
     )
+    in_u, out_u, cached = gemini_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "gemini", model, "chat",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached,
+                 pricing=PRICING, proposal_id=PROPOSAL_ID)
     return response.text.strip()
 
 
@@ -458,6 +478,10 @@ def _call_openai_summary(openai_client: OpenAI, user_prompt: str, model: str) ->
             {"role": "user",   "content": user_prompt},
         ],
     )
+    in_u, out_u, cached = openai_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", model, "chat",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached,
+                 pricing=PRICING, proposal_id=PROPOSAL_ID)
     return response.choices[0].message.content.strip()
 
 
@@ -582,8 +606,10 @@ def process_summary():
 
 
 def main():
+    global PRICING
     validate_env()
     resolve_model_config()
+    PRICING = load_pricing()
     try:
         process_summary()
     except Exception as e:

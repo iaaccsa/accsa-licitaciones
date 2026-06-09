@@ -62,6 +62,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
 COPY global/supabase_logger.py .
+COPY global/ai_usage_logger.py .
 
 # Copy application code
 COPY service-admissibility-matcher/main.py service-admissibility-matcher/prompt_compliance_evaluator.md .

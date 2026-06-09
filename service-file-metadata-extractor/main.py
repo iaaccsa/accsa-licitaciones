@@ -34,6 +34,7 @@ from openai import OpenAI
 import requests
 from qdrant_client import QdrantClient
 from supabase_logger import setup_logger, log_event, make_session
+from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -63,6 +64,9 @@ PRIMARY_PROVIDER = "gemini"
 PRIMARY_MODEL = GEMINI_MODEL
 FALLBACK_PROVIDER = "openai"
 FALLBACK_MODEL = OPENAI_FALLBACK_MODEL
+
+# AI cost accounting: frozen price snapshot, loaded once in main().
+PRICING: dict = {}
 
 
 def _provider_of(model_id: str) -> str:
@@ -184,6 +188,9 @@ def _gemini_extract(gemini_client: genai.Client, prompt: str, model: str) -> dic
             response_mime_type="application/json",
         ),
     )
+    in_u, out_u, cached = gemini_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "gemini", model, "chat",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached, pricing=PRICING)
     result = json.loads(response.text)
     return result[0] if isinstance(result, list) else result
 
@@ -194,6 +201,9 @@ def _openai_extract(openai_client: OpenAI, prompt: str, model: str) -> dict:
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
     )
+    in_u, out_u, cached = openai_units(response)
+    record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", model, "chat",
+                 input_units=in_u, output_units=out_u, cached_input_units=cached, pricing=PRICING)
     result = json.loads(response.choices[0].message.content)
     return result[0] if isinstance(result, list) else result
 
@@ -336,8 +346,10 @@ def process_file_metadata_extraction():
 
 
 def main():
+    global PRICING
     validate_env()
     resolve_model_config()
+    PRICING = load_pricing()
     try:
         process_file_metadata_extraction()
     except requests.exceptions.HTTPError as e:

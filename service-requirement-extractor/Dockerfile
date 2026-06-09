@@ -66,6 +66,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
 COPY global/supabase_logger.py .
+COPY global/ai_usage_logger.py .
 
 # Copy application code
 COPY service-requirement-extractor/main.py service-requirement-extractor/prompt_requirements_extractor.md service-requirement-extractor/prompt_admissibility_extractor.md .

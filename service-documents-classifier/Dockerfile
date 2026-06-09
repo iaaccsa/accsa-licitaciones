@@ -41,6 +41,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
 COPY global/supabase_logger.py .
+COPY global/ai_usage_logger.py .
 
 # Copy application code
 COPY service-documents-classifier/main.py service-documents-classifier/prompt_document_category_classifier.md .

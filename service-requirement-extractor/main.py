@@ -44,6 +44,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator, model_v
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from supabase_logger import log_event, make_session, setup_logger
+from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -78,6 +79,9 @@ PRIMARY_PROVIDER = "openai"
 PRIMARY_MODEL = OPENAI_MODEL
 FALLBACK_PROVIDER = "gemini"
 FALLBACK_MODEL = GEMINI_FALLBACK_MODEL
+
+# AI cost accounting: frozen price snapshot, loaded once in main().
+PRICING: dict = {}
 
 
 def _provider_of(model_id: str) -> str:
@@ -903,8 +907,26 @@ def _run_llm_pass(
     Returns (result, final_err, primary_unavailable, fallback_used, fallback_failed).
     """
     raw_capture = {"openai": "", "gemini": ""}
+    attempts = {"openai": 0, "gemini": 0}
+
+    def _record_usage(provider: str, model: str, units, attempt: int, success: bool) -> None:
+        in_u, out_u, cached = units
+        record_usage(
+            ANALYSIS_ID,
+            SERVICE_NAME,
+            provider,
+            model,
+            "chat",
+            input_units=in_u,
+            output_units=out_u,
+            cached_input_units=cached,
+            pricing=PRICING,
+            attempt=attempt,
+            success=success,
+        )
 
     def _call_openai(model: str):
+        attempts["openai"] += 1
         oai_response = openai_client.chat.completions.create(
             model=model,
             messages=[
@@ -915,9 +937,17 @@ def _run_llm_pass(
         )
         content = oai_response.choices[0].message.content or ""
         raw_capture["openai"] = content
-        return response_model.model_validate_json(content)
+        units = openai_units(oai_response)
+        try:
+            parsed = response_model.model_validate_json(content)
+        except Exception:
+            _record_usage("openai", model, units, attempts["openai"], False)
+            raise
+        _record_usage("openai", model, units, attempts["openai"], True)
+        return parsed
 
     def _call_gemini(model: str):
+        attempts["gemini"] += 1
         response = gemini_client.models.generate_content(
             model=model,
             contents=[
@@ -945,7 +975,14 @@ def _run_llm_pass(
             ),
         )
         raw_capture["gemini"] = response.text or ""
-        return response_model.model_validate_json(response.text)
+        units = gemini_units(response)
+        try:
+            parsed = response_model.model_validate_json(response.text)
+        except Exception:
+            _record_usage("gemini", model, units, attempts["gemini"], False)
+            raise
+        _record_usage("gemini", model, units, attempts["gemini"], True)
+        return parsed
 
     def _make_call(provider: str, model: str):
         if provider == "gemini":
@@ -1650,8 +1687,10 @@ def process_extraction():
 
 
 def main():
+    global PRICING
     validate_env()
     resolve_model_config()
+    PRICING = load_pricing()
     try:
         process_extraction()
     except requests.exceptions.HTTPError as e:
