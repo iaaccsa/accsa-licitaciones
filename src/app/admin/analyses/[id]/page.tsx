@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProposalsList from "@/components/ProposalsList";
 import ProposalsComplianceChart from "@/components/ProposalsComplianceChart";
+import AnalysisCostCard from "@/components/AnalysisCostCard";
 
 interface Analysis {
   id: string;
@@ -232,6 +233,9 @@ export default function AdminAnalysisDetailPage() {
           />
         </div>
       </div>
+
+      {/* AI cost breakdown */}
+      <AnalysisCostCard analysisId={id} />
 
       {/* Navigation Buttons */}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
