@@ -23,8 +23,9 @@ export async function GET(
             upstream.searchParams.append("verdict", verdict);
         }
 
-        const role = search.get("role");
-        if (role) upstream.searchParams.set("role", role);
+        for (const role of search.getAll("role")) {
+            upstream.searchParams.append("role", role);
+        }
 
         const domain = search.get("domain");
         if (domain) upstream.searchParams.set("domain", domain);
