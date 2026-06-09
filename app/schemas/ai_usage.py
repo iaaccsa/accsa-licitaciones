@@ -31,3 +31,33 @@ class AiUsage(AiUsageCreate):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class CostByProposal(BaseModel):
+    proposal_id: Optional[UUID] = None
+    cost: float
+    calls: int
+
+
+class CostByProvider(BaseModel):
+    provider: str
+    cost: float
+    calls: int
+
+
+class CostByModel(BaseModel):
+    provider: str
+    model: str
+    operation: str
+    cost: float
+    calls: int
+
+
+class AiUsageCostSummary(BaseModel):
+    analysis_id: UUID
+    currency: str = "USD"
+    total_cost: float
+    total_calls: int
+    by_proposal: list[CostByProposal]
+    by_provider: list[CostByProvider]
+    by_model: list[CostByModel]

@@ -5,7 +5,9 @@ from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate,
 from app.schemas.job import CancelPipelineResponse, ResumePipelineResponse, RetryJobRequest
 from app.schemas.proposal import ProposalRead
 from app.schemas.model_tier import AnalysisModelConfig
+from app.schemas.ai_usage import AiUsageCostSummary
 from app.services.analysis_service import analysis_service
+from app.services.ai_usage_service import ai_usage_service
 from app.services.job_orchestrator_service import job_orchestrator_service
 from app.services.proposal_service import proposal_service
 from app.services.model_tier_service import model_tier_service
@@ -95,6 +97,14 @@ def list_proposals_by_analysis(analysis_id: UUID):
 def get_analysis_sources(analysis_id: UUID):
     try:
         return analysis_service.get_sources(analysis_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/{analysis_id}/cost", response_model=AiUsageCostSummary)
+def get_analysis_cost(analysis_id: UUID):
+    try:
+        return ai_usage_service.cost_summary(analysis_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
