@@ -37,6 +37,7 @@ from pathlib import Path
 from typing import Annotated, Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import requests
+from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
 from google import genai
 from google.genai import types as genai_types
 from openai import OpenAI
@@ -44,7 +45,6 @@ from pydantic import BaseModel, Field, ValidationError, field_validator, model_v
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from supabase_logger import log_event, make_session, setup_logger
-from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -205,7 +205,7 @@ DOMAIN_ALIASES: Dict[str, str] = {
     "financiero": "financial",
     "financiera": "financial",
     "economico": "financial",
-    "economica": "financial",
+    "económica": "financial",
     "rrhh": "hr",
     "recursos_humanos": "hr",
     "personal": "hr",
@@ -909,7 +909,9 @@ def _run_llm_pass(
     raw_capture = {"openai": "", "gemini": ""}
     attempts = {"openai": 0, "gemini": 0}
 
-    def _record_usage(provider: str, model: str, units, attempt: int, success: bool) -> None:
+    def _record_usage(
+        provider: str, model: str, units, attempt: int, success: bool
+    ) -> None:
         in_u, out_u, cached = units
         record_usage(
             ANALYSIS_ID,
@@ -995,7 +997,9 @@ def _run_llm_pass(
 
     source: Optional[str] = None
     result, primary_err = _call_with_retry(
-        f"{PRIMARY_PROVIDER}[{label}]", batch_id, _make_call(PRIMARY_PROVIDER, PRIMARY_MODEL)
+        f"{PRIMARY_PROVIDER}[{label}]",
+        batch_id,
+        _make_call(PRIMARY_PROVIDER, PRIMARY_MODEL),
     )
     if result is not None:
         source = PRIMARY_PROVIDER
@@ -1009,14 +1013,19 @@ def _run_llm_pass(
         )
         fallback_used = True
         result, fallback_err = _call_with_retry(
-            f"{FALLBACK_PROVIDER}[{label}]", batch_id, _make_call(FALLBACK_PROVIDER, FALLBACK_MODEL)
+            f"{FALLBACK_PROVIDER}[{label}]",
+            batch_id,
+            _make_call(FALLBACK_PROVIDER, FALLBACK_MODEL),
         )
         if result is not None:
             source = FALLBACK_PROVIDER
         if result is None:
             fallback_failed = True
             final_err = fallback_err or primary_err
-            raw_snippet = (raw_capture.get(FALLBACK_PROVIDER, "") or raw_capture.get(PRIMARY_PROVIDER, ""))[:1000]
+            raw_snippet = (
+                raw_capture.get(FALLBACK_PROVIDER, "")
+                or raw_capture.get(PRIMARY_PROVIDER, "")
+            )[:1000]
             log_event(
                 ANALYSIS_ID,
                 "warning",
@@ -1037,7 +1046,9 @@ def _run_llm_pass(
             )
 
     if result is not None and source is not None:
-        _log_dropped_uncited(batch_id, label, source, raw_capture.get(source, ""), result)
+        _log_dropped_uncited(
+            batch_id, label, source, raw_capture.get(source, ""), result
+        )
 
     return result, final_err, primary_unavailable, fallback_used, fallback_failed
 
@@ -1054,14 +1065,16 @@ def extract_batch(
 
     # Pass A: admissibility (no profile)
     adm_user_prompt = build_admissibility_user_prompt(batch)
-    adm_result, adm_err, adm_primary_unavail, adm_fb_used, adm_fb_failed = _run_llm_pass(
-        gemini_client,
-        openai_client,
-        ADMISSIBILITY_SYSTEM_PROMPT,
-        adm_user_prompt,
-        AdmissibilityBatchResponse,
-        batch_id,
-        "admissibility",
+    adm_result, adm_err, adm_primary_unavail, adm_fb_used, adm_fb_failed = (
+        _run_llm_pass(
+            gemini_client,
+            openai_client,
+            ADMISSIBILITY_SYSTEM_PROMPT,
+            adm_user_prompt,
+            AdmissibilityBatchResponse,
+            batch_id,
+            "admissibility",
+        )
     )
     if adm_primary_unavail:
         outcome.primary_unavailable = True
@@ -1086,14 +1099,16 @@ def extract_batch(
 
     # Pass B: general (with profile) — exactly as before
     gen_user_prompt = build_user_prompt(profile, batch)
-    gen_result, gen_err, gen_primary_unavail, gen_fb_used, gen_fb_failed = _run_llm_pass(
-        gemini_client,
-        openai_client,
-        SYSTEM_PROMPT,
-        gen_user_prompt,
-        BatchResponse,
-        batch_id,
-        "general",
+    gen_result, gen_err, gen_primary_unavail, gen_fb_used, gen_fb_failed = (
+        _run_llm_pass(
+            gemini_client,
+            openai_client,
+            SYSTEM_PROMPT,
+            gen_user_prompt,
+            BatchResponse,
+            batch_id,
+            "general",
+        )
     )
     if gen_primary_unavail:
         outcome.primary_unavailable = True
@@ -1623,7 +1638,9 @@ def process_extraction():
         for role in r.roles:
             role_counts[role] = role_counts.get(role, 0) + 1
 
-    primary_unavailable_count = sum(1 for o in outcomes.values() if o.primary_unavailable)
+    primary_unavailable_count = sum(
+        1 for o in outcomes.values() if o.primary_unavailable
+    )
     fallbacks_succeeded = sum(
         1 for o in outcomes.values() if o.fallback_used and not o.fallback_failed
     )
@@ -1641,7 +1658,7 @@ def process_extraction():
     )
 
     summary = (
-        f"Extraccion completada: {len(cleaned)} requisitos generales | "
+        f"Extracción completada: {len(cleaned)} requisitos generales | "
         f"{len(adm_with_codes)} requisitos admisibilidad | "
         f"batches fallidos: {failed_batches}/{len(batches)} | "
         f"warnings de validacion: {len(validation_warnings)}"

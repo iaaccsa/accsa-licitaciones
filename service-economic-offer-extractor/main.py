@@ -35,14 +35,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional
 
 import requests
+from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
 from google import genai
 from google.genai import types as genai_types
 from openai import OpenAI
 from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient
-
-from supabase_logger import setup_logger, log_event, make_session
-from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+from supabase_logger import log_event, make_session, setup_logger
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -93,7 +92,7 @@ LLM_RETRY_BACKOFF_BASE = 1.5
 # Each query is embedded and searched independently; results are deduplicated
 # by chunk_id and capped at RAG_MAX_TOTAL_CHUNKS.
 RAG_QUERIES = [
-    "precio total monto de la oferta economica cotizacion",
+    "precio total monto de la oferta económica cotizacion",
     "moneda de la oferta pesos uruguayos dolares UI UYU USD",
     "IVA impuestos gravamenes incluidos no incluidos",
     "plazo de pago condiciones comerciales dias fecha factura",
@@ -140,7 +139,9 @@ class LLMEconomicOffer(BaseModel):
     requires_manual_review: bool = False
 
 
-SYSTEM_PROMPT = (Path(__file__).parent / "prompt_economic_offer_extractor.md").read_text(encoding="utf-8")
+SYSTEM_PROMPT = (
+    Path(__file__).parent / "prompt_economic_offer_extractor.md"
+).read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -152,9 +153,16 @@ API_HEADERS = {
 }
 
 
-def api_request(method: str, path: str, json_data: dict | list | None = None, params: dict | None = None) -> dict | list | None:
+def api_request(
+    method: str,
+    path: str,
+    json_data: dict | list | None = None,
+    params: dict | None = None,
+) -> dict | list | None:
     url = f"{API_BASE_URL}{path}"
-    response = SESSION.request(method, url, json=json_data, params=params, headers=API_HEADERS, timeout=60)
+    response = SESSION.request(
+        method, url, json=json_data, params=params, headers=API_HEADERS, timeout=60
+    )
     response.raise_for_status()
     try:
         return response.json()
@@ -190,7 +198,8 @@ def resolve_model_config():
 
 def validate_env():
     missing = [
-        var for var, val in [
+        var
+        for var, val in [
             ("GOOGLE_API_KEY", GOOGLE_API_KEY),
             ("OPENAI_API_KEY", OPENAI_API_KEY),
             ("QDRANT_URL", QDRANT_URL),
@@ -217,9 +226,18 @@ def get_embedding(client: OpenAI, text: str) -> List[float]:
     text = text.replace("\n", " ")
     response = client.embeddings.create(input=[text], model=EMBEDDING_MODEL)
     in_u, out_u, cached = openai_units(response)
-    record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", EMBEDDING_MODEL, "embedding",
-                 input_units=in_u, output_units=out_u, cached_input_units=cached,
-                 pricing=PRICING, proposal_id=PROPOSAL_ID)
+    record_usage(
+        ANALYSIS_ID,
+        SERVICE_NAME,
+        "openai",
+        EMBEDDING_MODEL,
+        "embedding",
+        input_units=in_u,
+        output_units=out_u,
+        cached_input_units=cached,
+        pricing=PRICING,
+        proposal_id=PROPOSAL_ID,
+    )
     return response.data[0].embedding
 
 
@@ -228,39 +246,55 @@ def get_embedding(client: OpenAI, text: str) -> List[float]:
 # ---------------------------------------------------------------------------
 def mark_economic_start(proposal_id: str):
     now = datetime.now(timezone.utc).isoformat()
-    api_request("PATCH", f"{API_PROPOSALS_PATH}{proposal_id}/economic-start", {
-        "economic_started_at": now,
-    })
+    api_request(
+        "PATCH",
+        f"{API_PROPOSALS_PATH}{proposal_id}/economic-start",
+        {
+            "economic_started_at": now,
+        },
+    )
     logger.info(f"Proposal {proposal_id} transitioned to extracting.")
 
 
 def mark_economic_result(proposal_id: str):
     now = datetime.now(timezone.utc).isoformat()
-    api_request("PATCH", f"{API_PROPOSALS_PATH}{proposal_id}/economic-result", {
-        "economic_completed_at": now,
-    })
+    api_request(
+        "PATCH",
+        f"{API_PROPOSALS_PATH}{proposal_id}/economic-result",
+        {
+            "economic_completed_at": now,
+        },
+    )
     logger.info(f"Proposal {proposal_id} transitioned to ready.")
 
 
 def mark_economic_failure(proposal_id: str, error: str):
     try:
         now = datetime.now(timezone.utc).isoformat()
-        api_request("PATCH", f"{API_PROPOSALS_PATH}{proposal_id}/economic-failure", {
-            "economic_completed_at": now,
-            "economic_error": error,
-        })
+        api_request(
+            "PATCH",
+            f"{API_PROPOSALS_PATH}{proposal_id}/economic-failure",
+            {
+                "economic_completed_at": now,
+                "economic_error": error,
+            },
+        )
     except Exception as e:
         logger.error(f"Failed to mark economic-failure: {e}")
 
 
 def notify_success():
     try:
-        api_request("POST", API_JOBS_CALLBACK, {
-            "service_name": SERVICE_NAME,
-            "analysis_id": ANALYSIS_ID,
-            "proposal_id": PROPOSAL_ID,
-            "status": "success",
-        })
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "proposal_id": PROPOSAL_ID,
+                "status": "success",
+            },
+        )
     except Exception as e:
         logger.error(f"Failed to notify job callback on success: {e}")
 
@@ -269,13 +303,17 @@ def notify_failure(error_msg: str):
     logger.error(f"notify_failure: {error_msg}")
     log_event(ANALYSIS_ID, "error", error_msg, EVENT_SOURCE)
     try:
-        api_request("POST", API_JOBS_CALLBACK, {
-            "service_name": SERVICE_NAME,
-            "analysis_id": ANALYSIS_ID,
-            "proposal_id": PROPOSAL_ID,
-            "status": "failed",
-            "error_message": error_msg,
-        })
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "proposal_id": PROPOSAL_ID,
+                "status": "failed",
+                "error_message": error_msg,
+            },
+        )
     except Exception as e:
         logger.error(f"Failed to notify job callback: {e}")
 
@@ -348,19 +386,24 @@ def rag_retrieve_economic_chunks(
 # ---------------------------------------------------------------------------
 # Prompt builder
 # ---------------------------------------------------------------------------
-def build_user_prompt(proposal: dict, profile: Optional[dict], chunks: List[dict]) -> str:
+def build_user_prompt(
+    proposal: dict, profile: Optional[dict], chunks: List[dict]
+) -> str:
     chunks_text = "\n\n".join(
         f'  [chunk_id={c["chunk_id"]} header="{c["header"] or ""}" chunk_index={c["chunk_index"]}]\n  {c["text"]}'
         for c in chunks
     )
     profile_text = "none"
     if profile:
-        profile_text = json.dumps({
-            "system_type": profile.get("system_type"),
-            "expected_currency": profile.get("expected_currency"),
-            "taxes_included_in_offer": profile.get("taxes_included_in_offer"),
-            "factors": profile.get("factors"),
-        }, ensure_ascii=False)
+        profile_text = json.dumps(
+            {
+                "system_type": profile.get("system_type"),
+                "expected_currency": profile.get("expected_currency"),
+                "taxes_included_in_offer": profile.get("taxes_included_in_offer"),
+                "factors": profile.get("factors"),
+            },
+            ensure_ascii=False,
+        )
 
     return (
         f"Extract the structured economic offer and return a single JSON object.\n\n"
@@ -376,13 +419,26 @@ def build_user_prompt(proposal: dict, profile: Optional[dict], chunks: List[dict
 # ---------------------------------------------------------------------------
 # LLM calls
 # ---------------------------------------------------------------------------
-def _call_gemini(gemini: genai.Client, user_prompt: str, model: str) -> LLMEconomicOffer:
+def _call_gemini(
+    gemini: genai.Client, user_prompt: str, model: str
+) -> LLMEconomicOffer:
     response = gemini.models.generate_content(
         model=model,
         contents=[
-            genai_types.Content(role="user", parts=[genai_types.Part(text=SYSTEM_PROMPT)]),
-            genai_types.Content(role="model", parts=[genai_types.Part(text="Understood. I will return only the JSON economic offer.")]),
-            genai_types.Content(role="user", parts=[genai_types.Part(text=user_prompt)]),
+            genai_types.Content(
+                role="user", parts=[genai_types.Part(text=SYSTEM_PROMPT)]
+            ),
+            genai_types.Content(
+                role="model",
+                parts=[
+                    genai_types.Part(
+                        text="Understood. I will return only the JSON economic offer."
+                    )
+                ],
+            ),
+            genai_types.Content(
+                role="user", parts=[genai_types.Part(text=user_prompt)]
+            ),
         ],
         config=genai_types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -390,13 +446,24 @@ def _call_gemini(gemini: genai.Client, user_prompt: str, model: str) -> LLMEcono
         ),
     )
     in_u, out_u, cached = gemini_units(response)
-    record_usage(ANALYSIS_ID, SERVICE_NAME, "gemini", model, "chat",
-                 input_units=in_u, output_units=out_u, cached_input_units=cached,
-                 pricing=PRICING, proposal_id=PROPOSAL_ID)
+    record_usage(
+        ANALYSIS_ID,
+        SERVICE_NAME,
+        "gemini",
+        model,
+        "chat",
+        input_units=in_u,
+        output_units=out_u,
+        cached_input_units=cached,
+        pricing=PRICING,
+        proposal_id=PROPOSAL_ID,
+    )
     return LLMEconomicOffer.model_validate_json(response.text)
 
 
-def _call_openai(openai_client: OpenAI, user_prompt: str, model: str) -> LLMEconomicOffer:
+def _call_openai(
+    openai_client: OpenAI, user_prompt: str, model: str
+) -> LLMEconomicOffer:
     response = openai_client.chat.completions.create(
         model=model,
         messages=[
@@ -406,13 +473,28 @@ def _call_openai(openai_client: OpenAI, user_prompt: str, model: str) -> LLMEcon
         response_format={"type": "json_object"},
     )
     in_u, out_u, cached = openai_units(response)
-    record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", model, "chat",
-                 input_units=in_u, output_units=out_u, cached_input_units=cached,
-                 pricing=PRICING, proposal_id=PROPOSAL_ID)
+    record_usage(
+        ANALYSIS_ID,
+        SERVICE_NAME,
+        "openai",
+        model,
+        "chat",
+        input_units=in_u,
+        output_units=out_u,
+        cached_input_units=cached,
+        pricing=PRICING,
+        proposal_id=PROPOSAL_ID,
+    )
     return LLMEconomicOffer.model_validate_json(response.choices[0].message.content)
 
 
-def _call_provider(gemini: genai.Client, openai_client: OpenAI, user_prompt: str, provider: str, model: str) -> LLMEconomicOffer:
+def _call_provider(
+    gemini: genai.Client,
+    openai_client: OpenAI,
+    user_prompt: str,
+    provider: str,
+    model: str,
+) -> LLMEconomicOffer:
     if provider == "gemini":
         return _call_gemini(gemini, user_prompt, model)
     return _call_openai(openai_client, user_prompt, model)
@@ -426,14 +508,26 @@ def call_llm_with_retries(
     last_error: Optional[Exception] = None
     for attempt in range(LLM_RETRY_ATTEMPTS + 1):
         try:
-            return _call_provider(gemini, openai_client, user_prompt, PRIMARY_PROVIDER, PRIMARY_MODEL)
+            return _call_provider(
+                gemini, openai_client, user_prompt, PRIMARY_PROVIDER, PRIMARY_MODEL
+            )
         except Exception as e_primary:
-            logger.warning(f"attempt {attempt}: primary {PRIMARY_PROVIDER}/{PRIMARY_MODEL} failed ({e_primary}), trying fallback {FALLBACK_PROVIDER}/{FALLBACK_MODEL}...")
+            logger.warning(
+                f"attempt {attempt}: primary {PRIMARY_PROVIDER}/{PRIMARY_MODEL} failed ({e_primary}), trying fallback {FALLBACK_PROVIDER}/{FALLBACK_MODEL}..."
+            )
             try:
-                return _call_provider(gemini, openai_client, user_prompt, FALLBACK_PROVIDER, FALLBACK_MODEL)
+                return _call_provider(
+                    gemini,
+                    openai_client,
+                    user_prompt,
+                    FALLBACK_PROVIDER,
+                    FALLBACK_MODEL,
+                )
             except Exception as e_fallback:
                 last_error = e_fallback
-                logger.warning(f"attempt {attempt}: fallback {FALLBACK_PROVIDER}/{FALLBACK_MODEL} also failed ({e_fallback}).")
+                logger.warning(
+                    f"attempt {attempt}: fallback {FALLBACK_PROVIDER}/{FALLBACK_MODEL} also failed ({e_fallback})."
+                )
                 if attempt < LLM_RETRY_ATTEMPTS:
                     time.sleep(LLM_RETRY_BACKOFF_BASE ** (attempt + 1))
     raise RuntimeError(f"All LLM attempts exhausted: {last_error}")
@@ -493,7 +587,9 @@ def upsert_economic_offer(analysis_id: str, proposal_id: str, llm: LLMEconomicOf
 # Main flow
 # ---------------------------------------------------------------------------
 def process_economic_extraction():
-    logger.info(f"Starting economic-offer-extractor for ANALYSIS_ID={ANALYSIS_ID} PROPOSAL_ID={PROPOSAL_ID}")
+    logger.info(
+        f"Starting economic-offer-extractor for ANALYSIS_ID={ANALYSIS_ID} PROPOSAL_ID={PROPOSAL_ID}"
+    )
 
     mark_economic_start(PROPOSAL_ID)
 
@@ -502,7 +598,12 @@ def process_economic_extraction():
     gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
 
     try:
-        log_event(ANALYSIS_ID, "info", f"Iniciando extraccion economica para propuesta {PROPOSAL_ID}...", EVENT_SOURCE)
+        log_event(
+            ANALYSIS_ID,
+            "info",
+            f"Iniciando extracción económica para propuesta {PROPOSAL_ID}...",
+            EVENT_SOURCE,
+        )
 
         analysis = load_analysis(ANALYSIS_ID)
         slug = analysis["slug"]
@@ -513,15 +614,21 @@ def process_economic_extraction():
         profile = load_evaluation_profile(ANALYSIS_ID)
 
         chunks = rag_retrieve_economic_chunks(
-            qdrant, openai_client, collection_name, ANALYSIS_ID, PROPOSAL_ID,
+            qdrant,
+            openai_client,
+            collection_name,
+            ANALYSIS_ID,
+            PROPOSAL_ID,
         )
-        logger.info(f"Retrieved {len(chunks)} unique chunks from proposal for economic extraction.")
+        logger.info(
+            f"Retrieved {len(chunks)} unique chunks from proposal for economic extraction."
+        )
 
         if not chunks:
             # No chunks at all -> persist an empty record with manual review flag
             llm = LLMEconomicOffer(
                 confidence="muy_baja",
-                reasoning="No se encontraron chunks indexados de la propuesta para la extraccion economica.",
+                reasoning="No se encontraron chunks indexados de la propuesta para la extracción económica.",
                 requires_manual_review=True,
             )
         else:
@@ -533,21 +640,29 @@ def process_economic_extraction():
         mark_economic_result(PROPOSAL_ID)
 
         summary_msg = (
-            f"Extraccion economica completada para {proposal.get('label', PROPOSAL_ID)}: "
+            f"Extracción económica completada para {proposal.get('label', PROPOSAL_ID)}: "
             f"total={llm.total_amount} {llm.currency or ''} "
             f"items={len(llm.line_items)} "
             f"confidence={llm.confidence} "
             f"manual_review={llm.requires_manual_review}"
         )
         logger.info(summary_msg)
-        log_event(ANALYSIS_ID, "info", summary_msg, EVENT_SOURCE, {
-            "proposal_id": PROPOSAL_ID,
-            "total_amount": str(llm.total_amount) if llm.total_amount is not None else None,
-            "currency": llm.currency,
-            "line_items_count": len(llm.line_items),
-            "confidence": llm.confidence,
-            "requires_manual_review": llm.requires_manual_review,
-        })
+        log_event(
+            ANALYSIS_ID,
+            "info",
+            summary_msg,
+            EVENT_SOURCE,
+            {
+                "proposal_id": PROPOSAL_ID,
+                "total_amount": str(llm.total_amount)
+                if llm.total_amount is not None
+                else None,
+                "currency": llm.currency,
+                "line_items_count": len(llm.line_items),
+                "confidence": llm.confidence,
+                "requires_manual_review": llm.requires_manual_review,
+            },
+        )
 
         notify_success()
 

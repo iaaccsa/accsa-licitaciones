@@ -37,6 +37,6 @@ Extrae todos los requerimientos atomicos del pliego (ya indexado en Qdrant) y lo
 | Servicio | Uso |
 |----------|-----|
 | **Qdrant** | Scroll de todos los chunks tender con filtros y orden por chunk_index |
-| **OpenAI** | Extraccion y clasificacion multi-eje (primary) |
+| **OpenAI** | Extracción y clasificacion multi-eje (primary) |
 | **Gemini** | Fallback si OpenAI falla |
 | **Backend API** | Obtener analisis, leer profile, guardar requerimientos, callback |

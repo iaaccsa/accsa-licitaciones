@@ -25,8 +25,8 @@ import sys
 from datetime import datetime, timezone
 
 import requests
-from supabase import create_client, Client
-from supabase_logger import setup_logger, log_event, make_session
+from supabase import Client, create_client
+from supabase_logger import log_event, make_session, setup_logger
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -59,9 +59,13 @@ API_HEADERS = {
 }
 
 
-def api_request(method: str, path: str, json_data: dict | list | None = None) -> dict | list | None:
+def api_request(
+    method: str, path: str, json_data: dict | list | None = None
+) -> dict | list | None:
     url = f"{API_BASE_URL}{path}"
-    response = SESSION.request(method, url, json=json_data, headers=API_HEADERS, timeout=30)
+    response = SESSION.request(
+        method, url, json=json_data, headers=API_HEADERS, timeout=30
+    )
     response.raise_for_status()
     try:
         return response.json()
@@ -196,23 +200,29 @@ def notify_failure(error_msg: str):
     except Exception as e:
         logger.error(f"Failed to update analysis status: {e}")
     try:
-        api_request("POST", API_JOBS_CALLBACK, {
-            "service_name": SERVICE_NAME,
-            "analysis_id": ANALYSIS_ID,
-            "original_file_id": FILE_ID,
-            "status": "failed",
-            "error_message": error_msg,
-        })
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "original_file_id": FILE_ID,
+                "status": "failed",
+                "error_message": error_msg,
+            },
+        )
     except Exception as e:
         logger.error(f"Failed to notify job callback: {e}")
 
 
 def process_file():
-    logger.info(f"Starting digital signature extraction — file_id={FILE_ID}, analysis_id={ANALYSIS_ID}")
+    logger.info(
+        f"Starting digital signature extraction — file_id={FILE_ID}, analysis_id={ANALYSIS_ID}"
+    )
     log_event(
         ANALYSIS_ID,
         "info",
-        f"Iniciando extraccion de firmas digitales para archivo {FILE_ID}",
+        f"Iniciando extracción de firmas digitales para archivo {FILE_ID}",
         EVENT_SOURCE,
     )
 
@@ -238,7 +248,10 @@ def process_file():
         "info",
         f"Firmas encontradas en {file_name}: {sig_count}",
         EVENT_SOURCE,
-        {"extraction_status": digital_signatures["extraction_status"], "count": sig_count},
+        {
+            "extraction_status": digital_signatures["extraction_status"],
+            "count": sig_count,
+        },
     )
 
     # 4. Patch original_file
@@ -267,16 +280,20 @@ def process_file():
         logger.info("No associated processed_files found")
 
     # 6. Notify success
-    api_request("POST", API_JOBS_CALLBACK, {
-        "service_name": SERVICE_NAME,
-        "analysis_id": ANALYSIS_ID,
-        "original_file_id": FILE_ID,
-        "status": "success",
-    })
+    api_request(
+        "POST",
+        API_JOBS_CALLBACK,
+        {
+            "service_name": SERVICE_NAME,
+            "analysis_id": ANALYSIS_ID,
+            "original_file_id": FILE_ID,
+            "status": "success",
+        },
+    )
     log_event(
         ANALYSIS_ID,
         "info",
-        f"Extraccion de firmas digitales completada para {file_name}",
+        f"Extracción de firmas digitales completada para {file_name}",
         EVENT_SOURCE,
     )
     logger.info("Digital signature extraction complete")

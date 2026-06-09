@@ -15,7 +15,7 @@ Obtiene el evaluation_profile (contexto no bloqueante: mono/multi-item, moneda e
 - **Response:** `{system_type, factors, enabled_roles, ...}`
 
 ### POST /api/v1/proposal-economic-offers/
-Upsert de la oferta economica extraida para la propuesta. Si ya existe un registro para ese `proposal_id`, lo reemplaza y resetea el flag `is_verified`.
+Upsert de la oferta económica extraida para la propuesta. Si ya existe un registro para ese `proposal_id`, lo reemplaza y resetea el flag `is_verified`.
 - **Request:** `{analysis_id, proposal_id, total_amount, currency, includes_taxes, tax_details, payment_terms, validity_days, adjustment_formula, line_items, citations, confidence, reasoning, requires_manual_review, extracted_by, notes}`
 - **Response:** `ProposalEconomicOfferRead`
 

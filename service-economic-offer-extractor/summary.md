@@ -1,7 +1,7 @@
 # service-economic-offer-extractor
 
 ## Proposito
-Extrae la oferta economica estructurada de una propuesta (monto total, moneda, impuestos, plazo de pago, dias de mantenimiento, formula de ajuste parametrico, desglose por items) a partir de los chunks indexados en Qdrant. Se ejecuta una instancia por propuesta (fan_out_by=proposal). El resultado alimenta al `service-scoring-engine` que aplica la formula del pliego.
+Extrae la oferta económica estructurada de una propuesta (monto total, moneda, impuestos, plazo de pago, dias de mantenimiento, formula de ajuste parametrico, desglose por items) a partir de los chunks indexados en Qdrant. Se ejecuta una instancia por propuesta (fan_out_by=proposal). El resultado alimenta al `service-scoring-engine` que aplica la formula del pliego.
 
 ## Flujo
 
@@ -19,7 +19,7 @@ Extrae la oferta economica estructurada de una propuesta (monto total, moneda, i
 9. `PATCH /api/v1/proposals/{PROPOSAL_ID}/economic-result` --- transiciona `economic_status` a `ready`.
 10. Notifica finalizacion via callback.
 
-Si algo falla irrecuperablemente: `PATCH .../economic-failure` con el `error_message`, luego `notify_failure`. El servicio **no falla** solo porque la extraccion sea de baja calidad: siempre persiste el mejor intento y marca `requires_manual_review`. Solo fallan los errores operativos (backend caido, Qdrant inaccesible, todos los retries del LLM agotados por errores de red).
+Si algo falla irrecuperablemente: `PATCH .../economic-failure` con el `error_message`, luego `notify_failure`. El servicio **no falla** solo porque la extracción sea de baja calidad: siempre persiste el mejor intento y marca `requires_manual_review`. Solo fallan los errores operativos (backend caido, Qdrant inaccesible, todos los retries del LLM agotados por errores de red).
 
 ## Entrada
 - **ANALYSIS_ID** (runtime): UUID del analisis.
@@ -48,6 +48,6 @@ Si algo falla irrecuperablemente: `PATCH .../economic-failure` con el `error_mes
 | Servicio | Uso |
 |----------|-----|
 | **Qdrant** | Busqueda RAG sobre chunks de la propuesta (`category=proposal`, `proposal_id`, `analysis_id`) |
-| **Gemini** | Extraccion estructurada de la oferta economica (primary) |
+| **Gemini** | Extracción estructurada de la oferta económica (primary) |
 | **OpenAI** | Fallback + embeddings para RAG (`text-embedding-3-small`) |
 | **Backend API** | Cargar analisis/propuesta/profile, upsert de economic offer, transiciones de estado, callback |

@@ -30,7 +30,7 @@ Multiple evaluation factors are assigned numerical points that sum to approximat
 - Tables or lists with "maximo X puntos"
 - "FACTOR 1: 60 puntos", "FACTOR 2: 15 puntos"
 - "Puntaje maximo: 100"
-- "puntaje de evaluacion economica = 50 x (PME/PEv)"
+- "puntaje de evaluacion económica = 50 x (PME/PEv)"
 - "se otorgaran 15 puntos", "se puntuara con 10 (diez) puntos"
 - "Puntaje Total = Puntaje de Evaluacion Economica + Puntaje de Antecedentes + ..."
 - Discrete scales like: "de 1 a 3 antecedentes = 5 puntos, de 4 a 6 = 10 puntos"
@@ -128,7 +128,7 @@ Respond ONLY with a JSON object of this shape:
   "factors": [
     {
       "id": "precio",
-      "label": "Evaluacion economica",
+      "label": "Evaluacion económica",
       "weight_type": "points",
       "weight_value": 60,
       "formula": "60 x (PME/PEv)",
