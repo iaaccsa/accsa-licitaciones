@@ -3,7 +3,7 @@ from app.core.supabase import supabase
 from app.core.security import get_api_key
 from app.core.qdrant import verify_qdrant_connection
 from app.core.azure import verify_azure_connection
-from app.api.v1.endpoints import analyses, events, requirements, original_files, processed_files, proposals, tenders, workflow_steps, workflow_phases, compliance_results, compliance_matrix, qdrant, jobs, chat, cleanup, upload_token, tender_classifications, tender_evaluation_types, economic_offers, admissibility_requirements, admissibility_results, model_tiers, ai_pricing, ai_usage
+from app.api.v1.endpoints import analyses, events, requirements, original_files, processed_files, proposals, tenders, workflow_steps, workflow_phases, compliance_results, compliance_matrix, qdrant, jobs, chat, cleanup, upload_token, tender_classifications, tender_evaluation_types, economic_offers, admissibility_requirements, admissibility_results, model_tiers, ai_pricing, ai_usage, settings
 
 api_router = APIRouter(dependencies=[Depends(get_api_key)])
 
@@ -31,6 +31,7 @@ api_router.include_router(admissibility_results.router, prefix="/admissibility-r
 api_router.include_router(model_tiers.router, prefix="/model-tiers", tags=["model-tiers"])
 api_router.include_router(ai_pricing.router, prefix="/ai-pricing", tags=["ai-pricing"])
 api_router.include_router(ai_usage.router, prefix="/ai-usage", tags=["ai-usage"])
+api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 
 @api_router.get("/health", tags=["health"], summary="Perform a Health Check")
 async def health_check():

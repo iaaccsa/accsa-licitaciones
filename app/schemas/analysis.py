@@ -43,8 +43,6 @@ class AnalysisFromStoragePath(BaseModel):
     user_assigned_name: Optional[str] = None
     user_email: Optional[str] = None
     hitl: bool = False
-    primary_model: PrimaryModel = PrimaryModel.openai
-    intelligence_level: IntelligenceLevel = IntelligenceLevel.medium
     created_by: Optional[UUID] = None
 
 class AnalysisUpdate(BaseModel):

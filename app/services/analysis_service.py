@@ -3,6 +3,7 @@ from app.repositories.proposal_repository import proposal_repository
 from app.repositories.tender_repository import tender_repository
 from app.schemas.analysis import Analysis, AnalysisFromStoragePath, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
 from app.schemas.event import EventBase
+from app.services.app_settings_service import app_settings_service
 from app.services.event_service import event_service
 from app.services.workflow_step_service import workflow_step_service
 from app.services.workflow_phase_service import workflow_phase_service
@@ -23,12 +24,13 @@ class AnalysisService:
 
     async def create_analysis_from_storage(self, data: AnalysisFromStoragePath) -> Analysis:
         # 1. Create Analysis record (file already in Supabase Storage)
+        llm_config = app_settings_service.get_llm_config()
         analysis_data = {
             "status": "pending",
             "artifact_path": data.storage_path,
             "hitl": data.hitl,
-            "primary_model": data.primary_model.value,
-            "intelligence_level": data.intelligence_level.value,
+            "primary_model": llm_config.primary_model.value,
+            "intelligence_level": llm_config.intelligence_level.value,
         }
         if data.user_assigned_name:
             analysis_data["user_assigned_name"] = data.user_assigned_name
