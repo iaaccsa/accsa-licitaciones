@@ -21,9 +21,10 @@ const envSchema = z.object({
     API_HEALTH_SUPABASE_PATH: z.string().optional(),
     API_HEALTH_QDRANT_PATH: z.string().optional(),
     API_HEALTH_AZURE_PATH: z.string().optional(),
-    AUTH_PIN_HASH: z.string().regex(/^[a-f0-9]{64}$/, "AUTH_PIN_HASH must be sha256 hex (64 chars)"),
-    AUTH_SESSION_SECRET: z.string().min(32, "AUTH_SESSION_SECRET must be at least 32 chars"),
-    AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().default(14400),
+    NEXT_PUBLIC_SUPABASE_URL: z.url(),
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
+    SUPABASE_SECRET_KEY: z.string().min(1),
+    INVITE_ALLOWED_EMAIL_DOMAINS: z.string().optional(),
 });
 
 type Env = z.infer<typeof envSchema>;

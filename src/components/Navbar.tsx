@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Upload, ListChecks, ShieldCheck, BookOpen } from "lucide-react";
+import { Upload, ListChecks, ShieldCheck, BookOpen, Users } from "lucide-react";
 import { LogoutButton } from "@/components/LogoutButton";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
     { href: "/analyses", label: "Análisis", icon: ListChecks },
     { href: "/docs", label: "Docs", icon: BookOpen },
     { href: "/admin", label: "Admin", icon: ShieldCheck },
+    { href: "/admin/users", label: "Usuarios", icon: Users },
 ] as const;
 
 export function Navbar() {
@@ -43,7 +44,12 @@ export function Navbar() {
                     <div className="flex items-center gap-1 flex-1">
                         {navItems.map(({ href, label, icon: Icon }) => {
                             const isActive =
-                                href === "/" ? pathname === "/" : pathname.startsWith(href);
+                                href === "/"
+                                    ? pathname === "/"
+                                    : href === "/admin"
+                                      ? pathname.startsWith("/admin") &&
+                                        !pathname.startsWith("/admin/users")
+                                      : pathname.startsWith(href);
 
                             return (
                                 <Link
