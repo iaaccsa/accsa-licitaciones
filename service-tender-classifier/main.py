@@ -410,11 +410,11 @@ def api_request(method: str, path: str, json_data: dict | list | None = None) ->
 
 
 def resolve_model_config():
-    """Resolve the LLM model for this analysis from the API (user selection)
+    """Resolve the LLM model for this analysis from the API (global config snapshot)
     and log a startup event. On any failure keep the hardcoded defaults."""
     global PRIMARY_PROVIDER, PRIMARY_MODEL, FALLBACK_PROVIDER, FALLBACK_MODEL
     level = None
-    origin = "seleccion del usuario"
+    origin = "configuracion global"
     try:
         cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config")
         if cfg:
