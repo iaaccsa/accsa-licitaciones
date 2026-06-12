@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { validateUUID, invalidIdResponse, apiError, safeLogError, parsePaginationBody } from "@/lib/api-utils";
+import { requireAnalysisAccess } from "@/lib/supabase/require-analysis-access";
 
 export async function POST(
     request: Request,
@@ -10,6 +11,10 @@ export async function POST(
 
     if (!validateUUID(id)) {
         return invalidIdResponse();
+    }
+
+    if (!(await requireAnalysisAccess(id))) {
+        return apiError("Analysis not found", 404);
     }
 
     try {

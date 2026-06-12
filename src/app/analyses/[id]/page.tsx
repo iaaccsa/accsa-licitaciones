@@ -33,7 +33,7 @@ import EconomicComparisonTable from "@/components/EconomicComparisonTable";
 interface Analysis {
   id: string;
   slug: string;
-  user_name: string | null;
+  user_assigned_name: string | null;
   generated_name: string | null;
   user_email: string | null;
   status:
@@ -228,7 +228,7 @@ export default function AnalysisDetailPage() {
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-1.5">
               <h1 className="text-2xl font-bold text-zinc-900 truncate">
-                {analysis.user_name || analysis.generated_name || (
+                {analysis.user_assigned_name || analysis.generated_name || (
                   <span className="font-mono uppercase">{analysis.slug}</span>
                 )}
               </h1>
@@ -236,7 +236,7 @@ export default function AnalysisDetailPage() {
                 <span className="font-mono uppercase text-xs bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded">
                   {analysis.slug}
                 </span>
-                {analysis.user_name && analysis.generated_name && (
+                {analysis.user_assigned_name && analysis.generated_name && (
                   <span className="text-sm text-zinc-400 truncate">
                     {analysis.generated_name}
                   </span>

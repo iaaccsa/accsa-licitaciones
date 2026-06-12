@@ -229,7 +229,7 @@ export default function EvaluationSystemPage() {
 
     const [classification, setClassification] = useState<TenderClassification | null>(null);
     const [evaluationType, setEvaluationType] = useState<TenderEvaluationType | null>(null);
-    const [analysis, setAnalysis] = useState<{ slug: string; user_name?: string; generated_name?: string } | null>(null);
+    const [analysis, setAnalysis] = useState<{ slug: string; user_assigned_name?: string; generated_name?: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -277,7 +277,7 @@ export default function EvaluationSystemPage() {
     }, [id]);
 
     const analysisLabel = analysis
-        ? (analysis.user_name || analysis.generated_name || analysis.slug)
+        ? (analysis.user_assigned_name || analysis.generated_name || analysis.slug)
         : null;
 
     if (error) {

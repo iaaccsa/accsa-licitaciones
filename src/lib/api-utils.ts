@@ -21,18 +21,6 @@ export function safeLogError(context: string, status: number, errorText: string)
     console.error(`[${context}] Backend responded with status ${status} (${errorText.length} chars)`);
 }
 
-const MAX_USER_NAME_LENGTH = 200;
-const USER_NAME_REGEX = /^[\p{L}\p{N}\s\-_.,:;()&/]+$/u;
-
-export function validateUserName(value: unknown): string | null {
-    if (typeof value !== "string") return null;
-    const trimmed = value.trim();
-    if (trimmed.length === 0) return null;
-    if (trimmed.length > MAX_USER_NAME_LENGTH) return null;
-    if (!USER_NAME_REGEX.test(trimmed)) return null;
-    return trimmed;
-}
-
 const STORAGE_PATH_REGEX = /^[a-zA-Z0-9/_\-][a-zA-Z0-9/_\-.]*$/;
 
 export function isValidStoragePath(path: string): boolean {

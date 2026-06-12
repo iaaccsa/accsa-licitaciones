@@ -26,7 +26,7 @@ import AnalysisCostCard from "@/components/AnalysisCostCard";
 interface Analysis {
   id: string;
   slug: string;
-  user_name: string | null;
+  user_assigned_name: string | null;
   generated_name: string | null;
   user_email: string | null;
   status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
@@ -147,7 +147,7 @@ export default function AdminAnalysisDetailPage() {
       <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-zinc-900">
-            {analysis.user_name || analysis.generated_name || (
+            {analysis.user_assigned_name || analysis.generated_name || (
               <span className="font-mono uppercase">{analysis.slug}</span>
             )}
           </h1>
@@ -214,7 +214,7 @@ export default function AdminAnalysisDetailPage() {
           />
           <DetailField
             label="Nombre (usuario)"
-            value={analysis.user_name || "—"}
+            value={analysis.user_assigned_name || "—"}
           />
           <DetailField
             label="Nombre (generado)"

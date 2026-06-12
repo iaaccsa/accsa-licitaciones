@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { validateUUID, invalidIdResponse, apiError, safeLogError } from "@/lib/api-utils";
+import { requireEntityAnalysisAccess } from "@/lib/supabase/require-analysis-access";
 
 const MATRIX_PATH = "/api/v1/analysis-compliance-matrix";
 
@@ -18,6 +19,10 @@ export async function PATCH(
 
     if (!validateUUID(entryId)) {
         return invalidIdResponse();
+    }
+
+    if (!(await requireEntityAnalysisAccess("analysis_compliance_matrix", entryId))) {
+        return apiError("Analysis not found", 404);
     }
 
     let body: Record<string, unknown>;

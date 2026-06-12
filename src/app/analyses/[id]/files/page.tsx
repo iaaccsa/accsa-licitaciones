@@ -66,7 +66,7 @@ export default function AnalysisFilesPage() {
     const id = params.id as string;
 
     const [files, setFiles] = useState<AnalysisFile[]>([]);
-    const [analysis, setAnalysis] = useState<{ slug: string; user_name?: string; generated_name?: string } | null>(null);
+    const [analysis, setAnalysis] = useState<{ slug: string; user_assigned_name?: string; generated_name?: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [moveFile, setMoveFile] = useState<AnalysisFile | null>(null);
@@ -215,7 +215,7 @@ export default function AnalysisFilesPage() {
                 </div>
                 {analysis && (
                     <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase">
-                        {analysis.user_name || analysis.generated_name || analysis.slug}
+                        {analysis.user_assigned_name || analysis.generated_name || analysis.slug}
                     </span>
                 )}
             </div>

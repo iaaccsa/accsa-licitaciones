@@ -13,7 +13,7 @@ function getPageNumbers(current: number, total: number): (number | "...")[] {
     return [1, "...", current - 1, current, current + 1, "...", total];
 }
 
-export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } = {}) {
+export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: string; scope?: "all" } = {}) {
     const [analyses, setAnalyses] = useState<Analysis[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -22,7 +22,7 @@ export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } =
     useEffect(() => {
         const fetchAnalyses = async () => {
             try {
-                const response = await fetch("/api/analyses/list");
+                const response = await fetch(`/api/analyses/list${scope === "all" ? "?scope=all" : ""}`);
                 if (response.ok) {
                     const data = await response.json();
                     setAnalyses(data);
@@ -38,7 +38,7 @@ export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } =
         };
 
         fetchAnalyses();
-    }, []);
+    }, [scope]);
 
     if (isLoading) {
         return (

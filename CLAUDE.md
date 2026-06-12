@@ -40,13 +40,15 @@ All Next.js API routes (`src/app/api/`) act as a **server-side proxy** to the ba
 - The browser never directly contacts the backend or sees the API key
 
 **API routes**:
-- `POST /api/upload` → forwards ZIP to `{API_BASE_URL}{API_ANALYSES_PATH}/`
-- `GET /api/analyses/list` → list all analyses
+- `POST /api/analyses` → creates analysis; injects `created_by` (session user id) and `user_email` (session email) into the body server-side, overwriting anything from the browser
+- `GET /api/analyses/list` → list analyses filtered by `created_by={session user}`; admins can pass `?scope=all` to list everything (used by `/admin`)
 - `GET /api/analyses/[id]` → fetch all, filter by id
 - `POST /api/analyses/[id]/workflow` → workflow steps (uses `API_WORKFLOW_STEPS_PATH`)
 - `GET /api/analyses/[id]/events`, `/files`, `/requirements`, `/proposals` → search endpoints
 - `GET /api/analyses/[id]/files/[fileId]/chunks` → Qdrant vector chunks
 - `GET /api/analyses/[id]/proposals/[proposalId]/compliance` → compliance results
+
+**Ownership enforcement**: `analyses.created_by` stores the creator's Supabase user id. Every `/api/analyses/[id]/*` route calls `requireAnalysisAccess(id)` (`src/lib/supabase/require-analysis-access.ts`): admins pass, owners pass, everyone else gets 404 (404 instead of 403 to avoid leaking ids). Entity-level routes (`/api/files/[fileId]`, `/api/requirements/[requirementId]`, `/api/compliance-matrix/[entryId]`, `/api/admissibility-requirements/[requirementId]`, `/api/admissibility-results/[entryId]`) resolve the parent `analysis_id` via `requireEntityAnalysisAccess(table, entityId)`. Chat routes check `analysis_id` from the validated body.
 
 ### Environment Variables
 

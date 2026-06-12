@@ -23,7 +23,7 @@ export default function AdminPage() {
                     <CleanupButton />
                 </div>
             </div>
-            <AnalysisList basePath="/admin/analyses" />
+            <AnalysisList basePath="/admin/analyses" scope="all" />
         </div>
     );
 }

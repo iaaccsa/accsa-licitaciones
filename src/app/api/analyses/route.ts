@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { apiError, safeLogError } from "@/lib/api-utils";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
     try {
@@ -38,7 +39,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createClient();
+        const { data } = await supabase.auth.getClaims();
+        const claims = data?.claims;
+        if (!claims) return apiError("unauthorized", 401);
+
         const body = await request.json();
+        body.created_by = claims.sub;
+        body.user_email = claims.email ?? null;
         const env = getEnv();
         const url = `${env.API_BASE_URL}${env.API_ANALYSES_PATH}`;
 

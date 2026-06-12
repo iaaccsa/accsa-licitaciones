@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { validateUUID, invalidIdResponse, apiError, safeLogError } from "@/lib/api-utils";
+import { requireEntityAnalysisAccess } from "@/lib/supabase/require-analysis-access";
 
 const ADMISSIBILITY_RESULTS_PATH = "/api/v1/admissibility-results";
 
@@ -18,6 +19,10 @@ export async function PATCH(
 
     if (!validateUUID(entryId)) {
         return invalidIdResponse();
+    }
+
+    if (!(await requireEntityAnalysisAccess("admissibility_results", entryId))) {
+        return apiError("Analysis not found", 404);
     }
 
     let body: Record<string, unknown>;

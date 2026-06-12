@@ -71,7 +71,6 @@ function SelectableCard({
 export function UploadSection() {
   const [files, setFiles] = useState<File[]>([]);
   const [analysisName, setAnalysisName] = useState("");
-  const [userEmail, setUserEmail] = useState("");
   const [hitl, setHitl] = useState(false);
   const [primaryModel, setPrimaryModel] = useState<PrimaryModel>("openai");
   const [intelligenceLevel, setIntelligenceLevel] =
@@ -147,8 +146,7 @@ export function UploadSection() {
         primary_model: primaryModel,
         intelligence_level: intelligenceLevel,
       };
-      if (analysisName.trim()) body.user_name = analysisName.trim();
-      if (userEmail.trim()) body.user_email = userEmail.trim();
+      if (analysisName.trim()) body.user_assigned_name = analysisName.trim();
 
       const response = await fetch("/api/analyses", {
         method: "POST",
@@ -164,7 +162,6 @@ export function UploadSection() {
 
         setFiles([]);
         setAnalysisName("");
-        setUserEmail("");
         setHitl(false);
         setPrimaryModel("openai");
         setIntelligenceLevel("medium");
@@ -182,7 +179,6 @@ export function UploadSection() {
     files,
     hasMinFiles,
     analysisName,
-    userEmail,
     hitl,
     primaryModel,
     intelligenceLevel,
@@ -200,7 +196,7 @@ export function UploadSection() {
         Subir Documentos
       </h2>
 
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="mb-6 grid grid-cols-1 gap-4">
         <div>
           <label
             htmlFor="analysis-name"
@@ -216,24 +212,6 @@ export function UploadSection() {
             onChange={(e) => setAnalysisName(e.target.value)}
             maxLength={200}
             placeholder="Ej: Licitación Obra Pública 2026"
-            className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="user-email"
-            className="block text-sm font-medium text-zinc-600 mb-2"
-          >
-            Correo <span className="text-zinc-400 font-normal">(opcional)</span>
-          </label>
-          <input
-            id="user-email"
-            type="email"
-            value={userEmail}
-            onChange={(e) => setUserEmail(e.target.value)}
-            maxLength={200}
-            placeholder="Ej: contacto@empresa.cl"
             className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
           />
         </div>

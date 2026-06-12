@@ -7,7 +7,7 @@ import { MetricBox } from "./MetricBox";
 export interface Analysis {
     id: string;
     slug: string;
-    user_name: string | null;
+    user_assigned_name: string | null;
     generated_name: string | null;
     status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
     is_success: boolean | null;
@@ -37,7 +37,7 @@ function getNameFontSize(name: string) {
 }
 
 export function AnalysisCard({ analysis, basePath = "/analyses" }: { analysis: Analysis; basePath?: string }) {
-    const displayName = analysis.user_name ?? analysis.generated_name ?? analysis.slug;
+    const displayName = analysis.user_assigned_name ?? analysis.generated_name ?? analysis.slug;
     return (
         <Link
             href={`${basePath}/${analysis.id}`}

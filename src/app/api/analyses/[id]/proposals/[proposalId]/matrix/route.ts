@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { validateUUID, invalidIdResponse, apiError, safeLogError } from "@/lib/api-utils";
+import { requireAnalysisAccess } from "@/lib/supabase/require-analysis-access";
 
 const MATRIX_PATH = "/api/v1/analysis-compliance-matrix/view";
 
@@ -8,10 +9,14 @@ export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string; proposalId: string }> }
 ) {
-    const { proposalId } = await params;
+    const { id, proposalId } = await params;
 
-    if (!validateUUID(proposalId)) {
+    if (!validateUUID(id) || !validateUUID(proposalId)) {
         return invalidIdResponse();
+    }
+
+    if (!(await requireAnalysisAccess(id))) {
+        return apiError("Analysis not found", 404);
     }
 
     try {
