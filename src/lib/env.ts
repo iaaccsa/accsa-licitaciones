@@ -17,6 +17,7 @@ const envSchema = z.object({
     API_UPLOAD_TOKEN_PATH: z.string().min(1),
     API_CHAT_PATH: z.string().min(1),
     API_CHAT_HISTORY_PATH: z.string().min(1),
+    API_SETTINGS_PATH: z.string().min(1).optional(),
     API_HEALTH_PATH: z.string().optional(),
     API_HEALTH_SUPABASE_PATH: z.string().optional(),
     API_HEALTH_QDRANT_PATH: z.string().optional(),

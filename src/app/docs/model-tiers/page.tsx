@@ -71,9 +71,10 @@ export default function ModelTiersPage() {
                     </h1>
                 </div>
                 <p className="text-sm text-zinc-500">
-                    Al crear un análisis el usuario elige un <strong>proveedor</strong> (Gemini u OpenAI) y un{" "}
-                    <strong>nivel de inteligencia</strong> (bajo, medio, alto). Esa combinación resuelve el modelo a
-                    usar a partir de la tabla{" "}
+                    Un administrador configura globalmente el <strong>proveedor</strong> (Gemini u OpenAI) y el{" "}
+                    <strong>nivel de inteligencia</strong> (bajo, medio, alto) en Admin → Configuración LLM; cada
+                    análisis toma esa configuración al crearse. Esa combinación resuelve el modelo a usar a partir de
+                    la tabla{" "}
                     <code className="font-mono text-xs bg-zinc-100 px-1 rounded">model_tiers</code>. Precios en USD por
                     1M de tokens (junio 2026).
                 </p>

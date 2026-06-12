@@ -10,71 +10,15 @@ import {
   XCircle,
   UserCheck,
   Bot,
-  Sparkles,
-  Cpu,
-  Zap,
-  Gauge,
-  Brain,
-  type LucideIcon,
 } from "lucide-react";
 
 type UploadStatus = "idle" | "success" | "error";
 type AnalysisResult = Record<string, unknown> | null;
-type PrimaryModel = "gemini" | "openai";
-type IntelligenceLevel = "low" | "medium" | "high";
-
-const MODELS: { value: PrimaryModel; label: string; desc: string; Icon: LucideIcon }[] = [
-  { value: "gemini", label: "Gemini", desc: "Modelos de Google.", Icon: Sparkles },
-  { value: "openai", label: "OpenAI", desc: "Modelos GPT de OpenAI.", Icon: Cpu },
-];
-
-const LEVELS: { value: IntelligenceLevel; label: string; desc: string; Icon: LucideIcon }[] = [
-  { value: "low", label: "Bajo", desc: "Más rápido y económico.", Icon: Zap },
-  { value: "medium", label: "Medio", desc: "Equilibrio velocidad/calidad.", Icon: Gauge },
-  { value: "high", label: "Alto", desc: "Más capaz, más lento.", Icon: Brain },
-];
-
-function SelectableCard({
-  active,
-  onClick,
-  Icon,
-  label,
-  desc,
-}: {
-  active: boolean;
-  onClick: () => void;
-  Icon: LucideIcon;
-  label: string;
-  desc: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${
-        active
-          ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500"
-          : "border-zinc-200 hover:border-zinc-300"
-      }`}
-    >
-      <Icon
-        className={`h-5 w-5 mt-0.5 shrink-0 ${active ? "text-blue-600" : "text-zinc-400"}`}
-      />
-      <span>
-        <span className="block text-sm font-medium text-zinc-700">{label}</span>
-        <span className="block text-xs text-zinc-500 mt-0.5">{desc}</span>
-      </span>
-    </button>
-  );
-}
 
 export function UploadSection() {
   const [files, setFiles] = useState<File[]>([]);
   const [analysisName, setAnalysisName] = useState("");
   const [hitl, setHitl] = useState(false);
-  const [primaryModel, setPrimaryModel] = useState<PrimaryModel>("openai");
-  const [intelligenceLevel, setIntelligenceLevel] =
-    useState<IntelligenceLevel>("medium");
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult>(null);
@@ -143,8 +87,6 @@ export function UploadSection() {
       const body: Record<string, string | boolean> = {
         storage_path: fileName,
         hitl,
-        primary_model: primaryModel,
-        intelligence_level: intelligenceLevel,
       };
       if (analysisName.trim()) body.user_assigned_name = analysisName.trim();
 
@@ -163,8 +105,6 @@ export function UploadSection() {
         setFiles([]);
         setAnalysisName("");
         setHitl(false);
-        setPrimaryModel("openai");
-        setIntelligenceLevel("medium");
         setUploadKey((prev) => prev + 1);
       } else {
         setErrorMessage(data.error || "No se pudo iniciar el análisis");
@@ -175,14 +115,7 @@ export function UploadSection() {
       setErrorMessage("Error de conexión. Inténtelo después.");
       setStatus("error");
     }
-  }, [
-    files,
-    hasMinFiles,
-    analysisName,
-    hitl,
-    primaryModel,
-    intelligenceLevel,
-  ]);
+  }, [files, hasMinFiles, analysisName, hitl]);
 
   const handleAnalysisWithTransition = useCallback(() => {
     startTransition(async () => {
@@ -264,42 +197,6 @@ export function UploadSection() {
               </span>
             </span>
           </button>
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <span className="block text-sm font-medium text-zinc-600 mb-2">
-          Modelo principal
-        </span>
-        <div className="grid grid-cols-2 gap-4">
-          {MODELS.map(({ value, label, desc, Icon }) => (
-            <SelectableCard
-              key={value}
-              active={primaryModel === value}
-              onClick={() => setPrimaryModel(value)}
-              Icon={Icon}
-              label={label}
-              desc={desc}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="mb-6">
-        <span className="block text-sm font-medium text-zinc-600 mb-2">
-          Nivel de inteligencia
-        </span>
-        <div className="grid grid-cols-3 gap-4">
-          {LEVELS.map(({ value, label, desc, Icon }) => (
-            <SelectableCard
-              key={value}
-              active={intelligenceLevel === value}
-              onClick={() => setIntelligenceLevel(value)}
-              Icon={Icon}
-              label={label}
-              desc={desc}
-            />
-          ))}
         </div>
       </div>
 
