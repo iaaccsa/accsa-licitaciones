@@ -18,16 +18,20 @@ SELECT
     status,
     is_success,
     artifact_path,
-    created_at,
-    updated_at,
-    user_name,
+    user_assigned_name,
+    user_email,
     generated_name,
     paused_at_service,
-    user_email,
+    created_at,
+    updated_at,
     (SELECT count(*) FROM events e WHERE e.analysis_id = a.id)::integer AS total_events,
     (SELECT count(*) FROM original_files f WHERE f.analysis_id = a.id)::integer AS total_files,
     (SELECT count(*) FROM proposals p WHERE p.analysis_id = a.id)::integer AS total_proposals,
-    (SELECT count(*) FROM analysis_requirements r WHERE r.analysis_id = a.id)::integer AS total_requirements
+    (SELECT count(*) FROM analysis_requirements r WHERE r.analysis_id = a.id)::integer AS total_requirements,
+    hitl,
+    primary_model,
+    intelligence_level,
+    created_by
 FROM analyses a;
 ```
 

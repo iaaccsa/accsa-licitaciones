@@ -18,13 +18,14 @@ class AnalysisBase(BaseModel):
     slug: str
     artifact_path: str
     is_success: Optional[bool] = None
-    user_name: Optional[str] = None
+    user_assigned_name: Optional[str] = None
     user_email: Optional[str] = None
     generated_name: Optional[str] = None
     paused_at_service: Optional[str] = None
     hitl: Optional[bool] = None
     primary_model: Optional[PrimaryModel] = None
     intelligence_level: Optional[IntelligenceLevel] = None
+    created_by: Optional[UUID] = None
 
 class Analysis(AnalysisBase):
     id: UUID
@@ -39,11 +40,12 @@ class Analysis(AnalysisBase):
 
 class AnalysisFromStoragePath(BaseModel):
     storage_path: str
-    user_name: Optional[str] = None
+    user_assigned_name: Optional[str] = None
     user_email: Optional[str] = None
     hitl: bool = False
     primary_model: PrimaryModel = PrimaryModel.openai
     intelligence_level: IntelligenceLevel = IntelligenceLevel.medium
+    created_by: Optional[UUID] = None
 
 class AnalysisUpdate(BaseModel):
     generated_name: Optional[str] = None

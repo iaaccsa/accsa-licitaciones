@@ -7,11 +7,8 @@ from app.services.event_service import event_service
 from app.services.workflow_step_service import workflow_step_service
 from app.services.workflow_phase_service import workflow_phase_service
 from app.services.job_orchestrator_service import job_orchestrator_service
-from app.core.supabase import supabase
-from fastapi import UploadFile
 from typing import List
 import logging
-import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -19,56 +16,10 @@ class AnalysisService:
     def __init__(self):
         self.repository = analysis_repository
 
-    def get_all_analyses(self) -> List[Analysis]:
-        data = self.repository.get_all()
+    def get_all_analyses(self, created_by: str | None = None) -> List[Analysis]:
+        data = self.repository.get_all(created_by)
         # Pydantic validation handles the conversion
         return [Analysis(**item) for item in data]
-
-    async def create_analysis(self, file: UploadFile, user_name: str | None = None) -> Analysis:
-        # 1. Generate UUID for filename
-        file_uuid = str(uuid.uuid4())
-        file_extension = file.filename.split('.')[-1] if '.' in file.filename else 'zip'
-        file_path = f"{file_uuid}.{file_extension}"
-        
-        # 2. Upload file to Supabase Storage
-        file_content = await file.read()
-        supabase.storage.from_("artifacts").upload(
-            path=file_path,
-            file=file_content,
-            file_options={"content-type": "application/zip"}
-        )
-        
-        # 3. Create Analysis record
-        analysis_data = {
-            "status": "pending",
-            "artifact_path": file_path,
-        }
-        if user_name:
-            analysis_data["user_name"] = user_name
-        analysis_record = self.repository.create(analysis_data)
-        analysis = Analysis(**analysis_record)
-        
-        # 4. Log Event
-        event_data = EventBase(
-            analysis_id=analysis.id,
-            level="info",
-            message="Archivo ZIP recibido con todos los documentos.",
-            source="api",
-            details={"original_filename": file.filename}
-        )
-        event_service.create_event(event_data)
-        
-        # 5. Initialize Workflow Steps
-        workflow_step_service.initialize_steps(analysis.id)
-        workflow_phase_service.initialize_phases(str(analysis.id))
-
-        # 6. Start Jobs Pipeline
-        try:
-            job_orchestrator_service.start_pipeline(analysis_id=analysis.id)
-        except Exception as e:
-            logger.error(f"Error starting jobs pipeline for analysis {analysis.id}: {e}")
-        
-        return analysis
 
     async def create_analysis_from_storage(self, data: AnalysisFromStoragePath) -> Analysis:
         # 1. Create Analysis record (file already in Supabase Storage)
@@ -79,10 +30,12 @@ class AnalysisService:
             "primary_model": data.primary_model.value,
             "intelligence_level": data.intelligence_level.value,
         }
-        if data.user_name:
-            analysis_data["user_name"] = data.user_name
+        if data.user_assigned_name:
+            analysis_data["user_assigned_name"] = data.user_assigned_name
         if data.user_email:
             analysis_data["user_email"] = data.user_email
+        if data.created_by:
+            analysis_data["created_by"] = str(data.created_by)
         analysis_record = self.repository.create(analysis_data)
         analysis = Analysis(**analysis_record)
 

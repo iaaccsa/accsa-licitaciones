@@ -15,12 +15,12 @@ from app.services.model_tier_service import model_tier_service
 router = APIRouter()
 
 @router.get("/", response_model=List[Analysis])
-def read_analyses():
+def read_analyses(created_by: UUID | None = None):
     """
-    Retrieve all analyses.
+    Retrieve all analyses, optionally filtered by creator.
     """
     try:
-        return analysis_service.get_all_analyses()
+        return analysis_service.get_all_analyses(str(created_by) if created_by else None)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

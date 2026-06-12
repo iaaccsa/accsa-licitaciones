@@ -8,8 +8,11 @@ class AnalysisRepository(BaseRepository):
         super().__init__("analyses")
         self.view_name = "analyses_view"
 
-    def get_all(self):
-        response = supabase.table(self.view_name).select("*").execute()
+    def get_all(self, created_by: str | None = None):
+        query = supabase.table(self.view_name).select("*")
+        if created_by:
+            query = query.eq("created_by", created_by)
+        response = query.execute()
         return response.data
 
     def get_by_id(self, analysis_id: UUID) -> Optional[Dict[str, Any]]:
