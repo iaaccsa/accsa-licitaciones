@@ -4,10 +4,20 @@ import { useEffect, useState } from "react";
 import { AnalysisCard, type Analysis } from "./AnalysisCard";
 import { Skeleton } from "./ui/skeleton";
 
+const PAGE_SIZE = 15;
+
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
+    if (current >= total - 3) return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+    return [1, "...", current - 1, current, current + 1, "...", total];
+}
+
 export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } = {}) {
     const [analyses, setAnalyses] = useState<Analysis[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [page, setPage] = useState(1);
 
     useEffect(() => {
         const fetchAnalyses = async () => {
@@ -87,6 +97,13 @@ export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } =
         ["ready", "failed"].includes(a.status)
     );
 
+    const totalPages = Math.ceil(completedAnalyses.length / PAGE_SIZE);
+    const currentPage = Math.min(page, Math.max(totalPages, 1));
+    const pagedCompleted = completedAnalyses.slice(
+        (currentPage - 1) * PAGE_SIZE,
+        currentPage * PAGE_SIZE
+    );
+
     return (
         <div className="space-y-8">
             {/* Active Analyses */}
@@ -115,10 +132,48 @@ export function AnalysisList({ basePath = "/analyses" }: { basePath?: string } =
                         Completados
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        {completedAnalyses.map((analysis) => (
+                        {pagedCompleted.map((analysis) => (
                             <AnalysisCard key={analysis.slug} analysis={analysis} basePath={basePath} />
                         ))}
                     </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-center gap-1 mt-6">
+                            <button
+                                onClick={() => setPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                            >
+                                Anterior
+                            </button>
+                            {getPageNumbers(currentPage, totalPages).map((p, i) =>
+                                p === "..." ? (
+                                    <span key={`ellipsis-${i}`} className="px-2 text-sm text-zinc-400">
+                                        …
+                                    </span>
+                                ) : (
+                                    <button
+                                        key={p}
+                                        onClick={() => setPage(p)}
+                                        className={`min-w-9 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                            p === currentPage
+                                                ? "bg-blue-50 text-blue-700"
+                                                : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
+                                        }`}
+                                    >
+                                        {p}
+                                    </button>
+                                )
+                            )}
+                            <button
+                                onClick={() => setPage(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                            >
+                                Siguiente
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
