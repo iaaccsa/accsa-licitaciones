@@ -1,6 +1,9 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Literal, Optional
 from uuid import UUID
+
+from app.core.audit import Actor, get_actor
+from app.services.audit_service import audit_service
 
 from app.schemas.compliance_matrix import (
     ComplianceEntryRead,
@@ -149,5 +152,15 @@ def batch_insert(items: List[ComplianceEntryFlatCreate]):
 
 
 @router.patch("/{entry_id}", response_model=ComplianceEntryRead)
-def patch_entry(entry_id: UUID, patch: ComplianceEntryPatch):
-    return compliance_matrix_service.patch_entry(str(entry_id), patch)
+def patch_entry(entry_id: UUID, patch: ComplianceEntryPatch, actor: Actor = Depends(get_actor)):
+    result = compliance_matrix_service.patch_entry(str(entry_id), patch)
+    audit_service.log(
+        "compliance_result.update", actor,
+        analysis_id=str(result.analysis_id),
+        resource_type="compliance_matrix_entry", resource_id=str(entry_id),
+        details={
+            "proposal_id": str(result.proposal_id),
+            "patch": patch.model_dump(mode="json", exclude_unset=True),
+        },
+    )
+    return result

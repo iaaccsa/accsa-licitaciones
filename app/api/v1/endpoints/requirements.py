@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Body, HTTPException, Query
+from fastapi import APIRouter, Body, HTTPException, Query, Depends
 from typing import List, Optional
 from uuid import UUID
+from app.core.audit import Actor, get_actor
+from app.services.audit_service import audit_service
 
 from app.schemas.requirement import (
     AnalysisRequirementCreate,
@@ -18,9 +20,17 @@ router = APIRouter()
 def bulk_replace(
     analysis_id: UUID = Query(...),
     requirements: List[AnalysisRequirementCreate] = Body(...),
+    actor: Actor = Depends(get_actor),
 ):
     try:
-        return analysis_requirement_service.bulk_replace(analysis_id, requirements)
+        result = analysis_requirement_service.bulk_replace(analysis_id, requirements)
+        if actor.user_id:  # skip pipeline writes (service-requirement-extractor), only audit user edits
+            audit_service.log(
+                "requirement.update", actor,
+                analysis_id=str(analysis_id), resource_type="requirement",
+                details={"op": "bulk_replace", "count": len(requirements)},
+            )
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -50,19 +60,30 @@ def list_requirements(
 
 
 @router.patch("/{analysis_id}/verify-all", response_model=BulkVerifyResponse)
-def bulk_set_verified(analysis_id: UUID, is_verified: bool = Query(...)):
+def bulk_set_verified(analysis_id: UUID, is_verified: bool = Query(...), actor: Actor = Depends(get_actor)):
     try:
-        return analysis_requirement_service.set_verified_bulk(analysis_id, is_verified)
+        result = analysis_requirement_service.set_verified_bulk(analysis_id, is_verified)
+        audit_service.log(
+            "requirement.update", actor,
+            analysis_id=str(analysis_id), resource_type="requirement",
+            details={"op": "verify_all", "is_verified": is_verified},
+        )
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.patch("/{requirement_id}", response_model=AnalysisRequirementRead)
-def update_requirement(requirement_id: UUID, patch: AnalysisRequirementUpdate):
+def update_requirement(requirement_id: UUID, patch: AnalysisRequirementUpdate, actor: Actor = Depends(get_actor)):
     try:
         result = analysis_requirement_service.update(str(requirement_id), patch)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     if not result:
         raise HTTPException(status_code=404, detail="Requirement not found")
+    audit_service.log(
+        "requirement.update", actor,
+        analysis_id=str(result.analysis_id), resource_type="requirement", resource_id=str(requirement_id),
+        details={"op": "update", "patch": patch.model_dump(mode="json", exclude_unset=True)},
+    )
     return result

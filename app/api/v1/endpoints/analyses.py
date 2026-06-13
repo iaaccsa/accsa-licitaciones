@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from uuid import UUID
+from app.core.audit import Actor, get_actor
+from app.services.audit_service import audit_service
 from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
 from app.schemas.job import CancelPipelineResponse, ResumePipelineResponse, RetryJobRequest
 from app.schemas.proposal import ProposalRead
@@ -94,9 +96,15 @@ def list_proposals_by_analysis(analysis_id: UUID):
 
 
 @router.get("/{analysis_id}/sources", response_model=List[AnalysisSource])
-def get_analysis_sources(analysis_id: UUID):
+def get_analysis_sources(analysis_id: UUID, actor: Actor = Depends(get_actor)):
     try:
-        return analysis_service.get_sources(analysis_id)
+        sources = analysis_service.get_sources(analysis_id)
+        audit_service.log(
+            "analysis.download", actor,
+            analysis_id=str(analysis_id), resource_type="analysis", resource_id=str(analysis_id),
+            details={"count": len(sources)},
+        )
+        return sources
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

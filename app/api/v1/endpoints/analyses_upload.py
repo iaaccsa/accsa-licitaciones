@@ -11,6 +11,8 @@ from app.core.config import get_settings
 from app.core.upload_tokens import consume_upload_token
 from app.schemas.analysis import Analysis, AnalysisFromStoragePath
 from app.services.analysis_service import analysis_service
+from app.services.audit_service import audit_service
+from app.core.audit import actor_from_request
 
 router = APIRouter()
 
@@ -45,8 +47,15 @@ async def create_analysis(
     - `X-Upload-Token` — single-use token issued by POST /upload-token (for browser direct upload)
     """
     _verify_auth(request)
+    actor = actor_from_request(request)
 
     try:
-        return await analysis_service.create_analysis_from_storage(body)
+        result = await analysis_service.create_analysis_from_storage(body)
+        audit_service.log(
+            "analysis.create", actor,
+            analysis_id=str(result.id), resource_type="analysis", resource_id=str(result.id),
+        )
+        return result
     except Exception as e:
+        audit_service.log("analysis.create", actor, status="failure", details={"error": str(e)})
         raise HTTPException(status_code=500, detail=str(e))

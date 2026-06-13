@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from typing import List, Optional
 from uuid import UUID
+from app.core.audit import Actor, get_actor
+from app.services.audit_service import audit_service
 from app.schemas.proposal import (
     ProposalRead, ProposalCreate, ProposalUpdate,
     ProposalMatchingStart, ProposalMatchingResult, ProposalMatchingFailure,
@@ -93,8 +95,14 @@ def admissibility_failure(proposal_id: UUID, body: ProposalAdmissibilityFailure)
 
 
 @router.patch("/{proposal_id}/admissibility-override", response_model=ProposalRead)
-def admissibility_override(proposal_id: UUID, body: ProposalAdmissibilityOverride):
-    return proposal_service.admissibility_override(str(proposal_id), body)
+def admissibility_override(proposal_id: UUID, body: ProposalAdmissibilityOverride, actor: Actor = Depends(get_actor)):
+    result = proposal_service.admissibility_override(str(proposal_id), body)
+    audit_service.log(
+        "admissibility.override", actor,
+        analysis_id=str(result.analysis_id), resource_type="proposal", resource_id=str(proposal_id),
+        details=body.model_dump(mode="json"),
+    )
+    return result
 
 
 @router.patch("/{proposal_id}/economic-start", response_model=ProposalRead)

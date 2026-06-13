@@ -1,6 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from app.core.supabase import supabase
 from app.core.qdrant import qdrant_client
+from app.core.audit import Actor, get_actor
+from app.services.audit_service import audit_service
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ def _collect_bucket_paths(bucket_name: str, prefix: str = "") -> list:
 
 
 @router.post("/")
-def cleanup_all():
+def cleanup_all(actor: Actor = Depends(get_actor)):
     """
     Delete all analyses (cascades to related tables), empty both storage buckets,
     and delete all Qdrant collections.
@@ -62,4 +64,9 @@ def cleanup_all():
         logger.error(f"Error deleting Qdrant collections: {e}")
         results["qdrant"] = f"error: {str(e)}"
 
+    audit_service.log(
+        "analysis.delete", actor,
+        resource_type="analysis",
+        details={"scope": "all", **results},
+    )
     return results
