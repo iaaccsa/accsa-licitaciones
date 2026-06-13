@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { validateUUID, invalidIdResponse, apiError, safeLogError } from "@/lib/api-utils";
 import { requireAnalysisAccess } from "@/lib/supabase/require-analysis-access";
+import { getAuditHeaders } from "@/lib/supabase/audit-headers";
 
 export async function GET(
     request: Request,
@@ -24,6 +25,7 @@ export async function GET(
         const response = await fetch(url, {
             headers: {
                 "X-API-Key": env.BACKEND_API_KEY,
+                ...(await getAuditHeaders(request)),
             },
         });
 

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { validateUUID, invalidIdResponse, apiError, safeLogError } from "@/lib/api-utils";
 import { requireEntityAnalysisAccess } from "@/lib/supabase/require-analysis-access";
+import { getAuditHeaders } from "@/lib/supabase/audit-headers";
 
 export async function PATCH(
     request: Request,
@@ -27,6 +28,7 @@ export async function PATCH(
             headers: {
                 "Content-Type": "application/json",
                 "X-API-Key": env.BACKEND_API_KEY,
+                ...(await getAuditHeaders(request)),
             },
             body: JSON.stringify(body),
         });

@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { apiError, safeLogError } from "@/lib/api-utils";
+import { getAuditHeaders } from "@/lib/supabase/audit-headers";
 
-export async function POST() {
+export async function POST(request: Request) {
     try {
         const env = getEnv();
         const url = `${env.API_BASE_URL}/api/v1/cleanup/`;
@@ -12,6 +13,7 @@ export async function POST() {
             headers: {
                 "Content-Type": "application/json",
                 "X-API-Key": env.BACKEND_API_KEY,
+                ...(await getAuditHeaders(request)),
             },
         });
 

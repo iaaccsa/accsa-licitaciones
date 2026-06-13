@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { apiError, safeLogError } from "@/lib/api-utils";
 import { createClient } from "@/lib/supabase/server";
+import { getAuditHeaders } from "@/lib/supabase/audit-headers";
 
 export async function GET(request: NextRequest) {
     try {
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
             headers: {
                 "Content-Type": "application/json",
                 "X-API-Key": env.BACKEND_API_KEY,
+                ...(await getAuditHeaders(request)),
             },
             body: JSON.stringify(body),
         });

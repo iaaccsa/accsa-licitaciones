@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { apiError, safeLogError } from "@/lib/api-utils";
 import { requireAdmin } from "@/lib/supabase/require-admin";
+import { getAuditHeaders } from "@/lib/supabase/audit-headers";
 
 function backendUrl() {
     const env = getEnv();
@@ -49,6 +50,7 @@ export async function PUT(request: NextRequest) {
             headers: {
                 "Content-Type": "application/json",
                 "X-API-Key": apiKey,
+                ...(await getAuditHeaders(request)),
             },
             body: JSON.stringify({
                 primary_model: body.primary_model,
