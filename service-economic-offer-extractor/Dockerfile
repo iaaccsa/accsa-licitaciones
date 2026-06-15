@@ -68,7 +68,7 @@ COPY global/ai_usage_logger.py .
 COPY global/prompt_loader.py .
 
 # Copy application code
-COPY service-economic-offer-extractor/main.py service-economic-offer-extractor/prompt_economic_offer_extractor.md .
+COPY service-economic-offer-extractor/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

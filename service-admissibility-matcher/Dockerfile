@@ -68,7 +68,7 @@ COPY global/ai_usage_logger.py .
 COPY global/prompt_loader.py .
 
 # Copy application code
-COPY service-admissibility-matcher/main.py service-admissibility-matcher/prompt_compliance_evaluator.md .
+COPY service-admissibility-matcher/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

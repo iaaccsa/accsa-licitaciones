@@ -42,7 +42,7 @@ except ImportError:
         return 0, 0, 0
 
     def load_prompt(key):
-        return (Path(__file__).parent / f"prompt_{key.split('/')[-1]}.md").read_text(encoding="utf-8")
+        raise RuntimeError(f"prompt_loader unavailable; cannot load prompt '{key}'")
 
 # ---------------------------------------------------------------------------
 # Configuration

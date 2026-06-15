@@ -72,7 +72,7 @@ COPY global/ai_usage_logger.py .
 COPY global/prompt_loader.py .
 
 # Copy application code
-COPY service-compliance-matcher/main.py service-compliance-matcher/prompt_compliance_evaluator.md .
+COPY service-compliance-matcher/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

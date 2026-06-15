@@ -50,7 +50,7 @@ COPY global/ai_usage_logger.py .
 COPY global/prompt_loader.py .
 
 # Copy application code
-COPY service-file-metadata-extractor/main.py service-file-metadata-extractor/prompt_file_metadata_extractor.md .
+COPY service-file-metadata-extractor/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

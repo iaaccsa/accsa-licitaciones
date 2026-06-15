@@ -47,7 +47,7 @@ COPY global/ai_usage_logger.py .
 COPY global/prompt_loader.py .
 
 # Copy application code
-COPY service-documents-classifier/main.py service-documents-classifier/prompt_document_category_classifier.md .
+COPY service-documents-classifier/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

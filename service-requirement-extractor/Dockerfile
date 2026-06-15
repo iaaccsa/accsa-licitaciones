@@ -72,7 +72,7 @@ COPY global/ai_usage_logger.py .
 COPY global/prompt_loader.py .
 
 # Copy application code
-COPY service-requirement-extractor/main.py service-requirement-extractor/prompt_requirements_extractor.md service-requirement-extractor/prompt_admissibility_extractor.md .
+COPY service-requirement-extractor/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

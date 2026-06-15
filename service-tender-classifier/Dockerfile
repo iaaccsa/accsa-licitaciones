@@ -64,7 +64,7 @@ COPY global/ai_usage_logger.py .
 COPY global/prompt_loader.py .
 
 # Copy application code
-COPY service-tender-classifier/main.py service-tender-classifier/prompt_tender_evaluation_profile.md .
+COPY service-tender-classifier/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

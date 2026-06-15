@@ -58,6 +58,6 @@ COPY global/ai_usage_logger.py .
 COPY global/prompt_loader.py .
 
 # Copy application code
-COPY service-compliance-summarizer/main.py service-compliance-summarizer/prompt_compliance_summary.md .
+COPY service-compliance-summarizer/main.py .
 
 CMD ["python", "main.py"]

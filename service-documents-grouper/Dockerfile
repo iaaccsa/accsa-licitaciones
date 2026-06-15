@@ -53,7 +53,7 @@ COPY global/ai_usage_logger.py .
 COPY global/prompt_loader.py .
 
 # Copy application code
-COPY service-documents-grouper/main.py service-documents-grouper/prompt_proposal_grouping.md service-documents-grouper/prompt_tender_naming.md .
+COPY service-documents-grouper/main.py .
 
 # Create workspace directory
 RUN mkdir -p /app/workspace

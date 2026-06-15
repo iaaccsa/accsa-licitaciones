@@ -3,6 +3,10 @@
 Run ONCE after deploying the API (FASE 1). Idempotent: PUT upserts by key.
 The .md originals contain their placeholders, so they pass server validation.
 
+NOTE: the prompt_*.md files were removed from the repo after the initial seed
+(the DB is now the authoritative source). To re-run this script, restore them
+first: `git checkout <commit> -- service-*/prompt_*.md`.
+
 Usage (from repo root accsa-licitaciones-services/, with API up):
     API_BASE_URL=http://localhost:8000 API_KEY=<BACKEND_API_KEY> \
       python scripts/seed_prompts.py
