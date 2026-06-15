@@ -36,6 +36,7 @@ from typing import Any, Dict, List, Literal, Optional
 
 import requests
 from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+from prompt_loader import load_prompt
 from google import genai
 from google.genai import types as genai_types
 from openai import OpenAI
@@ -139,9 +140,7 @@ class LLMEconomicOffer(BaseModel):
     requires_manual_review: bool = False
 
 
-SYSTEM_PROMPT = (
-    Path(__file__).parent / "prompt_economic_offer_extractor.md"
-).read_text(encoding="utf-8")
+SYSTEM_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 
 # ---------------------------------------------------------------------------
@@ -672,8 +671,9 @@ def process_economic_extraction():
 
 
 def main():
-    global PRICING
+    global PRICING, SYSTEM_PROMPT
     validate_env()
+    SYSTEM_PROMPT = load_prompt("service-economic-offer-extractor/economic_offer_extractor")
     resolve_model_config()
     PRICING = load_pricing()
     try:

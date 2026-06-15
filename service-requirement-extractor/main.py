@@ -38,6 +38,7 @@ from typing import Annotated, Any, Callable, Dict, List, Literal, Optional, Tupl
 
 import requests
 from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+from prompt_loader import load_prompt
 from google import genai
 from google.genai import types as genai_types
 from openai import OpenAI
@@ -512,12 +513,8 @@ class FinalRequirement(RawRequirement):
 # ---------------------------------------------------------------------------
 # System Prompts
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = (Path(__file__).parent / "prompt_requirements_extractor.md").read_text(
-    encoding="utf-8"
-)
-ADMISSIBILITY_SYSTEM_PROMPT = (
-    Path(__file__).parent / "prompt_admissibility_extractor.md"
-).read_text(encoding="utf-8")
+SYSTEM_PROMPT = None  # loaded at runtime in main() via load_prompt
+ADMISSIBILITY_SYSTEM_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -1704,8 +1701,10 @@ def process_extraction():
 
 
 def main():
-    global PRICING
+    global PRICING, SYSTEM_PROMPT, ADMISSIBILITY_SYSTEM_PROMPT
     validate_env()
+    SYSTEM_PROMPT = load_prompt("service-requirement-extractor/requirements_extractor")
+    ADMISSIBILITY_SYSTEM_PROMPT = load_prompt("service-requirement-extractor/admissibility_extractor")
     resolve_model_config()
     PRICING = load_pricing()
     try:

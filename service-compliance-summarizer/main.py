@@ -14,6 +14,7 @@ from pydantic import BaseModel
 try:
     from supabase_logger import setup_logger, log_event, make_session
     from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+    from prompt_loader import load_prompt
 except ImportError:
     import logging
 
@@ -39,6 +40,9 @@ except ImportError:
 
     def gemini_units(response):
         return 0, 0, 0
+
+    def load_prompt(key):
+        return (Path(__file__).parent / f"prompt_{key.split('/')[-1]}.md").read_text(encoding="utf-8")
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -98,7 +102,7 @@ class SummaryMetrics(BaseModel):
 # ---------------------------------------------------------------------------
 # LLM prompts
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = (Path(__file__).parent / "prompt_compliance_summary.md").read_text(encoding="utf-8")
+SYSTEM_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 
 def build_user_prompt(
@@ -606,8 +610,9 @@ def process_summary():
 
 
 def main():
-    global PRICING
+    global PRICING, SYSTEM_PROMPT
     validate_env()
+    SYSTEM_PROMPT = load_prompt("service-compliance-summarizer/compliance_summary")
     resolve_model_config()
     PRICING = load_pricing()
     try:

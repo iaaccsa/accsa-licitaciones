@@ -30,6 +30,7 @@ from openai import OpenAI
 import requests
 from supabase_logger import setup_logger, log_event, make_session
 from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+from prompt_loader import load_prompt
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -141,7 +142,7 @@ def validate_env():
 # ---------------------------------------------------------------------------
 # Gemini classification
 # ---------------------------------------------------------------------------
-CLASSIFICATION_PROMPT = (Path(__file__).parent / "prompt_document_category_classifier.md").read_text(encoding="utf-8")
+CLASSIFICATION_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 
 def _gemini_json(gemini_client: genai.Client, prompt: str, model: str) -> dict:
@@ -293,8 +294,9 @@ def process_document_classification():
 
 
 def main():
-    global PRICING
+    global PRICING, CLASSIFICATION_PROMPT
     validate_env()
+    CLASSIFICATION_PROMPT = load_prompt("service-documents-classifier/document_category_classifier")
     resolve_model_config()
     PRICING = load_pricing()
     try:

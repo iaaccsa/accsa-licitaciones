@@ -49,6 +49,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from supabase_logger import setup_logger, log_event, make_session
 from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+from prompt_loader import load_prompt
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -364,7 +365,7 @@ STRATEGY_ROLE_RULES: Dict[str, Dict] = {
 # ---------------------------------------------------------------------------
 # System Prompt
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = (Path(__file__).parent / "prompt_tender_evaluation_profile.md").read_text(encoding="utf-8")
+SYSTEM_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 
 # ---------------------------------------------------------------------------
@@ -797,8 +798,9 @@ def process_classification():
 
 
 def main():
-    global PRICING
+    global PRICING, SYSTEM_PROMPT
     validate_env()
+    SYSTEM_PROMPT = load_prompt("service-tender-classifier/tender_evaluation_profile")
     resolve_model_config()
     PRICING = load_pricing()
     try:

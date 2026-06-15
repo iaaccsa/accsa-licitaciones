@@ -35,6 +35,7 @@ docker build $BUILD_ARGS --platform linux/amd64 \
   --build-arg OPENAI_API_KEY="$OPENAI_API_KEY" \
   --build-arg API_BASE_URL="$API_BASE_URL" \
   --build-arg API_KEY="$API_KEY" \
+  --build-arg API_PROMPTS_PATH="${API_PROMPTS_PATH:-/api/v1/prompts}" \
   --build-arg API_EVENTS_PATH="$API_EVENTS_PATH" \
   --build-arg API_PROPOSALS_PATH="$API_PROPOSALS_PATH" \
   --build-arg API_ANALYSIS_REQUIREMENTS_PATH="$API_ANALYSIS_REQUIREMENTS_PATH" \

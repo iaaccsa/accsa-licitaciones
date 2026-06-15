@@ -31,6 +31,7 @@ from openai import OpenAI
 import requests
 from supabase_logger import setup_logger, log_event, make_session
 from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+from prompt_loader import load_prompt
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -146,10 +147,10 @@ def validate_env():
 # ---------------------------------------------------------------------------
 # LLM prompts and helpers
 # ---------------------------------------------------------------------------
-GROUPING_PROMPT = (Path(__file__).parent / "prompt_proposal_grouping.md").read_text(encoding="utf-8")
+GROUPING_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 
-NAMING_PROMPT = (Path(__file__).parent / "prompt_tender_naming.md").read_text(encoding="utf-8")
+NAMING_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 
 def _openai_json(openai_client: OpenAI, prompt: str, model: str) -> dict:
@@ -517,8 +518,10 @@ def process_documents_grouping():
 
 
 def main():
-    global PRICING
+    global PRICING, GROUPING_PROMPT, NAMING_PROMPT
     validate_env()
+    GROUPING_PROMPT = load_prompt("service-documents-grouper/proposal_grouping")
+    NAMING_PROMPT = load_prompt("service-documents-grouper/tender_naming")
     resolve_model_config()
     PRICING = load_pricing()
     try:

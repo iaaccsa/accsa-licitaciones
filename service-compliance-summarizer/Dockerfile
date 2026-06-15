@@ -7,6 +7,7 @@ ARG GOOGLE_API_KEY
 ARG OPENAI_API_KEY
 ARG API_BASE_URL
 ARG API_KEY
+ARG API_PROMPTS_PATH=/api/v1/prompts
 ARG API_EVENTS_PATH
 ARG API_PROPOSALS_PATH
 ARG API_ANALYSIS_REQUIREMENTS_PATH
@@ -18,6 +19,7 @@ ENV GOOGLE_API_KEY=$GOOGLE_API_KEY
 ENV OPENAI_API_KEY=$OPENAI_API_KEY
 ENV API_BASE_URL=$API_BASE_URL
 ENV API_KEY=$API_KEY
+ENV API_PROMPTS_PATH=$API_PROMPTS_PATH
 ENV API_EVENTS_PATH=$API_EVENTS_PATH
 ENV API_PROPOSALS_PATH=$API_PROPOSALS_PATH
 ENV API_ANALYSIS_REQUIREMENTS_PATH=$API_ANALYSIS_REQUIREMENTS_PATH
@@ -53,6 +55,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy shared global modules
 COPY global/supabase_logger.py .
 COPY global/ai_usage_logger.py .
+COPY global/prompt_loader.py .
 
 # Copy application code
 COPY service-compliance-summarizer/main.py service-compliance-summarizer/prompt_compliance_summary.md .

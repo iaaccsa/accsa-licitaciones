@@ -44,6 +44,7 @@ from qdrant_client.http import models
 
 from supabase_logger import setup_logger, log_event, make_session
 from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+from prompt_loader import load_prompt
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -136,7 +137,7 @@ class FinalComplianceEntry(BaseModel):
 # ---------------------------------------------------------------------------
 # System Prompt
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = (Path(__file__).parent / "prompt_compliance_evaluator.md").read_text(encoding="utf-8")
+SYSTEM_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 
 # ---------------------------------------------------------------------------
@@ -705,8 +706,9 @@ async def process_compliance_matching_async():
 
 
 def main():
-    global PRICING
+    global PRICING, SYSTEM_PROMPT
     validate_env()
+    SYSTEM_PROMPT = load_prompt("service-compliance-matcher/compliance_evaluator")
     resolve_model_config()
     PRICING = load_pricing()
     try:

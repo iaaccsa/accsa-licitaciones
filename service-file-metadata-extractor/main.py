@@ -35,6 +35,7 @@ import requests
 from qdrant_client import QdrantClient
 from supabase_logger import setup_logger, log_event, make_session
 from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+from prompt_loader import load_prompt
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -177,7 +178,7 @@ def fetch_all_chunks(qdrant: QdrantClient, collection_name: str) -> List[str]:
 # ---------------------------------------------------------------------------
 # Gemini extraction
 # ---------------------------------------------------------------------------
-EXTRACTION_PROMPT = (Path(__file__).parent / "prompt_file_metadata_extractor.md").read_text(encoding="utf-8")
+EXTRACTION_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 
 def _gemini_extract(gemini_client: genai.Client, prompt: str, model: str) -> dict:
@@ -346,8 +347,9 @@ def process_file_metadata_extraction():
 
 
 def main():
-    global PRICING
+    global PRICING, EXTRACTION_PROMPT
     validate_env()
+    EXTRACTION_PROMPT = load_prompt("service-file-metadata-extractor/file_metadata_extractor")
     resolve_model_config()
     PRICING = load_pricing()
     try:
