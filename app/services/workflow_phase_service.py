@@ -148,6 +148,41 @@ class WorkflowPhaseService:
             "ended_at": now,
         })
 
+    def apply_admissibility_cut(self, analysis_id: str) -> None:
+        """No proposal passed admissibility: paint the admissibility phase (award_check)
+        as a warning and leave the final phase as not-reached (pending). Only acts once
+        admissibility actually ran (award_check completed)."""
+        award = self.repository.get_by_analysis_and_code(analysis_id, "award_check")
+        if not award or award.get("status") != "completed":
+            return
+
+        now = datetime.now().isoformat()
+        self.repository.upsert({
+            "analysis_id": analysis_id,
+            "code": "award_check",
+            "display_name": award.get("display_name") or "Chequeo de Admisibilidad",
+            "status": "warning",
+            "progress": 100,
+            "order": award["order"],
+            "type": "processing",
+            "started_at": award.get("started_at") or now,
+            "ended_at": now,
+        })
+
+        final = self.repository.get_by_analysis_and_code(analysis_id, "final_compliance_check")
+        if final:
+            self.repository.upsert({
+                "analysis_id": analysis_id,
+                "code": "final_compliance_check",
+                "display_name": final.get("display_name") or "Chequeo Final",
+                "status": "pending",
+                "progress": 0,
+                "order": final["order"],
+                "type": "processing",
+                "started_at": None,
+                "ended_at": None,
+            })
+
     def _activate_approval_phase(self, analysis_id: str, phase_meta: dict, now: str) -> None:
         existing = self.repository.get_by_analysis_and_code(analysis_id, phase_meta["code"])
         if existing and existing.get("status") in ("running", "completed"):

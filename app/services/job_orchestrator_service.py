@@ -558,6 +558,10 @@ class JobOrchestratorService:
                 logger.error(f"Failed to auto-complete downstream step {svc} for analysis_id={analysis_id}: {e}")
             queue.extend(get_next_jobs(svc))
 
+        # No proposal passed admissibility: flag the admissibility phase (warning) and
+        # leave the final phase as not-reached instead of completed.
+        workflow_phase_service.apply_admissibility_cut(str(analysis_id))
+
         analysis_repository.update_by_id(
             str(analysis_id),
             {"status": "ready", "is_success": True},
@@ -579,6 +583,12 @@ class JobOrchestratorService:
             )
             return
 
+        # If the pipeline reached the end with no admitida proposals (e.g. HITL resume
+        # cascaded empty fan-outs), flag the admissibility phase and leave the final
+        # phase as not-reached instead of completed.
+        if not proposal_repository.get_admitidas_by_analysis_id(analysis_id):
+            workflow_phase_service.apply_admissibility_cut(str(analysis_id))
+
         analysis_repository.update_by_id(
             str(analysis_id),
             {"status": "ready", "is_success": True},
@@ -599,7 +609,10 @@ class JobOrchestratorService:
             return
         try:
             if reason == "awaiting_approval":
-                email_service.send_awaiting_approval(str(analysis_id), user_email)
+                summary = None
+                if analysis.get("paused_at_service") == "service-admissibility-gate":
+                    summary = self._build_admissibility_summary(analysis_id)
+                email_service.send_awaiting_approval(str(analysis_id), user_email, summary)
             elif reason == "completed":
                 email_service.send_pipeline_completed(str(analysis_id), user_email)
             elif reason == "failed":
@@ -613,6 +626,29 @@ class JobOrchestratorService:
             )
         except Exception as e:
             logger.error(f"Failed to send {reason} email for analysis_id={analysis_id}: {e}")
+
+    def _build_admissibility_summary(self, analysis_id: UUID) -> Optional[dict]:
+        """Collect admitidas/rechazadas (with blocking requirement codes) for the email.
+        Reasons are precomputed by service-admissibility-gate in proposals.admissibility_reasons;
+        only obligatoria failures block, so subsanable reason types are excluded."""
+        proposals = proposal_repository.get_by_analysis_id(analysis_id)
+        admitidas: List[str] = []
+        rechazadas: List[dict] = []
+        for p in proposals:
+            name = p.get("provider_name") or p.get("label") or "Propuesta"
+            status = p.get("admissibility_status")
+            if status == "admitida":
+                admitidas.append(name)
+            elif status == "rechazada":
+                codes = [
+                    r.get("requirement_code")
+                    for r in (p.get("admissibility_reasons") or [])
+                    if r.get("requirement_code") and "subsanable" not in (r.get("type") or "")
+                ]
+                rechazadas.append({"name": name, "codes": codes})
+        if not admitidas and not rechazadas:
+            return None
+        return {"admitidas": admitidas, "rechazadas": rechazadas}
 
     def _log_event(
         self,

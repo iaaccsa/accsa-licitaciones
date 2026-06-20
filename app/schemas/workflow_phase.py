@@ -8,7 +8,7 @@ class WorkflowPhaseBase(BaseModel):
     analysis_id: UUID
     code: str
     display_name: str
-    status: Literal["pending", "running", "completed", "failed"] = "pending"
+    status: Literal["pending", "running", "completed", "failed", "warning"] = "pending"
     progress: int = 0
     order: int
     type: Literal["processing", "approval"] = "processing"
