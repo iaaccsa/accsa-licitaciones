@@ -3,14 +3,13 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ListChecks, ShieldCheck, BookOpen, Users } from "lucide-react";
+import { ListChecks, ShieldCheck, BookOpen } from "lucide-react";
 import { LogoutButton } from "@/components/LogoutButton";
 
 const navItems = [
     { href: "/", label: "Análisis", icon: ListChecks },
     { href: "/docs", label: "Docs", icon: BookOpen },
     { href: "/admin", label: "Admin", icon: ShieldCheck },
-    { href: "/admin/users", label: "Usuarios", icon: Users },
 ] as const;
 
 export function Navbar() {
@@ -46,10 +45,7 @@ export function Navbar() {
                                 href === "/"
                                     ? pathname === "/" ||
                                       pathname.startsWith("/analyses")
-                                    : href === "/admin"
-                                      ? pathname.startsWith("/admin") &&
-                                        !pathname.startsWith("/admin/users")
-                                      : pathname.startsWith(href);
+                                    : pathname.startsWith(href);
 
                             return (
                                 <Link

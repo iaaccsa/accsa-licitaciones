@@ -4,20 +4,13 @@ import { useState, useCallback, useTransition } from "react";
 import Link from "next/link";
 import { FileUploadZone } from "@/components/FileUploadZone";
 import { Button } from "@/components/ui/button";
-import {
-  Loader2,
-  CheckCircle,
-  XCircle,
-  UserCheck,
-  Bot,
-} from "lucide-react";
+import { Loader2, CheckCircle, XCircle } from "lucide-react";
 
 type UploadStatus = "idle" | "success" | "error";
 type AnalysisResult = Record<string, unknown> | null;
 
 export function UploadSection() {
   const [files, setFiles] = useState<File[]>([]);
-  const [hitl, setHitl] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<UploadStatus>("idle");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult>(null);
@@ -83,9 +76,8 @@ export function UploadSection() {
         return;
       }
 
-      const body: Record<string, string | boolean> = {
+      const body: Record<string, string> = {
         storage_path: fileName,
-        hitl,
       };
 
       const response = await fetch("/api/analyses", {
@@ -101,7 +93,6 @@ export function UploadSection() {
         setStatus("success");
 
         setFiles([]);
-        setHitl(false);
         setUploadKey((prev) => prev + 1);
       } else {
         setErrorMessage(data.error || "No se pudo iniciar el análisis");
@@ -112,7 +103,7 @@ export function UploadSection() {
       setErrorMessage("Error de conexión. Inténtelo después.");
       setStatus("error");
     }
-  }, [files, hasMinFiles, hitl]);
+  }, [files, hasMinFiles]);
 
   const handleAnalysisWithTransition = useCallback(() => {
     startTransition(async () => {
@@ -125,56 +116,6 @@ export function UploadSection() {
       <h2 className="text-lg font-medium text-zinc-700 mb-6">
         Subir Documentos
       </h2>
-
-      <div className="mb-6">
-        <span className="block text-sm font-medium text-zinc-600 mb-2">
-          Validación
-        </span>
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            onClick={() => setHitl(true)}
-            className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${
-              hitl
-                ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500"
-                : "border-zinc-200 hover:border-zinc-300"
-            }`}
-          >
-            <UserCheck
-              className={`h-5 w-5 mt-0.5 shrink-0 ${hitl ? "text-blue-600" : "text-zinc-400"}`}
-            />
-            <span>
-              <span className="block text-sm font-medium text-zinc-700">
-                Con validación humana
-              </span>
-              <span className="block text-xs text-zinc-500 mt-0.5">
-                Pausa el análisis para aprobación manual.
-              </span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setHitl(false)}
-            className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${
-              !hitl
-                ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500"
-                : "border-zinc-200 hover:border-zinc-300"
-            }`}
-          >
-            <Bot
-              className={`h-5 w-5 mt-0.5 shrink-0 ${!hitl ? "text-blue-600" : "text-zinc-400"}`}
-            />
-            <span>
-              <span className="block text-sm font-medium text-zinc-700">
-                Sin validación humana
-              </span>
-              <span className="block text-xs text-zinc-500 mt-0.5">
-                El análisis corre de principio a fin sin pausas.
-              </span>
-            </span>
-          </button>
-        </div>
-      </div>
 
       <div key={uploadKey} className="mb-8">
         <FileUploadZone

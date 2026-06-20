@@ -1,0 +1,37 @@
+import Link from "next/link";
+import { Activity, Bell, Cpu, FileText, ScrollText, UserCheck, Users } from "lucide-react";
+
+const cards = [
+    { href: "/admin/config/llm-config", label: "Configuración LLM", description: "Modelos y parámetros de los servicios de IA.", icon: Cpu },
+    { href: "/admin/config/prompts", label: "Prompts", description: "Editar los prompts de los microservicios.", icon: FileText },
+    { href: "/admin/config/human-loop", label: "Validación humana", description: "Puntos de control humano (HITL) del pipeline.", icon: UserCheck },
+    { href: "/admin/config/notifications", label: "Notificaciones", description: "Correos y avisos del sistema.", icon: Bell },
+    { href: "/admin/config/status", label: "Estado del Sistema", description: "Salud de backend, Supabase, Qdrant y Azure.", icon: Activity },
+    { href: "/admin/config/audit", label: "Auditoría", description: "Registro de acciones de los usuarios.", icon: ScrollText },
+    { href: "/admin/config/users", label: "Usuarios", description: "Invitar usuarios y administrar roles.", icon: Users },
+] as const;
+
+export default function AdminConfigPage() {
+    return (
+        <div className="max-w-7xl mx-auto py-8 px-4">
+            <h1 className="text-2xl font-semibold text-zinc-800 font-serif italic mb-6">
+                Configuración
+            </h1>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {cards.map(({ href, label, description, icon: Icon }) => (
+                    <Link
+                        key={href}
+                        href={href}
+                        className="group flex flex-col gap-3 p-5 bg-white border border-zinc-200 rounded-xl shadow-sm hover:border-zinc-300 hover:shadow transition-colors"
+                    >
+                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-100 text-zinc-700 group-hover:bg-zinc-200 transition-colors">
+                            <Icon className="w-5 h-5" />
+                        </span>
+                        <span className="text-base font-medium text-zinc-800">{label}</span>
+                        <span className="text-sm text-zinc-500">{description}</span>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+}
