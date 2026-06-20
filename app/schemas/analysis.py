@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
 from typing import Optional
 from uuid import UUID
@@ -47,6 +47,7 @@ class AnalysisFromStoragePath(BaseModel):
 
 class AnalysisUpdate(BaseModel):
     generated_name: Optional[str] = None
+    user_assigned_name: Optional[str] = Field(default=None, max_length=200)
 
 class AnalysisStatusUpdate(BaseModel):
     status: str

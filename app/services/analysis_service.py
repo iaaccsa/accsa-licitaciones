@@ -70,7 +70,7 @@ class AnalysisService:
         return Analysis(**data)
 
     def update_analysis(self, analysis_id, update_data: AnalysisUpdate) -> Analysis:
-        data = update_data.model_dump(exclude_none=True)
+        data = update_data.model_dump(exclude_unset=True)
         result = self.repository.update_by_id(str(analysis_id), data)
         return Analysis(**result)
 

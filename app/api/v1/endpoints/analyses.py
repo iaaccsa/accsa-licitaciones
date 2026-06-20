@@ -142,14 +142,20 @@ def get_analysis_model_config(analysis_id: UUID):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.patch("/{analysis_id}", response_model=Analysis)
-def update_analysis(analysis_id: UUID, update_data: AnalysisUpdate):
+def update_analysis(analysis_id: UUID, update_data: AnalysisUpdate, actor: Actor = Depends(get_actor)):
     """
-    Update analysis fields (e.g. generated_name).
+    Update analysis fields (e.g. generated_name, user_assigned_name).
     """
     try:
-        return analysis_service.update_analysis(analysis_id, update_data)
+        result = analysis_service.update_analysis(analysis_id, update_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    audit_service.log(
+        "analysis.rename", actor,
+        analysis_id=str(analysis_id), resource_type="analysis", resource_id=str(analysis_id),
+        details={"patch": update_data.model_dump(mode="json", exclude_unset=True)},
+    )
+    return result
 
 @router.patch("/{analysis_id}/status", response_model=Analysis)
 def update_analysis_status(analysis_id: UUID, status_update: AnalysisStatusUpdate):
