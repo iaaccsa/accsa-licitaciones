@@ -16,6 +16,7 @@ from app.services.workflow_step_service import workflow_step_service
 from app.services.workflow_phase_service import workflow_phase_service
 from app.repositories.workflow_step_repository import workflow_step_repository
 from app.services.email_service import email_service
+from app.services.app_settings_service import app_settings_service
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -603,6 +604,13 @@ class JobOrchestratorService:
         """Send email notification if user_email is set and belongs to the allowed domain."""
         analysis = analysis_repository.get_by_id(analysis_id)
         if not analysis:
+            return
+        if not app_settings_service.get_notifications_config().email_enabled:
+            self._log_event(
+                analysis_id, "info",
+                "Notificacion por email omitida (deshabilitada globalmente)",
+                {"reason": reason},
+            )
             return
         user_email = analysis.get("user_email")
         if not user_email:

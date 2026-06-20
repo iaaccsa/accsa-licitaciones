@@ -12,3 +12,19 @@ class LlmConfig(BaseModel):
 
 class LlmConfigRead(LlmConfig):
     updated_at: Optional[datetime] = None
+
+
+class HitlConfig(BaseModel):
+    hitl: bool
+
+
+class HitlConfigRead(HitlConfig):
+    updated_at: Optional[datetime] = None
+
+
+class NotificationsConfig(BaseModel):
+    email_enabled: bool
+
+
+class NotificationsConfigRead(NotificationsConfig):
+    updated_at: Optional[datetime] = None

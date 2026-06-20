@@ -42,7 +42,6 @@ class AnalysisFromStoragePath(BaseModel):
     storage_path: str
     user_assigned_name: Optional[str] = None
     user_email: Optional[str] = None
-    hitl: bool = False
     created_by: Optional[UUID] = None
 
 class AnalysisUpdate(BaseModel):

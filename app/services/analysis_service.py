@@ -25,10 +25,11 @@ class AnalysisService:
     async def create_analysis_from_storage(self, data: AnalysisFromStoragePath) -> Analysis:
         # 1. Create Analysis record (file already in Supabase Storage)
         llm_config = app_settings_service.get_llm_config()
+        hitl = app_settings_service.get_hitl_config().hitl
         analysis_data = {
             "status": "pending",
             "artifact_path": data.storage_path,
-            "hitl": data.hitl,
+            "hitl": hitl,
             "primary_model": llm_config.primary_model.value,
             "intelligence_level": llm_config.intelligence_level.value,
         }
@@ -53,7 +54,7 @@ class AnalysisService:
 
         # 3. Initialize Workflow Steps
         workflow_step_service.initialize_steps(analysis.id)
-        workflow_phase_service.initialize_phases(str(analysis.id), data.hitl)
+        workflow_phase_service.initialize_phases(str(analysis.id), hitl)
 
         # 4. Start Jobs Pipeline
         try:
