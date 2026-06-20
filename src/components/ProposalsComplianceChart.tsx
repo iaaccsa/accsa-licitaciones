@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useProposals } from "@/lib/use-proposals";
 
 interface Proposal {
     id: string;
@@ -23,30 +24,26 @@ interface ChartEntry {
 }
 
 export default function ProposalsComplianceChart({ analysisId }: { analysisId: string }) {
-    const [data, setData] = useState<ChartEntry[]>([]);
+    const { proposals } = useProposals<Proposal>(analysisId);
 
-    useEffect(() => {
-        fetch(`/api/analyses/${analysisId}/proposals`)
-            .then((r) => r.json())
-            .then((proposals: Proposal[]) => {
-                const entries = proposals
-                    .filter((p) =>
-                        p.compliant_count != null ||
-                        p.non_compliant_count != null ||
-                        p.missing_info_count != null ||
-                        p.unprocessable_count != null
-                    )
-                    .map((p) => ({
-                        name: p.label || p.provider_name || p.id,
-                        Cumple: p.compliant_count ?? 0,
-                        "No cumple": p.non_compliant_count ?? 0,
-                        "Sin info": p.missing_info_count ?? 0,
-                        "No procesado": p.unprocessable_count ?? 0,
-                    }));
-                setData(entries);
-            })
-            .catch(() => { });
-    }, [analysisId]);
+    const data = useMemo<ChartEntry[]>(
+        () =>
+            (proposals ?? [])
+                .filter((p) =>
+                    p.compliant_count != null ||
+                    p.non_compliant_count != null ||
+                    p.missing_info_count != null ||
+                    p.unprocessable_count != null
+                )
+                .map((p) => ({
+                    name: p.label || p.provider_name || p.id,
+                    Cumple: p.compliant_count ?? 0,
+                    "No cumple": p.non_compliant_count ?? 0,
+                    "Sin info": p.missing_info_count ?? 0,
+                    "No procesado": p.unprocessable_count ?? 0,
+                })),
+        [proposals]
+    );
 
     if (data.length === 0) return null;
 

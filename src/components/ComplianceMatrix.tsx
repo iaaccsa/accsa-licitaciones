@@ -627,7 +627,7 @@ export default function ComplianceMatrix({
             return (
               <div
                 key={entry.id}
-                className={`bg-white rounded-xl border transition-all ${
+                className={`cv-auto bg-white rounded-xl border transition-all ${
                   isExpanded
                     ? "border-zinc-300 shadow-sm"
                     : "border-zinc-200 hover:border-zinc-300"

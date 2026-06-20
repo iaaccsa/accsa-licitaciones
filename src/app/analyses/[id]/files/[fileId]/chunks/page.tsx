@@ -378,7 +378,7 @@ export default function ChunksPage() {
                             <div
                                 key={chunk.id}
                                 ref={isLast ? lastChunkElementRef : undefined}
-                                className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm hover:border-blue-300 transition-colors relative"
+                                className="cv-auto bg-white rounded-xl border border-zinc-200 p-6 shadow-sm hover:border-blue-300 transition-colors relative"
                             >
                                 <div className="absolute top-4 right-4 bg-blue-100 text-blue-700 text-xs font-mono px-2 py-1 rounded">
                                     #{index + 1}

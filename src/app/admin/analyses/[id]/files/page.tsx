@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { FileText, Download, Eye, X, ChevronLeft, AlertCircle, MessageSquare, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import ReactMarkdown from "react-markdown";
+
+const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
 interface AnalysisFile {
     id: string;

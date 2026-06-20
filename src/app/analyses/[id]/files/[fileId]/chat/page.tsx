@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { ChevronLeft, MessageSquare, Send, Loader2 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
+
+const ReactMarkdown = dynamic(() => import("react-markdown"), { ssr: false });
 
 interface Message {
     role: "user" | "assistant";

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, FileText, Trophy } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useProposals } from "@/lib/use-proposals";
 
 interface Proposal {
     id: string;
@@ -23,31 +23,8 @@ interface ProposalsListProps {
 }
 
 export default function ProposalsList({ analysisId }: ProposalsListProps) {
-    const [proposals, setProposals] = useState<Proposal[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchProposals = async () => {
-            try {
-                const response = await fetch(`/api/analyses/${analysisId}/proposals`);
-                if (!response.ok) {
-                    throw new Error("Failed to fetch proposals");
-                }
-                const data = await response.json();
-                setProposals(data);
-            } catch (err) {
-                console.error(err);
-                setError("Error al cargar las propuestas.");
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        if (analysisId) {
-            fetchProposals();
-        }
-    }, [analysisId]);
+    const { proposals: data, error, isLoading } = useProposals<Proposal>(analysisId);
+    const proposals = data ?? [];
 
     if (isLoading) {
         return (
@@ -74,7 +51,7 @@ export default function ProposalsList({ analysisId }: ProposalsListProps) {
         return (
             <div className="p-4 bg-red-50 text-red-600 rounded-lg flex items-center gap-2">
                 <AlertCircle className="w-5 h-5" />
-                <span>{error}</span>
+                <span>Error al cargar las propuestas.</span>
             </div>
         );
     }

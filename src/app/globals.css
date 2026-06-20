@@ -124,3 +124,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Defer layout/paint for off-screen list rows. `auto` lets the browser
+   remember each row's real height after first render, so the placeholder
+   value only matters for not-yet-rendered rows. */
+@utility cv-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 500px;
+}
+
+/* Hardware-accelerate spinner rotation. lucide icons render as <svg>, and many
+   browsers don't GPU-accelerate transform animations applied directly to SVG.
+   Promoting spinning icons to their own compositor layer achieves what wrapping
+   each in a <div> would, without touching every call site. */
+svg.animate-spin {
+  will-change: transform;
+}

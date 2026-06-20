@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import useSWR from "swr";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign } from "lucide-react";
+import { fetcher, useProposals } from "@/lib/use-proposals";
 
 interface CostRow {
   cost: number;
@@ -38,25 +40,19 @@ function fmtUsd(n: number) {
 }
 
 export default function AnalysisCostCard({ analysisId }: { analysisId: string }) {
-  const [cost, setCost] = useState<CostSummary | null>(null);
-  const [names, setNames] = useState<Record<string, string>>({});
+  const { data: cost } = useSWR<CostSummary>(
+    `/api/analyses/${analysisId}/cost`,
+    fetcher
+  );
+  const { proposals } = useProposals<Proposal>(analysisId);
 
-  useEffect(() => {
-    fetch(`/api/analyses/${analysisId}/cost`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then(setCost)
-      .catch(() => {});
-    fetch(`/api/analyses/${analysisId}/proposals`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((ps: Proposal[]) => {
-        const m: Record<string, string> = {};
-        ps.forEach((p) => {
-          m[p.id] = p.label || p.provider_name || p.id.slice(0, 8);
-        });
-        setNames(m);
-      })
-      .catch(() => {});
-  }, [analysisId]);
+  const names = useMemo<Record<string, string>>(() => {
+    const m: Record<string, string> = {};
+    (proposals ?? []).forEach((p) => {
+      m[p.id] = p.label || p.provider_name || p.id.slice(0, 8);
+    });
+    return m;
+  }, [proposals]);
 
   if (!cost || cost.total_calls === 0) return null;
 

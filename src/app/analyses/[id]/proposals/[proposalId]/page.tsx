@@ -137,16 +137,18 @@ export default function ProposalDetailPage() {
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                // Fetch Analysis Details
-                const analysisRes = await fetch(`/api/analyses/${analysisId}`);
+                // Analysis details and proposals are independent: fetch in parallel.
+                // Note: Ideally we would have a direct endpoint for a single proposal,
+                // but for now we reuse the list endpoint and filter.
+                const [analysisRes, proposalsRes] = await Promise.all([
+                    fetch(`/api/analyses/${analysisId}`),
+                    fetch(`/api/analyses/${analysisId}/proposals`),
+                ]);
+
                 if (!analysisRes.ok) throw new Error("Error fetching analysis details");
                 const analysisData = await analysisRes.json();
                 setAnalysis(analysisData);
 
-                // Fetch Proposals and find specific one
-                // Note: Ideally we would have a direct endpoint for a single proposal,
-                // but for now we reuse the list endpoint and filter.
-                const proposalsRes = await fetch(`/api/analyses/${analysisId}/proposals`);
                 if (!proposalsRes.ok) throw new Error("Error fetching proposals");
                 const proposalsData = await proposalsRes.json();
 

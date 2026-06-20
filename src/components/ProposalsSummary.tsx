@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Trophy, Users } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useProposals } from "@/lib/use-proposals";
 
 interface Proposal {
     id: string;
@@ -37,16 +37,7 @@ interface Props {
 }
 
 export default function ProposalsSummary({ analysisId }: Props) {
-    const [proposals, setProposals] = useState<Proposal[] | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        fetch(`/api/analyses/${analysisId}/proposals`)
-            .then((r) => r.ok ? r.json() : Promise.reject())
-            .then((data) => setProposals(data))
-            .catch(() => setProposals([]))
-            .finally(() => setIsLoading(false));
-    }, [analysisId]);
+    const { proposals, isLoading } = useProposals<Proposal>(analysisId);
 
     if (isLoading) {
         return (

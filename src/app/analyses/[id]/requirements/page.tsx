@@ -323,7 +323,7 @@ export default function RequirementsPage() {
                             return (
                                 <div
                                     key={req.id}
-                                    className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm hover:shadow-md transition-all duration-200"
+                                    className="cv-auto bg-white p-6 rounded-xl border border-zinc-200 shadow-sm hover:shadow-md transition-all duration-200"
                                 >
                                     {/* Header: code + text */}
                                     <div className="flex flex-col md:flex-row gap-3 md:gap-6 mb-4">

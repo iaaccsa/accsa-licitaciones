@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   Loader2,
   CheckCircle,
@@ -20,8 +21,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProposalsList from "@/components/ProposalsList";
-import ProposalsComplianceChart from "@/components/ProposalsComplianceChart";
 import AnalysisCostCard from "@/components/AnalysisCostCard";
+
+const ProposalsComplianceChart = dynamic(
+  () => import("@/components/ProposalsComplianceChart"),
+  { ssr: false }
+);
 
 interface Analysis {
   id: string;
