@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Check } from "lucide-react";
+import { Check, AlertTriangle } from "lucide-react";
 
 interface Phase {
   id: string;
@@ -9,7 +9,7 @@ interface Phase {
   code: string;
   display_name: string;
   type: "processing" | "approval";
-  status: "pending" | "running" | "completed" | "failed";
+  status: "pending" | "running" | "completed" | "failed" | "warning";
   progress: number;
   order: number;
   started_at: string | null;
@@ -21,12 +21,13 @@ interface WorkflowPhasesProps {
   analysisId: string;
 }
 
-type UiStatus = "done" | "running" | "pending";
+type UiStatus = "done" | "running" | "pending" | "warning";
 
 const RING_R = 24;
 const CIRC = 2 * Math.PI * RING_R;
 
 function normalizeStatus(phase: Phase): UiStatus {
+  if (phase.status === "warning") return "warning";
   if (phase.status === "completed" || phase.progress >= 100) return "done";
   if (phase.status === "running") return "running";
   return "pending";
@@ -39,34 +40,44 @@ function clamp(n: number, min: number, max: number): number {
 function Step({ stage, index }: { stage: Phase; index: number }) {
   const uiStatus = normalizeStatus(stage);
   const progress = clamp(stage.progress ?? 0, 0, 100);
-  const dashOffset = uiStatus === "done" ? 0 : CIRC * (1 - progress / 100);
+  const dashOffset =
+    uiStatus === "done" || uiStatus === "warning"
+      ? 0
+      : CIRC * (1 - progress / 100);
 
   const statusLabel: Record<UiStatus, string> = {
     running: "En curso",
     pending: "Pendiente",
     done: "Completado",
+    warning: "Sin admisibles",
   };
 
   const ringStroke =
     uiStatus === "done"
       ? "stroke-green-500"
-      : uiStatus === "running"
-        ? "stroke-sky-400"
-        : "stroke-zinc-200";
+      : uiStatus === "warning"
+        ? "stroke-amber-400"
+        : uiStatus === "running"
+          ? "stroke-sky-400"
+          : "stroke-zinc-200";
 
   const nodeStyle =
     uiStatus === "done"
       ? "bg-green-600 text-white"
-      : uiStatus === "running"
-        ? "bg-white text-sky-500 ring-4 ring-sky-100"
-        : "bg-zinc-100 text-zinc-400";
+      : uiStatus === "warning"
+        ? "bg-amber-500 text-white"
+        : uiStatus === "running"
+          ? "bg-white text-sky-500 ring-4 ring-sky-100"
+          : "bg-zinc-100 text-zinc-400";
 
   const statusColor =
     uiStatus === "done"
       ? "text-green-600"
-      : uiStatus === "running"
-        ? "text-sky-500"
-        : "text-zinc-400";
+      : uiStatus === "warning"
+        ? "text-amber-600"
+        : uiStatus === "running"
+          ? "text-sky-500"
+          : "text-zinc-400";
 
   return (
     <div className="flex flex-col items-center text-center w-[140px] sm:w-[170px] shrink-0">
@@ -104,6 +115,8 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
         >
           {uiStatus === "done" ? (
             <Check className="w-5 h-5" strokeWidth={3} />
+          ) : uiStatus === "warning" ? (
+            <AlertTriangle className="w-5 h-5" strokeWidth={2.5} />
           ) : (
             index + 1
           )}
@@ -163,19 +176,22 @@ function Connector({
           className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out ${state === "done" ? "w-full bg-green-500" : "w-0"}`}
         />
       </div>
-      <div className="relative mt-2.5">
-        {state === "waiting" && (
-          <span className="absolute inset-0 rounded-full border-2 border-amber-400/40 animate-ping" />
-        )}
-        <div
-          className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${badgeStyle}`}
-        >
-          <span
-            className={`w-1.5 h-1.5 rounded-full bg-current ${state === "waiting" ? "animate-pulse" : ""}`}
-          />
-          <span>{label}</span>
+      {/* HOTL (auto-approval): hide the intermediate approval state entirely. */}
+      {!isAuto && (
+        <div className="relative mt-2.5">
+          {state === "waiting" && (
+            <span className="absolute inset-0 rounded-full border-2 border-amber-400/40 animate-ping" />
+          )}
+          <div
+            className={`inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap ${badgeStyle}`}
+          >
+            <span
+              className={`w-1.5 h-1.5 rounded-full bg-current ${state === "waiting" ? "animate-pulse" : ""}`}
+            />
+            <span>{label}</span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

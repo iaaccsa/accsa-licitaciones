@@ -22,6 +22,9 @@ import {
   Bot,
   Cpu,
   Gauge,
+  Pencil,
+  Check,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -117,6 +120,9 @@ export default function AnalysisDetailPage() {
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [isSavingName, setIsSavingName] = useState(false);
 
   const fetchData = useCallback(
     async (silent = false) => {
@@ -135,6 +141,34 @@ export default function AnalysisDetailPage() {
     },
     [id],
   );
+
+  const startEditName = useCallback(() => {
+    if (!analysis) return;
+    setNameDraft(analysis.user_assigned_name ?? "");
+    setIsEditingName(true);
+  }, [analysis]);
+
+  const handleSaveName = useCallback(async () => {
+    if (!analysis || isSavingName) return;
+    setIsSavingName(true);
+    try {
+      const res = await fetch(`/api/analyses/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_assigned_name: nameDraft }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      const updated = await res.json();
+      setAnalysis((prev) =>
+        prev ? { ...prev, user_assigned_name: updated.user_assigned_name ?? null } : prev,
+      );
+      setIsEditingName(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSavingName(false);
+    }
+  }, [analysis, id, nameDraft, isSavingName]);
 
   useEffect(() => {
     if (id) fetchData();
@@ -227,11 +261,58 @@ export default function AnalysisDetailPage() {
           {/* Top: title block + status / actions */}
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 space-y-1.5">
-              <h1 className="text-2xl font-bold text-zinc-900 truncate">
-                {analysis.user_assigned_name || analysis.generated_name || (
-                  <span className="font-mono uppercase">{analysis.slug}</span>
-                )}
-              </h1>
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    type="text"
+                    value={nameDraft}
+                    onChange={(e) => setNameDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveName();
+                      if (e.key === "Escape") setIsEditingName(false);
+                    }}
+                    maxLength={200}
+                    placeholder={analysis.generated_name || analysis.slug}
+                    className="flex-1 min-w-0 text-2xl font-bold text-zinc-900 bg-transparent border-b border-zinc-300 focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    onClick={handleSaveName}
+                    disabled={isSavingName}
+                    title="Guardar"
+                    className="shrink-0 text-zinc-500 hover:text-green-600 disabled:opacity-50"
+                  >
+                    {isSavingName ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <Check className="h-5 w-5" />
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setIsEditingName(false)}
+                    disabled={isSavingName}
+                    title="Cancelar"
+                    className="shrink-0 text-zinc-500 hover:text-red-600 disabled:opacity-50"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold text-zinc-900 truncate">
+                    {analysis.user_assigned_name || analysis.generated_name || (
+                      <span className="font-mono uppercase">{analysis.slug}</span>
+                    )}
+                  </h1>
+                  <button
+                    onClick={startEditName}
+                    title="Editar nombre"
+                    className="shrink-0 text-zinc-400 hover:text-zinc-700 transition-colors"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
               <div className="flex items-center gap-2 min-w-0">
                 <span className="font-mono uppercase text-xs bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded">
                   {analysis.slug}

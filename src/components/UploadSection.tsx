@@ -17,7 +17,6 @@ type AnalysisResult = Record<string, unknown> | null;
 
 export function UploadSection() {
   const [files, setFiles] = useState<File[]>([]);
-  const [analysisName, setAnalysisName] = useState("");
   const [hitl, setHitl] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [status, setStatus] = useState<UploadStatus>("idle");
@@ -88,7 +87,6 @@ export function UploadSection() {
         storage_path: fileName,
         hitl,
       };
-      if (analysisName.trim()) body.user_assigned_name = analysisName.trim();
 
       const response = await fetch("/api/analyses", {
         method: "POST",
@@ -103,7 +101,6 @@ export function UploadSection() {
         setStatus("success");
 
         setFiles([]);
-        setAnalysisName("");
         setHitl(false);
         setUploadKey((prev) => prev + 1);
       } else {
@@ -115,7 +112,7 @@ export function UploadSection() {
       setErrorMessage("Error de conexión. Inténtelo después.");
       setStatus("error");
     }
-  }, [files, hasMinFiles, analysisName, hitl]);
+  }, [files, hasMinFiles, hitl]);
 
   const handleAnalysisWithTransition = useCallback(() => {
     startTransition(async () => {
@@ -128,27 +125,6 @@ export function UploadSection() {
       <h2 className="text-lg font-medium text-zinc-700 mb-6">
         Subir Documentos
       </h2>
-
-      <div className="mb-6 grid grid-cols-1 gap-4">
-        <div>
-          <label
-            htmlFor="analysis-name"
-            className="block text-sm font-medium text-zinc-600 mb-2"
-          >
-            Nombre del análisis{" "}
-            <span className="text-zinc-400 font-normal">(opcional)</span>
-          </label>
-          <input
-            id="analysis-name"
-            type="text"
-            value={analysisName}
-            onChange={(e) => setAnalysisName(e.target.value)}
-            maxLength={200}
-            placeholder="Ej: Licitación Obra Pública 2026"
-            className="w-full px-4 py-2.5 rounded-lg border border-zinc-200 text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-          />
-        </div>
-      </div>
 
       <div className="mb-6">
         <span className="block text-sm font-medium text-zinc-600 mb-2">

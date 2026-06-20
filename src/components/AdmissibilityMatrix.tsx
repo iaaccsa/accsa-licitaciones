@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { AdmissibilityResult, ComplianceVerdict, Confidence } from "@/lib/admissibility-types";
+import { isExclusionary } from "@/lib/admissibility-types";
 
 // ---- Config ----
 
@@ -435,6 +436,15 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                 <Badge variant="outline" className="text-xs font-normal">
                                                     {req.domain}
                                                 </Badge>
+                                                {isExclusionary(req.roles) && (
+                                                    <Badge
+                                                        variant="outline"
+                                                        title="El incumplimiento de este requisito rechaza la propuesta"
+                                                        className="text-xs font-normal bg-amber-50 text-amber-700 border-amber-200"
+                                                    >
+                                                        Excluyente
+                                                    </Badge>
+                                                )}
                                                 {req.roles.map((r) => (
                                                     <Badge key={r} variant="secondary" className="text-xs font-normal">
                                                         {ROLE_LABELS[r] ?? r}

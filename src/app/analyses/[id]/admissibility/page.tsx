@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft, ShieldCheck, AlertCircle, ChevronDown, ChevronUp, CheckCircle2, CheckCheck, XCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AdmissibilityRequirement, AdmissibilityRequirementCitation } from "@/lib/admissibility-types";
+import { isExclusionary } from "@/lib/admissibility-types";
 
 const LIMIT = 30;
 
@@ -292,6 +293,14 @@ export default function AdmissibilityRequirementsPage() {
 
                                 {/* Tag row 1: roles + domain + temporal_scope */}
                                 <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    {isExclusionary(req.roles) && (
+                                        <span
+                                            title="El incumplimiento de este requisito rechaza la propuesta"
+                                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100"
+                                        >
+                                            Excluyente
+                                        </span>
+                                    )}
                                     {req.roles.map(role => (
                                         <span
                                             key={role}

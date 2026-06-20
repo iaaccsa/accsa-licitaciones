@@ -13,6 +13,13 @@ export type ComplianceVerdict =
 
 export type AdmissibilityRole = "admisibilidad_obligatoria" | "admisibilidad_subsanable";
 
+// Only mandatory admissibility requirements are exclusionary: failing one rejects the proposal.
+export const EXCLUSIONARY_ROLE = "admisibilidad_obligatoria";
+
+export function isExclusionary(roles: string[]): boolean {
+    return roles.includes(EXCLUSIONARY_ROLE);
+}
+
 export interface AdmissibilityRequirementCitation {
     chunk_id: string;
     page_number: number | null;
