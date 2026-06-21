@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import {
-    ChevronDown, ChevronRight, CheckCircle2, XCircle, AlertTriangle,
-    MinusCircle, HelpCircle, ShieldAlert, Loader2, AlertCircle,
+    ChevronDown, ChevronRight, CheckCircle2, XCircle,
+    HelpCircle, Loader2, AlertCircle,
     FileText, Filter, Search, X, ShieldCheck, ClipboardEdit, Save,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -12,36 +12,17 @@ import { isExclusionary } from "@/lib/admissibility-types";
 
 // ---- Config ----
 
+// Admissibility verdicts are binary (Feature 08): cumple / no_cumple only.
 const VERDICT_CONFIG: Record<ComplianceVerdict, { label: string; color: string; icon: React.ReactNode }> = {
     cumple: {
         label: "Cumple",
         color: "bg-emerald-50 text-emerald-700 border-emerald-200",
         icon: <CheckCircle2 className="w-3.5 h-3.5" />,
     },
-    cumple_parcial: {
-        label: "Cumple Parcial",
-        color: "bg-amber-50 text-amber-700 border-amber-200",
-        icon: <AlertTriangle className="w-3.5 h-3.5" />,
-    },
     no_cumple: {
         label: "No Cumple",
         color: "bg-red-50 text-red-700 border-red-200",
         icon: <XCircle className="w-3.5 h-3.5" />,
-    },
-    no_evidencia: {
-        label: "Sin Evidencia",
-        color: "bg-zinc-100 text-zinc-600 border-zinc-200",
-        icon: <MinusCircle className="w-3.5 h-3.5" />,
-    },
-    no_aplica: {
-        label: "No Aplica",
-        color: "bg-slate-50 text-slate-600 border-slate-200",
-        icon: <MinusCircle className="w-3.5 h-3.5" />,
-    },
-    requiere_verificacion_manual: {
-        label: "Verificación Manual",
-        color: "bg-orange-50 text-orange-700 border-orange-200",
-        icon: <ShieldAlert className="w-3.5 h-3.5" />,
     },
 };
 
@@ -82,7 +63,7 @@ interface Filters {
 // ---- Helpers ----
 
 function VerdictBadge({ verdict }: { verdict: ComplianceVerdict }) {
-    const cfg = VERDICT_CONFIG[verdict] ?? VERDICT_CONFIG.no_evidencia;
+    const cfg = VERDICT_CONFIG[verdict] ?? VERDICT_CONFIG.no_cumple;
     return (
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border ${cfg.color}`}>
             {cfg.icon}

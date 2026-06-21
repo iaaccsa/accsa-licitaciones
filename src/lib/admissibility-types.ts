@@ -3,13 +3,9 @@
 
 export type Confidence = "alta" | "media" | "baja" | "muy_baja";
 
-export type ComplianceVerdict =
-    | "cumple"
-    | "cumple_parcial"
-    | "no_cumple"
-    | "no_evidencia"
-    | "no_aplica"
-    | "requiere_verificacion_manual";
+// Admissibility verdicts are binary (Feature 08). The general compliance matrix
+// keeps its own multi-value verdict type in ComplianceMatrix.tsx.
+export type ComplianceVerdict = "cumple" | "no_cumple";
 
 export type AdmissibilityRole = "admisibilidad_obligatoria" | "admisibilidad_subsanable";
 
