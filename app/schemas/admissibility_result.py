@@ -5,13 +5,13 @@ from uuid import UUID
 from enum import Enum
 
 
-class ComplianceVerdict(str, Enum):
-    cumple                       = "cumple"
-    cumple_parcial               = "cumple_parcial"
-    no_cumple                    = "no_cumple"
-    no_evidencia                 = "no_evidencia"
-    no_aplica                    = "no_aplica"
-    requiere_verificacion_manual = "requiere_verificacion_manual"
+class AdmissibilityVerdict(str, Enum):
+    # Admissibility verdicts are binary (Feature 08). The matcher collapses any
+    # non-cumple verdict to no_cumple before persisting; the DB enforces it via
+    # admissibility_results_verdict_binary_check. The general compliance matrix
+    # keeps its own 6-value enum.
+    cumple    = "cumple"
+    no_cumple = "no_cumple"
 
 
 Confidence = Literal["alta", "media", "baja", "muy_baja"]
@@ -28,7 +28,7 @@ class ComplianceCitation(BaseModel):
 
 class AdmissibilityResultEntryCreate(BaseModel):
     requirement_id:               UUID
-    verdict:                      ComplianceVerdict
+    verdict:                      AdmissibilityVerdict
     confidence:                   Confidence               = "media"
     reasoning:                    Optional[str]            = None
     missing_elements:             List[str]                = Field(default_factory=list)
@@ -54,7 +54,7 @@ class AdmissibilityResultEntryRead(BaseModel):
     analysis_id:                  UUID
     requirement_id:               UUID
     proposal_id:                  UUID
-    verdict:                      ComplianceVerdict
+    verdict:                      AdmissibilityVerdict
     confidence:                   str
     reasoning:                    Optional[str]      = None
     missing_elements:             List[Any]          = []
@@ -87,7 +87,7 @@ class AdmissibilityResultEntryReadWithRequirement(AdmissibilityResultEntryRead):
 
 
 class AdmissibilityResultEntryPatch(BaseModel):
-    verdict:                      Optional[ComplianceVerdict] = None
+    verdict:                      Optional[AdmissibilityVerdict] = None
     confidence:                   Optional[Confidence]        = None
     reasoning:                    Optional[str]               = None
     missing_elements:             Optional[List[str]]         = None

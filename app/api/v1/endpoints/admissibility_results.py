@@ -12,7 +12,7 @@ from app.schemas.admissibility_result import (
     BulkReplaceMatrixResponse,
     DeleteByProposalResponse,
     BatchInsertResponse,
-    ComplianceVerdict,
+    AdmissibilityVerdict,
 )
 from app.services.admissibility_result_service import admissibility_result_service
 
@@ -40,7 +40,7 @@ def bulk_replace(items: List[AdmissibilityResultEntryFlatCreate]):
 @router.get("/by-proposal/{proposal_id}", response_model=List[AdmissibilityResultEntryReadWithRequirement])
 def get_by_proposal(
     proposal_id: UUID,
-    verdict: Optional[List[ComplianceVerdict]] = Query(default=None),
+    verdict: Optional[List[AdmissibilityVerdict]] = Query(default=None),
     role: Optional[List[str]]                  = Query(default=None),
     domain: Optional[str]                      = Query(default=None),
     is_verified: Optional[bool]                = Query(default=None),
