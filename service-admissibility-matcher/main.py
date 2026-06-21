@@ -6,9 +6,10 @@ Given an ANALYSIS_ID and a PROPOSAL_ID, matches each admissibility requirement
 writes the verdicts into admissibility_results. Runs for ALL proposals (the
 admissibility-gate reads these results to decide admitida/rechazada).
 
-For each requirement, produces a verdict (cumple / cumple_parcial / no_cumple /
-no_evidencia / no_aplica / requiere_verificacion_manual) with reasoning,
-citations, and a manual-verification flag when applicable.
+For each requirement, the LLM/auto-filters produce a verdict, but admissibility is
+binary (Feature 08): any non-cumple verdict is collapsed to no_cumple before being
+persisted to admissibility_results (see append_admissibility_results). Reasoning,
+citations, and the manual-verification flag are kept as-is.
 
 Required environment variables:
   - GOOGLE_API_KEY
@@ -626,11 +627,16 @@ def append_admissibility_results(analysis_id: str, proposal_id: str, entries: Li
     # is processed. Using /bulk here would replace on every call and keep only the last entry.
     if not entries:
         return
+    # Feature 08: admissibility verdict is binary. Collapse any non-cumple verdict
+    # (cumple_parcial, no_evidencia, no_aplica, requiere_verificacion_manual) to
+    # no_cumple before persisting. Single defensive chokepoint covering every entry
+    # source (auto-filters, LLM, degrade). manual_verification_required is kept as-is.
     payload = [
         {
             "analysis_id": analysis_id,
             "proposal_id": proposal_id,
             **e.model_dump(),
+            "verdict": "cumple" if e.verdict == "cumple" else "no_cumple",
         }
         for e in entries
     ]
