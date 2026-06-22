@@ -11,7 +11,14 @@ credential = ClientSecretCredential(
 )
 
 azure_container_apps_client = ContainerAppsAPIClient(
-    credential, settings.AZURE_SUBSCRIPTION_ID
+    credential,
+    settings.AZURE_SUBSCRIPTION_ID,
+    # ARM throttles management requests (HTTP 429). Fan-out steps launch jobs in
+    # bursts, so give the azure-core retry policy more headroom; it honors the
+    # Retry-After header on 429 automatically.
+    retry_total=10,
+    retry_status=10,
+    retry_backoff_max=120,
 )
 
 def verify_azure_connection():
