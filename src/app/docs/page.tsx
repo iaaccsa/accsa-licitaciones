@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit, Network, Braces, Coins } from "lucide-react";
+import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit, Network, Braces, Coins, ScrollText } from "lucide-react";
 
 const docs = [
     {
@@ -49,6 +49,12 @@ const docs = [
         icon: Braces,
         title: "Resumen del extractor de requisitos",
         description: "Significado de cada campo del JSON de métricas que emite service-requirement-extractor al finalizar.",
+    },
+    {
+        href: "/docs/audit-events",
+        icon: ScrollText,
+        title: "Eventos de auditoría",
+        description: "Acciones de usuario que la API registra en la tabla audit_logs, agrupadas por categoría con el recurso afectado y los datos que guardan.",
     },
 ];
 
