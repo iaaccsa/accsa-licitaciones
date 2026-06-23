@@ -28,6 +28,16 @@ class ServicePromptRepository(BaseRepository):
         )
         return response.data if response else None
 
+    def update_by_key(self, key: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        record = {**payload, "updated_at": "now()"}
+        response = (
+            supabase.table(self.table_name)
+            .update(record)
+            .eq("key", key)
+            .execute()
+        )
+        return response.data[0]
+
     def upsert(self, key: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         record = {**payload, "key": key, "updated_at": "now()"}
         response = (

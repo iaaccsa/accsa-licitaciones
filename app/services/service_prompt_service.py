@@ -41,7 +41,7 @@ class ServicePromptService:
         if missing:
             raise PlaceholderValidationError(missing)
 
-        updated = self.repository.upsert(key, {"body": body, "updated_by": updated_by})
+        updated = self.repository.update_by_key(key, {"body": body, "updated_by": updated_by})
         return ServicePromptRead(**updated)
 
     def seed_prompt(self, key: str, payload: ServicePromptUpdate) -> ServicePromptRead:
