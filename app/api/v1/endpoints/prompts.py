@@ -50,7 +50,13 @@ def update_prompt(key: str, payload: ServicePromptUpdate, actor: Actor = Depends
         audit_service.log(
             "prompt.update", actor,
             resource_type="service_prompt",
-            details={"key": key},
+            resource_id=result.id,
+            details={
+                "key": result.key,
+                "service": result.service,
+                "filename": result.filename,
+                "body_length": len(result.body),
+            },
         )
         return result
     except PromptNotFoundError as e:
