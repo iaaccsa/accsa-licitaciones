@@ -1,3 +1,3 @@
 # Changelog Keeper Memory
 
-- [project_versioning.md](project_versioning.md) — Versioning state: no tags/releases yet, all changes under [Unreleased], Spanish language, infinitive verbs
+- [project_versioning.md](project_versioning.md) — UNIFIED changelog lives in THIS repo (CHANGELOG.md), single shared version (2.0.0, 2026-06-24), structure version->project->type; api/services changelogs removed

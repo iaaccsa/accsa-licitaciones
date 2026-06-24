@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "fs";
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const { version: appVersion } = JSON.parse(
+    readFileSync("./package.json", "utf8"),
+);
 
 const securityHeaders = [
     {
@@ -26,6 +30,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+    env: {
+        NEXT_PUBLIC_APP_VERSION: appVersion,
+    },
     turbopack: {
         root: __dirname,
     },
