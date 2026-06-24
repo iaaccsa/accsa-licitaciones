@@ -58,6 +58,7 @@ COPY service-files-converter-mistral/requirements.txt .
 RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 # Copy shared global modules
+COPY VERSION .
 COPY global/supabase_logger.py .
 COPY global/ai_usage_logger.py .
 

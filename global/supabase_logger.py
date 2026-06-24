@@ -7,6 +7,7 @@ and manage workflow steps in Supabase.
 """
 
 import os
+import pathlib
 import logging
 
 import requests
@@ -19,6 +20,25 @@ from urllib3.util.retry import Retry
 API_BASE_URL = os.environ.get("API_BASE_URL", "")
 API_KEY = os.environ.get("API_KEY", "")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH", "/api/v1/events/")
+
+
+def _read_system_version() -> str:
+    """Read the unified system version baked into the image.
+
+    In the container the VERSION file sits next to this module (Dockerfile
+    COPYs both into /app). In local dev it lives at the services repo root,
+    one level up from global/. Falls back to env var then "dev".
+    """
+    here = pathlib.Path(__file__).resolve().parent
+    for candidate in (here / "VERSION", here.parent / "VERSION"):
+        try:
+            return candidate.read_text().strip()
+        except OSError:
+            continue
+    return os.environ.get("SYSTEM_VERSION", "dev")
+
+
+SYSTEM_VERSION = _read_system_version()
 
 
 def make_session() -> requests.Session:
@@ -67,7 +87,7 @@ def log_event(
         "analysis_id": analysis_id,
         "level": level,
         "message": message,
-        "source": source,
+        "source": f"{source} v{SYSTEM_VERSION}",
     }
     if details:
         payload["details"] = details
