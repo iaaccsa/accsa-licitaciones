@@ -1,17 +1,20 @@
 ---
 name: Changelog conventions
-description: Versioning pattern, changelog format, and release history for accsa-licitaciones-api
+description: Unified changelog + shared versioning for accsa-licitaciones-api (the changelog file lives in the sibling UI repo)
 type: project
 ---
 
-CHANGELOG.md initialized on 2026-03-25 with version 1.0.0 covering all commits from project inception (2026-02-19) to 2026-03-24.
+The Licitaciones system uses a SINGLE unified changelog and a SINGLE shared version across the three projects (ui, api, services). Unified on 2026-06-24 starting at 2.0.0. This repo NO LONGER has its own CHANGELOG.md (removed 2026-06-24).
 
-**Why:** Project reached stable state with full pipeline orchestration, all endpoints, and integrations (Supabase, Qdrant, Azure).
+**Changelog location:** `../accsa-licitaciones-ui/CHANGELOG.md` (the UI repo, a sibling directory of this repo). Edit that file; do not create a local CHANGELOG.md here.
+
+**Structure:** version -> project -> type. API changes go under `[Unreleased]` -> `### accsa-licitaciones-api` -> `#### Added/Changed/Fixed/Removed/...`.
+
+**Current version:** 2.0.0 (2026-06-24), unified (was 1.1.0 before unification; the pre-2.0.0 API history is preserved verbatim under the `## Historial previo` block in the unified file).
 
 **How to apply:**
-- Current version: 1.1.0 (2026-03-31)
-- Tag v1.0.0 exists; v1.1.0 tag pending creation
+- Language: Spanish, verbs in infinitive ("Agregar", "Corregir", "Implementar"). Group related commits. No comparison-links footer.
+- Version source of truth in this repo: `VERSION` constant in `app/core/config.py`, exposed at `GET /version`. Mirrors the shared system version.
+- On release: bump the shared version in all three repos and tag `v<version>` here.
 - Remote: git@github-accsa:iaaccsa/accsa-licitaciones-api.git
-- Categories used most: Added (bulk of features), Changed (refactors), Fixed (bug corrections)
-- Language: Spanish, verbs in infinitive ("Agregar", "Corregir", "Implementar")
-- User preference: NO "Co-Authored-By: Claude Sonnet" in commits
+- User preference: NO "Co-Authored-By: Claude ..." in commits.

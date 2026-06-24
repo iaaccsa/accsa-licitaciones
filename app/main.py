@@ -55,6 +55,13 @@ async def root():
     """
     return {"message": "Hola desde el API del Asistente de Licitaciones!"}
 
+@app.get("/version", summary="System version")
+async def version():
+    """
+    Returns the unified system version.
+    """
+    return {"name": "accsa-licitaciones-api", "version": settings.VERSION}
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     from fastapi.responses import Response
