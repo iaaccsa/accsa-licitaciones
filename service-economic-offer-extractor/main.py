@@ -42,7 +42,7 @@ from google.genai import types as genai_types
 from openai import OpenAI
 from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient
-from supabase_logger import log_event, make_session, setup_logger
+from supabase_logger import SYSTEM_VERSION, log_event, make_session, setup_logger
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -63,7 +63,7 @@ ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 PROPOSAL_ID = os.environ.get("PROPOSAL_ID")
 
 SERVICE_NAME = "service-economic-offer-extractor"
-SERVICE_VERSION = "1.0.0"
+SERVICE_VERSION = SYSTEM_VERSION
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 EMBEDDING_MODEL = "text-embedding-3-small"
 GEMINI_MODEL = "gemini-2.5-flash"
