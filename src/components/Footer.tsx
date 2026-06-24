@@ -28,12 +28,6 @@ export function Footer() {
                 </div>
                 <div className="flex items-center gap-4">
                     <Link
-                        href="/tech"
-                        className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
-                    >
-                        Stack tecnológico
-                    </Link>
-                    <Link
                         href="/terms"
                         className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
                     >

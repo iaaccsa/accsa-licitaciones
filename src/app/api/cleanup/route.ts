@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { apiError, safeLogError } from "@/lib/api-utils";
 import { getAuditHeaders } from "@/lib/supabase/audit-headers";
+import { requireAdmin } from "@/lib/supabase/require-admin";
 
 export async function POST(request: Request) {
+    if (!(await requireAdmin())) {
+        return apiError("forbidden", 403);
+    }
     try {
         const env = getEnv();
         const url = `${env.API_BASE_URL}/api/v1/cleanup/`;

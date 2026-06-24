@@ -15,6 +15,9 @@ const sections = [
             { tech: "Tailwind CSS 4", use: "Utilidades CSS para todo el diseño visual. Paleta base zinc. Configurado con @import en globals.css." },
             { tech: "@tailwindcss/typography", use: "Plugin que activa las clases prose para renderizar respuestas del chat en Markdown con tipografía legible." },
             { tech: "shadcn/ui + Radix UI", use: "Componentes accesibles sin estilos propios (Button, Badge, Card, Separator, Skeleton). Primitiva react-slot para composición." },
+            { tech: "@supabase/ssr + supabase-js", use: "Cliente de Supabase Auth y gestión de sesión server-side (cookies). Resuelve el usuario y protege rutas en API Routes y Server Components." },
+            { tech: "SWR", use: "Fetching y caché de datos en el cliente con revalidación automática. Usado para listar y refrescar análisis, propuestas y resultados." },
+            { tech: "Zod", use: "Validación y parseo tipado de los cuerpos de request en las API Routes antes de reenviar al backend." },
             { tech: "class-variance-authority + clsx + tailwind-merge", use: "Utilidades para definir variantes de componentes de forma tipada y combinar clases Tailwind sin conflictos." },
             { tech: "Recharts 3", use: "Gráficos de cumplimiento de propuestas (RadarChart / BarChart) en la vista de análisis." },
             { tech: "JSZip 3", use: "Empaqueta los PDFs cargados por el usuario en un archivo ZIP en el cliente antes de enviarlos al backend. Cargado de forma lazy." },
@@ -50,10 +53,10 @@ const sections = [
         subtitle: "LLMs, embeddings y procesamiento documental",
         rows: [
             { tech: "OpenAI — text-embedding-3-small", use: "Generación de embeddings vectoriales (1536 dimensiones) para indexar chunks de documentos en Qdrant y para la búsqueda semántica en el chat RAG." },
-            { tech: "Google Gemini — gemini-2.5-pro / gemini-2.0-pro-preview", use: "Modelo de lenguaje principal. Usado para extracción de requisitos, verificación de cumplimiento con salida JSON estructurada via schema Pydantic, generación de resúmenes en Markdown y respuestas conversacionales del chat en base al contexto recuperado de Qdrant." },
-            { tech: "Cohere — rerank-multilingual-v3.0", use: "Reranking semántico de los resultados de búsqueda vectorial. Mejora la precisión seleccionando los chunks más relevantes antes de pasarlos al LLM." },
-            { tech: "LlamaParse (LlamaCloud)", use: "Conversión asíncrona de PDFs a Markdown estructurado. Preserva tablas, headers y formato del documento original para mejorar la calidad del chunking posterior." },
+            { tech: "OpenAI y Google Gemini (multi-proveedor)", use: "Modelos de lenguaje seleccionables por el usuario. Cada tarea corre en un nivel (bajo / medio / alto) con modelo primario y fallback cruzado entre proveedores (ver Niveles de modelo y precios). Usados para extracción de requisitos, verificación de cumplimiento con salida JSON estructurada via schema Pydantic, generación de resúmenes en Markdown y respuestas del chat RAG." },
+            { tech: "Mistral — OCR", use: "Conversión de PDFs a Markdown estructurado (service-files-converter-mistral). Preserva tablas, headers y formato del documento original para mejorar la calidad del chunking posterior." },
             { tech: "langchain-text-splitters", use: "Chunking semántico de documentos Markdown: división por headers (MarkdownHeaderTextSplitter) seguida de división recursiva (RecursiveCharacterTextSplitter)." },
+            { tech: "pyHanko", use: "Validación y extracción de firmas digitales de los PDFs (service-digital-sig-extractor): detecta firmas, valida cadenas de certificados y reporta integridad del documento." },
         ],
     },
     {
@@ -77,12 +80,11 @@ const sections = [
         title: "Infraestructura y Despliegue",
         subtitle: "Azure, CI/CD y orquestación",
         rows: [
-            { tech: "Azure Container Apps Jobs", use: "Runtime de cada microservicio del pipeline. Contenedores efímeros disparados on-demand desde n8n. Cada etapa del procesamiento (extracción, conversión, indexado, etc.) corre como un job aislado." },
+            { tech: "Azure Container Apps Jobs", use: "Runtime de cada microservicio del pipeline. Contenedores efímeros disparados on-demand por la API (job_orchestrator_service) via la Azure Management API. Cada etapa del procesamiento (extracción, conversión, indexado, etc.) corre como un job aislado, encadenado mediante callbacks al endpoint /jobs/callback." },
             { tech: "Azure Container Registry (ACR)", use: "Registro privado de imágenes Docker. Cada microservicio publica su imagen en accsalicitaciones.azurecr.io/services/<nombre>:latest." },
             { tech: "Azure Pipelines", use: "CI/CD. Build y push paralelo de todas las imágenes al ACR en cada push a main, usando una estrategia matrix." },
             { tech: "Azure Identity", use: "Autenticación con Azure via ClientSecretCredential (service principal) para lanzar y gestionar los Container Apps Jobs desde la API." },
             { tech: "Docker", use: "Empaquetado de cada microservicio en contenedores python:3.12-slim compilados para linux/amd64." },
-            { tech: "n8n", use: "Orquestador de workflows. Recibe webhooks de Supabase al crearse un análisis y dispara secuencialmente los Container Apps Jobs via la Azure Management API." },
         ],
     },
     {
@@ -93,6 +95,7 @@ const sections = [
         title: "Seguridad",
         subtitle: "Autenticación y control de acceso",
         rows: [
+            { tech: "Supabase Auth", use: "Autenticación de usuarios del frontend (acceso por invitación). Las sesiones se gestionan server-side con @supabase/ssr; los roles se guardan en app_metadata y controlan el acceso a cada análisis (los no propietarios reciben 404)." },
             { tech: "API Key — X-API-Key", use: "Mecanismo de autenticación de la API backend. Todas las rutas bajo /api/v1 requieren el header X-API-Key. El frontend actúa como proxy server-side: el navegador nunca ve la clave, que se almacena exclusivamente en variables de entorno del servidor Next.js." },
         ],
     },
@@ -105,7 +108,7 @@ const sections = [
         subtitle: "Entornos de ejecución",
         rows: [
             { tech: "Python 3.12", use: "Lenguaje principal del backend API y de todos los microservicios del pipeline de procesamiento." },
-            { tech: "Node.js / npm", use: "Runtime del frontend Next.js. Gestión de dependencias con package.json." },
+            { tech: "Node.js / pnpm", use: "Runtime del frontend Next.js. Gestión de dependencias con package.json y pnpm-lock.yaml." },
             { tech: "pip + requirements.txt", use: "Gestión de dependencias Python por microservicio, sin monorepo manager." },
         ],
     },

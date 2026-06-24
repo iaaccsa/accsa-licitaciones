@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit, Network, Braces, Coins, ScrollText } from "lucide-react";
+import { BookOpen, Layers, Scale, GitBranch, ScanText, BrainCircuit, Network, Braces, Coins, ScrollText, Code2 } from "lucide-react";
 
 const docs = [
     {
@@ -55,6 +55,12 @@ const docs = [
         icon: ScrollText,
         title: "Eventos de auditoría",
         description: "Acciones de usuario que la API registra en la tabla audit_logs, agrupadas por categoría con el recurso afectado y los datos que guardan.",
+    },
+    {
+        href: "/docs/tech",
+        icon: Code2,
+        title: "Stack tecnológico",
+        description: "Tecnologías utilizadas en los tres repositorios del proyecto: frontend, backend API y microservicios.",
     },
 ];
 

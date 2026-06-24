@@ -80,17 +80,17 @@ export function AnalysisCard({ analysis, basePath = "/analyses" }: { analysis: A
 }
 
 function StatusIcon({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {
-    if (status === "processing") return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
-    if (status === "pending") return <Clock className="w-5 h-5 text-zinc-400" />;
-    if (status === "awaiting_approval") return <PauseCircle className="w-5 h-5 text-amber-500" />;
+    if (status === "processing") return <Loader2 className="w-5 h-5 shrink-0 text-blue-500 animate-spin" />;
+    if (status === "pending") return <Clock className="w-5 h-5 shrink-0 text-zinc-400" />;
+    if (status === "awaiting_approval") return <PauseCircle className="w-5 h-5 shrink-0 text-amber-500" />;
     if (status === "ready") {
         return isSuccess ? (
-            <CheckCircle className="w-5 h-5 text-green-500" />
+            <CheckCircle className="w-5 h-5 shrink-0 text-green-500" />
         ) : (
-            <XCircle className="w-5 h-5 text-red-500" />
+            <XCircle className="w-5 h-5 shrink-0 text-red-500" />
         );
     }
-    return <AlertCircle className="w-5 h-5 text-gray-400" />;
+    return <AlertCircle className="w-5 h-5 shrink-0 text-gray-400" />;
 }
 
 function StatusBadge({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {

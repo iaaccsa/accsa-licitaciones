@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Settings } from "lucide-react";
+import { ClipboardCheck, Settings } from "lucide-react";
 import { AnalysisList } from "@/components/AnalysisList";
-import CleanupButton from "@/components/CleanupButton";
 
 export default function AdminPage() {
     return (
@@ -14,13 +13,19 @@ export default function AdminPage() {
                 </h1>
                 <div className="flex items-center gap-2">
                     <Link
+                        href="/admin/review"
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-colors shadow-sm"
+                    >
+                        <ClipboardCheck className="w-4 h-4" />
+                        Revisión
+                    </Link>
+                    <Link
                         href="/admin/config"
                         className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 rounded-lg text-sm font-medium text-zinc-700 hover:bg-zinc-50 hover:border-zinc-300 transition-colors shadow-sm"
                     >
                         <Settings className="w-4 h-4" />
                         Configuración
                     </Link>
-                    <CleanupButton />
                 </div>
             </div>
             <AnalysisList basePath="/admin/analyses" scope="all" />

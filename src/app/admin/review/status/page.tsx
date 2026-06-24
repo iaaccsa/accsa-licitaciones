@@ -1,4 +1,5 @@
 import { Database, Server, Box, Cloud } from "lucide-react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 
 async function getHealth(path: string) {
     const baseUrl = process.env.API_BASE_URL;
@@ -44,15 +45,12 @@ export default async function AdminStatusPage() {
     ]);
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-8">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-zinc-900 font-serif italic mb-2">
-                    Estado del Sistema
-                </h1>
-                <p className="text-zinc-500">
-                    Estado de los servicios y diagnósticos.
-                </p>
-            </div>
+        <div className="max-w-5xl mx-auto px-4 py-8">
+            <AdminPageHeader
+                backHref="/admin/review"
+                title="Estado del Sistema"
+                description="Estado de los servicios y diagnósticos."
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* API Health Card */}

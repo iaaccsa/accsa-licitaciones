@@ -1,19 +1,16 @@
 import Link from "next/link";
-import { Bell, Cpu, FileText, UserCheck, Users } from "lucide-react";
+import { Activity, ScrollText } from "lucide-react";
 
 const cards = [
-    { href: "/admin/config/llm-config", label: "Configuración LLM", description: "Modelos y parámetros de los servicios de IA.", icon: Cpu },
-    { href: "/admin/config/prompts", label: "Prompts", description: "Editar los prompts de los microservicios.", icon: FileText },
-    { href: "/admin/config/human-loop", label: "Validación humana", description: "Puntos de control humano (HITL) del pipeline.", icon: UserCheck },
-    { href: "/admin/config/notifications", label: "Notificaciones", description: "Correos y avisos del sistema.", icon: Bell },
-    { href: "/admin/config/users", label: "Usuarios", description: "Invitar usuarios y administrar roles.", icon: Users },
+    { href: "/admin/review/status", label: "Estado del Sistema", description: "Salud de backend, Supabase, Qdrant y Azure.", icon: Activity },
+    { href: "/admin/review/audit", label: "Auditoría", description: "Registro de acciones de los usuarios.", icon: ScrollText },
 ] as const;
 
-export default function AdminConfigPage() {
+export default function AdminReviewPage() {
     return (
         <div className="max-w-7xl mx-auto py-8 px-4">
             <h1 className="text-2xl font-semibold text-zinc-800 font-serif italic mb-6">
-                Configuración
+                Revisión
             </h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {cards.map(({ href, label, description, icon: Icon }) => (

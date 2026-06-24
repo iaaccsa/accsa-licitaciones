@@ -131,8 +131,8 @@ export default function AuditEventsPage() {
                     <code className="font-mono text-xs bg-zinc-100 px-1 rounded">success</code> o{" "}
                     <code className="font-mono text-xs bg-zinc-100 px-1 rounded">failure</code>) y la fecha. Consultables
                     en{" "}
-                    <Link href="/admin/config/audit" className="text-blue-600 hover:underline">
-                        Admin → Auditoría
+                    <Link href="/admin/review/audit" className="text-blue-600 hover:underline">
+                        Admin → Revisión → Auditoría
                     </Link>
                     .
                 </p>

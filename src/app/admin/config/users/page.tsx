@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { UserPlus, RefreshCw, Trash2 } from "lucide-react";
 
 type Role = "administrator" | "user";
@@ -175,10 +176,8 @@ export default function AdminUsersPage() {
     }
 
     return (
-        <div className="max-w-3xl mx-auto py-8 px-4 space-y-6">
-            <h1 className="text-2xl font-semibold text-zinc-800 font-serif italic">
-                Gestión de usuarios
-            </h1>
+        <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+            <AdminPageHeader backHref="/admin/config" title="Gestión de usuarios" />
 
             <Card>
                 <CardHeader>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollText } from "lucide-react";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 
 interface AuditLog {
     id: string;
@@ -107,11 +107,8 @@ export default function AdminAuditPage() {
     }
 
     return (
-        <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
-            <h1 className="text-2xl font-semibold text-zinc-800 font-serif italic flex items-center gap-2">
-                <ScrollText className="w-5 h-5" />
-                Auditoría
-            </h1>
+        <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+            <AdminPageHeader backHref="/admin/review" title="Auditoría" />
 
             <Card>
                 <CardHeader>

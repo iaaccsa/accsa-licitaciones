@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AdminPageHeader } from "@/components/AdminPageHeader";
 import {
     ArrowLeft,
     CheckCircle,
@@ -126,22 +126,11 @@ export default function PromptsPage() {
 
     return (
         <div className="max-w-5xl mx-auto py-8 px-4">
-            <div className="mb-6">
-                <Link
-                    href="/admin"
-                    className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 transition-colors mb-4"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Volver
-                </Link>
-                <h1 className="text-2xl font-semibold text-zinc-800 font-serif italic">
-                    Prompts de los servicios
-                </h1>
-                <p className="text-sm text-zinc-500 mt-1">
-                    Editá el texto de los prompts. Los cambios aplican en la próxima
-                    corrida del pipeline; los análisis en curso no se ven afectados.
-                </p>
-            </div>
+            <AdminPageHeader
+                backHref="/admin/config"
+                title="Prompts de los servicios"
+                description="Editá el texto de los prompts. Los cambios aplican en la próxima corrida del pipeline; los análisis en curso no se ven afectados."
+            />
 
             {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
