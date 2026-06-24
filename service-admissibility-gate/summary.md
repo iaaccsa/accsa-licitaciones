@@ -23,6 +23,7 @@ El usuario puede sobreescribir el veredicto via HITL (`PATCH .../admissibility-o
 8. Notifica finalizacion via callback.
 
 ## Entrada
+
 - **ANALYSIS_ID** (runtime): UUID del analisis.
 - **PROPOSAL_ID** (runtime): UUID de la propuesta a evaluar.
 - Requiere: `matching_status` en `{matrix_ready, completed}` (la matriz debe existir).
