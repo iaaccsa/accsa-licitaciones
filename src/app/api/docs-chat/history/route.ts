@@ -20,8 +20,9 @@ export async function POST(request: Request) {
             return apiError("Invalid request body", 400);
         }
 
+        const baseUrl = env.CHATBOT_DOCS_URL.replace(/\/+$/, "");
         const response = await fetch(
-            `${env.CHATBOT_DOCS_URL}/conversations/${parsed.data.conversation_id}`,
+            `${baseUrl}/conversations/${parsed.data.conversation_id}`,
             { headers: { "X-API-Key": env.CHATBOT_DOCS_API_KEY } },
         );
 

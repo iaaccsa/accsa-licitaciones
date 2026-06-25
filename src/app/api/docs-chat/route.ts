@@ -27,7 +27,8 @@ export async function POST(request: Request) {
         const { data } = await supabase.auth.getClaims();
         const userId = data?.claims?.sub;
 
-        const response = await fetch(`${env.CHATBOT_DOCS_URL}/chat`, {
+        const baseUrl = env.CHATBOT_DOCS_URL.replace(/\/+$/, "");
+        const response = await fetch(`${baseUrl}/chat`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
