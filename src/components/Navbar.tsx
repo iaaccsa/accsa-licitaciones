@@ -3,11 +3,12 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ListChecks, ShieldCheck, BookOpen } from "lucide-react";
+import { ListChecks, ShieldCheck, BookOpen, LifeBuoy } from "lucide-react";
 import { LogoutButton } from "@/components/LogoutButton";
 
 const navItems = [
     { href: "/", label: "Análisis", icon: ListChecks },
+    { href: "/ayuda", label: "Ayuda", icon: LifeBuoy },
     { href: "/docs", label: "Docs", icon: BookOpen },
     { href: "/admin", label: "Admin", icon: ShieldCheck },
 ] as const;

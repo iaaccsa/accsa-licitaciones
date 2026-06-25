@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sync:graph": "node scripts/sync-nerd-graph.mjs"
+    "sync:graph": "node scripts/sync-nerd-graph.mjs",
+    "reindex:help": "node --env-file=.env.local scripts/reindex-help.mjs"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
@@ -18,6 +19,7 @@
     "@vercel/analytics": "^1.6.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "gray-matter": "^4.0.3",
     "jszip": "^3.10.1",
     "lucide-react": "^0.563.0",
     "next": "16.2.6",
@@ -25,6 +27,8 @@
     "react-dom": "19.2.3",
     "react-markdown": "^10.1.0",
     "recharts": "^3.7.0",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "server-only": "0.0.1",
     "swr": "^2.4.1",
     "tailwind-merge": "^3.4.0",
