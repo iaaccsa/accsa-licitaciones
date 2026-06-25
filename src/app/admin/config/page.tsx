@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Bell, Cpu, FileText, UserCheck, Users } from "lucide-react";
+import { Bell, Cpu, FileText, KeyRound, UserCheck, Users } from "lucide-react";
 
 const cards = [
     { href: "/admin/config/llm-config", label: "Configuración LLM", description: "Modelos y parámetros de los servicios de IA.", icon: Cpu },
+    { href: "/admin/config/infra-config", label: "Credenciales de servicios", description: "Claves de proveedores (Qdrant, OpenAI, Google, Mistral).", icon: KeyRound },
     { href: "/admin/config/prompts", label: "Prompts", description: "Editar los prompts de los microservicios.", icon: FileText },
     { href: "/admin/config/human-loop", label: "Validación humana", description: "Puntos de control humano (HITL) del pipeline.", icon: UserCheck },
     { href: "/admin/config/notifications", label: "Notificaciones", description: "Correos y avisos del sistema.", icon: Bell },
