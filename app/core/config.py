@@ -29,6 +29,12 @@ class Settings(BaseSettings):
 
     API_TENDER_CLASSIFICATIONS_PATH: str = "/api/v1/tender-classifications/"
 
+    # Control plane injected into service jobs at launch (host config, not in DB).
+    # Public URL of this API that jobs use for callbacks (never localhost in prod).
+    SERVICE_API_BASE_URL: str = "https://accsa-licitaciones-api.vercel.app"
+    # Public Supabase Storage base for artifacts. Empty -> derived from SUPABASE_URL.
+    SUPABASE_ARTIFACTS_BASE_URL: str = ""
+
     JOB_TIMEOUT_MINUTES: int = 65
     JOB_MONITOR_INTERVAL_SECONDS: int = 60
 

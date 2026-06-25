@@ -17,9 +17,33 @@ from app.services.workflow_phase_service import workflow_phase_service
 from app.repositories.workflow_step_repository import workflow_step_repository
 from app.services.email_service import email_service
 from app.services.app_settings_service import app_settings_service
+from app.services.infra_config_service import infra_config_service
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
+
+# Control-plane API route paths injected into every service job. Single source of
+# truth; must stay aligned with the prefixes mounted in app/api/v1/router.py.
+SERVICE_API_PATHS = {
+    "API_EVENTS_PATH": "/api/v1/events/",
+    "API_JOBS_CALLBACK": "/api/v1/jobs/callback",
+    "API_ANALYSES_PATH": "/api/v1/analyses/",
+    "API_PROCESSED_FILES_PATH": "/api/v1/processed-files/",
+    "API_ORIGINAL_FILES_PATH": "/api/v1/original-files/",
+    "API_PROPOSALS_PATH": "/api/v1/proposals/",
+    "API_PROPOSAL_ECONOMIC_OFFERS_PATH": "/api/v1/proposal-economic-offers/",
+    "API_TENDERS_PATH": "/api/v1/tenders/",
+    "API_TENDER_CLASSIFICATIONS_PATH": "/api/v1/tender-classifications/",
+    "API_ANALYSIS_REQUIREMENTS_PATH": "/api/v1/analysis-requirements/",
+    "API_COMPLIANCE_MATRIX_PATH": "/api/v1/analysis-compliance-matrix/",
+    "API_ADMISSIBILITY_REQUIREMENTS_PATH": "/api/v1/admissibility-requirements/",
+    "API_ADMISSIBILITY_RESULTS_PATH": "/api/v1/admissibility-results/",
+    # Read by shared global modules baked into every image (prompt_loader,
+    # ai_usage_logger). Values match the code defaults; injected for single source.
+    "API_PROMPTS_PATH": "/api/v1/prompts",
+    "API_PRICING_PATH": "/api/v1/ai-pricing/",
+    "API_USAGE_PATH": "/api/v1/ai-usage/",
+}
 
 
 class JobOrchestratorService:
@@ -35,6 +59,24 @@ class JobOrchestratorService:
             raise ValueError("No root jobs found in the jobs tree configuration.")
 
         first_job = root_jobs[0]
+
+        # Pre-flight: every provider credential must be present BEFORE launching any
+        # job, so a misconfiguration fails clean without spending compute.
+        provider = infra_config_service.get_runtime_env()
+        missing = [k for k, v in provider.items() if not v]
+        if missing:
+            self._log_event(
+                analysis_id, "error",
+                f"Falta configuración de servicios: {', '.join(missing)}. "
+                f"Configurar las credenciales en /admin antes de ejecutar análisis.",
+                {"missing_provider_keys": missing},
+            )
+            try:
+                workflow_step_service.fail_step_by_service(str(analysis_id), first_job)
+            except Exception as step_error:
+                logger.error(f"Failed to fail workflow step for {first_job}: {step_error}")
+            analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+            raise ValueError(f"Provider configuration missing: {missing}")
 
         try:
             # 1. Complete the initial workflow step (parent)
@@ -300,6 +342,39 @@ class JobOrchestratorService:
 
         return launched
 
+    def _control_plane_env(self) -> dict:
+        """Host config injected into every job (not stored in DB): Settings + route paths."""
+        artifacts_base = settings.SUPABASE_ARTIFACTS_BASE_URL or (
+            f"{settings.SUPABASE_URL}/storage/v1/object/public/artifacts/"
+        )
+        env = {
+            "API_BASE_URL": settings.SERVICE_API_BASE_URL,
+            "API_KEY": settings.BACKEND_API_KEY,
+            "SUPABASE_URL": settings.SUPABASE_URL,
+            "SUPABASE_SERVICE_KEY": settings.SUPABASE_KEY,
+            "SUPABASE_ARTIFACTS_BASE_URL": artifacts_base,
+        }
+        env.update(SERVICE_API_PATHS)
+        return env
+
+    def build_service_env(
+        self,
+        analysis_id: UUID,
+        proposal_id: Optional[UUID] = None,
+        file_id: Optional[UUID] = None,
+    ) -> List[dict]:
+        """Assemble the full runtime environment for a job: dynamic (per execution) +
+        control plane (Settings + paths) + provider plane (Vault, cached)."""
+        env = {
+            "ANALYSIS_ID": str(analysis_id),
+            "PROPOSAL_ID": str(proposal_id) if proposal_id else "",
+        }
+        if file_id:
+            env["FILE_ID"] = str(file_id)
+        env.update(self._control_plane_env())
+        env.update(infra_config_service.get_runtime_env())
+        return [{"name": k, "value": v} for k, v in env.items()]
+
     def _launch_job(
         self,
         service_name: str,
@@ -311,14 +386,8 @@ class JobOrchestratorService:
         """Launch a single Azure Container Apps Job and create a record in the jobs table."""
         image = f"{self.registry}/{service_name}:latest"
 
-        env_vars = [
-            {"name": "ANALYSIS_ID", "value": str(analysis_id)},
-            {"name": "PROPOSAL_ID", "value": str(proposal_id) if proposal_id else ""},
-        ]
-
         effective_file_id = file_id or original_file_id
-        if effective_file_id:
-            env_vars.append({"name": "FILE_ID", "value": str(effective_file_id)})
+        env_vars = self.build_service_env(analysis_id, proposal_id, effective_file_id)
 
         template = {
             "containers": [
