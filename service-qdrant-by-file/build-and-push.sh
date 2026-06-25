@@ -15,13 +15,6 @@ REGISTRY="accsalicitaciones.azurecr.io"
 IMAGE="$REGISTRY/$APP_PATH/$APP_NAME:$APP_TAG"
 
 if [ "$ENV_TYPE" = "local" ]; then
-  if [ -f ../.env.local ]; then
-    set -a
-    source ../.env.local
-    set +a
-  else
-    echo "Warning: ../.env.local file not found"
-  fi
   BUILD_ARGS="--no-cache"
 else
   # azure
@@ -31,17 +24,6 @@ fi
 echo "Building Docker image for $APP_NAME targeting $ENV_TYPE..."
 
 docker build $BUILD_ARGS --platform linux/amd64 \
-  --build-arg API_BASE_URL="$API_BASE_URL" \
-  --build-arg API_KEY="$API_KEY" \
-  --build-arg API_EVENTS_PATH="$API_EVENTS_PATH" \
-  --build-arg API_ANALYSES_PATH="$API_ANALYSES_PATH" \
-  --build-arg API_PROCESSED_FILES_PATH="$API_PROCESSED_FILES_PATH" \
-  --build-arg API_JOBS_CALLBACK="$API_JOBS_CALLBACK" \
-  --build-arg SUPABASE_URL="$SUPABASE_URL" \
-  --build-arg SUPABASE_SERVICE_KEY="$SUPABASE_SERVICE_KEY" \
-  --build-arg OPENAI_API_KEY="$OPENAI_API_KEY" \
-  --build-arg QDRANT_URL="$QDRANT_URL" \
-  --build-arg QDRANT_API_KEY="$QDRANT_API_KEY" \
   -t "$IMAGE" -f Dockerfile ..
 
 if [ "$ENV_TYPE" = "azure" ]; then
