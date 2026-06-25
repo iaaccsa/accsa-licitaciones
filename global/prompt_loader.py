@@ -2,9 +2,9 @@ import os
 
 import requests
 
-API_BASE_URL = os.environ.get("API_BASE_URL", "")
-API_KEY = os.environ.get("API_KEY", "")
-API_PROMPTS_PATH = os.environ.get("API_PROMPTS_PATH", "/api/v1/prompts")
+API_BASE_URL = os.environ["API_BASE_URL"]
+API_KEY = os.environ["API_KEY"]
+API_PROMPTS_PATH = os.environ["API_PROMPTS_PATH"]
 
 
 def load_prompt(key: str) -> str:

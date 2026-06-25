@@ -17,9 +17,9 @@ from urllib3.util.retry import Retry
 # ---------------------------------------------------------------------------
 # API Configuration for events
 # ---------------------------------------------------------------------------
-API_BASE_URL = os.environ.get("API_BASE_URL", "")
-API_KEY = os.environ.get("API_KEY", "")
-API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH", "/api/v1/events/")
+API_BASE_URL = os.environ["API_BASE_URL"]
+API_KEY = os.environ["API_KEY"]
+API_EVENTS_PATH = os.environ["API_EVENTS_PATH"]
 
 
 def _read_system_version() -> str:

@@ -21,10 +21,10 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-API_BASE_URL = os.environ.get("API_BASE_URL", "")
-API_KEY = os.environ.get("API_KEY", "")
-API_PRICING_PATH = os.environ.get("API_PRICING_PATH", "/api/v1/ai-pricing/")
-API_USAGE_PATH = os.environ.get("API_USAGE_PATH", "/api/v1/ai-usage/")
+API_BASE_URL = os.environ["API_BASE_URL"]
+API_KEY = os.environ["API_KEY"]
+API_PRICING_PATH = os.environ["API_PRICING_PATH"]
+API_USAGE_PATH = os.environ["API_USAGE_PATH"]
 
 
 def _make_session() -> requests.Session:

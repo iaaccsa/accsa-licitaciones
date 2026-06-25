@@ -56,7 +56,7 @@ API_PROPOSALS_PATH              = os.environ.get("API_PROPOSALS_PATH")
 API_ANALYSIS_REQUIREMENTS_PATH  = os.environ.get("API_ANALYSIS_REQUIREMENTS_PATH")
 API_COMPLIANCE_MATRIX_PATH      = os.environ.get("API_COMPLIANCE_MATRIX_PATH")
 API_JOBS_CALLBACK               = os.environ.get("API_JOBS_CALLBACK")
-API_ANALYSES_PATH               = os.environ.get("API_ANALYSES_PATH", "/api/v1/analyses")
+API_ANALYSES_PATH               = os.environ.get("API_ANALYSES_PATH")
 ANALYSIS_ID                     = os.environ.get("ANALYSIS_ID")
 PROPOSAL_ID                     = os.environ.get("PROPOSAL_ID")
 
@@ -232,6 +232,7 @@ def validate_env():
             ("API_BASE_URL",                   API_BASE_URL),
             ("API_KEY",                        API_KEY),
             ("API_EVENTS_PATH",                API_EVENTS_PATH),
+            ("API_ANALYSES_PATH",              API_ANALYSES_PATH),
             ("API_PROPOSALS_PATH",             API_PROPOSALS_PATH),
             ("API_ANALYSIS_REQUIREMENTS_PATH", API_ANALYSIS_REQUIREMENTS_PATH),
             ("API_COMPLIANCE_MATRIX_PATH",     API_COMPLIANCE_MATRIX_PATH),

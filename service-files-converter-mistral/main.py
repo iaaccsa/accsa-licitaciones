@@ -44,8 +44,8 @@ API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ORIGINAL_FILES_PATH = os.environ.get("API_ORIGINAL_FILES_PATH")
 API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
-API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH", "/api/v1/analyses/")
-API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH", "/api/v1/proposals/")
+API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
+API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
@@ -105,6 +105,10 @@ def validate_env():
         missing.append("API_ORIGINAL_FILES_PATH")
     if not API_PROCESSED_FILES_PATH:
         missing.append("API_PROCESSED_FILES_PATH")
+    if not API_ANALYSES_PATH:
+        missing.append("API_ANALYSES_PATH")
+    if not API_PROPOSALS_PATH:
+        missing.append("API_PROPOSALS_PATH")
     if not API_JOBS_CALLBACK:
         missing.append("API_JOBS_CALLBACK")
     if not ANALYSIS_ID:
