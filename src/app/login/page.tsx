@@ -95,6 +95,10 @@ function LoginForm() {
                             {loading ? "Verificando..." : "Ingresar"}
                         </Button>
                     </form>
+                    <p className="mt-6 border-t border-zinc-200 pt-4 text-center text-xs text-zinc-500">
+                        ¿No tiene una cuenta? El acceso al sistema es solo por
+                        invitación. Las cuentas nuevas las crea un administrador.
+                    </p>
                 </CardContent>
             </Card>
         </div>
