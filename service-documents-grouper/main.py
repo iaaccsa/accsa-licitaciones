@@ -226,7 +226,9 @@ def group_proposal_files(gemini_client: genai.Client, openai_client: OpenAI, pro
             },
         })
 
-    prompt = GROUPING_PROMPT.format(files_json=json.dumps(
+    # Prompts (user-editable, DB-stored) contain literal JSON examples; use
+    # replace() so those braces are not parsed as str.format() fields.
+    prompt = GROUPING_PROMPT.replace("{files_json}", json.dumps(
         files_for_prompt, ensure_ascii=False, indent=2))
 
     result = call_llm_json(gemini_client, openai_client, prompt)
@@ -352,7 +354,7 @@ def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, fil
             },
         })
 
-    prompt = NAMING_PROMPT.format(files_json=json.dumps(
+    prompt = NAMING_PROMPT.replace("{files_json}", json.dumps(
         files_for_prompt, ensure_ascii=False, indent=2))
 
     result = call_llm_json(gemini_client, openai_client, prompt)

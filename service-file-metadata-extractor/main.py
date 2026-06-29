@@ -217,7 +217,9 @@ def _extract_with(gemini_client: genai.Client, openai_client: OpenAI, prompt: st
 
 def extract_metadata(gemini_client: genai.Client, openai_client: OpenAI, text: str, max_retries: int = 3) -> dict:
     """Extract structured metadata. Retries transient errors on the primary model, then falls back to the other provider."""
-    prompt = EXTRACTION_PROMPT.format(text=text)
+    # Prompt is user-editable and DB-stored; use replace() so any literal JSON
+    # braces are not parsed as str.format() fields.
+    prompt = EXTRACTION_PROMPT.replace("{text}", text)
 
     for attempt in range(max_retries):
         try:

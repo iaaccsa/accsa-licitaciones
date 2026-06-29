@@ -191,14 +191,20 @@ def classify_file(gemini_client: genai.Client, openai_client: OpenAI, file_recor
     """Classify a file based on its metadata. Returns category string."""
     metadata = file_record.get("metadata") or {}
 
-    prompt = CLASSIFICATION_PROMPT.format(
-        file_name=file_record.get("file_name", "unknown"),
-        document_type=metadata.get("document_type", "unknown"),
-        company_name=metadata.get("company_name", "unknown"),
-        company_role=metadata.get("company_role", "unknown"),
-        document_purpose=metadata.get("document_purpose", "unknown"),
-        summary=metadata.get("summary", "unknown"),
-    )
+    # The prompt body (user-editable, stored in the DB) contains a literal JSON
+    # example {"category": ...}; str.format() would read those braces as a
+    # replacement field and raise KeyError. Substitute only known placeholders.
+    fields = {
+        "file_name": file_record.get("file_name", "unknown"),
+        "document_type": metadata.get("document_type", "unknown"),
+        "company_name": metadata.get("company_name", "unknown"),
+        "company_role": metadata.get("company_role", "unknown"),
+        "document_purpose": metadata.get("document_purpose", "unknown"),
+        "summary": metadata.get("summary", "unknown"),
+    }
+    prompt = CLASSIFICATION_PROMPT
+    for key, value in fields.items():
+        prompt = prompt.replace("{" + key + "}", str(value))
 
     result = call_llm_json(gemini_client, openai_client, prompt)
     return result["category"]
