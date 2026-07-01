@@ -97,6 +97,8 @@ export default function AdminAuditPage() {
     }, [action, analysisId, dateFrom, dateTo, offset]);
 
     useEffect(() => {
+        // Filter-driven reload with offset paging; SWR rewrite pending, needs live QA.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         load();
     }, [load]);
 

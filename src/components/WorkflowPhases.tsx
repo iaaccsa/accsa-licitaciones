@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useMemo } from "react";
+import useSWR from "swr";
+import { fetcher } from "@/lib/swr";
 import { Check, AlertTriangle } from "lucide-react";
 
 interface Phase {
@@ -201,32 +203,11 @@ function FragmentKey({ children }: { children: React.ReactNode }) {
 }
 
 export default function WorkflowPhases({ analysisId }: WorkflowPhasesProps) {
-  const [phases, setPhases] = useState<Phase[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const fetchPhases = useCallback(
-    async (silent = false) => {
-      if (!silent) setIsLoading(true);
-      try {
-        const res = await fetch(`/api/analyses/${analysisId}/phases`);
-        if (res.ok) {
-          const data: Phase[] = await res.json();
-          setPhases(data);
-        }
-      } catch (err) {
-        console.error("Error fetching phases:", err);
-      } finally {
-        if (!silent) setIsLoading(false);
-      }
-    },
-    [analysisId],
+  const { data: phases = [], isLoading } = useSWR<Phase[]>(
+    analysisId ? `/api/analyses/${analysisId}/phases` : null,
+    fetcher,
+    { refreshInterval: 10000, revalidateOnFocus: false },
   );
-
-  useEffect(() => {
-    fetchPhases();
-    const timer = setInterval(() => fetchPhases(true), 10000);
-    return () => clearInterval(timer);
-  }, [fetchPhases]);
 
   const sorted = useMemo(
     () =>

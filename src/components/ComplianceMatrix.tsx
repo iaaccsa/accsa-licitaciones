@@ -297,12 +297,15 @@ export default function ComplianceMatrix({
     [analysisId, proposalId, buildParams],
   );
 
-  // Reset to page 1 when filters (server-side) change
+  // Reset to page 1 when filters (server-side) change.
+  // Page-discovery pagination; useSWRInfinite rewrite pending, needs live QA.
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setCurrentPage(1);
     setTotalPages(1);
     setLastPageConfirmed(false);
     fetchPage(1);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [fetchPage]);
 
   // Client-side filtering

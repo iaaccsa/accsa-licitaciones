@@ -161,6 +161,8 @@ export default function ChunksPage() {
 
     useEffect(() => {
         if (analysis && file && chunks.length === 0) {
+            // Cursor-based load-more; SWR (useSWRInfinite) rewrite pending, needs live QA.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             loadChunks("");
         }
     }, [analysis, file, chunks.length, loadChunks]);

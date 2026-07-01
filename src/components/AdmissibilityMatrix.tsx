@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
+import useSWR from "swr";
+import { fetcher } from "@/lib/swr";
 import {
     ChevronDown, ChevronRight, CheckCircle2, XCircle,
     HelpCircle, Loader2, AlertCircle,
@@ -86,9 +88,6 @@ interface AdmissibilityMatrixProps {
 }
 
 export default function AdmissibilityMatrix({ analysisId, proposalId }: AdmissibilityMatrixProps) {
-    const [entries, setEntries] = useState<AdmissibilityResult[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
     const [filters, setFilters] = useState<Filters>({
         verdicts: [],
@@ -104,28 +103,17 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState<string | null>(null);
 
-    const fetchEntries = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const p = new URLSearchParams();
-            filters.roles.forEach((r) => p.append("role", r));
-            p.set("limit", String(LIMIT));
-            p.set("offset", "0");
-            const res = await fetch(`/api/analyses/${analysisId}/proposals/${proposalId}/admissibility-results?${p.toString()}`);
-            if (!res.ok) throw new Error(`Error ${res.status}`);
-            const data: AdmissibilityResult[] = await res.json();
-            setEntries(Array.isArray(data) ? data : []);
-        } catch {
-            setError("No se pudo cargar la matriz de admisibilidad.");
-        } finally {
-            setLoading(false);
-        }
-    }, [analysisId, proposalId, filters.roles]);
-
-    useEffect(() => {
-        fetchEntries();
-    }, [fetchEntries]);
+    const listParams = new URLSearchParams();
+    filters.roles.forEach((r) => listParams.append("role", r));
+    listParams.set("limit", String(LIMIT));
+    listParams.set("offset", "0");
+    const { data, isLoading: loading, error: swrError, mutate } = useSWR<AdmissibilityResult[]>(
+        `/api/analyses/${analysisId}/proposals/${proposalId}/admissibility-results?${listParams.toString()}`,
+        fetcher,
+        { revalidateOnFocus: false },
+    );
+    const entries = Array.isArray(data) ? data : [];
+    const error = swrError ? "No se pudo cargar la matriz de admisibilidad." : null;
 
     // Client-side filtering
     const visible = entries.filter((e) => {
@@ -144,7 +132,10 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
     });
 
     function patchLocal(entryId: string, updated: Partial<AdmissibilityResult>) {
-        setEntries((prev) => prev.map((e) => (e.id === entryId ? { ...e, ...updated } : e)));
+        mutate(
+            (prev) => (prev ?? []).map((e) => (e.id === entryId ? { ...e, ...updated } : e)),
+            { revalidate: false },
+        );
     }
 
     function startEdit(entry: AdmissibilityResult) {

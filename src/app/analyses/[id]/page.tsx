@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
+import useSWR from "swr";
+import { fetcher } from "@/lib/swr";
 import { useParams } from "next/navigation";
 import {
   Loader2,
@@ -111,9 +113,18 @@ export default function AnalysisDetailPage() {
   const params = useParams();
   const id = params.id as string;
 
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: analysis, isLoading, error, mutate } = useSWR<Analysis>(
+    id ? `/api/analyses/${id}` : null,
+    fetcher,
+    {
+      refreshInterval: (latest) =>
+        latest &&
+        ["pending", "processing", "awaiting_approval"].includes(latest.status)
+          ? 10000
+          : 0,
+      revalidateOnFocus: false,
+    },
+  );
   const [isCancelling, setIsCancelling] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
   const [cancelMessage, setCancelMessage] = useState<{
@@ -123,24 +134,6 @@ export default function AnalysisDetailPage() {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
-
-  const fetchData = useCallback(
-    async (silent = false) => {
-      if (!silent) setIsLoading(true);
-      try {
-        const analysisRes = await fetch(`/api/analyses/${id}`);
-        if (!analysisRes.ok) throw new Error("Error fetching analysis details");
-        const analysisData = await analysisRes.json();
-        setAnalysis(analysisData);
-      } catch (err) {
-        console.error(err);
-        if (!silent) setError("No se pudo cargar la información del análisis.");
-      } finally {
-        if (!silent) setIsLoading(false);
-      }
-    },
-    [id],
-  );
 
   const startEditName = useCallback(() => {
     if (!analysis) return;
@@ -159,32 +152,19 @@ export default function AnalysisDetailPage() {
       });
       if (!res.ok) throw new Error("save failed");
       const updated = await res.json();
-      setAnalysis((prev) =>
-        prev ? { ...prev, user_assigned_name: updated.user_assigned_name ?? null } : prev,
-      );
+      if (analysis) {
+        mutate(
+          { ...analysis, user_assigned_name: updated.user_assigned_name ?? null },
+          { revalidate: false },
+        );
+      }
       setIsEditingName(false);
     } catch (err) {
       console.error(err);
     } finally {
       setIsSavingName(false);
     }
-  }, [analysis, id, nameDraft, isSavingName]);
-
-  useEffect(() => {
-    if (id) fetchData();
-  }, [id, fetchData]);
-
-  // Poll while analysis is active
-  useEffect(() => {
-    if (!analysis) return;
-    const isActive = ["pending", "processing", "awaiting_approval"].includes(
-      analysis.status,
-    );
-    if (!isActive) return;
-
-    const timer = setInterval(() => fetchData(true), 10000);
-    return () => clearInterval(timer);
-  }, [analysis?.status, fetchData]);
+  }, [analysis, id, nameDraft, isSavingName, mutate]);
 
   const handleCancel = useCallback(async () => {
     if (!analysis || isCancelling) return;
@@ -197,7 +177,7 @@ export default function AnalysisDetailPage() {
     try {
       const res = await fetch(`/api/analyses/${id}/cancel`, { method: "POST" });
       if (res.ok) {
-        setAnalysis((prev) => (prev ? { ...prev, status: "cancelled" } : prev));
+        if (analysis) mutate({ ...analysis, status: "cancelled" }, { revalidate: false });
         setCancelMessage({
           type: "success",
           text: "Análisis cancelado correctamente.",
@@ -216,7 +196,7 @@ export default function AnalysisDetailPage() {
     } finally {
       setIsCancelling(false);
     }
-  }, [id, analysis, isCancelling]);
+  }, [id, analysis, isCancelling, mutate]);
 
   const handleResume = useCallback(async () => {
     if (!analysis || isResuming) return;
@@ -224,25 +204,28 @@ export default function AnalysisDetailPage() {
     try {
       const res = await fetch(`/api/analyses/${id}/resume`, { method: "POST" });
       if (res.ok) {
-        setAnalysis((prev) =>
-          prev
-            ? { ...prev, status: "processing", paused_at_service: null }
-            : prev,
-        );
+        if (analysis) {
+          mutate(
+            { ...analysis, status: "processing", paused_at_service: null },
+            { revalidate: false },
+          );
+        }
       }
     } catch (err) {
       console.error("Error resuming analysis:", err);
     } finally {
       setIsResuming(false);
     }
-  }, [id, analysis, isResuming]);
+  }, [id, analysis, isResuming, mutate]);
 
-  if (error) {
+  if (error && !analysis) {
     return (
       <div className="max-w-5xl mx-auto py-12 px-4 text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
         <h2 className="text-xl font-semibold text-zinc-900 mb-2">Error</h2>
-        <p className="text-zinc-600">{error}</p>
+        <p className="text-zinc-600">
+          No se pudo cargar la información del análisis.
+        </p>
       </div>
     );
   }

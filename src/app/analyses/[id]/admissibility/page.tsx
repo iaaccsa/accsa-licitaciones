@@ -95,6 +95,9 @@ export default function AdmissibilityRequirementsPage() {
     const offsetRef = useRef(0);
     const hasMoreRef = useRef(true);
 
+    // Infinite-scroll fetch; deps intentionally minimal (refs hold cursor state).
+    // useSWRInfinite migration pending, needs live QA.
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     const fetchPage = useCallback(async (off: number, append: boolean) => {
         if (isFetchingRef.current) return;
         isFetchingRef.current = true;
@@ -127,7 +130,7 @@ export default function AdmissibilityRequirementsPage() {
                 }
             }, 50);
         }
-    }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [id]);
 
     const handleVerifyToggle = useCallback(async (req: AdmissibilityRequirement) => {
         const newValue = !req.is_verified;

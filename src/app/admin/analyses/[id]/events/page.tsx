@@ -85,6 +85,8 @@ export default function AnalysisEventsPage() {
         };
 
         if (id) {
+            // Initial load-more page; SWR (useSWRInfinite) rewrite pending, needs live QA.
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             fetchEvents(0, true);
             fetchAnalysis();
         }

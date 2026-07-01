@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React from "react";
+import useSWR from "swr";
+import { fetcher, postFetcher } from "@/lib/swr";
 import { useParams, useRouter } from "next/navigation";
 import { AlertCircle, ChevronLeft, GitBranch, CheckCircle2, XCircle, Clock, Settings, Layers, Play, Pause } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,68 +49,34 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-function formatDateTime(iso: string | null) {
-    if (!iso) return <span className="text-zinc-300">—</span>;
-    return new Date(iso).toLocaleString("es-ES", {
-        day: "2-digit", month: "2-digit", year: "2-digit",
-        hour: "2-digit", minute: "2-digit",
-    });
-}
-
 export default function AnalysisFlowPage() {
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
 
-    const [steps, setSteps] = useState<WorkflowStep[]>([]);
-    const [phases, setPhases] = useState<Phase[]>([]);
-    const [analysis, setAnalysis] = useState<{ slug: string; status: string } | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [phasesLoading, setPhasesLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const { data: stepsData, error: stepsError, isLoading } = useSWR<WorkflowStep[]>(
+        id ? [`/api/analyses/${id}/workflow`, { uuid: id }] : null,
+        postFetcher,
+        { revalidateOnFocus: false },
+    );
+    const steps = Array.isArray(stepsData) ? stepsData : [];
 
-    const fetchSteps = useCallback(async () => {
-        try {
-            const res = await fetch(`/api/analyses/${id}/workflow`, {
-                method: "POST",
-                body: JSON.stringify({ uuid: id }),
-            });
-            if (!res.ok) throw new Error("Error fetching workflow");
-            const data = await res.json();
-            setSteps(Array.isArray(data) ? data : []);
-        } catch (err) {
-            console.error(err);
-            setError("No se pudo cargar el flujo de proceso.");
-        } finally {
-            setIsLoading(false);
-        }
-    }, [id]);
+    const { data: phasesData, isLoading: phasesLoading } = useSWR<Phase[]>(
+        id ? `/api/analyses/${id}/phases` : null,
+        fetcher,
+        { revalidateOnFocus: false },
+    );
+    const phases = Array.isArray(phasesData)
+        ? [...phasesData].sort((a, b) => a.order - b.order)
+        : [];
 
-    const fetchPhases = useCallback(async () => {
-        try {
-            const res = await fetch(`/api/analyses/${id}/phases`);
-            if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data)) {
-                    setPhases(data.sort((a: Phase, b: Phase) => a.order - b.order));
-                }
-            }
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setPhasesLoading(false);
-        }
-    }, [id]);
+    const { data: analysis } = useSWR<{ slug: string; status: string }>(
+        id ? `/api/analyses/${id}` : null,
+        fetcher,
+        { revalidateOnFocus: false },
+    );
 
-    useEffect(() => {
-        if (!id) return;
-        fetchSteps();
-        fetchPhases();
-        fetch(`/api/analyses/${id}`)
-            .then(r => r.ok ? r.json() : null)
-            .then(data => { if (data) setAnalysis(data); })
-            .catch(() => {});
-    }, [id, fetchSteps, fetchPhases]);
+    const error = stepsError ? "No se pudo cargar el flujo de proceso." : null;
 
     const codeToName = Object.fromEntries(
         steps.map(s => [s.code, s.display_name || s.label || s.code])

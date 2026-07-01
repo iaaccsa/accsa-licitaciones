@@ -150,6 +150,9 @@ export default function RequirementsPage() {
         return `/api/analyses/${id}/requirements?limit=${LIMIT}&offset=${off}`;
     }, [id]);
 
+    // Infinite-scroll fetch; deps intentionally minimal (refs hold cursor state).
+    // useSWRInfinite migration pending, needs live QA.
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     const fetchPage = useCallback(async (off: number, append: boolean) => {
         if (isFetchingRef.current) return;
         isFetchingRef.current = true;
@@ -182,7 +185,7 @@ export default function RequirementsPage() {
                 }
             }, 50);
         }
-    }, [buildUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [buildUrl]);
 
     const handleVerifyToggle = useCallback(async (req: AnalysisRequirementRead) => {
         const newValue = !req.is_verified;

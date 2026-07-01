@@ -21,12 +21,13 @@ export function StatusCheckSection({ initialJobId }: StatusCheckSectionProps) {
     const [autoRefresh, setAutoRefresh] = useState(false);
     const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Sync initialJobId when it changes (e.g. after a new upload)
-    useEffect(() => {
-        if (initialJobId) {
-            setSearchJobId(initialJobId);
-        }
-    }, [initialJobId]);
+    // Sync when the parent passes a new job id (e.g. after a new upload).
+    // Adjust state during render instead of in an effect (React-recommended).
+    const [prevInitialJobId, setPrevInitialJobId] = useState(initialJobId);
+    if (initialJobId && initialJobId !== prevInitialJobId) {
+        setPrevInitialJobId(initialJobId);
+        setSearchJobId(initialJobId);
+    }
 
     const handleCheckStatus = useCallback(async () => {
         if (!searchJobId.trim()) return;

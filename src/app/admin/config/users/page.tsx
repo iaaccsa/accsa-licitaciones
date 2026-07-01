@@ -1,6 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR from "swr";
+import { fetcher } from "@/lib/swr";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,10 +47,13 @@ const selectClass =
     "h-10 px-3 rounded-md border border-zinc-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50";
 
 export default function AdminUsersPage() {
-    const [users, setUsers] = useState<AdminUser[]>([]);
-    const [callerId, setCallerId] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [pageError, setPageError] = useState<string | null>(null);
+    const { data, isLoading: loading, error, mutate } = useSWR<{
+        users: AdminUser[];
+        caller_id: string;
+    }>("/api/admin/users", fetcher, { revalidateOnFocus: false });
+    const users = data?.users ?? [];
+    const callerId = data?.caller_id ?? null;
+    const pageError = error ? "No se pudo cargar la lista de usuarios." : null;
 
     const [inviteEmail, setInviteEmail] = useState("");
     const [inviteRole, setInviteRole] = useState<Role>("user");
@@ -60,28 +65,6 @@ export default function AdminUsersPage() {
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [rowError, setRowError] = useState<string | null>(null);
     const [rowOk, setRowOk] = useState<string | null>(null);
-
-    const loadUsers = useCallback(async () => {
-        try {
-            const res = await fetch("/api/admin/users");
-            if (!res.ok) {
-                setPageError("No se pudo cargar la lista de usuarios.");
-                return;
-            }
-            const data = await res.json();
-            setUsers(data.users);
-            setCallerId(data.caller_id);
-            setPageError(null);
-        } catch {
-            setPageError("Error de red. Intente nuevamente.");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadUsers();
-    }, [loadUsers]);
 
     async function handleInvite(e: React.FormEvent) {
         e.preventDefault();
@@ -98,7 +81,7 @@ export default function AdminUsersPage() {
                 setInviteOk(`Invitación enviada a ${inviteEmail}.`);
                 setInviteEmail("");
                 setInviteRole("user");
-                await loadUsers();
+                await mutate();
             } else {
                 const data = await res.json().catch(() => ({}));
                 setInviteError(errorMessage(data.error));
@@ -122,7 +105,7 @@ export default function AdminUsersPage() {
             });
             if (res.ok) {
                 setRowOk(`Rol de ${user.email} actualizado. Aplica cuando renueve su sesión.`);
-                await loadUsers();
+                await mutate();
             } else {
                 const data = await res.json().catch(() => ({}));
                 setRowError(errorMessage(data.error));
@@ -142,7 +125,7 @@ export default function AdminUsersPage() {
             const res = await fetch(`/api/admin/users/${user.id}/resend`, { method: "POST" });
             if (res.ok) {
                 setRowOk(`Invitación reenviada a ${user.email}.`);
-                await loadUsers();
+                await mutate();
             } else {
                 const data = await res.json().catch(() => ({}));
                 setRowError(errorMessage(data.error));
@@ -162,7 +145,7 @@ export default function AdminUsersPage() {
             const res = await fetch(`/api/admin/users/${user.id}`, { method: "DELETE" });
             if (res.ok) {
                 setRowOk(`Usuario ${user.email} eliminado.`);
-                await loadUsers();
+                await mutate();
             } else {
                 const data = await res.json().catch(() => ({}));
                 setRowError(errorMessage(data.error));

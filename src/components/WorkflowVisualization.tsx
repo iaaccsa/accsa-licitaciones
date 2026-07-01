@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import useSWR from "swr";
+import { postFetcher } from "@/lib/swr";
 import { Settings, GitBranch, CheckCircle2, AlertCircle, Clock, XCircle, RefreshCw } from 'lucide-react';
 import { Loader2 } from "lucide-react";
 
@@ -126,55 +128,24 @@ const Connection = ({ start, end, status }: { start: { x: number; y: number }; e
 };
 
 export default function WorkflowVisualization({ analysisId, analysisStatus }: { analysisId: string; analysisStatus?: string }) {
-    const [steps, setSteps] = useState<WorkflowStep[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { data: steps = [], isLoading: loading, mutate } = useSWR<WorkflowStep[]>(
+        analysisId ? [`/api/analyses/${analysisId}/workflow`, { uuid: analysisId }] : null,
+        postFetcher,
+        { revalidateOnFocus: false },
+    );
     const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
-    const isFirstLoad = useRef(true);
-
-    const fetchWorkflow = useCallback(async () => {
-        try {
-            const res = await fetch(`/api/analyses/${analysisId}/workflow`, {
-                method: 'POST',
-                body: JSON.stringify({ uuid: analysisId })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                if (Array.isArray(data)) {
-                    setSteps(data);
-                } else {
-                    console.warn("Unexpected workflow data format", data);
-                    setSteps([]);
-                }
-            } else {
-                console.error("Failed to fetch workflow");
-                if (isFirstLoad.current) setSteps([]);
-            }
-        } catch (err) {
-            console.error("Error fetching workflow:", err);
-        } finally {
-            if (isFirstLoad.current) {
-                setLoading(false);
-                isFirstLoad.current = false;
-            }
-        }
-    }, [analysisId]);
-
-    // Initial fetch
-    useEffect(() => {
-        if (analysisId) fetchWorkflow();
-    }, [analysisId, fetchWorkflow]);
 
     const isComplete = analysisStatus === 'ready' || analysisStatus === 'failed';
 
-    // Countdown + auto-refresh (only while analysis is in progress)
+    // Visible countdown that triggers a revalidation each cycle
+    // (only while the analysis is in progress).
     useEffect(() => {
         if (!analysisId || isComplete) return;
 
         const timer = setInterval(() => {
             setCountdown(prev => {
                 if (prev <= 1) {
-                    fetchWorkflow();
+                    mutate();
                     return REFRESH_INTERVAL;
                 }
                 return prev - 1;
@@ -182,7 +153,7 @@ export default function WorkflowVisualization({ analysisId, analysisStatus }: { 
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [analysisId, fetchWorkflow, isComplete]);
+    }, [analysisId, mutate, isComplete]);
 
     // Layout Logic
     const layout = useMemo(() => {
