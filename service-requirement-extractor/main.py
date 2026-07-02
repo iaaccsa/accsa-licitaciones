@@ -1533,7 +1533,9 @@ def process_extraction():
             try:
                 outcome = future.result()
                 outcomes[batch_id] = outcome
-                if not outcome.requirements:
+                # A batch with 0 requirements is a valid outcome; failed means
+                # the general pass errored (general_failure_reason set).
+                if outcome.general_failure_reason:
                     failed_batches += 1
                 else:
                     raw_results.extend(outcome.requirements)
@@ -1642,7 +1644,7 @@ def process_extraction():
         1 for o in outcomes.values() if o.fallback_used and not o.fallback_failed
     )
     fallbacks_failed = sum(1 for o in outcomes.values() if o.fallback_failed)
-    failed_batch_ids = sorted(bid for bid, o in outcomes.items() if not o.requirements)
+    failed_batch_ids = sorted(bid for bid, o in outcomes.items() if o.general_failure_reason)
     durations = sorted(
         ((bid, o.duration_seconds) for bid, o in outcomes.items()), key=lambda x: -x[1]
     )
