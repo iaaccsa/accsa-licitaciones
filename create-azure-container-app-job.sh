@@ -20,6 +20,10 @@ VALID_SERVICES=(
   "service-compliance-summarizer"
   "service-economic-offer-extractor"
   "service-admissibility-matcher"
+  "lab-service-file-extractor"
+  "lab-service-files-converter-mistral"
+  "lab-service-qdrant-by-file"
+  "lab-service-requirement-extractor"
 )
 
 if [ -z "$1" ]; then
@@ -58,12 +62,22 @@ APP_TAG="latest"
 
 IMAGE="$REGISTRY/$APP_PATH/$APP_NAME:$APP_TAG"
 
+# Lab jobs: ACR repo leaf stays lab-service-X, but the ACA Job name is
+# shortened to lab-X (Azure caps Job names at 32 chars). Mirrors
+# accsa-admissibility-lab/services/create-lab-aca-jobs.sh and the lab
+# orchestrator's _job_name_for_service.
+if [[ "$APP_NAME" == lab-service-* ]]; then
+  JOB_NAME="lab-${APP_NAME#lab-service-}"
+else
+  JOB_NAME="$APP_NAME"
+fi
+
 # Get ACR password
 ACR_PASSWORD=$(az acr credential show --name "$REGISTRY_NAME" --query passwords[0].value -o tsv)
 
-echo "Creating Container App Job '$APP_NAME'..."
+echo "Creating Container App Job '$JOB_NAME' (image: $IMAGE)..."
 az containerapp job create \
-  --name "$APP_NAME" \
+  --name "$JOB_NAME" \
   --resource-group "$RESOURCE_GROUP" \
   --environment "$ACA_ENV" \
   --subscription "$SUBSCRIPTION_ID" \
@@ -78,4 +92,4 @@ az containerapp job create \
   --replica-completion-count 1 \
   --cpu 1 --memory 2Gi
 
-echo "Job '$APP_NAME' created successfully!"
+echo "Job '$JOB_NAME' created successfully!"
