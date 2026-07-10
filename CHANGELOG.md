@@ -18,6 +18,7 @@ se versionan y publican en conjunto.
 - Agregar enlaces cruzados hacia los nuevos artículos de Ayuda desde "Requisitos extraídos", "Requisitos de admisibilidad" y "Sistema de evaluación".
 - Agregar breadcrumb de navegación en todas las vistas de un análisis, con el nombre del análisis y la sección actual (archivos, propuestas, requisitos, etc.).
 - Agregar la variable de entorno `AUTH_DISABLED` (solo desarrollo) que deshabilita la autenticación para revisar el sitio completo sin sesión; en builds de producción es inerte.
+- Agregar suite de tests e2e con Playwright (`pnpm test:e2e`) que recorre todas las vistas de la aplicación con la autenticación deshabilitada.
 
 #### Changed
 - Ampliar el artículo de Ayuda "Revisión y auditoría" con el detalle de qué acciones de usuario se registran.

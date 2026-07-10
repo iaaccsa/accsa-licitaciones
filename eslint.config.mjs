@@ -21,6 +21,10 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Vendored/minified third-party assets must not be linted.
     "public/**",
+    // Playwright e2e artifacts (dedicated distDir, reports, traces).
+    ".next-e2e/**",
+    "test-results/**",
+    "playwright-report/**",
   ]),
 ]);
 

@@ -30,6 +30,10 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+    // Next 16 keeps a lockfile inside distDir that rejects a second `next dev`
+    // in the same project. The Playwright e2e webServer sets NEXT_DIST_DIR so
+    // it can run alongside the regular dev server without lock/artifact clashes.
+    distDir: process.env.NEXT_DIST_DIR || ".next",
     env: {
         NEXT_PUBLIC_APP_VERSION: appVersion,
     },

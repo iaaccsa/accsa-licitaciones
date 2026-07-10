@@ -10,7 +10,14 @@ pnpm build       # Production build
 pnpm lint        # Run ESLint
 ```
 
-There are no tests configured in this project.
+```bash
+pnpm test:e2e    # Playwright smoke tests: visit every view (e2e/)
+```
+
+E2E tests start their own dev server on port 3100 with `AUTH_DISABLED=true` and
+`NEXT_DIST_DIR=.next-e2e`, so they work while the regular `pnpm dev` is running.
+Set `E2E_BASE_URL` to target an already-running server instead (it must have
+`AUTH_DISABLED=true`). There are no unit tests configured.
 
 ## Architecture
 
