@@ -16,6 +16,7 @@ se versionan y publican en conjunto.
 - Agregar artículo de Ayuda "Cómo se clasifican los requisitos", que explica roles, dominios, métodos de verificación, alcance, peso y citas con ejemplos.
 - Agregar artículo de Ayuda "Tipos de sistema de evaluación", con el catálogo de los 7 sistemas que detecta el clasificador, incluyendo fórmulas y advertencias.
 - Agregar enlaces cruzados hacia los nuevos artículos de Ayuda desde "Requisitos extraídos", "Requisitos de admisibilidad" y "Sistema de evaluación".
+- Agregar breadcrumb de navegación en todas las vistas de un análisis, con el nombre del análisis y la sección actual (archivos, propuestas, requisitos, etc.).
 
 #### Changed
 - Ampliar el artículo de Ayuda "Revisión y auditoría" con el detalle de qué acciones de usuario se registran.
