@@ -2,19 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { getEnv } from "@/lib/env";
 import { apiError, safeLogError } from "@/lib/api-utils";
 import { createClient } from "@/lib/supabase/server";
+import { isAuthDisabled } from "@/lib/dev-auth";
 
 export async function GET(request: NextRequest) {
     try {
         const supabase = await createClient();
         const { data: claimsData } = await supabase.auth.getClaims();
         const claims = claimsData?.claims;
-        if (!claims) return apiError("unauthorized", 401);
-        const role = (claims.app_metadata as { role?: string } | undefined)?.role;
+        if (!claims && !isAuthDisabled()) return apiError("unauthorized", 401);
+        const role = (claims?.app_metadata as { role?: string } | undefined)?.role;
         const scope = new URL(request.url).searchParams.get("scope");
 
         const env = getEnv();
         let url = `${env.API_BASE_URL}${env.API_ANALYSES_PATH}`;
-        if (!(scope === "all" && role === "administrator")) {
+        if (claims && !isAuthDisabled() && !(scope === "all" && role === "administrator")) {
             url += `?created_by=${claims.sub}`;
         }
 

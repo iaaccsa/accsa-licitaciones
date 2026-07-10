@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isAuthDisabled } from "@/lib/dev-auth";
 
 export async function requireAnalysisAccess(analysisId: string): Promise<boolean> {
+    if (isAuthDisabled()) return true;
     const supabase = await createClient();
     const { data } = await supabase.auth.getClaims();
     const claims = data?.claims;

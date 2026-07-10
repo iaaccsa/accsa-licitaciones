@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAuthDisabled } from "@/lib/dev-auth";
 
 const PUBLIC_PATHS = ["/login", "/auth/confirm", "/api/auth/login", "/nerd-graph"];
 
@@ -17,6 +18,8 @@ function withSessionCookies(res: NextResponse, base: NextResponse): NextResponse
 }
 
 export async function updateSession(request: NextRequest) {
+    if (isAuthDisabled()) return NextResponse.next({ request });
+
     let supabaseResponse = NextResponse.next({ request });
 
     const supabase = createServerClient(

@@ -3,6 +3,7 @@ import { z } from "zod/v4";
 import { getEnv } from "@/lib/env";
 import { apiError, safeLogError } from "@/lib/api-utils";
 import { createClient } from "@/lib/supabase/server";
+import { isAuthDisabled, DEV_USER } from "@/lib/dev-auth";
 
 const docsChatSchema = z.object({
     message: z.string().min(1).max(4000),
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
         // Inject the session user id server-side; never trust the browser for it.
         const supabase = await createClient();
         const { data } = await supabase.auth.getClaims();
-        const userId = data?.claims?.sub;
+        const userId = data?.claims?.sub ?? (isAuthDisabled() ? DEV_USER.id : undefined);
 
         const baseUrl = env.CHATBOT_DOCS_URL.replace(/\/+$/, "");
         const response = await fetch(`${baseUrl}/chat`, {

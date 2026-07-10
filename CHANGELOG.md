@@ -17,6 +17,7 @@ se versionan y publican en conjunto.
 - Agregar artículo de Ayuda "Tipos de sistema de evaluación", con el catálogo de los 7 sistemas que detecta el clasificador, incluyendo fórmulas y advertencias.
 - Agregar enlaces cruzados hacia los nuevos artículos de Ayuda desde "Requisitos extraídos", "Requisitos de admisibilidad" y "Sistema de evaluación".
 - Agregar breadcrumb de navegación en todas las vistas de un análisis, con el nombre del análisis y la sección actual (archivos, propuestas, requisitos, etc.).
+- Agregar la variable de entorno `AUTH_DISABLED` (solo desarrollo) que deshabilita la autenticación para revisar el sitio completo sin sesión; en builds de producción es inerte.
 
 #### Changed
 - Ampliar el artículo de Ayuda "Revisión y auditoría" con el detalle de qué acciones de usuario se registran.
