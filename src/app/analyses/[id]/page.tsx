@@ -17,7 +17,6 @@ import {
   Ban,
   PauseCircle,
   Play,
-  Scale,
   Users,
   ShieldCheck,
   UserCheck,
@@ -69,10 +68,10 @@ const LEVEL_LABELS: Record<string, string> = {
 };
 
 const CHIP_TONES = {
-  neutral: "bg-zinc-50 text-zinc-600 border-zinc-200",
-  indigo: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  violet: "bg-violet-50 text-violet-700 border-violet-200",
-  amber: "bg-amber-50 text-amber-700 border-amber-200",
+  neutral: "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800",
+  indigo: "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900",
+  violet: "bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-900",
+  amber: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900",
 } as const;
 
 function InfoChip({
@@ -221,9 +220,9 @@ export default function AnalysisDetailPage() {
   if (error && !analysis) {
     return (
       <div className="max-w-5xl mx-auto py-12 px-4 text-center">
-        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-zinc-900 mb-2">Error</h2>
-        <p className="text-zinc-600">
+        <AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
+        <p className="text-zinc-600 dark:text-zinc-400">
           No se pudo cargar la información del análisis.
         </p>
       </div>
@@ -239,7 +238,7 @@ export default function AnalysisDetailPage() {
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
         <div className="flex flex-col gap-5">
           {/* Top: title block + status / actions */}
           <div className="flex items-start justify-between gap-4">
@@ -257,13 +256,13 @@ export default function AnalysisDetailPage() {
                     }}
                     maxLength={200}
                     placeholder={analysis.generated_name || analysis.slug}
-                    className="flex-1 min-w-0 text-2xl font-bold text-zinc-900 bg-transparent border-b border-zinc-300 focus:outline-none focus:border-blue-500"
+                    className="flex-1 min-w-0 text-2xl font-bold text-zinc-900 dark:text-zinc-100 bg-transparent border-b border-zinc-300 dark:border-zinc-700 focus:outline-none focus:border-blue-500"
                   />
                   <button
                     onClick={handleSaveName}
                     disabled={isSavingName}
                     title="Guardar"
-                    className="shrink-0 text-zinc-500 hover:text-green-600 disabled:opacity-50"
+                    className="shrink-0 text-zinc-500 dark:text-zinc-400 hover:text-green-600 dark:hover:text-green-400 disabled:opacity-50"
                   >
                     {isSavingName ? (
                       <Loader2 className="h-5 w-5 animate-spin" />
@@ -275,14 +274,14 @@ export default function AnalysisDetailPage() {
                     onClick={() => setIsEditingName(false)}
                     disabled={isSavingName}
                     title="Cancelar"
-                    className="shrink-0 text-zinc-500 hover:text-red-600 disabled:opacity-50"
+                    className="shrink-0 text-zinc-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold text-zinc-900 truncate">
+                  <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 truncate">
                     {analysis.user_assigned_name || analysis.generated_name || (
                       <span className="font-mono uppercase">{analysis.slug}</span>
                     )}
@@ -290,18 +289,18 @@ export default function AnalysisDetailPage() {
                   <button
                     onClick={startEditName}
                     title="Editar nombre"
-                    className="shrink-0 text-zinc-400 hover:text-zinc-700 transition-colors"
+                    className="shrink-0 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                 </div>
               )}
               <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono uppercase text-xs bg-zinc-100 text-zinc-600 px-2 py-0.5 rounded">
+                <span className="font-mono uppercase text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
                   {analysis.slug}
                 </span>
                 {analysis.user_assigned_name && analysis.generated_name && (
-                  <span className="text-sm text-zinc-400 truncate">
+                  <span className="text-sm text-zinc-400 dark:text-zinc-500 truncate">
                     {analysis.generated_name}
                   </span>
                 )}
@@ -331,7 +330,7 @@ export default function AnalysisDetailPage() {
                   size="sm"
                   onClick={handleCancel}
                   disabled={isCancelling}
-                  className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
+                  className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-700 dark:hover:text-red-300"
                 >
                   {isCancelling ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -348,7 +347,7 @@ export default function AnalysisDetailPage() {
             </div>
           </div>
 
-          <div className="h-px bg-zinc-100" />
+          <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
 
           {/* Metadata chips */}
           <div className="flex flex-wrap items-center gap-2">
@@ -403,7 +402,7 @@ export default function AnalysisDetailPage() {
 
       {cancelMessage && (
         <div
-          className={`rounded-lg px-4 py-3 text-sm font-medium ${cancelMessage.type === "success" ? "bg-green-50 text-green-700 border border-green-200" : "bg-red-50 text-red-700 border border-red-200"}`}
+          className={`rounded-lg px-4 py-3 text-sm font-medium ${cancelMessage.type === "success" ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-900" : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900"}`}
         >
           {cancelMessage.text}
         </div>
@@ -413,10 +412,10 @@ export default function AnalysisDetailPage() {
       <WorkflowPhases analysisId={id} />
 
       {/* Navigation Buttons */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         <a
           href={`/analyses/${id}/files`}
-          className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all group text-center"
+          className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-blue-300 dark:hover:border-blue-800 hover:shadow-md transition-all group text-center"
         >
           {analysis.status === "awaiting_approval" &&
             analysis.paused_at_service === "service-documents-grouper" && (
@@ -425,14 +424,14 @@ export default function AnalysisDetailPage() {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
               </span>
             )}
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
+          <div className="p-3 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-lg group-hover:bg-blue-600 group-hover:text-white transition-colors">
             <FileText className="w-8 h-8" />
           </div>
           <div className="flex-1 space-y-1">
-            <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-blue-600 transition-colors">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
               Archivos
             </h3>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
               Pliegos, normativas y ofertas
             </p>
           </div>
@@ -440,7 +439,7 @@ export default function AnalysisDetailPage() {
 
         <a
           href={`/analyses/${id}/requirements`}
-          className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-green-300 hover:shadow-md transition-all group text-center"
+          className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-green-300 dark:hover:border-green-800 hover:shadow-md transition-all group text-center"
         >
           {analysis.status === "awaiting_approval" &&
             analysis.paused_at_service === "service-requirement-extractor" && (
@@ -449,20 +448,20 @@ export default function AnalysisDetailPage() {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
               </span>
             )}
-          <div className="p-3 bg-green-50 text-green-600 rounded-lg group-hover:bg-green-600 group-hover:text-white transition-colors">
+          <div className="p-3 bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 rounded-lg group-hover:bg-green-600 group-hover:text-white transition-colors">
             <ClipboardList className="w-8 h-8" />
           </div>
           <div className="flex-1 space-y-1">
-            <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-green-600 transition-colors">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
               Requisitos
             </h3>
-            <p className="text-sm text-zinc-500">Ver requisitos</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Ver requisitos</p>
           </div>
         </a>
 
         <a
           href={`/analyses/${id}/admissibility`}
-          className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-violet-300 hover:shadow-md transition-all group text-center"
+          className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-violet-300 dark:hover:border-violet-800 hover:shadow-md transition-all group text-center"
         >
           {analysis.status === "awaiting_approval" &&
             analysis.paused_at_service === "service-requirement-extractor" && (
@@ -471,20 +470,20 @@ export default function AnalysisDetailPage() {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
               </span>
             )}
-          <div className="p-3 bg-violet-50 text-violet-600 rounded-lg group-hover:bg-violet-600 group-hover:text-white transition-colors">
+          <div className="p-3 bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400 rounded-lg group-hover:bg-violet-600 group-hover:text-white transition-colors">
             <ShieldCheck className="w-8 h-8" />
           </div>
           <div className="flex-1 space-y-1">
-            <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-violet-600 transition-colors">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
               Admisibilidad
             </h3>
-            <p className="text-sm text-zinc-500">Requisitos excluyentes</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Requisitos excluyentes</p>
           </div>
         </a>
 
         <a
           href={`/analyses/${id}/proposals`}
-          className="relative flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-orange-300 hover:shadow-md transition-all group text-center"
+          className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-orange-300 dark:hover:border-orange-800 hover:shadow-md transition-all group text-center"
         >
           {analysis.status === "awaiting_approval" &&
             (analysis.paused_at_service === "service-compliance-matcher" ||
@@ -494,29 +493,14 @@ export default function AnalysisDetailPage() {
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
               </span>
             )}
-          <div className="p-3 bg-orange-50 text-orange-600 rounded-lg group-hover:bg-orange-600 group-hover:text-white transition-colors">
+          <div className="p-3 bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400 rounded-lg group-hover:bg-orange-600 group-hover:text-white transition-colors">
             <Users className="w-8 h-8" />
           </div>
           <div className="flex-1 space-y-1">
-            <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-orange-600 transition-colors">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
               Propuestas
             </h3>
-            <p className="text-sm text-zinc-500">Propuestas y cumplimiento</p>
-          </div>
-        </a>
-
-        <a
-          href={`/analyses/${id}/evaluation_system`}
-          className="flex flex-col items-center gap-4 p-6 bg-white rounded-xl border border-zinc-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group text-center"
-        >
-          <div className="p-3 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-600 group-hover:text-white transition-colors">
-            <Scale className="w-8 h-8" />
-          </div>
-          <div className="flex-1 space-y-1">
-            <h3 className="text-lg font-semibold text-zinc-900 group-hover:text-purple-600 transition-colors">
-              Evaluación
-            </h3>
-            <p className="text-sm text-zinc-500">Sistema de evaluación</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Propuestas y cumplimiento</p>
           </div>
         </a>
       </div>
@@ -532,7 +516,7 @@ function AnalysisDetailSkeleton() {
   return (
     <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
       {/* Header Skeleton */}
-      <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between gap-4">
           <div className="space-y-3 w-full">
             <div className="flex items-center gap-3">
@@ -566,41 +550,41 @@ function StatusBadge({
 }) {
   if (status === "processing")
     return (
-      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 flex items-center gap-1">
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 flex items-center gap-1">
         <Loader2 className="w-3 h-3 animate-spin" /> Procesando
       </span>
     );
   if (status === "pending")
     return (
-      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-600 flex items-center gap-1">
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
         <Clock className="w-3 h-3" /> Pendiente
       </span>
     );
   if (status === "awaiting_approval")
     return (
-      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 flex items-center gap-1">
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 flex items-center gap-1">
         <PauseCircle className="w-3 h-3" /> Esperando Aprovación
       </span>
     );
   if (status === "cancelled")
     return (
-      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-200 text-zinc-600 flex items-center gap-1">
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
         <Ban className="w-3 h-3" /> Cancelado
       </span>
     );
   if (status === "ready") {
     return isSuccess ? (
-      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 flex items-center gap-1">
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 flex items-center gap-1">
         <CheckCircle className="w-3 h-3" /> Completado
       </span>
     ) : (
-      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 flex items-center gap-1">
+      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300 flex items-center gap-1">
         <XCircle className="w-3 h-3" /> Fallido
       </span>
     );
   }
   return (
-    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 flex items-center gap-1">
+    <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-400 flex items-center gap-1">
       <AlertCircle className="w-3 h-3" /> Desconocido
     </span>
   );
