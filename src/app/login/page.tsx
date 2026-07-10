@@ -2,9 +2,11 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react";
+
+const inputClass =
+    "w-full h-10 px-3 rounded-lg border border-zinc-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/15 focus:border-zinc-400 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100/20 dark:focus:border-zinc-500";
 
 function LoginForm() {
     const router = useRouter();
@@ -17,6 +19,7 @@ function LoginForm() {
             : null
     );
     const [loading, setLoading] = useState(false);
+    const [showResetInfo, setShowResetInfo] = useState(false);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -37,7 +40,7 @@ function LoginForm() {
             if (res.status === 429) {
                 setError("Demasiados intentos. Espere unos minutos.");
             } else {
-                setError("Email o contraseña incorrectos");
+                setError("Usuario o contraseña incorrectos");
             }
             setPassword("");
         } catch {
@@ -48,56 +51,79 @@ function LoginForm() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
-            <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
-                    <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                        <Lock className="h-6 w-6 text-blue-700" />
-                    </div>
-                    <CardTitle>Acceso restringido</CardTitle>
-                    <CardDescription>Ingrese su email y contraseña para continuar</CardDescription>
+        <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-200 dark:bg-zinc-950 px-4">
+            <Card className="w-full max-w-md py-8">
+                <CardHeader className="px-8">
+                    <CardTitle className="text-lg font-medium">Iniciar Sesión</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <input
-                            type="email"
-                            autoComplete="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={loading}
-                            autoFocus
-                            required
-                            className="w-full h-10 px-3 rounded-md border border-zinc-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                            placeholder="Email"
-                            aria-label="Email"
-                        />
-                        <input
-                            type="password"
-                            autoComplete="current-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={loading}
-                            required
-                            className="w-full h-10 px-3 rounded-md border border-zinc-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                            placeholder="Contraseña"
-                            aria-label="Contraseña"
-                        />
+                <CardContent className="px-8">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="space-y-2">
+                            <label htmlFor="email" className="block text-sm text-zinc-900 dark:text-zinc-200">
+                                Usuario
+                            </label>
+                            <input
+                                id="email"
+                                type="email"
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={loading}
+                                autoFocus
+                                required
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="password" className="block text-sm text-zinc-900 dark:text-zinc-200">
+                                Contraseña
+                            </label>
+                            <input
+                                id="password"
+                                type="password"
+                                autoComplete="current-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                disabled={loading}
+                                required
+                                className={inputClass}
+                            />
+                        </div>
+                        <div>
+                            <button
+                                type="button"
+                                onClick={() => setShowResetInfo((v) => !v)}
+                                className="text-sm text-zinc-900 dark:text-zinc-200 hover:underline"
+                            >
+                                ¿Olvidaste tu contraseña?
+                            </button>
+                            {showResetInfo && (
+                                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                    Comunícate con el administrador de tu organización para
+                                    restablecerla.
+                                </p>
+                            )}
+                        </div>
                         {error && (
-                            <p className="text-sm text-red-600 text-center" role="alert">
+                            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
                                 {error}
                             </p>
                         )}
                         <Button
                             type="submit"
-                            className="w-full"
-                            disabled={loading || !email || !password}
+                            className="w-full h-11 rounded-lg dark:border dark:border-zinc-600 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
+                            disabled={loading}
                         >
-                            {loading ? "Verificando..." : "Ingresar"}
+                            {loading ? "Verificando..." : "Iniciar Sesión"}
                         </Button>
                     </form>
-                    <p className="mt-6 border-t border-zinc-200 pt-4 text-center text-xs text-zinc-500">
-                        ¿No tiene una cuenta? El acceso al sistema es solo por
-                        invitación. Las cuentas nuevas las crea un administrador.
+                    <p className="mt-6 text-sm leading-relaxed">
+                        <span className="text-zinc-500 dark:text-zinc-200">
+                            ¿No tienes una cuenta?{" "}
+                        </span>
+                        <span className="font-medium text-zinc-900 dark:text-zinc-500">
+                            Comunícate con el administrador de tu organización para crear una
+                        </span>
                     </p>
                 </CardContent>
             </Card>

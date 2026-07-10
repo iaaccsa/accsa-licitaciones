@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { KeyRound } from "lucide-react";
 
 const ERROR_MESSAGES: Record<string, string> = {
     same_password: "La nueva contraseña debe ser distinta a la actual",
     weak_password: "La contraseña es demasiado débil",
     invalid_password_format: "La contraseña debe tener al menos 6 caracteres",
 };
+
+const inputClass =
+    "w-full h-10 px-3 rounded-lg border border-zinc-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/15 focus:border-zinc-400 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100/20 dark:focus:border-zinc-500";
 
 export default function SetPasswordPage() {
     const router = useRouter();
@@ -55,53 +57,64 @@ export default function SetPasswordPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
-            <Card className="w-full max-w-md">
-                <CardHeader className="text-center">
-                    <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                        <KeyRound className="h-6 w-6 text-blue-700" />
-                    </div>
-                    <CardTitle>Establecer contraseña</CardTitle>
-                    <CardDescription>
-                        Defina la contraseña con la que va a ingresar a la plataforma
-                    </CardDescription>
+        <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center bg-zinc-200 dark:bg-zinc-950 px-4">
+            <Card className="w-full max-w-md py-8">
+                <CardHeader className="px-8">
+                    <CardTitle className="text-lg font-medium">Establecer contraseña</CardTitle>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                        Define la contraseña con la que vas a ingresar a la plataforma
+                    </p>
                 </CardHeader>
-                <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        <input
-                            type="password"
-                            autoComplete="new-password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={loading}
-                            autoFocus
-                            required
-                            minLength={6}
-                            className="w-full h-10 px-3 rounded-md border border-zinc-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                            placeholder="Nueva contraseña"
-                            aria-label="Nueva contraseña"
-                        />
-                        <input
-                            type="password"
-                            autoComplete="new-password"
-                            value={confirm}
-                            onChange={(e) => setConfirm(e.target.value)}
-                            disabled={loading}
-                            required
-                            minLength={6}
-                            className="w-full h-10 px-3 rounded-md border border-zinc-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
-                            placeholder="Confirmar contraseña"
-                            aria-label="Confirmar contraseña"
-                        />
+                <CardContent className="px-8">
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        <div className="space-y-2">
+                            <label
+                                htmlFor="new-password"
+                                className="block text-sm text-zinc-900 dark:text-zinc-200"
+                            >
+                                Nueva contraseña
+                            </label>
+                            <input
+                                id="new-password"
+                                type="password"
+                                autoComplete="new-password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                disabled={loading}
+                                autoFocus
+                                required
+                                minLength={6}
+                                className={inputClass}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label
+                                htmlFor="confirm-password"
+                                className="block text-sm text-zinc-900 dark:text-zinc-200"
+                            >
+                                Confirmar contraseña
+                            </label>
+                            <input
+                                id="confirm-password"
+                                type="password"
+                                autoComplete="new-password"
+                                value={confirm}
+                                onChange={(e) => setConfirm(e.target.value)}
+                                disabled={loading}
+                                required
+                                minLength={6}
+                                className={inputClass}
+                            />
+                        </div>
                         {error && (
-                            <p className="text-sm text-red-600 text-center" role="alert">
+                            <p className="text-sm text-red-600 dark:text-red-400" role="alert">
                                 {error}
                             </p>
                         )}
                         <Button
                             type="submit"
-                            className="w-full"
-                            disabled={loading || !password || !confirm}
+                            className="w-full h-11 rounded-lg dark:border dark:border-zinc-600 dark:bg-black dark:text-white dark:hover:bg-zinc-900"
+                            disabled={loading}
                         >
                             {loading ? "Guardando..." : "Guardar contraseña"}
                         </Button>

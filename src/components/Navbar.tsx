@@ -3,25 +3,24 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { ListChecks, ShieldCheck, BookOpen, LifeBuoy } from "lucide-react";
-import { LogoutButton } from "@/components/LogoutButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { UserMenu } from "@/components/UserMenu";
 
 const navItems = [
-    { href: "/", label: "Análisis", icon: ListChecks },
-    { href: "/ayuda", label: "Ayuda", icon: LifeBuoy },
-    { href: "/docs", label: "Docs", icon: BookOpen },
-    { href: "/admin", label: "Admin", icon: ShieldCheck },
+    { href: "/", label: "Análisis" },
+    { href: "/ayuda", label: "Ayuda" },
+    { href: "/admin", label: "Admin" },
 ] as const;
 
 export function Navbar() {
     const pathname = usePathname();
-
-    if (pathname === "/login") return null;
+    // Unauthenticated/onboarding pages get a brand-only bar with the theme toggle.
+    const minimal = pathname === "/login" || pathname.startsWith("/auth");
 
     return (
-        <nav className="bg-white border-b border-zinc-200 shadow-sm sticky top-0 z-50">
+        <nav className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 shadow-sm sticky top-0 z-50">
             <div className="max-w-6xl mx-auto px-4">
-                <div className="flex items-center h-14 gap-8">
+                <div className="relative flex items-center h-14">
                     {/* Logo / Brand */}
                     <Link
                         href="/"
@@ -34,41 +33,47 @@ export function Navbar() {
                             height={32}
                             className="rounded"
                         />
-                        <span className="text-lg font-semibold text-zinc-800 font-serif italic">
+                        <span className="text-lg font-semibold text-zinc-800 dark:text-zinc-100 font-serif italic">
                             Asistente de Compras Estatales
                         </span>
                     </Link>
 
-                    {/* Navigation Links */}
-                    <div className="flex items-center gap-1 flex-1">
-                        {navItems.map(({ href, label, icon: Icon }) => {
-                            const isActive =
-                                href === "/"
-                                    ? pathname === "/" ||
-                                      pathname.startsWith("/analyses")
-                                    : pathname.startsWith(href);
+                    {minimal ? (
+                        <div className="ml-auto">
+                            <ThemeToggle />
+                        </div>
+                    ) : (
+                        <>
+                            {/* Navigation Links */}
+                            <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-6">
+                                {navItems.map(({ href, label }) => {
+                                    const isActive =
+                                        href === "/"
+                                            ? pathname === "/" ||
+                                              pathname.startsWith("/analyses")
+                                            : pathname.startsWith(href);
 
-                            return (
-                                <Link
-                                    key={href}
-                                    href={href}
-                                    className={`
-                    flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                    transition-colors duration-150
-                    ${isActive
-                                            ? "bg-blue-50 text-blue-700"
-                                            : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-50"
-                                        }
-                  `}
-                                >
-                                    <Icon className="h-4 w-4" />
-                                    {label}
-                                </Link>
-                            );
-                        })}
-                    </div>
+                                    return (
+                                        <Link
+                                            key={href}
+                                            href={href}
+                                            className={`text-sm font-medium transition-colors duration-150 ${
+                                                isActive
+                                                    ? "text-zinc-900 dark:text-zinc-100"
+                                                    : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                                            }`}
+                                        >
+                                            {label}
+                                        </Link>
+                                    );
+                                })}
+                            </div>
 
-                    <LogoutButton />
+                            <div className="ml-auto">
+                                <UserMenu />
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </nav>
