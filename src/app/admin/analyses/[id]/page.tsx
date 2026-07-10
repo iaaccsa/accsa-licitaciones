@@ -108,7 +108,7 @@ export default function AdminAnalysisDetailPage() {
 
   if (error && !analysis) {
     return (
-      <div className="max-w-5xl mx-auto py-12 px-4 text-center">
+      <div className="max-w-6xl mx-auto py-12 px-4 text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 dark:text-red-400" />
         <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
         <p className="text-zinc-600 dark:text-zinc-400">
@@ -125,7 +125,7 @@ export default function AdminAnalysisDetailPage() {
   if (!analysis) return null;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+    <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
       {/* Admin Header */}
       <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
         <div className="flex items-center justify-between mb-4">
@@ -326,7 +326,7 @@ function DetailField({
 
 function AnalysisDetailSkeleton() {
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+    <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
       <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
         <div className="space-y-3 w-full">
           <div className="flex items-center gap-3">

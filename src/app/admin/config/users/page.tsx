@@ -159,7 +159,7 @@ export default function AdminUsersPage() {
     }
 
     return (
-        <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+        <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
             <AdminPageHeader backHref="/admin/config" title="Gestión de usuarios" />
 
             <Card>

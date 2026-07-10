@@ -115,7 +115,7 @@ export function HelpView({ sections }: { sections: HelpSection[] }) {
     );
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto px-4 py-8">
             <div className="mb-6">
                 <h1 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-200 font-serif italic flex items-center gap-2">
                     <LifeBuoy className="w-6 h-6 text-blue-600 dark:text-blue-400" />

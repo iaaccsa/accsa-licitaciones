@@ -123,7 +123,7 @@ export default function HumanLoopPage() {
     }, [hitl]);
 
     return (
-        <div className="max-w-5xl mx-auto py-8 px-4">
+        <div className="max-w-6xl mx-auto py-8 px-4">
             <AdminPageHeader
                 backHref="/admin/config"
                 title="Validación humana"

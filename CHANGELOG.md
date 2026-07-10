@@ -20,6 +20,7 @@ se versionan y publican en conjunto.
 
 #### Changed
 - Ampliar el artículo de Ayuda "Revisión y auditoría" con el detalle de qué acciones de usuario se registran.
+- Unificar el ancho de todas las vistas para que el contenido quede alineado con la barra de navegación y el pie de página; las páginas de lectura (términos, changelog, chat de archivo) mantienen su ancho angosto.
 
 #### Removed
 - Eliminar la sección "Docs" de la interfaz (ruta `/docs`, su entrada en la barra de navegación y sus 11 páginas); el contenido útil para usuarios se trasladó a la Ayuda y el resto quedó como documentación interna del repositorio.

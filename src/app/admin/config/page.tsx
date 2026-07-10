@@ -12,7 +12,7 @@ const cards = [
 
 export default function AdminConfigPage() {
     return (
-        <div className="max-w-7xl mx-auto py-8 px-4">
+        <div className="max-w-6xl mx-auto py-8 px-4">
             <h1 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-200 font-serif italic mb-6">
                 Configuración
             </h1>

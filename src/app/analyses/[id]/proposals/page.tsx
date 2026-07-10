@@ -155,7 +155,7 @@ export default function ProposalsPage() {
     };
 
     return (
-        <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+        <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
             <div className="flex items-center gap-3">
                 <Link
                     href={`/analyses/${id}`}

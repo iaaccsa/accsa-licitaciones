@@ -180,7 +180,7 @@ export default function AnalysisFilesPage() {
 
     if (error) {
         return (
-            <div className="max-w-5xl mx-auto py-12 px-4 text-center">
+            <div className="max-w-6xl mx-auto py-12 px-4 text-center">
                 <AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
                 <p className="text-zinc-600 dark:text-zinc-400">{error}</p>
@@ -199,7 +199,7 @@ export default function AnalysisFilesPage() {
     const unclassifiedFiles = files.filter(f => f.category === 'unclassified');
 
     return (
-        <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+        <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                     <button

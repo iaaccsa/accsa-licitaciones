@@ -587,7 +587,7 @@ export default function AdminEvaluationSystemPage() {
 
     if (error) {
         return (
-            <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+            <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
                 <PageHeader onBack={() => router.back()} analysisLabel={null} />
                 <div className="text-center py-16 bg-white rounded-xl border border-zinc-200 border-dashed dark:bg-zinc-900 dark:border-zinc-800">
                     <Scale className="w-8 h-8 text-zinc-300 mx-auto mb-3 dark:text-zinc-600" />
@@ -599,7 +599,7 @@ export default function AdminEvaluationSystemPage() {
     }
 
     return (
-        <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
+        <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
             <PageHeader onBack={() => router.back()} analysisLabel={analysisLabel} />
 
             {isLoading ? (

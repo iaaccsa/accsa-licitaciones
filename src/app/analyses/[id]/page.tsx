@@ -219,7 +219,7 @@ export default function AnalysisDetailPage() {
 
   if (error && !analysis) {
     return (
-      <div className="max-w-5xl mx-auto py-12 px-4 text-center">
+      <div className="max-w-6xl mx-auto py-12 px-4 text-center">
         <AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
         <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
         <p className="text-zinc-600 dark:text-zinc-400">
@@ -236,7 +236,7 @@ export default function AnalysisDetailPage() {
   if (!analysis) return null;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
+    <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
         <div className="flex flex-col gap-5">
@@ -514,7 +514,7 @@ export default function AnalysisDetailPage() {
 
 function AnalysisDetailSkeleton() {
   return (
-    <div className="max-w-5xl mx-auto py-8 px-4 space-y-8">
+    <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
       {/* Header Skeleton */}
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between gap-4">
