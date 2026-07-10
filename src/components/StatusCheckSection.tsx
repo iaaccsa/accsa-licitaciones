@@ -79,8 +79,8 @@ export function StatusCheckSection({ initialJobId }: StatusCheckSectionProps) {
     }, [autoRefresh, searchJobId, statusCheckStatus, handleCheckStatus]);
 
     return (
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
-            <h2 className="text-lg font-medium text-zinc-700 mb-6">
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8">
+            <h2 className="text-lg font-medium text-zinc-700 dark:text-zinc-300 mb-6">
                 Consultar Estado del Análisis
             </h2>
 
@@ -90,7 +90,7 @@ export function StatusCheckSection({ initialJobId }: StatusCheckSectionProps) {
                     value={searchJobId}
                     onChange={(e) => setSearchJobId(e.target.value)}
                     placeholder="Ingrese el ID del procesamiento (job_id)"
-                    className="flex-1 px-4 py-3 border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-zinc-700 placeholder:text-zinc-400"
+                    className="flex-1 px-4 py-3 border border-zinc-300 dark:border-zinc-600 dark:bg-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-zinc-700 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
                 />
                 <Button
                     onClick={handleCheckStatusWithTransition}
@@ -114,16 +114,16 @@ export function StatusCheckSection({ initialJobId }: StatusCheckSectionProps) {
                         id="autoRefresh"
                         checked={autoRefresh}
                         onChange={(e) => setAutoRefresh(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 bg-zinc-100 border-zinc-300 rounded focus:ring-blue-500 cursor-pointer"
+                        className="w-4 h-4 text-blue-600 dark:text-blue-400 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 rounded focus:ring-blue-500 cursor-pointer"
                     />
                     <label
                         htmlFor="autoRefresh"
-                        className="text-sm text-zinc-600 cursor-pointer"
+                        className="text-sm text-zinc-600 dark:text-zinc-400 cursor-pointer"
                     >
                         Actualizar automáticamente cada 30 segundos
                     </label>
                     {autoRefresh ? (
-                        <span className="text-xs text-blue-500 flex items-center gap-1">
+                        <span className="text-xs text-blue-500 dark:text-blue-400 flex items-center gap-1">
                             <Loader2 className="h-3 w-3 animate-spin" />
                             Activo
                         </span>
@@ -133,7 +133,7 @@ export function StatusCheckSection({ initialJobId }: StatusCheckSectionProps) {
 
             {/* Status messages */}
             {statusCheckStatus === "error" ? (
-                <div className="flex items-center justify-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                <div className="flex items-center justify-center gap-2 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300">
                     <AlertCircle className="h-5 w-5" />
                     <span>
                         No se pudo obtener el estado. Verifique el ID e intente de nuevo.
@@ -142,7 +142,7 @@ export function StatusCheckSection({ initialJobId }: StatusCheckSectionProps) {
             ) : null}
 
             {statusCheckStatus === "not_found" ? (
-                <div className="flex items-center justify-center gap-2 p-4 bg-yellow-50 border border-yellow-200 rounded-xl text-yellow-700">
+                <div className="flex items-center justify-center gap-2 p-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-900 rounded-xl text-yellow-700 dark:text-yellow-300">
                     <AlertCircle className="h-5 w-5" />
                     <span>ID de Análisis no existe.</span>
                 </div>

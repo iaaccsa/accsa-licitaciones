@@ -47,16 +47,16 @@ function SelectableCard({
             onClick={onClick}
             className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${
                 active
-                    ? "border-blue-500 bg-blue-50 ring-2 ring-blue-500"
-                    : "border-zinc-200 hover:border-zinc-300"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950 ring-2 ring-blue-500"
+                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
             }`}
         >
             <Icon
-                className={`h-5 w-5 mt-0.5 shrink-0 ${active ? "text-blue-600" : "text-zinc-400"}`}
+                className={`h-5 w-5 mt-0.5 shrink-0 ${active ? "text-blue-600 dark:text-blue-400" : "text-zinc-400 dark:text-zinc-500"}`}
             />
             <span>
-                <span className="block text-sm font-medium text-zinc-700">{label}</span>
-                <span className="block text-xs text-zinc-500 mt-0.5">{desc}</span>
+                <span className="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{label}</span>
+                <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{desc}</span>
             </span>
         </button>
     );
@@ -130,7 +130,7 @@ export default function NotificationsPage() {
                 description="Interruptor global de los correos de notificación. Aplica a todos los análisis. Si está apagado, no se envía ningún correo."
             />
 
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8">
                 {loading ? (
                     <div className="grid grid-cols-2 gap-4">
                         <Skeleton className="h-20 rounded-xl" />
@@ -139,7 +139,7 @@ export default function NotificationsPage() {
                 ) : (
                     <>
                         <div className="mb-6">
-                            <span className="block text-sm font-medium text-zinc-600 mb-2">
+                            <span className="block text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                                 Correos de notificación
                             </span>
                             <div className="grid grid-cols-2 gap-4">
@@ -157,14 +157,14 @@ export default function NotificationsPage() {
                         </div>
 
                         {status === "success" ? (
-                            <div className="flex items-center justify-center gap-2 mb-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700">
+                            <div className="flex items-center justify-center gap-2 mb-4 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-xl text-green-700 dark:text-green-300">
                                 <CheckCircle className="h-5 w-5" />
                                 <span>Configuración guardada con éxito.</span>
                             </div>
                         ) : null}
 
                         {status === "error" ? (
-                            <div className="flex items-center justify-center gap-2 mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                            <div className="flex items-center justify-center gap-2 mb-4 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300">
                                 <XCircle className="h-5 w-5" />
                                 <span>{errorMessage || "No se pudo guardar la configuración."}</span>
                             </div>
@@ -174,7 +174,7 @@ export default function NotificationsPage() {
                             onClick={handleSave}
                             variant="outline"
                             disabled={!hasChanges || saving}
-                            className="w-full py-6 text-lg font-medium text-blue-600 border-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full py-6 text-lg font-medium text-blue-600 dark:text-blue-400 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? (
                                 <>

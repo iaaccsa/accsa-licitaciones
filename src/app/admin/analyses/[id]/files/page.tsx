@@ -125,10 +125,10 @@ export default function AdminAnalysisFilesPage() {
     if (error) {
         return (
             <div className="max-w-5xl mx-auto py-12 px-4 text-center">
-                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-zinc-900 mb-2">Error</h2>
-                <p className="text-zinc-600">{error}</p>
-                <button onClick={() => router.back()} className="mt-4 text-blue-600 hover:underline">
+                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 dark:text-red-400" />
+                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
+                <p className="text-zinc-600 dark:text-zinc-400">{error}</p>
+                <button onClick={() => router.back()} className="mt-4 text-blue-600 dark:text-blue-400 hover:underline">
                     Volver
                 </button>
             </div>
@@ -140,16 +140,16 @@ export default function AdminAnalysisFilesPage() {
             {/* Header */}
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <button onClick={() => router.back()} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
-                        <ChevronLeft className="w-5 h-5 text-zinc-600" />
+                    <button onClick={() => router.back()} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+                        <ChevronLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
                     </button>
-                    <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
-                        <FileText className="w-6 h-6 text-blue-600" />
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                         Archivos
                     </h1>
                 </div>
                 {analysis && (
-                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase">
+                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase dark:text-zinc-400 dark:bg-zinc-800 dark:border-zinc-800">
                         {analysis.slug}
                     </span>
                 )}
@@ -162,51 +162,51 @@ export default function AdminAnalysisFilesPage() {
                     ))}
                 </div>
             ) : files.length === 0 ? (
-                <div className="bg-white rounded-xl border border-zinc-200 p-8 shadow-sm text-center">
-                    <p className="text-sm text-zinc-400 italic">No hay archivos registrados.</p>
+                <div className="bg-white rounded-xl border border-zinc-200 p-8 shadow-sm text-center dark:bg-zinc-900 dark:border-zinc-800">
+                    <p className="text-sm text-zinc-400 italic dark:text-zinc-500">No hay archivos registrados.</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden dark:bg-zinc-900 dark:border-zinc-800">
                     <table className="w-full text-sm">
                         <thead>
-                            <tr className="border-b border-zinc-100 bg-zinc-50 text-left">
-                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Nombre</th>
-                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Categoría</th>
-                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Tamaño</th>
-                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Chunks</th>
-                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide">Tipo</th>
-                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide w-24"></th>
+                            <tr className="border-b border-zinc-100 bg-zinc-50 text-left dark:border-zinc-800 dark:bg-zinc-800/50">
+                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide dark:text-zinc-400">Nombre</th>
+                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide dark:text-zinc-400">Categoría</th>
+                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide dark:text-zinc-400">Tamaño</th>
+                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide dark:text-zinc-400">Chunks</th>
+                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide dark:text-zinc-400">Tipo</th>
+                                <th className="px-4 py-3 font-medium text-zinc-500 text-xs uppercase tracking-wide w-24 dark:text-zinc-400"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-zinc-100">
+                        <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                             {files.map((file) => (
-                                <tr key={file.id} className="hover:bg-zinc-50 transition-colors">
+                                <tr key={file.id} className="hover:bg-zinc-50 transition-colors dark:hover:bg-zinc-800">
                                     <td className="px-4 py-3">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-medium text-zinc-800 truncate max-w-[200px]" title={file.file_name}>
+                                            <span className="font-medium text-zinc-800 truncate max-w-[200px] dark:text-zinc-200" title={file.file_name}>
                                                 {file.file_name}
                                             </span>
                                             {file.kind === "processed" ? (
-                                                <span className="text-blue-600 bg-blue-50 border border-blue-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider shrink-0">
+                                                <span className="text-blue-600 bg-blue-50 border border-blue-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider shrink-0 dark:text-blue-400 dark:bg-blue-950 dark:border-blue-900">
                                                     Procesado
                                                 </span>
                                             ) : (
-                                                <span className="text-zinc-500 bg-zinc-50 border border-zinc-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider shrink-0">
+                                                <span className="text-zinc-500 bg-zinc-50 border border-zinc-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider shrink-0 dark:text-zinc-400 dark:bg-zinc-800/50 dark:border-zinc-800">
                                                     Original
                                                 </span>
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3 text-zinc-600 text-xs">
+                                    <td className="px-4 py-3 text-zinc-600 text-xs dark:text-zinc-400">
                                         {file.category === "tender" ? "Pliego" : file.category === "proposal" ? "Oferta" : "Sin clasificar"}
                                     </td>
-                                    <td className="px-4 py-3 text-zinc-500 font-mono text-xs whitespace-nowrap">
+                                    <td className="px-4 py-3 text-zinc-500 font-mono text-xs whitespace-nowrap dark:text-zinc-400">
                                         {formatBytes(file.file_size)}
                                     </td>
-                                    <td className="px-4 py-3 text-zinc-500 font-mono text-xs">
+                                    <td className="px-4 py-3 text-zinc-500 font-mono text-xs dark:text-zinc-400">
                                         {file.total_chunks ?? "—"}
                                     </td>
-                                    <td className="px-4 py-3 text-zinc-500 font-mono text-xs">
+                                    <td className="px-4 py-3 text-zinc-500 font-mono text-xs dark:text-zinc-400">
                                         {file.mime_type.split("/").pop()}
                                     </td>
                                     <td className="px-4 py-3">
@@ -214,7 +214,7 @@ export default function AdminAnalysisFilesPage() {
                                             {file.metadata != null && (
                                                 <button
                                                     onClick={() => setMetadataModal({ name: file.file_name, data: file.metadata! })}
-                                                    className="text-zinc-400 hover:text-amber-600 transition-colors p-1.5 hover:bg-amber-50 rounded-md"
+                                                    className="text-zinc-400 hover:text-amber-600 transition-colors p-1.5 hover:bg-amber-50 rounded-md dark:text-zinc-500 dark:hover:text-amber-400 dark:hover:bg-amber-950"
                                                     title="Ver metadata"
                                                 >
                                                     <Info className="w-4 h-4" />
@@ -223,7 +223,7 @@ export default function AdminAnalysisFilesPage() {
                                             {file.is_merged && (
                                                 <a
                                                     href={`/admin/analyses/${id}/files/${file.id}/chat`}
-                                                    className="text-zinc-400 hover:text-violet-600 transition-colors p-1.5 hover:bg-violet-50 rounded-md"
+                                                    className="text-zinc-400 hover:text-violet-600 transition-colors p-1.5 hover:bg-violet-50 rounded-md dark:text-zinc-500 dark:hover:text-violet-400 dark:hover:bg-violet-950"
                                                     title="Chat con este documento"
                                                 >
                                                     <MessageSquare className="w-4 h-4" />
@@ -232,7 +232,7 @@ export default function AdminAnalysisFilesPage() {
                                             {getFileUrl(file) && (
                                                 <button
                                                     onClick={() => handlePreview(file)}
-                                                    className="text-zinc-400 hover:text-emerald-600 transition-colors p-1.5 hover:bg-emerald-50 rounded-md"
+                                                    className="text-zinc-400 hover:text-emerald-600 transition-colors p-1.5 hover:bg-emerald-50 rounded-md dark:text-zinc-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-950"
                                                     title="Ver documento"
                                                 >
                                                     <Eye className="w-4 h-4" />
@@ -242,7 +242,7 @@ export default function AdminAnalysisFilesPage() {
                                                 href={`${SUPABASE_STORAGE_URL}/${file.storage_path}?download=${encodeURIComponent(file.file_name)}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
-                                                className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
+                                                className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md dark:text-zinc-500 dark:hover:text-blue-400 dark:hover:bg-blue-950"
                                                 title="Descargar"
                                                 download={file.file_name}
                                             >
@@ -260,21 +260,21 @@ export default function AdminAnalysisFilesPage() {
             {/* Metadata Modal */}
             {metadataModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col m-4">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
-                            <h3 className="font-semibold text-zinc-800 truncate flex items-center gap-2">
-                                <Info className="w-4 h-4 text-amber-500 shrink-0" />
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col m-4 dark:bg-zinc-900">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+                            <h3 className="font-semibold text-zinc-800 truncate flex items-center gap-2 dark:text-zinc-200">
+                                <Info className="w-4 h-4 text-amber-500 shrink-0 dark:text-amber-400" />
                                 {metadataModal.name}
                             </h3>
                             <button
                                 onClick={() => setMetadataModal(null)}
-                                className="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-500 hover:text-zinc-800"
+                                className="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-500 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
                         <div className="overflow-y-auto px-6 py-6 flex-1">
-                            <pre className="text-xs text-zinc-700 bg-zinc-50 rounded-lg p-4 border border-zinc-200 whitespace-pre-wrap break-all font-mono">
+                            <pre className="text-xs text-zinc-700 bg-zinc-50 rounded-lg p-4 border border-zinc-200 whitespace-pre-wrap break-all font-mono dark:text-zinc-300 dark:bg-zinc-800/50 dark:border-zinc-800">
                                 {JSON.stringify(metadataModal.data, null, 2)}
                             </pre>
                         </div>
@@ -285,14 +285,14 @@ export default function AdminAnalysisFilesPage() {
             {/* Markdown Preview Modal */}
             {(mdPreview || mdLoading) && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col m-4">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
-                            <h3 className="font-semibold text-zinc-800 truncate">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col m-4 dark:bg-zinc-900">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800">
+                            <h3 className="font-semibold text-zinc-800 truncate dark:text-zinc-200">
                                 {mdPreview?.name ?? "Cargando..."}
                             </h3>
                             <button
                                 onClick={() => setMdPreview(null)}
-                                className="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-500 hover:text-zinc-800"
+                                className="p-1.5 hover:bg-zinc-100 rounded-md transition-colors text-zinc-500 hover:text-zinc-800 dark:hover:bg-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -306,7 +306,7 @@ export default function AdminAnalysisFilesPage() {
                                     <Skeleton className="h-4 w-2/3" />
                                 </div>
                             ) : (
-                                <div className="prose prose-sm prose-zinc max-w-none">
+                                <div className="prose prose-sm prose-zinc max-w-none dark:prose-invert">
                                     <ReactMarkdown>{mdPreview!.content}</ReactMarkdown>
                                 </div>
                             )}

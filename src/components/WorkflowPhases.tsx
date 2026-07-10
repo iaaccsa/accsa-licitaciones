@@ -61,7 +61,7 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
         ? "stroke-amber-400"
         : uiStatus === "running"
           ? "stroke-sky-400"
-          : "stroke-zinc-200";
+          : "stroke-zinc-200 dark:stroke-zinc-700";
 
   const nodeStyle =
     uiStatus === "done"
@@ -69,17 +69,17 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
       : uiStatus === "warning"
         ? "bg-amber-500 text-white"
         : uiStatus === "running"
-          ? "bg-white text-sky-500 ring-4 ring-sky-100"
-          : "bg-zinc-100 text-zinc-400";
+          ? "bg-white dark:bg-zinc-900 text-sky-500 dark:text-sky-400 ring-4 ring-sky-100 dark:ring-sky-950"
+          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500";
 
   const statusColor =
     uiStatus === "done"
-      ? "text-green-600"
+      ? "text-green-600 dark:text-green-400"
       : uiStatus === "warning"
-        ? "text-amber-600"
+        ? "text-amber-600 dark:text-amber-400"
         : uiStatus === "running"
-          ? "text-sky-500"
-          : "text-zinc-400";
+          ? "text-sky-500 dark:text-sky-400"
+          : "text-zinc-400 dark:text-zinc-500";
 
   return (
     <div className="flex flex-col items-center text-center w-[140px] sm:w-[170px] shrink-0">
@@ -93,7 +93,7 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
             cx="28"
             cy="28"
             r={RING_R}
-            className="fill-none stroke-zinc-100"
+            className="fill-none stroke-zinc-100 dark:stroke-zinc-800"
             strokeWidth="4"
           />
           <circle
@@ -125,7 +125,7 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
         </div>
       </div>
 
-      <div className="mt-3 text-xs sm:text-sm font-medium text-zinc-700 leading-snug px-1">
+      <div className="mt-3 text-xs sm:text-sm font-medium text-zinc-700 dark:text-zinc-300 leading-snug px-1">
         {stage.display_name}
       </div>
       <div
@@ -160,9 +160,9 @@ function Connector({
   else if (prevDone && !currStarted) state = "waiting";
 
   const badgeStyle = {
-    idle: "text-zinc-400 border-zinc-200 bg-zinc-50",
-    waiting: "text-amber-600 border-amber-300 bg-amber-50",
-    done: "text-green-600 border-green-300 bg-green-50",
+    idle: "text-zinc-400 dark:text-zinc-500 border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50",
+    waiting: "text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950",
+    done: "text-green-600 dark:text-green-400 border-green-300 dark:border-green-800 bg-green-50 dark:bg-green-950",
   }[state];
 
   const label = isAuto
@@ -173,7 +173,7 @@ function Connector({
 
   return (
     <div className="flex-1 flex flex-col items-center pt-[22px] min-w-[60px]">
-      <div className="relative w-full h-[3px] rounded-full bg-zinc-100">
+      <div className="relative w-full h-[3px] rounded-full bg-zinc-100 dark:bg-zinc-800">
         <div
           className={`absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out ${state === "done" ? "w-full bg-green-500" : "w-0"}`}
         />
@@ -234,13 +234,13 @@ export default function WorkflowPhases({ analysisId }: WorkflowPhasesProps) {
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-        <div className="h-4 w-40 bg-zinc-100 rounded animate-pulse mb-6" />
+      <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+        <div className="h-4 w-40 bg-zinc-100 dark:bg-zinc-800 rounded animate-pulse mb-6" />
         <div className="flex items-center gap-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="flex flex-col items-center gap-2">
-              <div className="w-14 h-14 rounded-full bg-zinc-100 animate-pulse" />
-              <div className="h-3 w-20 bg-zinc-100 rounded animate-pulse" />
+              <div className="w-14 h-14 rounded-full bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+              <div className="h-3 w-20 bg-zinc-100 dark:bg-zinc-800 rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -251,18 +251,18 @@ export default function WorkflowPhases({ analysisId }: WorkflowPhasesProps) {
   if (sorted.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
       <header className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
-        <h2 className="text-base font-semibold text-zinc-900 tracking-tight">
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
           Progreso del análisis
         </h2>
-        <div className="text-sm text-zinc-500">
+        <div className="text-sm text-zinc-500 dark:text-zinc-400">
           Progreso global:{" "}
-          <strong className="text-zinc-900 font-semibold">{overall}%</strong>
+          <strong className="text-zinc-900 dark:text-zinc-100 font-semibold">{overall}%</strong>
         </div>
       </header>
 
-      <div className="h-1.5 w-full rounded-full bg-zinc-100 overflow-hidden mt-4 mb-10">
+      <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden mt-4 mb-10">
         <div
           className="h-full rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 transition-all duration-700 ease-out"
           style={{ width: `${overall}%` }}

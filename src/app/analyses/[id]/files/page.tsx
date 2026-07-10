@@ -181,12 +181,12 @@ export default function AnalysisFilesPage() {
     if (error) {
         return (
             <div className="max-w-5xl mx-auto py-12 px-4 text-center">
-                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-zinc-900 mb-2">Error</h2>
-                <p className="text-zinc-600">{error}</p>
+                <AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
+                <p className="text-zinc-600 dark:text-zinc-400">{error}</p>
                 <button
                     onClick={() => router.back()}
-                    className="mt-4 text-blue-600 hover:underline"
+                    className="mt-4 text-blue-600 dark:text-blue-400 hover:underline"
                 >
                     Volver al análisis
                 </button>
@@ -204,17 +204,17 @@ export default function AnalysisFilesPage() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
-                        className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
                     >
-                        <ChevronLeft className="w-5 h-5 text-zinc-600" />
+                        <ChevronLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
                     </button>
-                    <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
-                        <FileText className="w-6 h-6 text-blue-600" />
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                         Archivos del Análisis
                     </h1>
                 </div>
                 {analysis && (
-                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase">
+                    <span className="font-mono text-sm font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 uppercase">
                         {analysis.user_assigned_name || analysis.generated_name || analysis.slug}
                     </span>
                 )}
@@ -229,23 +229,23 @@ export default function AnalysisFilesPage() {
                 <div className="space-y-6">
                     {/* Unclassified Files */}
                     {unclassifiedFiles.length > 0 && (
-                        <div className="bg-white rounded-xl border border-amber-200 p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                                <HelpCircle className="w-5 h-5 text-amber-500" />
+                        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-amber-200 dark:border-amber-900 p-6 shadow-sm">
+                            <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
+                                <HelpCircle className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                                 Sin Clasificar
                             </h2>
                             <ul className="space-y-3">
                                 {unclassifiedFiles.map(file => (
-                                    <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 rounded-lg border border-zinc-100 group hover:border-amber-200 transition-colors">
+                                    <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800 group hover:border-amber-200 dark:hover:border-amber-900 transition-colors">
                                         <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
-                                            <span className="truncate font-medium text-zinc-700">{file.file_name}</span>
-                                            <span className="text-zinc-400 text-xs whitespace-nowrap font-mono bg-zinc-100 px-1.5 py-0.5 rounded">
+                                            <span className="truncate font-medium text-zinc-700 dark:text-zinc-300">{file.file_name}</span>
+                                            <span className="text-zinc-400 dark:text-zinc-500 text-xs whitespace-nowrap font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
                                                 {formatBytes(file.file_size)}
                                             </span>
                                             {(file.total_chunks || 0) > 0 && (
                                                 <a
                                                     href={`/analyses/${id}/files/${file.id}/chunks`}
-                                                    className="flex items-center gap-1 text-orange-600 bg-orange-50 border border-orange-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 transition-colors"
+                                                    className="flex items-center gap-1 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 dark:hover:bg-orange-950 transition-colors"
                                                     title="Ver chunks extraídos"
                                                 >
                                                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
@@ -257,7 +257,7 @@ export default function AnalysisFilesPage() {
                                             {file.is_reorderable && (
                                                 <button
                                                     onClick={() => openMoveModal(file)}
-                                                    className="text-amber-500 hover:text-amber-700 transition-colors p-1.5 hover:bg-amber-50 rounded-md flex items-center gap-1 text-xs font-medium"
+                                                    className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors p-1.5 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-md flex items-center gap-1 text-xs font-medium"
                                                     title="Mover archivo"
                                                 >
                                                     <ArrowRightLeft className="w-4 h-4" />
@@ -269,7 +269,7 @@ export default function AnalysisFilesPage() {
                                                     href={getViewUrl(file)!}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-zinc-400 hover:text-emerald-600 transition-colors p-1.5 hover:bg-emerald-50 rounded-md"
+                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950 rounded-md"
                                                     title="Ver documento"
                                                 >
                                                     <Eye className="w-4 h-4" />
@@ -280,7 +280,7 @@ export default function AnalysisFilesPage() {
                                                     href={getDownloadUrl(file)!}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
+                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-md"
                                                     title="Descargar documento"
                                                     download={file.file_name}
                                                 >
@@ -295,24 +295,24 @@ export default function AnalysisFilesPage() {
                     )}
 
                     {/* Tender Files */}
-                    <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-blue-600" />
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+                        <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
+                            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             Pliego y Normativas
                         </h2>
                         {tenderFiles.length > 0 ? (
                             <ul className="space-y-3">
                                 {tenderFiles.map(file => (
-                                    <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 rounded-lg border border-zinc-100 group hover:border-blue-200 transition-colors">
+                                    <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800 group hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
                                         <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
-                                            <span className="truncate font-medium text-zinc-700">{file.file_name}</span>
-                                            <span className="text-zinc-400 text-xs whitespace-nowrap font-mono bg-zinc-100 px-1.5 py-0.5 rounded">
+                                            <span className="truncate font-medium text-zinc-700 dark:text-zinc-300">{file.file_name}</span>
+                                            <span className="text-zinc-400 dark:text-zinc-500 text-xs whitespace-nowrap font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
                                                 {formatBytes(file.file_size)}
                                             </span>
                                             {(file.total_chunks || 0) > 0 && (
                                                 <a
                                                     href={`/analyses/${id}/files/${file.id}/chunks`}
-                                                    className="flex items-center gap-1 text-orange-600 bg-orange-50 border border-orange-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 transition-colors"
+                                                    className="flex items-center gap-1 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 dark:hover:bg-orange-950 transition-colors"
                                                     title="Ver chunks extraídos"
                                                 >
                                                     <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
@@ -325,7 +325,7 @@ export default function AnalysisFilesPage() {
                                                 <>
                                                     <button
                                                         onClick={() => openMoveModal(file)}
-                                                        className="text-amber-500 hover:text-amber-700 transition-colors p-1.5 hover:bg-amber-50 rounded-md flex items-center gap-1 text-xs font-medium"
+                                                        className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors p-1.5 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-md flex items-center gap-1 text-xs font-medium"
                                                         title="Mover archivo"
                                                     >
                                                         <ArrowRightLeft className="w-4 h-4" />
@@ -334,7 +334,7 @@ export default function AnalysisFilesPage() {
                                                     <button
                                                         onClick={() => handleExclude(file)}
                                                         disabled={excludingFileId === file.id}
-                                                        className="text-red-400 hover:text-red-600 transition-colors p-1.5 hover:bg-red-50 rounded-md flex items-center gap-1 text-xs font-medium disabled:opacity-50"
+                                                        className="text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1.5 hover:bg-red-50 dark:hover:bg-red-950 rounded-md flex items-center gap-1 text-xs font-medium disabled:opacity-50"
                                                         title="Excluir archivo"
                                                     >
                                                         {excludingFileId === file.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
@@ -345,7 +345,7 @@ export default function AnalysisFilesPage() {
                                             {file.is_merged && (
                                                 <a
                                                     href={`/analyses/${id}/files/${file.id}/chat`}
-                                                    className="text-zinc-400 hover:text-violet-600 transition-colors p-1.5 hover:bg-violet-50 rounded-md"
+                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors p-1.5 hover:bg-violet-50 dark:hover:bg-violet-950 rounded-md"
                                                     title="Chat con este documento"
                                                 >
                                                     <MessageSquare className="w-4 h-4" />
@@ -356,7 +356,7 @@ export default function AnalysisFilesPage() {
                                                     href={getViewUrl(file)!}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-zinc-400 hover:text-emerald-600 transition-colors p-1.5 hover:bg-emerald-50 rounded-md"
+                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950 rounded-md"
                                                     title="Ver documento"
                                                 >
                                                     <Eye className="w-4 h-4" />
@@ -367,7 +367,7 @@ export default function AnalysisFilesPage() {
                                                     href={getDownloadUrl(file)!}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
+                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-md"
                                                     title="Descargar documento"
                                                     download={file.file_name}
                                                 >
@@ -379,7 +379,7 @@ export default function AnalysisFilesPage() {
                                 ))}
                             </ul>
                         ) : (
-                            <p className="text-sm text-zinc-400 italic">No hay archivos de pliego.</p>
+                            <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">No hay archivos de pliego.</p>
                         )}
                     </div>
 
@@ -394,23 +394,23 @@ export default function AnalysisFilesPage() {
                             }, {} as Record<string, AnalysisFile[]>)).map(([proposalId, files]) => {
                             const label = files[0].proposal_label || files[0].proposal_provider_name || 'Sin etiqueta';
                             return (
-                                <div key={proposalId} className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                                    <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                                        <FileText className="w-5 h-5 text-green-600" />
+                                <div key={proposalId} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+                                    <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
                                         Oferta: {label}
                                     </h2>
                                     <ul className="space-y-3">
                                         {files.map(file => (
-                                            <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 rounded-lg border border-zinc-100 group hover:border-blue-200 transition-colors">
+                                            <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800 group hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
                                                 <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
-                                                    <span className="truncate font-medium text-zinc-700">{file.file_name}</span>
-                                                    <span className="text-zinc-400 text-xs whitespace-nowrap font-mono bg-zinc-100 px-1.5 py-0.5 rounded">
+                                                    <span className="truncate font-medium text-zinc-700 dark:text-zinc-300">{file.file_name}</span>
+                                                    <span className="text-zinc-400 dark:text-zinc-500 text-xs whitespace-nowrap font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
                                                         {formatBytes(file.file_size)}
                                                     </span>
                                                     {(file.total_chunks || 0) > 0 && (
                                                         <a
                                                             href={`/analyses/${id}/files/${file.id}/chunks`}
-                                                            className="flex items-center gap-1 text-orange-600 bg-orange-50 border border-orange-100 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 transition-colors"
+                                                            className="flex items-center gap-1 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 dark:hover:bg-orange-950 transition-colors"
                                                             title="Ver chunks extraídos"
                                                         >
                                                             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
@@ -423,7 +423,7 @@ export default function AnalysisFilesPage() {
                                                         <>
                                                             <button
                                                                 onClick={() => openMoveModal(file)}
-                                                                className="text-amber-500 hover:text-amber-700 transition-colors p-1.5 hover:bg-amber-50 rounded-md flex items-center gap-1 text-xs font-medium"
+                                                                className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors p-1.5 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-md flex items-center gap-1 text-xs font-medium"
                                                                 title="Mover archivo"
                                                             >
                                                                 <ArrowRightLeft className="w-4 h-4" />
@@ -432,7 +432,7 @@ export default function AnalysisFilesPage() {
                                                             <button
                                                                 onClick={() => handleExclude(file)}
                                                                 disabled={excludingFileId === file.id}
-                                                                className="text-red-400 hover:text-red-600 transition-colors p-1.5 hover:bg-red-50 rounded-md flex items-center gap-1 text-xs font-medium disabled:opacity-50"
+                                                                className="text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1.5 hover:bg-red-50 dark:hover:bg-red-950 rounded-md flex items-center gap-1 text-xs font-medium disabled:opacity-50"
                                                                 title="Excluir archivo"
                                                             >
                                                                 {excludingFileId === file.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
@@ -443,7 +443,7 @@ export default function AnalysisFilesPage() {
                                                     {file.is_merged && (
                                                         <a
                                                             href={`/analyses/${id}/files/${file.id}/chat`}
-                                                            className="text-zinc-400 hover:text-violet-600 transition-colors p-1.5 hover:bg-violet-50 rounded-md"
+                                                            className="text-zinc-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors p-1.5 hover:bg-violet-50 dark:hover:bg-violet-950 rounded-md"
                                                             title="Chat con este documento"
                                                         >
                                                             <MessageSquare className="w-4 h-4" />
@@ -454,7 +454,7 @@ export default function AnalysisFilesPage() {
                                                             href={getViewUrl(file)!}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-zinc-400 hover:text-emerald-600 transition-colors p-1.5 hover:bg-emerald-50 rounded-md"
+                                                            className="text-zinc-400 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950 rounded-md"
                                                             title="Ver documento"
                                                         >
                                                             <Eye className="w-4 h-4" />
@@ -465,7 +465,7 @@ export default function AnalysisFilesPage() {
                                                             href={getDownloadUrl(file)!}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="text-zinc-400 hover:text-blue-600 transition-colors p-1.5 hover:bg-blue-50 rounded-md"
+                                                            className="text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-md"
                                                             title="Descargar documento"
                                                             download={file.file_name}
                                                         >
@@ -480,12 +480,12 @@ export default function AnalysisFilesPage() {
                             );
                             })
                         ) : (
-                            <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
-                                <h2 className="text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-green-600" />
+                            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
+                                <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
                                     Ofertas
                                 </h2>
-                                <p className="text-sm text-zinc-400 italic">No hay archivos de oferta.</p>
+                                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">No hay archivos de oferta.</p>
                             </div>
                         )}
                     </div>
@@ -496,27 +496,27 @@ export default function AnalysisFilesPage() {
             {/* Move File Modal */}
             {moveFile && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !isMoving && setMoveFile(null)}>
-                    <div className="bg-white rounded-xl border border-zinc-200 shadow-lg w-full max-w-2xl mx-4" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between p-4 border-b border-zinc-100">
-                            <h3 className="font-semibold text-zinc-900">Mover archivo</h3>
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-lg w-full max-w-2xl mx-4" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-4 border-b border-zinc-100 dark:border-zinc-800">
+                            <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">Mover archivo</h3>
                             <button
                                 onClick={() => !isMoving && setMoveFile(null)}
-                                className="p-1 hover:bg-zinc-100 rounded-md transition-colors"
+                                className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
                             >
-                                <X className="w-4 h-4 text-zinc-500" />
+                                <X className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                             </button>
                         </div>
                         <div className="p-4">
-                            <p className="text-sm text-zinc-500 mb-4">
-                                <span className="font-medium text-zinc-700">{moveFile.file_name}</span>
+                            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4">
+                                <span className="font-medium text-zinc-700 dark:text-zinc-300">{moveFile.file_name}</span>
                             </p>
-                            <p className="text-xs text-zinc-400 uppercase tracking-wider font-semibold mb-2">Seleccionar destino</p>
+                            <p className="text-xs text-zinc-400 dark:text-zinc-500 uppercase tracking-wider font-semibold mb-2">Seleccionar destino</p>
                             {isLoadingSources ? (
                                 <div className="flex justify-center py-8">
-                                    <Loader2 className="w-6 h-6 text-zinc-300 animate-spin" />
+                                    <Loader2 className="w-6 h-6 text-zinc-300 dark:text-zinc-600 animate-spin" />
                                 </div>
                             ) : sources.length === 0 ? (
-                                <p className="text-sm text-zinc-400 italic text-center py-4">No hay destinos disponibles.</p>
+                                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic text-center py-4">No hay destinos disponibles.</p>
                             ) : (
                                 <ul className="space-y-2 max-h-80 overflow-y-auto">
                                     {sources.map(source => (
@@ -526,25 +526,25 @@ export default function AnalysisFilesPage() {
                                                 disabled={isMoving}
                                                 className={`w-full text-left p-3 rounded-lg border transition-colors flex items-start gap-3 disabled:opacity-50 ${
                                                     selectedSource?.id === source.id
-                                                        ? "border-blue-400 bg-blue-50 ring-1 ring-blue-400"
-                                                        : "border-zinc-100 hover:border-blue-300 hover:bg-blue-50/50"
+                                                        ? "border-blue-400 bg-blue-50 dark:bg-blue-950 ring-1 ring-blue-400"
+                                                        : "border-zinc-100 dark:border-zinc-800 hover:border-blue-300 dark:hover:border-blue-800 hover:bg-blue-50/50 dark:hover:bg-blue-950/50"
                                                 }`}
                                             >
                                                 <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shrink-0 mt-0.5 ${
                                                     source.type === "proposal"
-                                                        ? "bg-green-100 text-green-700"
-                                                        : "bg-blue-100 text-blue-700"
+                                                        ? "bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300"
+                                                        : "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
                                                 }`}>
                                                     {source.type === "proposal" ? "Propuesta" : "Pliego"}
                                                 </span>
-                                                <span className="text-sm text-zinc-700">{source.label}</span>
+                                                <span className="text-sm text-zinc-700 dark:text-zinc-300">{source.label}</span>
                                             </button>
                                         </li>
                                     ))}
                                 </ul>
                             )}
                         </div>
-                        <div className="flex items-center justify-end gap-2 p-4 border-t border-zinc-100">
+                        <div className="flex items-center justify-end gap-2 p-4 border-t border-zinc-100 dark:border-zinc-800">
                             <Button
                                 variant="outline"
                                 size="sm"

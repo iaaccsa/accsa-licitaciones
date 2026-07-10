@@ -18,11 +18,11 @@ type MatchingStatus =
 type AdmissibilityStatus = "failed" | "pending" | "admitida" | "rechazada" | "evaluating";
 
 const ADMISSIBILITY_CONFIG: Record<AdmissibilityStatus, { label: string; color: string }> = {
-    pending: { label: "Pendiente", color: "bg-zinc-100 text-zinc-500" },
-    evaluating: { label: "Evaluando", color: "bg-blue-50 text-blue-600" },
-    admitida: { label: "Admitida", color: "bg-emerald-50 text-emerald-700" },
-    rechazada: { label: "Rechazada", color: "bg-red-50 text-red-600" },
-    failed: { label: "Error", color: "bg-orange-50 text-orange-600" },
+    pending: { label: "Pendiente", color: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400" },
+    evaluating: { label: "Evaluando", color: "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400" },
+    admitida: { label: "Admitida", color: "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300" },
+    rechazada: { label: "Rechazada", color: "bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400" },
+    failed: { label: "Error", color: "bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400" },
 };
 
 interface Proposal {
@@ -48,13 +48,13 @@ interface Proposal {
 }
 
 const STATUS_CONFIG: Record<MatchingStatus, { label: string; color: string; icon: React.ReactNode }> = {
-    pending: { label: "Pendiente", color: "bg-zinc-100 text-zinc-600", icon: <Clock className="w-3.5 h-3.5" /> },
-    matching: { label: "Evaluando", color: "bg-blue-50 text-blue-600", icon: <Loader2 className="w-3.5 h-3.5 animate-spin" /> },
-    matrix_ready: { label: "Matriz lista", color: "bg-indigo-50 text-indigo-600", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-    summarizing: { label: "Resumiendo", color: "bg-violet-50 text-violet-600", icon: <Loader2 className="w-3.5 h-3.5 animate-spin" /> },
-    completed: { label: "Completado", color: "bg-emerald-50 text-emerald-700", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
-    failed: { label: "Fallido", color: "bg-red-50 text-red-600", icon: <XCircle className="w-3.5 h-3.5" /> },
-    summary_failed: { label: "Error en resumen", color: "bg-orange-50 text-orange-600", icon: <AlertTriangle className="w-3.5 h-3.5" /> },
+    pending: { label: "Pendiente", color: "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400", icon: <Clock className="w-3.5 h-3.5" /> },
+    matching: { label: "Evaluando", color: "bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400", icon: <Loader2 className="w-3.5 h-3.5 animate-spin" /> },
+    matrix_ready: { label: "Matriz lista", color: "bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+    summarizing: { label: "Resumiendo", color: "bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400", icon: <Loader2 className="w-3.5 h-3.5 animate-spin" /> },
+    completed: { label: "Completado", color: "bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300", icon: <CheckCircle2 className="w-3.5 h-3.5" /> },
+    failed: { label: "Fallido", color: "bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400", icon: <XCircle className="w-3.5 h-3.5" /> },
+    summary_failed: { label: "Error en resumen", color: "bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400", icon: <AlertTriangle className="w-3.5 h-3.5" /> },
 };
 
 function StatusBadge({ status }: { status: MatchingStatus }) {
@@ -72,10 +72,10 @@ function ComplianceBar({ rate }: { rate: number }) {
     const color = pct >= 75 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-red-500";
     return (
         <div className="flex items-center gap-2 min-w-0">
-            <div className="flex-1 bg-zinc-100 rounded-full h-1.5 min-w-[60px]">
+            <div className="flex-1 bg-zinc-100 dark:bg-zinc-800 rounded-full h-1.5 min-w-[60px]">
                 <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${pct}%` }} />
             </div>
-            <span className="text-xs font-semibold text-zinc-700 tabular-nums w-8 text-right">{pct}%</span>
+            <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 tabular-nums w-8 text-right">{pct}%</span>
         </div>
     );
 }
@@ -159,7 +159,7 @@ export default function ProposalsPage() {
             <div className="flex items-center gap-3">
                 <Link
                     href={`/analyses/${id}`}
-                    className="flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+                    className="flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Volver al análisis
@@ -167,27 +167,27 @@ export default function ProposalsPage() {
             </div>
 
             <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-zinc-900">Propuestas</h1>
+                <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Propuestas</h1>
                 {!isLoading && !error && (
-                    <span className="text-sm text-zinc-500">{proposals.length} propuesta{proposals.length !== 1 ? "s" : ""}</span>
+                    <span className="text-sm text-zinc-500 dark:text-zinc-400">{proposals.length} propuesta{proposals.length !== 1 ? "s" : ""}</span>
                 )}
             </div>
 
             {isLoading && (
                 <div className="flex justify-center py-16">
-                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400 dark:text-zinc-500" />
                 </div>
             )}
 
             {error && (
-                <div className="flex items-center gap-2 text-red-600 py-8 justify-center">
+                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 py-8 justify-center">
                     <AlertCircle className="w-5 h-5" />
                     <span className="text-sm">{error}</span>
                 </div>
             )}
 
             {!isLoading && !error && proposals.length === 0 && (
-                <div className="text-center py-16 text-zinc-400">
+                <div className="text-center py-16 text-zinc-400 dark:text-zinc-500">
                     <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
                     <p className="text-sm">No hay propuestas asociadas a este analisis.</p>
                 </div>
@@ -213,21 +213,21 @@ export default function ProposalsPage() {
                         <Link
                             key={proposal.id}
                             href={`/analyses/${id}/proposals/${proposal.id}`}
-                            className="flex flex-col bg-white rounded-xl border border-zinc-200 hover:border-zinc-300 hover:shadow-sm transition-all p-5"
+                            className="flex flex-col bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all p-5"
                         >
                             <div className="flex items-start gap-3">
-                                <div className="p-2 bg-blue-50 rounded-lg text-blue-500 shrink-0">
+                                <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg text-blue-500 dark:text-blue-400 shrink-0">
                                     <FileText className="w-5 h-5" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <span className="block font-semibold text-zinc-900 truncate">{proposal.label}</span>
+                                    <span className="block font-semibold text-zinc-900 dark:text-zinc-100 truncate">{proposal.label}</span>
                                     {proposal.provider_name && (
-                                        <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-500 truncate">
+                                        <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 truncate">
                                             <Building2 className="w-3.5 h-3.5 shrink-0" />
                                             <span className="truncate">{proposal.provider_name}</span>
                                         </span>
                                     )}
-                                    <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-400">
+                                    <span className="mt-0.5 flex items-center gap-1 text-xs text-zinc-400 dark:text-zinc-500">
                                         <Calendar className="w-3.5 h-3.5 shrink-0" />
                                         {new Date(proposal.created_at).toLocaleDateString("es-ES")}
                                     </span>
@@ -248,22 +248,22 @@ export default function ProposalsPage() {
                             </div>
 
                             {hasError && errorMsg && (
-                                <p className="mt-2 text-xs text-red-500 line-clamp-2">{errorMsg}</p>
+                                <p className="mt-2 text-xs text-red-500 dark:text-red-400 line-clamp-2">{errorMsg}</p>
                             )}
 
                             {(offer || proposal.compliance_rate != null) && (
-                                <div className="mt-4 pt-4 border-t border-zinc-100 flex items-end justify-between gap-4">
+                                <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800 flex items-end justify-between gap-4">
                                     {offer && (
                                         <div>
-                                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5 flex items-center gap-1">
+                                            <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-0.5 flex items-center gap-1">
                                                 <Coins className="w-3 h-3" />
                                                 Oferta
                                             </p>
-                                            <p className="text-sm font-bold text-emerald-700 tabular-nums">
+                                            <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300 tabular-nums">
                                                 {formatAmount(offer.total_amount, offer.currency)}
                                             </p>
                                             {offer.requires_manual_review && (
-                                                <p className="text-[10px] text-amber-600 flex items-center gap-0.5 mt-0.5">
+                                                <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5 mt-0.5">
                                                     <AlertTriangle className="w-3 h-3" />
                                                     Revisar
                                                 </p>
@@ -272,7 +272,7 @@ export default function ProposalsPage() {
                                     )}
                                     {proposal.compliance_rate != null && (
                                         <div className="flex-1 max-w-[160px]">
-                                            <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-1">Cumplimiento</p>
+                                            <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Cumplimiento</p>
                                             <ComplianceBar rate={proposal.compliance_rate} />
                                         </div>
                                     )}
@@ -280,22 +280,22 @@ export default function ProposalsPage() {
                             )}
 
                             {hasCounts && (
-                                <div className="mt-3 grid grid-cols-4 divide-x divide-zinc-100 rounded-lg bg-zinc-50 py-2">
+                                <div className="mt-3 grid grid-cols-4 divide-x divide-zinc-100 dark:divide-zinc-800 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 py-2">
                                     <div className="px-2 text-center">
-                                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">Cumple</p>
-                                        <p className="text-sm font-bold text-emerald-600">{compliant ?? "-"}</p>
+                                        <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-0.5">Cumple</p>
+                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{compliant ?? "-"}</p>
                                     </div>
                                     <div className="px-2 text-center">
-                                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">No cumple</p>
-                                        <p className="text-sm font-bold text-red-500">{nonCompliant ?? "-"}</p>
+                                        <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-0.5">No cumple</p>
+                                        <p className="text-sm font-bold text-red-500 dark:text-red-400">{nonCompliant ?? "-"}</p>
                                     </div>
                                     <div className="px-2 text-center">
-                                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">Sin info</p>
-                                        <p className="text-sm font-bold text-amber-500">{missing ?? "-"}</p>
+                                        <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-0.5">Sin info</p>
+                                        <p className="text-sm font-bold text-amber-500 dark:text-amber-400">{missing ?? "-"}</p>
                                     </div>
                                     <div className="px-2 text-center">
-                                        <p className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider mb-0.5">Criticos</p>
-                                        <p className="text-sm font-bold text-red-600 flex items-center justify-center gap-1">
+                                        <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-0.5">Criticos</p>
+                                        <p className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center justify-center gap-1">
                                             {proposal.critical_failures_count != null && proposal.critical_failures_count > 0 && (
                                                 <AlertTriangle className="w-3.5 h-3.5" />
                                             )}
@@ -306,13 +306,13 @@ export default function ProposalsPage() {
                             )}
 
                             {(proposal.admissibility_status === "admitida" || proposal.admissibility_status === "rechazada") && (
-                                <div className="mt-4 pt-4 border-t border-zinc-100">
+                                <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800">
                                     {proposal.admissibility_status === "admitida" ? (
                                         <button
                                             type="button"
                                             onClick={(e) => handleOverride(e, proposal, "rechazada")}
                                             disabled={overridingId === proposal.id}
-                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                         >
                                             {overridingId === proposal.id ? (
                                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -326,7 +326,7 @@ export default function ProposalsPage() {
                                             type="button"
                                             onClick={(e) => handleOverride(e, proposal, "admitida")}
                                             disabled={overridingId === proposal.id}
-                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                         >
                                             {overridingId === proposal.id ? (
                                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -347,10 +347,10 @@ export default function ProposalsPage() {
                         {admitidas.length > 0 && (
                             <section>
                                 <div className="flex items-center gap-2 mb-3">
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-emerald-700">Admitidas</h2>
-                                    <span className="text-xs text-zinc-500">{admitidas.length}</span>
-                                    <div className="flex-1 h-px bg-emerald-100 ml-2" />
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Admitidas</h2>
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{admitidas.length}</span>
+                                    <div className="flex-1 h-px bg-emerald-100 dark:bg-emerald-950 ml-2" />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{admitidas.map(renderCard)}</div>
                             </section>
@@ -359,10 +359,10 @@ export default function ProposalsPage() {
                         {rechazadas.length > 0 && (
                             <section>
                                 <div className="flex items-center gap-2 mb-3">
-                                    <XCircle className="w-5 h-5 text-red-600" />
-                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-red-700">Rechazadas</h2>
-                                    <span className="text-xs text-zinc-500">{rechazadas.length}</span>
-                                    <div className="flex-1 h-px bg-red-100 ml-2" />
+                                    <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-red-700 dark:text-red-300">Rechazadas</h2>
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{rechazadas.length}</span>
+                                    <div className="flex-1 h-px bg-red-100 dark:bg-red-950 ml-2" />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{rechazadas.map(renderCard)}</div>
                             </section>
@@ -371,10 +371,10 @@ export default function ProposalsPage() {
                         {otras.length > 0 && (
                             <section>
                                 <div className="flex items-center gap-2 mb-3">
-                                    <Clock className="w-5 h-5 text-zinc-500" />
-                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-600">Sin resolver</h2>
-                                    <span className="text-xs text-zinc-500">{otras.length}</span>
-                                    <div className="flex-1 h-px bg-zinc-100 ml-2" />
+                                    <Clock className="w-5 h-5 text-zinc-500 dark:text-zinc-400" />
+                                    <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-600 dark:text-zinc-400">Sin resolver</h2>
+                                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{otras.length}</span>
+                                    <div className="flex-1 h-px bg-zinc-100 dark:bg-zinc-800 ml-2" />
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{otras.map(renderCard)}</div>
                             </section>

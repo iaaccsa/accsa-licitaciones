@@ -47,10 +47,10 @@ interface EconomicOffer {
 }
 
 const CONFIDENCE_CONFIG: Record<Confidence, { label: string; color: string }> = {
-    alta: { label: "Confianza alta", color: "bg-emerald-50 text-emerald-700" },
-    media: { label: "Confianza media", color: "bg-blue-50 text-blue-700" },
-    baja: { label: "Confianza baja", color: "bg-amber-50 text-amber-700" },
-    muy_baja: { label: "Confianza muy baja", color: "bg-red-50 text-red-700" },
+    alta: { label: "Confianza alta", color: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" },
+    media: { label: "Confianza media", color: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300" },
+    baja: { label: "Confianza baja", color: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300" },
+    muy_baja: { label: "Confianza muy baja", color: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300" },
 };
 
 function formatAmount(value: number | string | null | undefined, currency?: string | null): string {
@@ -97,7 +97,7 @@ export default function EconomicOfferCard({
             <Card className="min-w-0">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Coins className="w-5 h-5 text-emerald-600" />
+                        <Coins className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         Propuesta Económica
                     </CardTitle>
                 </CardHeader>
@@ -117,12 +117,12 @@ export default function EconomicOfferCard({
             <Card className="min-w-0">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Coins className="w-5 h-5 text-emerald-600" />
+                        <Coins className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         Propuesta Económica
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-red-600">{error}</p>
+                    <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                 </CardContent>
             </Card>
         );
@@ -133,12 +133,12 @@ export default function EconomicOfferCard({
             <Card className="min-w-0">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        <Coins className="w-5 h-5 text-emerald-600" />
+                        <Coins className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         Propuesta Económica
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex items-center gap-2 text-zinc-500 text-sm py-4">
+                    <div className="flex items-center gap-2 text-zinc-500 dark:text-zinc-400 text-sm py-4">
                         <FileQuestion className="w-4 h-4" />
                         Sin datos económicos extraídos para esta propuesta.
                     </div>
@@ -154,7 +154,7 @@ export default function EconomicOfferCard({
             <CardHeader>
                 <CardTitle className="flex items-center justify-between gap-3 flex-wrap">
                     <span className="flex items-center gap-2">
-                        <Coins className="w-5 h-5 text-emerald-600" />
+                        <Coins className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         Propuesta Económica
                     </span>
                     <div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export default function EconomicOfferCard({
                             {confidenceCfg.label}
                         </span>
                         {offer.requires_manual_review && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
                                 <AlertTriangle className="w-3.5 h-3.5" />
                                 Requiere revisión manual
                             </span>
@@ -174,12 +174,12 @@ export default function EconomicOfferCard({
                 <div className="space-y-6">
                     {/* Total destacado */}
                     <div className="flex items-baseline gap-3 flex-wrap">
-                        <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Total</span>
-                        <span className="text-3xl font-bold text-zinc-900 tabular-nums">
+                        <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Total</span>
+                        <span className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
                             {formatAmount(offer.total_amount, offer.currency)}
                         </span>
                         {offer.includes_taxes != null && (
-                            <span className="text-xs text-zinc-500">
+                            <span className="text-xs text-zinc-500 dark:text-zinc-400">
                                 {offer.includes_taxes ? "IVA incluido" : "IVA no incluido"}
                             </span>
                         )}
@@ -200,7 +200,7 @@ export default function EconomicOfferCard({
                             <Field
                                 label="Detalle de impuestos"
                                 value={
-                                    <pre className="text-xs font-mono text-zinc-700 bg-zinc-50 border border-zinc-100 rounded p-2 whitespace-pre-wrap break-all">
+                                    <pre className="text-xs font-mono text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded p-2 whitespace-pre-wrap break-all">
                                         {JSON.stringify(offer.tax_details, null, 2)}
                                     </pre>
                                 }
@@ -211,13 +211,13 @@ export default function EconomicOfferCard({
                     {/* Line items */}
                     {offer.line_items.length > 0 && (
                         <div>
-                            <h4 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+                            <h4 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
                                 Detalle por ítems ({offer.line_items.length})
                             </h4>
-                            <div className="overflow-x-auto rounded-lg border border-zinc-200">
+                            <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
                                 <table className="w-full text-sm">
-                                    <thead className="bg-zinc-50">
-                                        <tr className="text-left text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                    <thead className="bg-zinc-50 dark:bg-zinc-800/50">
+                                        <tr className="text-left text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                                             <th className="px-3 py-2">Código</th>
                                             <th className="px-3 py-2">Descripción</th>
                                             <th className="px-3 py-2 text-right">Cant.</th>
@@ -225,18 +225,18 @@ export default function EconomicOfferCard({
                                             <th className="px-3 py-2 text-right">Subtotal</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-zinc-100">
+                                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                                         {offer.line_items.map((item, idx) => (
                                             <tr key={idx}>
-                                                <td className="px-3 py-2 font-mono text-xs text-zinc-600">{item.code || "—"}</td>
-                                                <td className="px-3 py-2 text-zinc-800">{item.description}</td>
-                                                <td className="px-3 py-2 text-right tabular-nums text-zinc-700">
+                                                <td className="px-3 py-2 font-mono text-xs text-zinc-600 dark:text-zinc-400">{item.code || "—"}</td>
+                                                <td className="px-3 py-2 text-zinc-800 dark:text-zinc-200">{item.description}</td>
+                                                <td className="px-3 py-2 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
                                                     {item.quantity ?? "—"}
                                                 </td>
-                                                <td className="px-3 py-2 text-right tabular-nums text-zinc-700">
+                                                <td className="px-3 py-2 text-right tabular-nums text-zinc-700 dark:text-zinc-300">
                                                     {formatAmount(item.unit_price, item.currency || offer.currency)}
                                                 </td>
-                                                <td className="px-3 py-2 text-right tabular-nums font-semibold text-zinc-900">
+                                                <td className="px-3 py-2 text-right tabular-nums font-semibold text-zinc-900 dark:text-zinc-100">
                                                     {formatAmount(item.subtotal, item.currency || offer.currency)}
                                                 </td>
                                             </tr>
@@ -249,11 +249,11 @@ export default function EconomicOfferCard({
 
                     {/* Citations colapsable */}
                     {offer.citations.length > 0 && (
-                        <div className="border-t border-zinc-100 pt-4">
+                        <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4">
                             <button
                                 type="button"
                                 onClick={() => setShowCitations((v) => !v)}
-                                className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-700 transition-colors"
+                                className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
                             >
                                 {showCitations ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                 Citas en el documento ({offer.citations.length})
@@ -261,14 +261,14 @@ export default function EconomicOfferCard({
                             {showCitations && (
                                 <ul className="mt-3 space-y-3">
                                     {offer.citations.map((c, idx) => (
-                                        <li key={idx} className="text-xs border-l-2 border-emerald-200 pl-3">
+                                        <li key={idx} className="text-xs border-l-2 border-emerald-200 dark:border-emerald-900 pl-3">
                                             {c.header && (
-                                                <p className="font-semibold text-zinc-700 mb-1">{c.header}</p>
+                                                <p className="font-semibold text-zinc-700 dark:text-zinc-300 mb-1">{c.header}</p>
                                             )}
-                                            <p className="text-zinc-600 italic leading-relaxed whitespace-pre-wrap">
+                                            <p className="text-zinc-600 dark:text-zinc-400 italic leading-relaxed whitespace-pre-wrap">
                                                 {c.snippet}
                                             </p>
-                                            <span className="inline-block mt-1 font-mono text-[10px] text-zinc-400 bg-zinc-50 px-1.5 py-0.5 rounded">
+                                            <span className="inline-block mt-1 font-mono text-[10px] text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 px-1.5 py-0.5 rounded">
                                                 {c.chunk_id}
                                             </span>
                                         </li>
@@ -280,16 +280,16 @@ export default function EconomicOfferCard({
 
                     {/* Reasoning + notes pie */}
                     {(offer.reasoning || offer.notes) && (
-                        <div className="border-t border-zinc-100 pt-4 space-y-2 text-xs text-zinc-500">
+                        <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 space-y-2 text-xs text-zinc-500 dark:text-zinc-400">
                             {offer.reasoning && (
                                 <p>
-                                    <span className="font-semibold text-zinc-600">Razonamiento: </span>
+                                    <span className="font-semibold text-zinc-600 dark:text-zinc-400">Razonamiento: </span>
                                     {offer.reasoning}
                                 </p>
                             )}
                             {offer.notes && (
                                 <p>
-                                    <span className="font-semibold text-zinc-600">Notas: </span>
+                                    <span className="font-semibold text-zinc-600 dark:text-zinc-400">Notas: </span>
                                     {offer.notes}
                                 </p>
                             )}
@@ -304,9 +304,9 @@ export default function EconomicOfferCard({
 function Field({ label, value, multiline = false }: { label: string; value: React.ReactNode; multiline?: boolean }) {
     return (
         <div>
-            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">{label}</p>
+            <p className="text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">{label}</p>
             {typeof value === "string" ? (
-                <p className={`text-zinc-800 ${multiline ? "whitespace-pre-wrap" : ""}`}>{value}</p>
+                <p className={`text-zinc-800 dark:text-zinc-200 ${multiline ? "whitespace-pre-wrap" : ""}`}>{value}</p>
             ) : (
                 value
             )}

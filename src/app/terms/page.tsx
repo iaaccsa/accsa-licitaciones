@@ -4,14 +4,14 @@ export default function TermsPage() {
     return (
         <div className="max-w-3xl mx-auto py-12 px-4">
             <div className="mb-8 flex items-center gap-3">
-                <FileText className="w-7 h-7 text-zinc-400 shrink-0" />
-                <h1 className="text-2xl font-bold text-zinc-900">Términos y Condiciones</h1>
+                <FileText className="w-7 h-7 text-zinc-400 dark:text-zinc-500 shrink-0" />
+                <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Términos y Condiciones</h1>
             </div>
 
-            <div className="space-y-8 text-sm text-zinc-600 leading-relaxed">
+            <div className="space-y-8 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
 
                 <section>
-                    <h2 className="text-base font-semibold text-zinc-800 mb-2">
+                    <h2 className="text-base font-semibold text-zinc-800 dark:text-zinc-200 mb-2">
                         1. Naturaleza del Servicio y Uso de Inteligencia Artificial
                     </h2>
                     <p>
@@ -24,7 +24,7 @@ export default function TermsPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-base font-semibold text-zinc-800 mb-2">
+                    <h2 className="text-base font-semibold text-zinc-800 dark:text-zinc-200 mb-2">
                         2. Descargo de Responsabilidad
                     </h2>
                     <p>
@@ -35,7 +35,7 @@ export default function TermsPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-base font-semibold text-zinc-800 mb-2">
+                    <h2 className="text-base font-semibold text-zinc-800 dark:text-zinc-200 mb-2">
                         3. Responsabilidad del Usuario
                     </h2>
                     <p>
@@ -47,11 +47,11 @@ export default function TermsPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-base font-semibold text-zinc-800 mb-2">
+                    <h2 className="text-base font-semibold text-zinc-800 dark:text-zinc-200 mb-2">
                         4. Privacidad y Procesamiento de Datos
                     </h2>
                     <p className="mb-3">El usuario reconoce y acepta que:</p>
-                    <ul className="space-y-2 pl-4 border-l-2 border-zinc-200">
+                    <ul className="space-y-2 pl-4 border-l-2 border-zinc-200 dark:border-zinc-800">
                         <li>Los documentos cargados son procesados por infraestructura de terceros (Azure, OpenAI).</li>
                         <li>El historial de chat se almacena en una base de datos de memoria (Redis) para mantener el contexto de la sesión.</li>
                         <li>No se debe cargar información altamente sensible o clasificada que viole acuerdos de confidencialidad externos.</li>
@@ -59,7 +59,7 @@ export default function TermsPage() {
                 </section>
 
                 <section>
-                    <h2 className="text-base font-semibold text-zinc-800 mb-2">
+                    <h2 className="text-base font-semibold text-zinc-800 dark:text-zinc-200 mb-2">
                         5. Limitación de Garantías
                     </h2>
                     <p>

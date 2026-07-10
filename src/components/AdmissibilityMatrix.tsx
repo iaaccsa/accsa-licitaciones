@@ -18,21 +18,21 @@ import { isExclusionary } from "@/lib/admissibility-types";
 const VERDICT_CONFIG: Record<ComplianceVerdict, { label: string; color: string; icon: React.ReactNode }> = {
     cumple: {
         label: "Cumple",
-        color: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        color: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-900",
         icon: <CheckCircle2 className="w-3.5 h-3.5" />,
     },
     no_cumple: {
         label: "No Cumple",
-        color: "bg-red-50 text-red-700 border-red-200",
+        color: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900",
         icon: <XCircle className="w-3.5 h-3.5" />,
     },
 };
 
 const CONFIDENCE_CONFIG: Record<Confidence, { label: string; color: string }> = {
-    alta: { label: "Alta", color: "text-emerald-600" },
-    media: { label: "Media", color: "text-amber-600" },
-    baja: { label: "Baja", color: "text-orange-600" },
-    muy_baja: { label: "Muy baja", color: "text-red-600" },
+    alta: { label: "Alta", color: "text-emerald-600 dark:text-emerald-400" },
+    media: { label: "Media", color: "text-amber-600 dark:text-amber-400" },
+    baja: { label: "Baja", color: "text-orange-600 dark:text-orange-400" },
+    muy_baja: { label: "Muy baja", color: "text-red-600 dark:text-red-400" },
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -76,7 +76,7 @@ function VerdictBadge({ verdict }: { verdict: ComplianceVerdict }) {
 
 function ConfidenceLabel({ confidence }: { confidence: string }) {
     const cfg = CONFIDENCE_CONFIG[confidence as Confidence];
-    if (!cfg) return <span className="text-xs text-zinc-400 font-mono">Confianza: {confidence}</span>;
+    if (!cfg) return <span className="text-xs text-zinc-400 dark:text-zinc-500 font-mono">Confianza: {confidence}</span>;
     return <span className={`text-xs font-semibold ${cfg.color}`}>Confianza: {cfg.label}</span>;
 }
 
@@ -203,19 +203,19 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
     return (
         <div className="space-y-4">
             {/* Filter bar */}
-            <div className="bg-white rounded-xl border border-zinc-200 p-4 space-y-3">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3">
                 {/* Search */}
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500" />
                     <input
                         type="text"
                         placeholder="Buscar por código o texto del requisito..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-zinc-50"
+                        className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-zinc-50 dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600"
                     />
                     {search && (
-                        <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700">
+                        <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
                             <X className="w-4 h-4" />
                         </button>
                     )}
@@ -223,7 +223,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
 
                 {/* Verdict filter chips */}
                 <div className="flex items-center gap-2 flex-wrap">
-                    <Filter className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                    <Filter className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500 shrink-0" />
                     {ALL_VERDICTS.map((v) => {
                         const cfg = VERDICT_CONFIG[v];
                         const active = filters.verdicts.includes(v);
@@ -240,7 +240,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                 }
                                 className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${active
                                     ? cfg.color
-                                    : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
+                                    : "bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
                                     }`}
                             >
                                 {cfg.icon}
@@ -251,7 +251,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                     {filters.verdicts.length > 0 && (
                         <button
                             onClick={() => setFilters((f) => ({ ...f, verdicts: [] }))}
-                            className="text-xs text-zinc-400 hover:text-zinc-700 underline"
+                            className="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
                         >
                             Limpiar
                         </button>
@@ -260,7 +260,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
 
                 {/* Role filter chips (server-side) */}
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-zinc-400 shrink-0">Rol:</span>
+                    <span className="text-xs text-zinc-400 dark:text-zinc-500 shrink-0">Rol:</span>
                     {ALL_ROLES.map((r) => {
                         const active = filters.roles.includes(r);
                         return (
@@ -276,7 +276,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                 }
                                 className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${active
                                     ? "bg-zinc-800 text-white border-zinc-800"
-                                    : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-300"
+                                    : "bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
                                     }`}
                             >
                                 {ROLE_LABELS[r]}
@@ -286,7 +286,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                     {filters.roles.length > 0 && (
                         <button
                             onClick={() => setFilters((f) => ({ ...f, roles: [] }))}
-                            className="text-xs text-zinc-400 hover:text-zinc-700 underline"
+                            className="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
                         >
                             Limpiar
                         </button>
@@ -303,14 +303,14 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                     ).map(({ key, trueLabel, falseLabel }) => {
                         const val = filters[key];
                         return (
-                            <div key={key} className="flex items-center gap-1 border border-zinc-200 rounded-lg overflow-hidden">
+                            <div key={key} className="flex items-center gap-1 border border-zinc-200 dark:border-zinc-800 rounded-lg overflow-hidden">
                                 {([null, true, false] as const).map((opt) => (
                                     <button
                                         key={String(opt)}
                                         onClick={() => setFilters((f) => ({ ...f, [key]: opt }))}
                                         className={`px-2.5 py-1 transition-colors ${val === opt
                                             ? "bg-zinc-800 text-white font-medium"
-                                            : "text-zinc-500 hover:bg-zinc-50"
+                                            : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                                             }`}
                                     >
                                         {opt === null ? "Todos" : opt ? trueLabel : falseLabel}
@@ -324,7 +324,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
 
             {/* Count */}
             {!loading && !error && (
-                <p className="text-sm text-zinc-500 px-1">
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 px-1">
                     {visible.length} resultado{visible.length !== 1 ? "s" : ""}
                     {search ? ` para "${search}"` : ""}
                     {entries.length !== visible.length ? ` (de ${entries.length})` : ""}
@@ -334,13 +334,13 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
             {/* Loading */}
             {loading && (
                 <div className="flex justify-center py-16">
-                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400" />
+                    <Loader2 className="w-6 h-6 animate-spin text-zinc-400 dark:text-zinc-500" />
                 </div>
             )}
 
             {/* Error */}
             {error && (
-                <div className="flex items-center gap-2 text-red-600 py-8 justify-center">
+                <div className="flex items-center gap-2 text-red-600 dark:text-red-400 py-8 justify-center">
                     <AlertCircle className="w-5 h-5" />
                     <span className="text-sm">{error}</span>
                 </div>
@@ -348,7 +348,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
 
             {/* Empty */}
             {!loading && !error && visible.length === 0 && (
-                <div className="text-center py-16 text-zinc-400">
+                <div className="text-center py-16 text-zinc-400 dark:text-zinc-500">
                     <FileText className="w-10 h-10 mx-auto mb-3 opacity-30" />
                     <p className="text-sm">No hay requisitos de admisibilidad evaluados para esta propuesta.</p>
                 </div>
@@ -365,7 +365,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                         return (
                             <div
                                 key={entry.id}
-                                className={`bg-white rounded-xl border transition-all ${isExpanded ? "border-zinc-300 shadow-sm" : "border-zinc-200 hover:border-zinc-300"
+                                className={`bg-white dark:bg-zinc-900 rounded-xl border transition-all ${isExpanded ? "border-zinc-300 dark:border-zinc-700 shadow-sm" : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
                                     }`}
                             >
                                 {/* Row header */}
@@ -373,25 +373,25 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                     className="w-full text-left px-4 py-3 flex items-center gap-3"
                                     onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                                 >
-                                    <span className="text-zinc-400 shrink-0">
+                                    <span className="text-zinc-400 dark:text-zinc-500 shrink-0">
                                         {isExpanded
                                             ? <ChevronDown className="w-4 h-4" />
                                             : <ChevronRight className="w-4 h-4" />
                                         }
                                     </span>
 
-                                    <span className="font-mono text-xs bg-zinc-100 text-zinc-700 px-2 py-0.5 rounded shrink-0">
+                                    <span className="font-mono text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded shrink-0">
                                         {req.requirement_code}
                                     </span>
 
-                                    <span className="flex-1 text-sm text-zinc-700 truncate min-w-0">
+                                    <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300 truncate min-w-0">
                                         {req.requirement_summary ?? req.requirement_text.slice(0, 100)}
                                     </span>
 
                                     <div className="flex items-center gap-2 shrink-0">
                                         {entry.is_verified && (
                                             <span title="Verificado">
-                                                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                                <ShieldCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                                             </span>
                                         )}
                                         <ConfidenceLabel confidence={entry.confidence} />
@@ -401,7 +401,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
 
                                 {/* Expanded content */}
                                 {isExpanded && (
-                                    <div className="px-4 pb-4 pt-1 border-t border-zinc-100 space-y-4">
+                                    <div className="px-4 pb-4 pt-1 border-t border-zinc-100 dark:border-zinc-800 space-y-4">
                                         {/* Requirement details */}
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-2 flex-wrap">
@@ -412,7 +412,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                     <Badge
                                                         variant="outline"
                                                         title="El incumplimiento de este requisito rechaza la propuesta"
-                                                        className="text-xs font-normal bg-amber-50 text-amber-700 border-amber-200"
+                                                        className="text-xs font-normal bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-900"
                                                     >
                                                         Excluyente
                                                     </Badge>
@@ -422,10 +422,10 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                         {ROLE_LABELS[r] ?? r}
                                                     </Badge>
                                                 ))}
-                                                <span className="text-xs text-zinc-400">{req.verification_method}</span>
-                                                <span className="text-xs text-zinc-400">{req.temporal_scope}</span>
+                                                <span className="text-xs text-zinc-400 dark:text-zinc-500">{req.verification_method}</span>
+                                                <span className="text-xs text-zinc-400 dark:text-zinc-500">{req.temporal_scope}</span>
                                             </div>
-                                            <p className="text-sm text-zinc-800 bg-zinc-50 rounded-lg p-3 leading-relaxed">
+                                            <p className="text-sm text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-3 leading-relaxed">
                                                 {req.requirement_text}
                                             </p>
                                         </div>
@@ -433,10 +433,10 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                         {/* Reasoning */}
                                         {entry.reasoning && (
                                             <div>
-                                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
+                                                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
                                                     Razonamiento
                                                 </p>
-                                                <p className="text-sm text-zinc-700 bg-blue-50 border border-blue-100 rounded-lg p-3 leading-relaxed">
+                                                <p className="text-sm text-zinc-700 dark:text-zinc-300 bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-900 rounded-lg p-3 leading-relaxed">
                                                     {entry.reasoning}
                                                 </p>
                                             </div>
@@ -445,20 +445,20 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                         {/* Citations */}
                                         {entry.citations.length > 0 && (
                                             <div>
-                                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
+                                                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
                                                     Citas ({entry.citations.length})
                                                 </p>
                                                 <ul className="space-y-1.5">
                                                     {entry.citations.map((c, i) => (
-                                                        <li key={i} className="text-sm text-zinc-600 bg-amber-50 border border-amber-100 rounded-lg p-2.5">
+                                                        <li key={i} className="text-sm text-zinc-600 dark:text-zinc-400 bg-amber-50 dark:bg-amber-950 border border-amber-100 dark:border-amber-900 rounded-lg p-2.5">
                                                             {(c.filename || c.page_number != null) && (
-                                                                <span className="block text-xs text-zinc-500 mb-1">
+                                                                <span className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">
                                                                     {c.filename ?? "Documento desconocido"}
                                                                     {c.page_number != null && ` — Página ${c.page_number}`}
                                                                 </span>
                                                             )}
                                                             {c.header && (
-                                                                <span className="block text-xs font-semibold text-zinc-500 mb-1">{c.header}</span>
+                                                                <span className="block text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-1">{c.header}</span>
                                                             )}
                                                             <span className="italic">&ldquo;{c.snippet}&rdquo;</span>
                                                         </li>
@@ -470,13 +470,13 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                         {/* Missing elements */}
                                         {entry.missing_elements.length > 0 && (
                                             <div>
-                                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
+                                                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
                                                     Elementos faltantes
                                                 </p>
                                                 <ul className="space-y-1">
                                                     {entry.missing_elements.map((m, i) => (
-                                                        <li key={i} className="flex items-start gap-2 text-sm text-red-700">
-                                                            <XCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-red-400" />
+                                                        <li key={i} className="flex items-start gap-2 text-sm text-red-700 dark:text-red-300">
+                                                            <XCircle className="w-3.5 h-3.5 mt-0.5 shrink-0 text-red-400 dark:text-red-500" />
                                                             {m}
                                                         </li>
                                                     ))}
@@ -487,16 +487,16 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                         {/* Notes */}
                                         {entry.notes && !isEditing && (
                                             <div>
-                                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">
+                                                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1.5">
                                                     Notas
                                                 </p>
-                                                <p className="text-sm text-zinc-700 bg-zinc-50 rounded-lg p-3">{entry.notes}</p>
+                                                <p className="text-sm text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-3">{entry.notes}</p>
                                             </div>
                                         )}
 
                                         {/* Review info */}
                                         {(entry.reviewed_by || entry.reviewed_at) && !isEditing && (
-                                            <p className="text-xs text-zinc-400">
+                                            <p className="text-xs text-zinc-400 dark:text-zinc-500">
                                                 Revisado
                                                 {entry.reviewed_by ? ` por ${entry.reviewed_by}` : ""}
                                                 {entry.reviewed_at
@@ -507,19 +507,19 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
 
                                         {/* HITL form */}
                                         {isEditing && draft ? (
-                                            <div className="border border-zinc-200 rounded-xl p-4 space-y-4 bg-zinc-50">
-                                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                                            <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 space-y-4 bg-zinc-50 dark:bg-zinc-800/50">
+                                                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                                                     <ClipboardEdit className="w-3.5 h-3.5" />
                                                     Edición manual
                                                 </p>
 
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div>
-                                                        <label className="block text-xs font-medium text-zinc-600 mb-1">Veredicto</label>
+                                                        <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Veredicto</label>
                                                         <select
                                                             value={draft.verdict ?? ""}
                                                             onChange={(e) => setDraft((d) => d && { ...d, verdict: e.target.value as ComplianceVerdict })}
-                                                            className="w-full text-sm border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                                                            className="w-full text-sm border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600"
                                                         >
                                                             {ALL_VERDICTS.map((v) => (
                                                                 <option key={v} value={v}>{VERDICT_CONFIG[v].label}</option>
@@ -528,11 +528,11 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                     </div>
 
                                                     <div>
-                                                        <label className="block text-xs font-medium text-zinc-600 mb-1">Confianza</label>
+                                                        <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Confianza</label>
                                                         <select
                                                             value={draft.confidence ?? ""}
                                                             onChange={(e) => setDraft((d) => d && { ...d, confidence: e.target.value as Confidence })}
-                                                            className="w-full text-sm border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                                                            className="w-full text-sm border border-zinc-200 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600"
                                                         >
                                                             {(["alta", "media", "baja", "muy_baja"] as const).map((c) => (
                                                                 <option key={c} value={c}>{CONFIDENCE_CONFIG[c].label}</option>
@@ -542,32 +542,32 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-xs font-medium text-zinc-600 mb-1">Razonamiento</label>
+                                                    <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Razonamiento</label>
                                                     <textarea
                                                         value={draft.reasoning}
                                                         onChange={(e) => setDraft((d) => d && { ...d, reasoning: e.target.value })}
                                                         rows={3}
-                                                        className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none"
+                                                        className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600"
                                                     />
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-xs font-medium text-zinc-600 mb-1">Notas internas</label>
+                                                    <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Notas internas</label>
                                                     <textarea
                                                         value={draft.notes}
                                                         onChange={(e) => setDraft((d) => d && { ...d, notes: e.target.value })}
                                                         rows={2}
-                                                        className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none"
+                                                        className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300 resize-none dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600"
                                                     />
                                                 </div>
 
                                                 <div>
-                                                    <label className="block text-xs font-medium text-zinc-600 mb-1">Revisado por</label>
+                                                    <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">Revisado por</label>
                                                     <input
                                                         type="text"
                                                         value={draft.reviewed_by}
                                                         onChange={(e) => setDraft((d) => d && { ...d, reviewed_by: e.target.value })}
-                                                        className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                                                        className="w-full text-sm border border-zinc-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-300 dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600"
                                                         placeholder="Nombre del revisor"
                                                     />
                                                 </div>
@@ -580,7 +580,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                             onChange={(e) => setDraft((d) => d && { ...d, is_verified: e.target.checked })}
                                                             className="w-4 h-4 rounded"
                                                         />
-                                                        <span className="text-sm text-zinc-700">Verificado</span>
+                                                        <span className="text-sm text-zinc-700 dark:text-zinc-300">Verificado</span>
                                                     </label>
                                                     <label className="flex items-center gap-2 cursor-pointer">
                                                         <input
@@ -589,12 +589,12 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                             onChange={(e) => setDraft((d) => d && { ...d, manual_verification_required: e.target.checked })}
                                                             className="w-4 h-4 rounded"
                                                         />
-                                                        <span className="text-sm text-zinc-700">Requiere revisión manual</span>
+                                                        <span className="text-sm text-zinc-700 dark:text-zinc-300">Requiere revisión manual</span>
                                                     </label>
                                                 </div>
 
                                                 {saveError && (
-                                                    <p className="text-xs text-red-600 flex items-center gap-1">
+                                                    <p className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
                                                         <AlertCircle className="w-3.5 h-3.5" />
                                                         {saveError}
                                                     </p>
@@ -604,7 +604,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                     <button
                                                         onClick={() => saveEdit(entry.id)}
                                                         disabled={saving}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 text-white text-sm font-medium rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-700 text-white text-sm font-medium rounded-lg hover:bg-zinc-700 disabled:opacity-50 transition-colors"
                                                     >
                                                         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                                                         Guardar
@@ -612,7 +612,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                     <button
                                                         onClick={() => { setEditingId(null); setDraft(null); setSaveError(null); }}
                                                         disabled={saving}
-                                                        className="px-3 py-1.5 text-sm text-zinc-600 hover:text-zinc-900 transition-colors"
+                                                        className="px-3 py-1.5 text-sm text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
                                                     >
                                                         Cancelar
                                                     </button>
@@ -623,7 +623,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                 {!entry.is_verified && (
                                                     <button
                                                         onClick={() => quickVerify(entry)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 transition-colors"
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-900 rounded-lg hover:bg-emerald-100 dark:hover:bg-emerald-950 transition-colors"
                                                     >
                                                         <ShieldCheck className="w-3.5 h-3.5" />
                                                         Verificar
@@ -631,13 +631,13 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                                                 )}
                                                 <button
                                                     onClick={() => startEdit(entry)}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-700 bg-white border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                                                 >
                                                     <ClipboardEdit className="w-3.5 h-3.5" />
                                                     Editar
                                                 </button>
                                                 {entry.manual_verification_required && !entry.is_verified && (
-                                                    <span className="inline-flex items-center gap-1 text-xs text-orange-600">
+                                                    <span className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
                                                         <HelpCircle className="w-3.5 h-3.5" />
                                                         Pendiente de revisión manual
                                                     </span>

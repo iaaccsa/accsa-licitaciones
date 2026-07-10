@@ -67,13 +67,13 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ROLE_COLORS: Record<string, string> = {
-    admisibilidad_obligatoria: "bg-red-50 text-red-700 border-red-100",
-    admisibilidad_subsanable: "bg-orange-50 text-orange-700 border-orange-100",
-    puntuable: "bg-blue-50 text-blue-700 border-blue-100",
-    penalizador: "bg-purple-50 text-purple-700 border-purple-100",
-    informativo: "bg-zinc-50 text-zinc-600 border-zinc-200",
-    preferencia_legal: "bg-indigo-50 text-indigo-700 border-indigo-100",
-    desconocido_pendiente_pliego_general: "bg-yellow-50 text-yellow-700 border-yellow-100",
+    admisibilidad_obligatoria: "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-100 dark:border-red-900",
+    admisibilidad_subsanable: "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-100 dark:border-orange-900",
+    puntuable: "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-900",
+    penalizador: "bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-100 dark:border-purple-900",
+    informativo: "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800",
+    preferencia_legal: "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-100 dark:border-indigo-900",
+    desconocido_pendiente_pliego_general: "bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 border-yellow-100 dark:border-yellow-900",
 };
 
 const VERIFICATION_LABELS: Record<string, string> = {
@@ -89,10 +89,10 @@ const SCOPE_LABELS: Record<string, string> = {
 };
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-    alta: "bg-green-50 text-green-700 border-green-100",
-    media: "bg-yellow-50 text-yellow-700 border-yellow-100",
-    baja: "bg-orange-50 text-orange-700 border-orange-100",
-    muy_baja: "bg-red-50 text-red-700 border-red-100",
+    alta: "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-100 dark:border-green-900",
+    media: "bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 border-yellow-100 dark:border-yellow-900",
+    baja: "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-100 dark:border-orange-900",
+    muy_baja: "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-100 dark:border-red-900",
 };
 
 const CONFIDENCE_LABELS: Record<string, string> = {
@@ -106,7 +106,7 @@ function CitationsToggle({ citations }: { citations: Citation[] }) {
         <div className="mt-3">
             <button
                 onClick={() => setExpanded(v => !v)}
-                className="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
             >
                 {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 {expanded ? "Ocultar citas" : `Ver ${citations.length} cita${citations.length > 1 ? "s" : ""}`}
@@ -114,12 +114,12 @@ function CitationsToggle({ citations }: { citations: Citation[] }) {
             {expanded && (
                 <div className="mt-2 space-y-2">
                     {citations.map((c, i) => (
-                        <div key={i} className="bg-zinc-50 border border-zinc-200 rounded-md px-3 py-2">
-                            <div className="text-xs text-zinc-400 mb-1">
+                        <div key={i} className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 py-2">
+                            <div className="text-xs text-zinc-400 dark:text-zinc-500 mb-1">
                                 {c.filename ?? "Documento desconocido"}
                                 {c.page_number != null && ` — Página ${c.page_number}`}
                             </div>
-                            <p className="text-xs text-zinc-600 italic leading-relaxed">"{c.snippet}"</p>
+                            <p className="text-xs text-zinc-600 dark:text-zinc-400 italic leading-relaxed">"{c.snippet}"</p>
                         </div>
                     ))}
                 </div>
@@ -250,10 +250,10 @@ export default function RequirementsPage() {
     if (error) {
         return (
             <div className="max-w-6xl mx-auto py-12 px-4 text-center">
-                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-zinc-900 mb-2">Error</h2>
-                <p className="text-zinc-600">{error}</p>
-                <button onClick={() => router.back()} className="mt-4 text-blue-600 hover:underline">
+                <AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
+                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
+                <p className="text-zinc-600 dark:text-zinc-400">{error}</p>
+                <button onClick={() => router.back()} className="mt-4 text-blue-600 dark:text-blue-400 hover:underline">
                     Volver al análisis
                 </button>
             </div>
@@ -266,17 +266,17 @@ export default function RequirementsPage() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
-                        className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
                     >
-                        <ChevronLeft className="w-5 h-5 text-zinc-600" />
+                        <ChevronLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
                     </button>
-                    <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
-                        <ClipboardList className="w-6 h-6 text-green-600" />
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                        <ClipboardList className="w-6 h-6 text-green-600 dark:text-green-400" />
                         Requisitos
                     </h1>
                 </div>
                 {analysis && (
-                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase">
+                    <span className="font-mono text-sm font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 uppercase">
                         {analysis.user_assigned_name || analysis.generated_name || analysis.slug}
                     </span>
                 )}
@@ -287,7 +287,7 @@ export default function RequirementsPage() {
                 <button
                     onClick={() => handleVerifyAll(true)}
                     disabled={verifyingAll !== null}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200 bg-green-50 text-green-700 hover:bg-green-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <CheckCheck className="w-4 h-4" />
                     {verifyingAll === true ? "Verificando..." : "Marcar todos como confirmados"}
@@ -295,7 +295,7 @@ export default function RequirementsPage() {
                 <button
                     onClick={() => handleVerifyAll(false)}
                     disabled={verifyingAll !== null}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-zinc-200 bg-zinc-50 text-zinc-600 hover:bg-zinc-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <XCircle className="w-4 h-4" />
                     {verifyingAll === false ? "Desmarcando..." : "Desmarcar todos"}
@@ -305,7 +305,7 @@ export default function RequirementsPage() {
             {isLoading ? (
                 <div className="space-y-4">
                     {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm space-y-3">
+                        <div key={i} className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
                             <div className="flex gap-4">
                                 <Skeleton className="h-6 w-24 rounded" />
                                 <Skeleton className="h-6 flex-1 rounded" />
@@ -326,21 +326,21 @@ export default function RequirementsPage() {
                             return (
                                 <div
                                     key={req.id}
-                                    className="cv-auto bg-white p-6 rounded-xl border border-zinc-200 shadow-sm hover:shadow-md transition-all duration-200"
+                                    className="cv-auto bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all duration-200"
                                 >
                                     {/* Header: code + text */}
                                     <div className="flex flex-col md:flex-row gap-3 md:gap-6 mb-4">
                                         <div className="min-w-[100px] pt-1">
-                                            <span className="font-mono text-zinc-900 font-bold bg-zinc-100 px-2.5 py-1 rounded-md text-sm border border-zinc-200">
+                                            <span className="font-mono text-zinc-900 dark:text-zinc-100 font-bold bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md text-sm border border-zinc-200 dark:border-zinc-800">
                                                 {req.requirement_code}
                                             </span>
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-zinc-700 leading-relaxed text-sm">
+                                            <p className="text-zinc-700 dark:text-zinc-300 leading-relaxed text-sm">
                                                 {req.requirement_text}
                                             </p>
                                             {req.requirement_summary && (
-                                                <p className="text-zinc-400 text-xs mt-1 leading-relaxed">
+                                                <p className="text-zinc-400 dark:text-zinc-500 text-xs mt-1 leading-relaxed">
                                                     {req.requirement_summary}
                                                 </p>
                                             )}
@@ -352,18 +352,18 @@ export default function RequirementsPage() {
                                         {req.roles.map(role => (
                                             <span
                                                 key={role}
-                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${ROLE_COLORS[role] ?? "bg-zinc-50 text-zinc-600 border-zinc-200"}`}
+                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${ROLE_COLORS[role] ?? "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800"}`}
                                             >
                                                 Rol: {ROLE_LABELS[role] ?? role}
                                             </span>
                                         ))}
                                         {req.domain && (
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900">
                                                 Dominio: {DOMAIN_LABELS[req.domain] ?? req.domain}
                                             </span>
                                         )}
                                         {req.temporal_scope && (
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-50 text-zinc-600 border border-zinc-200">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
                                                 Alcance: {SCOPE_LABELS[req.temporal_scope] ?? req.temporal_scope}
                                             </span>
                                         )}
@@ -372,12 +372,12 @@ export default function RequirementsPage() {
                                     {/* Tag row 2: verification_method + confidence */}
                                     <div className="flex flex-wrap items-center gap-2 mb-3">
                                         {req.verification_method && (
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-50 text-zinc-600 border border-zinc-200">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
                                                 Verificación: {VERIFICATION_LABELS[req.verification_method] ?? req.verification_method}
                                             </span>
                                         )}
                                         {req.confidence && (
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${CONFIDENCE_COLORS[req.confidence] ?? "bg-zinc-50 text-zinc-600 border-zinc-200"}`}>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${CONFIDENCE_COLORS[req.confidence] ?? "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800"}`}>
                                                 Confianza: {CONFIDENCE_LABELS[req.confidence] ?? req.confidence}
                                             </span>
                                         )}
@@ -385,8 +385,8 @@ export default function RequirementsPage() {
 
                                     {/* Weight */}
                                     {weightVisible && (
-                                        <div className="text-xs text-zinc-500 mb-2">
-                                            <span className="font-medium text-zinc-600">Peso:</span>{" "}
+                                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">
+                                            <span className="font-medium text-zinc-600 dark:text-zinc-400">Peso:</span>{" "}
                                             {req.weight!.type === "formula"
                                                 ? `formula: ${req.weight!.formula}`
                                                 : `${req.weight!.value} ${req.weight!.type}`}
@@ -396,10 +396,10 @@ export default function RequirementsPage() {
 
                                     {/* Mapped factors */}
                                     {req.mapped_factors.length > 0 && (
-                                        <div className="text-xs text-zinc-500 mb-2 flex flex-wrap gap-2">
-                                            <span className="font-medium text-zinc-600">Factores:</span>
+                                        <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-2 flex flex-wrap gap-2">
+                                            <span className="font-medium text-zinc-600 dark:text-zinc-400">Factores:</span>
                                             {req.mapped_factors.map((f, i) => (
-                                                <span key={i} className="inline-flex items-center gap-1 bg-zinc-50 border border-zinc-200 px-2 py-0.5 rounded font-mono">
+                                                <span key={i} className="inline-flex items-center gap-1 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 px-2 py-0.5 rounded font-mono">
                                                     {f.factor_id}
                                                     {f.weight_value !== null && ` · ${f.weight_value} ${f.weight_type}`}
                                                     {f.block && ` · ${f.block}`}
@@ -412,21 +412,21 @@ export default function RequirementsPage() {
                                     <CitationsToggle citations={req.citations} />
 
                                     {/* Footer: notes + is_verified */}
-                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-50">
+                                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-50 dark:border-zinc-800">
                                         <div className="flex-1">
                                             {req.notes && (
-                                                <p className="text-xs text-zinc-400 italic">{req.notes}</p>
+                                                <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">{req.notes}</p>
                                             )}
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => handleVerifyToggle(req)}
                                                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${req.is_verified
-                                                        ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                                                        : "bg-zinc-50 text-zinc-500 border-zinc-200 hover:bg-zinc-100"
+                                                        ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-900 hover:bg-green-100 dark:hover:bg-green-950"
+                                                        : "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                                                     }`}
                                             >
-                                                <CheckCircle2 className={`w-3.5 h-3.5 ${req.is_verified ? "text-green-600" : "text-zinc-400"}`} />
+                                                <CheckCircle2 className={`w-3.5 h-3.5 ${req.is_verified ? "text-green-600 dark:text-green-400" : "text-zinc-400 dark:text-zinc-500"}`} />
                                                 {req.is_verified ? "Confirmado" : "Confirmar requisito"}
                                             </button>
                                         </div>
@@ -435,12 +435,12 @@ export default function RequirementsPage() {
                             );
                         })
                     ) : (
-                        <div className="text-center py-16 bg-white rounded-xl border border-zinc-200 border-dashed">
-                            <div className="bg-zinc-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <ClipboardList className="w-6 h-6 text-zinc-400" />
+                        <div className="text-center py-16 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 border-dashed">
+                            <div className="bg-zinc-50 dark:bg-zinc-800/50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <ClipboardList className="w-6 h-6 text-zinc-400 dark:text-zinc-500" />
                             </div>
-                            <p className="text-zinc-500 font-medium">No se encontraron requisitos</p>
-                            <p className="text-zinc-400 text-sm mt-1">Este análisis no tiene requisitos asociados.</p>
+                            <p className="text-zinc-500 dark:text-zinc-400 font-medium">No se encontraron requisitos</p>
+                            <p className="text-zinc-400 dark:text-zinc-500 text-sm mt-1">Este análisis no tiene requisitos asociados.</p>
                         </div>
                     )}
 
@@ -449,7 +449,7 @@ export default function RequirementsPage() {
                         {isFetchingMore && (
                             <div className="space-y-4">
                                 {Array.from({ length: 3 }).map((_, i) => (
-                                    <div key={i} className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm space-y-3">
+                                    <div key={i} className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
                                         <div className="flex gap-4">
                                             <Skeleton className="h-6 w-24 rounded" />
                                             <Skeleton className="h-6 flex-1 rounded" />
@@ -463,7 +463,7 @@ export default function RequirementsPage() {
                             </div>
                         )}
                         {!hasMore && requirements.length > 0 && (
-                            <p className="text-center text-xs text-zinc-400 py-4">
+                            <p className="text-center text-xs text-zinc-400 dark:text-zinc-500 py-4">
                                 {requirements.length} requisitos cargados
                             </p>
                         )}

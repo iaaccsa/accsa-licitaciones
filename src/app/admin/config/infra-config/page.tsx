@@ -128,7 +128,7 @@ export default function InfraConfigPage() {
                 description="Credenciales de los proveedores que usan los microservicios del pipeline. Se guardan cifradas; nunca se muestran. Deje un campo vacío para no modificarlo."
             />
 
-            <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8">
                 {loading ? (
                     <div className="space-y-5">
                         {FIELDS.map((f) => (
@@ -138,7 +138,7 @@ export default function InfraConfigPage() {
                 ) : (
                     <>
                         {missing.length > 0 ? (
-                            <div className="flex items-start gap-2 mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800">
+                            <div className="flex items-start gap-2 mb-6 p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 rounded-xl text-amber-800 dark:text-amber-300">
                                 <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
                                 <span>
                                     Faltan credenciales: {missing.join(", ")}. Los análisis
@@ -156,19 +156,19 @@ export default function InfraConfigPage() {
                                         <div className="flex items-center justify-between mb-1.5">
                                             <label
                                                 htmlFor={f.key}
-                                                className="text-sm font-medium text-zinc-700"
+                                                className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
                                             >
                                                 {f.label}
                                             </label>
                                             {isSet ? (
-                                                <span className="text-xs text-green-600">
+                                                <span className="text-xs text-green-600 dark:text-green-400">
                                                     Configurado
                                                     {keyStatus?.updated_at
                                                         ? ` · actualizado ${formatDate(keyStatus.updated_at)}`
                                                         : ""}
                                                 </span>
                                             ) : (
-                                                <span className="text-xs text-amber-600">
+                                                <span className="text-xs text-amber-600 dark:text-amber-400">
                                                     No configurado
                                                 </span>
                                             )}
@@ -189,7 +189,7 @@ export default function InfraConfigPage() {
                                                     ? "•••••••• (dejar vacío para no cambiar)"
                                                     : "Sin configurar"
                                             }
-                                            className="w-full px-3 py-2.5 text-sm bg-white border border-zinc-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            className="w-full px-3 py-2.5 text-sm dark:text-zinc-100 bg-white dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                         />
                                     </div>
                                 );
@@ -197,14 +197,14 @@ export default function InfraConfigPage() {
                         </div>
 
                         {saveState === "success" ? (
-                            <div className="flex items-center justify-center gap-2 mt-6 mb-2 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700">
+                            <div className="flex items-center justify-center gap-2 mt-6 mb-2 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-xl text-green-700 dark:text-green-300">
                                 <CheckCircle className="h-5 w-5" />
                                 <span>Configuración guardada con éxito.</span>
                             </div>
                         ) : null}
 
                         {saveState === "error" ? (
-                            <div className="flex items-center justify-center gap-2 mt-6 mb-2 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                            <div className="flex items-center justify-center gap-2 mt-6 mb-2 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300">
                                 <XCircle className="h-5 w-5" />
                                 <span>{errorMessage || "No se pudo guardar la configuración."}</span>
                             </div>
@@ -214,7 +214,7 @@ export default function InfraConfigPage() {
                             onClick={handleSave}
                             variant="outline"
                             disabled={!hasChanges || saving}
-                            className="w-full mt-6 py-6 text-lg font-medium text-blue-600 border-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full mt-6 py-6 text-lg font-medium text-blue-600 dark:text-blue-400 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {saving ? (
                                 <>

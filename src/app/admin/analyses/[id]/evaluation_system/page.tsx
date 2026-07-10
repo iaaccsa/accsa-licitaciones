@@ -98,12 +98,12 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 const SOURCE_COLORS: Record<string, string> = {
-    both: "bg-green-100 text-green-800 border-green-200",
-    strategy_default: "bg-blue-100 text-blue-800 border-blue-200",
-    strategy_required: "bg-indigo-100 text-indigo-800 border-indigo-200",
-    strategy: "bg-sky-100 text-sky-800 border-sky-200",
-    text_only_rejected: "bg-amber-100 text-amber-800 border-amber-200",
-    none: "bg-zinc-100 text-zinc-500 border-zinc-200",
+    both: "bg-green-100 text-green-800 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-900",
+    strategy_default: "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-900",
+    strategy_required: "bg-indigo-100 text-indigo-800 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-900",
+    strategy: "bg-sky-100 text-sky-800 border-sky-200 dark:bg-sky-950 dark:text-sky-300 dark:border-sky-900",
+    text_only_rejected: "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-900",
+    none: "bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-800",
 };
 
 const WEIGHT_TYPE_LABELS: Record<string, string> = {
@@ -122,7 +122,7 @@ function ConfidenceBadge({ confidence }: { confidence: string }) {
 
     if (isHigh) {
         return (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-700 border border-green-200">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-700 border border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-900">
                 <CheckCircle className="w-4 h-4" />
                 Alta
             </span>
@@ -130,14 +130,14 @@ function ConfidenceBadge({ confidence }: { confidence: string }) {
     }
     if (isMedium) {
         return (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-900">
                 <AlertCircle className="w-4 h-4" />
                 Media
             </span>
         );
     }
     return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700 border border-red-200">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700 border border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-900">
             <XCircle className="w-4 h-4" />
             Baja
         </span>
@@ -146,10 +146,10 @@ function ConfidenceBadge({ confidence }: { confidence: string }) {
 
 function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
     return (
-        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-6 py-4 border-b border-zinc-100 bg-zinc-50">
-                <span className="text-zinc-500">{icon}</span>
-                <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide">{title}</h2>
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden dark:bg-zinc-900 dark:border-zinc-800">
+            <div className="flex items-center gap-2 px-6 py-4 border-b border-zinc-100 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/50">
+                <span className="text-zinc-500 dark:text-zinc-400">{icon}</span>
+                <h2 className="text-sm font-semibold text-zinc-700 uppercase tracking-wide dark:text-zinc-300">{title}</h2>
             </div>
             <div className="p-6">{children}</div>
         </div>
@@ -163,7 +163,7 @@ function CitationsExpand({ citations }: { citations: string[] }) {
         <div className="mt-2">
             <button
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-600 transition-colors"
+                className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-600 transition-colors dark:text-zinc-500 dark:hover:text-zinc-400"
             >
                 {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                 {open ? "Ocultar citas" : `Ver ${citations.length} cita${citations.length > 1 ? "s" : ""} del pliego`}
@@ -171,7 +171,7 @@ function CitationsExpand({ citations }: { citations: string[] }) {
             {open && (
                 <ul className="mt-2 space-y-1">
                     {citations.map((c, i) => (
-                        <li key={i} className="text-xs text-zinc-600 bg-zinc-50 border border-zinc-100 rounded px-2 py-1.5 leading-relaxed italic">
+                        <li key={i} className="text-xs text-zinc-600 bg-zinc-50 border border-zinc-100 rounded px-2 py-1.5 leading-relaxed italic dark:text-zinc-400 dark:bg-zinc-800/50 dark:border-zinc-800">
                             &ldquo;{c}&rdquo;
                         </li>
                     ))}
@@ -206,7 +206,7 @@ function FactorsSection({ factors }: { factors: Factor[] }) {
                 {Object.entries(groups).map(([block, groupFactors]) => (
                     <div key={block}>
                         {hasBlocks && (
-                            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-3">
+                            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-3 dark:text-zinc-500">
                                 {blockLabel[block] ?? block}
                             </p>
                         )}
@@ -214,28 +214,28 @@ function FactorsSection({ factors }: { factors: Factor[] }) {
                             {groupFactors.map((factor) => (
                                 <div
                                     key={factor.id}
-                                    className={`rounded-lg border p-4 ${factor.is_negative ? "border-red-200 bg-red-50" : "border-zinc-200 bg-zinc-50"}`}
+                                    className={`rounded-lg border p-4 ${factor.is_negative ? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950" : "border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-800/50"}`}
                                 >
                                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                                         <div className="flex items-start gap-2">
                                             {factor.is_negative ? (
-                                                <TrendingDown className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                                                <TrendingDown className="w-4 h-4 text-red-500 mt-0.5 shrink-0 dark:text-red-400" />
                                             ) : (
-                                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                                                <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0 dark:text-green-400" />
                                             )}
                                             <div>
-                                                <p className={`text-sm font-semibold ${factor.is_negative ? "text-red-800" : "text-zinc-800"}`}>
+                                                <p className={`text-sm font-semibold ${factor.is_negative ? "text-red-800 dark:text-red-300" : "text-zinc-800 dark:text-zinc-200"}`}>
                                                     {factor.label}
                                                 </p>
-                                                <p className="text-xs text-zinc-400 font-mono mt-0.5">{factor.id}</p>
+                                                <p className="text-xs text-zinc-400 font-mono mt-0.5 dark:text-zinc-500">{factor.id}</p>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 shrink-0">
-                                            <span className="text-xs font-medium text-zinc-500 bg-white border border-zinc-200 px-2 py-0.5 rounded-full">
+                                            <span className="text-xs font-medium text-zinc-500 bg-white border border-zinc-200 px-2 py-0.5 rounded-full dark:text-zinc-400 dark:bg-zinc-900 dark:border-zinc-800">
                                                 {WEIGHT_TYPE_LABELS[factor.weight_type] ?? factor.weight_type}
                                             </span>
                                             {factor.weight_value !== null && (
-                                                <span className={`text-sm font-bold ${factor.is_negative ? "text-red-700" : "text-zinc-800"}`}>
+                                                <span className={`text-sm font-bold ${factor.is_negative ? "text-red-700 dark:text-red-300" : "text-zinc-800 dark:text-zinc-200"}`}>
                                                     {factor.is_negative ? "−" : ""}{factor.weight_value}
                                                     {factor.weight_type === "percent" ? "%" : factor.weight_type === "points" ? " pts" : ""}
                                                 </span>
@@ -244,8 +244,8 @@ function FactorsSection({ factors }: { factors: Factor[] }) {
                                     </div>
                                     {factor.formula && (
                                         <div className="mt-3">
-                                            <p className="text-xs text-zinc-400 uppercase tracking-wide mb-1">Fórmula</p>
-                                            <code className="block bg-white border border-zinc-200 rounded px-2 py-1.5 text-xs font-mono text-zinc-700">
+                                            <p className="text-xs text-zinc-400 uppercase tracking-wide mb-1 dark:text-zinc-500">Fórmula</p>
+                                            <code className="block bg-white border border-zinc-200 rounded px-2 py-1.5 text-xs font-mono text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300">
                                                 {factor.formula}
                                             </code>
                                         </div>
@@ -278,7 +278,7 @@ function EnabledRolesSection({ enabledRoles }: { enabledRoles: Record<string, En
                     return (
                         <div
                             key={role}
-                            className={`rounded-lg border transition-colors ${info.enabled ? "border-zinc-200 bg-white" : "border-zinc-100 bg-zinc-50 opacity-60"}`}
+                            className={`rounded-lg border transition-colors ${info.enabled ? "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900" : "border-zinc-100 bg-zinc-50 opacity-60 dark:border-zinc-800 dark:bg-zinc-800/50"}`}
                         >
                             <button
                                 className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
@@ -286,11 +286,11 @@ function EnabledRolesSection({ enabledRoles }: { enabledRoles: Record<string, En
                             >
                                 <div className="flex items-center gap-3">
                                     {info.enabled ? (
-                                        <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                                        <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 dark:text-green-400" />
                                     ) : (
-                                        <XCircle className="w-4 h-4 text-zinc-300 shrink-0" />
+                                        <XCircle className="w-4 h-4 text-zinc-300 shrink-0 dark:text-zinc-600" />
                                     )}
-                                    <span className={`text-sm font-medium ${info.enabled ? "text-zinc-800" : "text-zinc-400"}`}>
+                                    <span className={`text-sm font-medium ${info.enabled ? "text-zinc-800 dark:text-zinc-200" : "text-zinc-400 dark:text-zinc-500"}`}>
                                         {label}
                                     </span>
                                 </div>
@@ -300,16 +300,16 @@ function EnabledRolesSection({ enabledRoles }: { enabledRoles: Record<string, En
                                     </span>
                                     {info.evidence.length > 0 && (
                                         isOpen
-                                            ? <ChevronUp className="w-3.5 h-3.5 text-zinc-400" />
-                                            : <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+                                            ? <ChevronUp className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+                                            : <ChevronDown className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
                                     )}
                                 </div>
                             </button>
                             {isOpen && info.evidence.length > 0 && (
-                                <div className="px-4 pb-3 border-t border-zinc-100 pt-3 space-y-1">
-                                    <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2">Evidencia textual</p>
+                                <div className="px-4 pb-3 border-t border-zinc-100 pt-3 space-y-1 dark:border-zinc-800">
+                                    <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-2 dark:text-zinc-500">Evidencia textual</p>
                                     {info.evidence.map((e, i) => (
-                                        <p key={i} className="text-xs text-zinc-600 bg-zinc-50 border border-zinc-100 rounded px-2 py-1.5 italic leading-relaxed">
+                                        <p key={i} className="text-xs text-zinc-600 bg-zinc-50 border border-zinc-100 rounded px-2 py-1.5 italic leading-relaxed dark:text-zinc-400 dark:bg-zinc-800/50 dark:border-zinc-800">
                                             &ldquo;{e}&rdquo;
                                         </p>
                                     ))}
@@ -332,7 +332,7 @@ function RoleSignalsSection({ roleSignals }: { roleSignals: Record<string, RoleS
 
     return (
         <SectionCard title="Señales detectadas por LLM" icon={<Eye className="w-4 h-4" />}>
-            <p className="text-xs text-zinc-400 mb-4">
+            <p className="text-xs text-zinc-400 mb-4 dark:text-zinc-500">
                 Evidencia textual encontrada en el pliego por el clasificador. Indica qué se detectó, no qué está habilitado.
             </p>
             <div className="space-y-2">
@@ -340,25 +340,25 @@ function RoleSignalsSection({ roleSignals }: { roleSignals: Record<string, RoleS
                     const label = ROLE_LABELS[role] ?? role;
                     const isOpen = expanded === role;
                     return (
-                        <div key={role} className="rounded-lg border border-zinc-200 bg-white">
+                        <div key={role} className="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
                             <button
                                 className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
                                 onClick={() => setExpanded(isOpen ? null : role)}
                             >
                                 <div className="flex items-center gap-2">
-                                    <CheckCircle className="w-4 h-4 text-purple-500 shrink-0" />
-                                    <span className="text-sm font-medium text-zinc-800">{label}</span>
+                                    <CheckCircle className="w-4 h-4 text-purple-500 shrink-0 dark:text-purple-400" />
+                                    <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{label}</span>
                                 </div>
                                 {signal.evidence.length > 0 && (
                                     isOpen
-                                        ? <ChevronUp className="w-3.5 h-3.5 text-zinc-400" />
-                                        : <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+                                        ? <ChevronUp className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
+                                        : <ChevronDown className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-500" />
                                 )}
                             </button>
                             {isOpen && signal.evidence.length > 0 && (
-                                <div className="px-4 pb-3 border-t border-zinc-100 pt-3 space-y-1">
+                                <div className="px-4 pb-3 border-t border-zinc-100 pt-3 space-y-1 dark:border-zinc-800">
                                     {signal.evidence.map((e, i) => (
-                                        <p key={i} className="text-xs text-zinc-600 bg-zinc-50 border border-zinc-100 rounded px-2 py-1.5 italic leading-relaxed">
+                                        <p key={i} className="text-xs text-zinc-600 bg-zinc-50 border border-zinc-100 rounded px-2 py-1.5 italic leading-relaxed dark:text-zinc-400 dark:bg-zinc-800/50 dark:border-zinc-800">
                                             &ldquo;{e}&rdquo;
                                         </p>
                                     ))}
@@ -370,7 +370,7 @@ function RoleSignalsSection({ roleSignals }: { roleSignals: Record<string, RoleS
                 {notDetected.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
                         {notDetected.map(([role]) => (
-                            <span key={role} className="text-xs text-zinc-400 bg-zinc-50 border border-zinc-200 px-2 py-1 rounded-full">
+                            <span key={role} className="text-xs text-zinc-400 bg-zinc-50 border border-zinc-200 px-2 py-1 rounded-full dark:text-zinc-500 dark:bg-zinc-800/50 dark:border-zinc-800">
                                 {ROLE_LABELS[role] ?? role}
                             </span>
                         ))}
@@ -401,47 +401,47 @@ const COMPLEXITY_LABELS: Record<string, string> = {
 };
 
 const COMPLEXITY_COLORS: Record<string, string> = {
-    low: "bg-green-100 text-green-800",
-    medium: "bg-amber-100 text-amber-800",
-    high: "bg-red-100 text-red-800",
+    low: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+    medium: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+    high: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
 };
 
 function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
     const [expanded, setExpanded] = useState(false);
 
     return (
-        <div className={`rounded-xl border border-zinc-200 shadow-sm overflow-hidden ${type.background_color || "bg-white"}`}>
-            <div className="bg-white p-5 border-b border-zinc-100">
+        <div className={`rounded-xl border border-zinc-200 shadow-sm overflow-hidden dark:border-zinc-800 ${type.background_color || "bg-white dark:bg-zinc-900"}`}>
+            <div className="bg-white p-5 border-b border-zinc-100 dark:bg-zinc-900 dark:border-zinc-800">
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${type.color_badge || "bg-zinc-100 text-zinc-700"}`}>
+                        <div className={`p-2 rounded-lg ${type.color_badge || "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"}`}>
                             {getIcon(type.icon)}
                         </div>
                         <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h2 className="text-lg font-semibold text-zinc-900">{type.title}</h2>
-                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${type.color_badge || "bg-zinc-100 text-zinc-600"}`}>
+                                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{type.title}</h2>
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${type.color_badge || "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"}`}>
                                     {type.label}
                                 </span>
                             </div>
-                            <p className="text-sm text-zinc-500 mt-0.5">{type.description}</p>
+                            <p className="text-sm text-zinc-500 mt-0.5 dark:text-zinc-400">{type.description}</p>
                         </div>
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${COMPLEXITY_COLORS[type.extraction_complexity] || "bg-zinc-100 text-zinc-700"}`}>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${COMPLEXITY_COLORS[type.extraction_complexity] || "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"}`}>
                             Complejidad: {COMPLEXITY_LABELS[type.extraction_complexity] ?? type.extraction_complexity}
                         </span>
-                        <span className="text-xs text-zinc-400">{type.observed_frequency} observaciones</span>
+                        <span className="text-xs text-zinc-400 dark:text-zinc-500">{type.observed_frequency} observaciones</span>
                     </div>
                 </div>
             </div>
 
             <div className="p-5 space-y-4">
-                <div className="flex items-center gap-2 text-sm text-zinc-600">
+                <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
                     {type.requires_additional_document ? (
-                        <CheckCircle2 className="w-4 h-4 text-amber-500 shrink-0" />
+                        <CheckCircle2 className="w-4 h-4 text-amber-500 shrink-0 dark:text-amber-400" />
                     ) : (
-                        <XCircle className="w-4 h-4 text-zinc-400 shrink-0" />
+                        <XCircle className="w-4 h-4 text-zinc-400 shrink-0 dark:text-zinc-500" />
                     )}
                     {type.requires_additional_document
                         ? "Requiere documentos adicionales al pliego"
@@ -450,8 +450,8 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
 
                 {type.main_formula && (
                     <div>
-                        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">Fórmula principal</p>
-                        <code className="block bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-800 font-mono">
+                        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1 dark:text-zinc-400">Fórmula principal</p>
+                        <code className="block bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-sm text-zinc-800 font-mono dark:bg-zinc-800/50 dark:border-zinc-800 dark:text-zinc-200">
                             {type.main_formula}
                         </code>
                     </div>
@@ -459,7 +459,7 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
 
                 {type.typical_factors.length > 0 && (
                     <div>
-                        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Factores típicos</p>
+                        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 dark:text-zinc-400">Factores típicos</p>
                         <div className="flex flex-wrap gap-1.5">
                             {type.typical_factors.map((f) => (
                                 <Badge key={f} variant="secondary" className="text-xs">{f}</Badge>
@@ -470,7 +470,7 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
 
                 {type.frequent_organizations.length > 0 && (
                     <div>
-                        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Organismos frecuentes</p>
+                        <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 dark:text-zinc-400">Organismos frecuentes</p>
                         <div className="flex flex-wrap gap-1.5">
                             {type.frequent_organizations.map((o) => (
                                 <Badge key={o} variant="outline" className="text-xs">{o}</Badge>
@@ -481,20 +481,20 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
 
                 <button
                     onClick={() => setExpanded((v) => !v)}
-                    className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 transition-colors"
+                    className="flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-700 transition-colors dark:text-zinc-400 dark:hover:text-zinc-300"
                 >
                     {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                     {expanded ? "Ocultar detalles" : "Ver más detalles"}
                 </button>
 
                 {expanded && (
-                    <div className="space-y-4 pt-1 border-t border-zinc-100">
+                    <div className="space-y-4 pt-1 border-t border-zinc-100 dark:border-zinc-800">
                         {type.key_signals.length > 0 && (
                             <div>
-                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Señales clave</p>
+                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 dark:text-zinc-400">Señales clave</p>
                                 <ul className="space-y-1">
                                     {type.key_signals.map((s, i) => (
-                                        <li key={i} className="text-sm text-zinc-700 font-mono bg-zinc-50 border border-zinc-100 rounded px-2 py-1">
+                                        <li key={i} className="text-sm text-zinc-700 font-mono bg-zinc-50 border border-zinc-100 rounded px-2 py-1 dark:text-zinc-300 dark:bg-zinc-800/50 dark:border-zinc-800">
                                             {s}
                                         </li>
                                     ))}
@@ -503,18 +503,18 @@ function EvaluationTypeCard({ type }: { type: TenderEvaluationType }) {
                         )}
                         {type.example && (
                             <div>
-                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1">Ejemplo real</p>
-                                <blockquote className="text-sm text-zinc-600 italic border-l-2 border-zinc-300 pl-3">
+                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-1 dark:text-zinc-400">Ejemplo real</p>
+                                <blockquote className="text-sm text-zinc-600 italic border-l-2 border-zinc-300 pl-3 dark:text-zinc-400 dark:border-zinc-700">
                                     {type.example}
                                 </blockquote>
                             </div>
                         )}
                         {type.notes.length > 0 && (
                             <div>
-                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2">Notas</p>
+                                <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wide mb-2 dark:text-zinc-400">Notas</p>
                                 <ul className="space-y-1 list-disc list-inside">
                                     {type.notes.map((n, i) => (
-                                        <li key={i} className="text-sm text-zinc-600">{n}</li>
+                                        <li key={i} className="text-sm text-zinc-600 dark:text-zinc-400">{n}</li>
                                     ))}
                                 </ul>
                             </div>
@@ -589,10 +589,10 @@ export default function AdminEvaluationSystemPage() {
         return (
             <div className="max-w-5xl mx-auto py-8 px-4 space-y-6">
                 <PageHeader onBack={() => router.back()} analysisLabel={null} />
-                <div className="text-center py-16 bg-white rounded-xl border border-zinc-200 border-dashed">
-                    <Scale className="w-8 h-8 text-zinc-300 mx-auto mb-3" />
-                    <p className="text-zinc-500 font-medium">Sistema de evaluación no disponible</p>
-                    <p className="text-zinc-400 text-sm mt-1">No se pudo cargar la información.</p>
+                <div className="text-center py-16 bg-white rounded-xl border border-zinc-200 border-dashed dark:bg-zinc-900 dark:border-zinc-800">
+                    <Scale className="w-8 h-8 text-zinc-300 mx-auto mb-3 dark:text-zinc-600" />
+                    <p className="text-zinc-500 font-medium dark:text-zinc-400">Sistema de evaluación no disponible</p>
+                    <p className="text-zinc-400 text-sm mt-1 dark:text-zinc-500">No se pudo cargar la información.</p>
                 </div>
             </div>
         );
@@ -610,10 +610,10 @@ export default function AdminEvaluationSystemPage() {
                     <Skeleton className="h-56 rounded-xl" />
                 </div>
             ) : notFound ? (
-                <div className="text-center py-16 bg-white rounded-xl border border-zinc-200 border-dashed">
-                    <Scale className="w-8 h-8 text-zinc-300 mx-auto mb-3" />
-                    <p className="text-zinc-500 font-medium">Clasificación no disponible</p>
-                    <p className="text-zinc-400 text-sm mt-1">
+                <div className="text-center py-16 bg-white rounded-xl border border-zinc-200 border-dashed dark:bg-zinc-900 dark:border-zinc-800">
+                    <Scale className="w-8 h-8 text-zinc-300 mx-auto mb-3 dark:text-zinc-600" />
+                    <p className="text-zinc-500 font-medium dark:text-zinc-400">Clasificación no disponible</p>
+                    <p className="text-zinc-400 text-sm mt-1 dark:text-zinc-500">
                         El sistema de evaluación aún no ha sido clasificado para este análisis.
                     </p>
                 </div>
@@ -623,9 +623,9 @@ export default function AdminEvaluationSystemPage() {
                     {classification.profile_warnings?.length > 0 && (
                         <div className="space-y-2">
                             {classification.profile_warnings.map((w, i) => (
-                                <div key={i} className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-                                    <p className="text-sm text-amber-800">{w}</p>
+                                <div key={i} className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg dark:bg-amber-950 dark:border-amber-900">
+                                    <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0 dark:text-amber-400" />
+                                    <p className="text-sm text-amber-800 dark:text-amber-300">{w}</p>
                                 </div>
                             ))}
                         </div>
@@ -633,39 +633,39 @@ export default function AdminEvaluationSystemPage() {
 
                     {/* Insufficient chunks */}
                     {!classification.sufficient_chunks && (
-                        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                            <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+                        <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl dark:bg-amber-950 dark:border-amber-900">
+                            <Info className="w-4 h-4 text-amber-600 mt-0.5 shrink-0 dark:text-amber-400" />
                             <div>
-                                <p className="text-sm font-medium text-amber-800">Información insuficiente del pliego</p>
+                                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Información insuficiente del pliego</p>
                                 {classification.additional_chunks_recommendation && (
-                                    <p className="text-sm text-amber-700 mt-0.5">{classification.additional_chunks_recommendation}</p>
+                                    <p className="text-sm text-amber-700 mt-0.5 dark:text-amber-300">{classification.additional_chunks_recommendation}</p>
                                 )}
                             </div>
                         </div>
                     )}
 
                     {/* Summary */}
-                    <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
+                    <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-1 dark:text-zinc-500">
                                     Tipo de sistema detectado
                                 </p>
-                                <p className="text-2xl font-bold text-zinc-900">{classification.system_type}</p>
+                                <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{classification.system_type}</p>
                             </div>
                             <div className="flex flex-col items-start sm:items-end gap-2">
-                                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Confianza</p>
+                                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Confianza</p>
                                 <ConfidenceBadge confidence={classification.confidence} />
                             </div>
                         </div>
-                        <div className="flex flex-wrap gap-x-6 gap-y-2 pt-4 mt-4 border-t border-zinc-100 text-xs text-zinc-400">
+                        <div className="flex flex-wrap gap-x-6 gap-y-2 pt-4 mt-4 border-t border-zinc-100 text-xs text-zinc-400 dark:border-zinc-800 dark:text-zinc-500">
                             <span>
-                                Creado: <strong className="text-zinc-600">{new Date(classification.created_at).toLocaleString("es-ES")}</strong>
+                                Creado: <strong className="text-zinc-600 dark:text-zinc-400">{new Date(classification.created_at).toLocaleString("es-ES")}</strong>
                             </span>
                             <span>
-                                Actualizado: <strong className="text-zinc-600">{new Date(classification.updated_at).toLocaleString("es-ES")}</strong>
+                                Actualizado: <strong className="text-zinc-600 dark:text-zinc-400">{new Date(classification.updated_at).toLocaleString("es-ES")}</strong>
                             </span>
-                            <span className="font-mono text-zinc-300 break-all">{classification.id}</span>
+                            <span className="font-mono text-zinc-300 break-all dark:text-zinc-600">{classification.id}</span>
                         </div>
                     </div>
 
@@ -700,7 +700,7 @@ export default function AdminEvaluationSystemPage() {
                         <SectionCard title="Evidencia del pliego" icon={<FileText className="w-4 h-4" />}>
                             <ul className="space-y-2">
                                 {classification.evidence.map((item, i) => (
-                                    <li key={i} className="text-sm text-zinc-700 bg-zinc-50 border border-zinc-100 rounded-lg p-3 leading-relaxed italic">
+                                    <li key={i} className="text-sm text-zinc-700 bg-zinc-50 border border-zinc-100 rounded-lg p-3 leading-relaxed italic dark:text-zinc-300 dark:bg-zinc-800/50 dark:border-zinc-800">
                                         &ldquo;{item}&rdquo;
                                     </li>
                                 ))}
@@ -714,14 +714,14 @@ export default function AdminEvaluationSystemPage() {
                             {classification.discarded.discarded_types?.length > 0 && (
                                 <div className="flex flex-wrap gap-2 mb-3">
                                     {classification.discarded.discarded_types.map((t) => (
-                                        <span key={t} className="text-xs font-mono font-semibold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+                                        <span key={t} className="text-xs font-mono font-semibold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200 dark:text-zinc-400 dark:bg-zinc-800 dark:border-zinc-800">
                                             {t}
                                         </span>
                                     ))}
                                 </div>
                             )}
                             {classification.discarded.reason && (
-                                <p className="text-sm text-zinc-600">{classification.discarded.reason}</p>
+                                <p className="text-sm text-zinc-600 dark:text-zinc-400">{classification.discarded.reason}</p>
                             )}
                         </SectionCard>
                     )}
@@ -729,7 +729,7 @@ export default function AdminEvaluationSystemPage() {
                     {/* Evaluation Type catalog details */}
                     {evaluationType && (
                         <div>
-                            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-3 dark:text-zinc-500">
                                 Catálogo: tipo de evaluación
                             </p>
                             <EvaluationTypeCard type={evaluationType} />
@@ -747,17 +747,17 @@ function PageHeader({ onBack, analysisLabel }: { onBack: () => void; analysisLab
             <div className="flex items-center gap-4">
                 <button
                     onClick={onBack}
-                    className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+                    className="p-2 hover:bg-zinc-100 rounded-full transition-colors dark:hover:bg-zinc-800"
                 >
-                    <ChevronLeft className="w-5 h-5 text-zinc-600" />
+                    <ChevronLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
                 </button>
-                <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
-                    <Scale className="w-6 h-6 text-purple-600" />
+                <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2 dark:text-zinc-100">
+                    <Scale className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                     Sistema de Evaluación
                 </h1>
             </div>
             {analysisLabel && (
-                <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase">
+                <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase dark:text-zinc-400 dark:bg-zinc-800 dark:border-zinc-800">
                     {analysisLabel}
                 </span>
             )}

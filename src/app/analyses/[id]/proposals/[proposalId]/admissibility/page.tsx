@@ -16,7 +16,7 @@ export default function ProposalAdmissibilityPage() {
             <div className="flex flex-col gap-3">
                 <Button
                     variant="ghost"
-                    className="w-fit -ml-2 text-zinc-500 hover:text-zinc-900"
+                    className="w-fit -ml-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
                     onClick={() => router.back()}
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -24,10 +24,10 @@ export default function ProposalAdmissibilityPage() {
                 </Button>
 
                 <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-violet-50 rounded-lg text-violet-600 shrink-0">
+                    <div className="p-2.5 bg-violet-50 dark:bg-violet-950 rounded-lg text-violet-600 dark:text-violet-400 shrink-0">
                         <ShieldCheck className="w-6 h-6" />
                     </div>
-                    <h1 className="text-2xl font-bold text-zinc-900">Admisibilidad</h1>
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Admisibilidad</h1>
                 </div>
             </div>
 

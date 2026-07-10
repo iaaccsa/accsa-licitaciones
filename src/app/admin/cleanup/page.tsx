@@ -43,7 +43,7 @@ export default function AdminCleanupPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-base text-red-700">
+                    <CardTitle className="flex items-center gap-2 text-base text-red-700 dark:text-red-300">
                         <AlertTriangle className="w-4 h-4" />
                         Zona peligrosa
                     </CardTitle>
@@ -55,8 +55,8 @@ export default function AdminCleanupPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {status === "confirm" ? (
-                        <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-3">
-                            <p className="text-sm font-medium text-red-700">
+                        <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 p-4 space-y-3">
+                            <p className="text-sm font-medium text-red-700 dark:text-red-300">
                                 ¿Seguro que desea eliminar todos los datos? Esta acción es irreversible.
                             </p>
                             <div className="flex gap-2">
@@ -89,23 +89,23 @@ export default function AdminCleanupPage() {
                             <div className="flex items-center gap-2 mb-2">
                                 {status === "success" ? (
                                     <>
-                                        <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                        <span className="text-sm font-semibold text-green-700">
+                                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        <span className="text-sm font-semibold text-green-700 dark:text-green-300">
                                             Limpieza completada
                                         </span>
                                     </>
                                 ) : (
                                     <>
-                                        <XCircle className="w-4 h-4 text-red-600" />
-                                        <span className="text-sm font-semibold text-red-700">Error</span>
+                                        <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                        <span className="text-sm font-semibold text-red-700 dark:text-red-300">Error</span>
                                     </>
                                 )}
                             </div>
                             <pre
                                 className={`whitespace-pre-wrap font-mono text-sm overflow-auto max-h-96 rounded-lg p-3 border ${
                                     status === "success"
-                                        ? "bg-green-50 border-green-200"
-                                        : "bg-red-50 border-red-200"
+                                        ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-900"
+                                        : "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-900"
                                 }`}
                             >
                                 {result}

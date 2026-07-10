@@ -97,7 +97,7 @@ export function FileUploadZone({
         <Card className="flex-1 min-w-[280px]" >
             <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-base font-medium">
-                    <Icon className="h-5 w-5 text-blue-500" />
+                    <Icon className="h-5 w-5 text-blue-500 dark:text-blue-400" />
                     {title}
                 </CardTitle>
             </CardHeader>
@@ -113,27 +113,27 @@ export function FileUploadZone({
             p-6 cursor-pointer
             transition-colors duration-200
             ${isDragging
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
+                            : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
                         }
           `}
                 >
                     {files.length === 0 ? (
                         <>
-                            <Upload className="h-10 w-10 text-zinc-400 mb-3" />
-                            <p className="text-sm font-medium text-zinc-700">{description}</p>
-                            <p className="text-xs text-zinc-500 mt-1">{subtitle}</p>
+                            <Upload className="h-10 w-10 text-zinc-400 dark:text-zinc-500 mb-3" />
+                            <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{description}</p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{subtitle}</p>
                         </>
                     ) : (
                         <div className="w-full space-y-2">
                             {files.map((file, index) => (
                                 <div
                                     key={`${file.name}-${index}`}
-                                    className="flex items-center justify-between bg-zinc-100 rounded-md px-3 py-2"
+                                    className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-800 rounded-md px-3 py-2"
                                 >
                                     <div className="flex items-center gap-2 min-w-0">
-                                        <FileText className="h-4 w-4 text-blue-500 shrink-0" />
-                                        <span className="text-sm text-zinc-700 truncate">
+                                        <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400 shrink-0" />
+                                        <span className="text-sm text-zinc-700 dark:text-zinc-300 truncate">
                                             {file.name}
                                         </span>
                                     </div>
@@ -142,14 +142,14 @@ export function FileUploadZone({
                                             e.stopPropagation();
                                             removeFile(index);
                                         }}
-                                        className="p-1 hover:bg-zinc-200 rounded-full transition-colors"
+                                        className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
                                     >
-                                        <X className="h-4 w-4 text-zinc-500" />
+                                        <X className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
                                     </button>
                                 </div>
                             ))}
                             {files.length < maxFiles && (
-                                <p className="text-xs text-center text-zinc-500 mt-2">
+                                <p className="text-xs text-center text-zinc-500 dark:text-zinc-400 mt-2">
                                     Click o arrastra para agregar más ({files.length}/{maxFiles})
                                 </p>
                             )}

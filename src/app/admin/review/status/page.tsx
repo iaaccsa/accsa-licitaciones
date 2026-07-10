@@ -54,65 +54,65 @@ export default async function AdminStatusPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* API Health Card */}
-                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-6">
+                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
+                        <div className="bg-blue-50 dark:bg-blue-950 p-2 rounded-lg text-blue-600 dark:text-blue-400">
                             <Server className="w-6 h-6" />
                         </div>
                         <div className="flex items-center">
-                            <h2 className="text-lg font-semibold text-zinc-800">Estado del API</h2>
+                            <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Estado del API</h2>
                             <StatusDot status={healthApi.status} />
                         </div>
                     </div>
-                    <div className="bg-zinc-50 rounded-lg p-4 font-mono text-sm overflow-auto max-h-60 border border-zinc-100">
+                    <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4 font-mono text-sm overflow-auto max-h-60 border border-zinc-100 dark:border-zinc-800">
                         <pre>{JSON.stringify(healthApi, null, 2)}</pre>
                     </div>
                 </div>
 
                 {/* Supabase Health Card */}
-                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-6">
+                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-emerald-50 p-2 rounded-lg text-emerald-600">
+                        <div className="bg-emerald-50 dark:bg-emerald-950 p-2 rounded-lg text-emerald-600 dark:text-emerald-400">
                             <Database className="w-6 h-6" />
                         </div>
                         <div className="flex items-center">
-                            <h2 className="text-lg font-semibold text-zinc-800">Estado de Supabase</h2>
+                            <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Estado de Supabase</h2>
                             <StatusDot status={healthSupabase.status} />
                         </div>
                     </div>
-                    <div className="bg-zinc-50 rounded-lg p-4 font-mono text-sm overflow-auto max-h-60 border border-zinc-100">
+                    <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4 font-mono text-sm overflow-auto max-h-60 border border-zinc-100 dark:border-zinc-800">
                         <pre>{JSON.stringify(healthSupabase, null, 2)}</pre>
                     </div>
                 </div>
 
                 {/* Qdrant Health Card */}
-                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-6">
+                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-amber-50 p-2 rounded-lg text-amber-600">
+                        <div className="bg-amber-50 dark:bg-amber-950 p-2 rounded-lg text-amber-600 dark:text-amber-400">
                             <Box className="w-6 h-6" />
                         </div>
                         <div className="flex items-center">
-                            <h2 className="text-lg font-semibold text-zinc-800">Estado de Qdrant</h2>
+                            <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Estado de Qdrant</h2>
                             <StatusDot status={healthQdrant.status} />
                         </div>
                     </div>
-                    <div className="bg-zinc-50 rounded-lg p-4 font-mono text-sm overflow-auto max-h-60 border border-zinc-100">
+                    <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4 font-mono text-sm overflow-auto max-h-60 border border-zinc-100 dark:border-zinc-800">
                         <pre>{JSON.stringify(healthQdrant, null, 2)}</pre>
                     </div>
                 </div>
 
                 {/* Azure Health Card */}
-                <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-6">
+                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="bg-indigo-50 p-2 rounded-lg text-indigo-600">
+                        <div className="bg-indigo-50 dark:bg-indigo-950 p-2 rounded-lg text-indigo-600 dark:text-indigo-400">
                             <Cloud className="w-6 h-6" />
                         </div>
                         <div className="flex items-center">
-                            <h2 className="text-lg font-semibold text-zinc-800">Estado de Azure</h2>
+                            <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200">Estado de Azure</h2>
                             <StatusDot status={healthAzure.status} />
                         </div>
                     </div>
-                    <div className="bg-zinc-50 rounded-lg p-4 font-mono text-sm overflow-auto max-h-60 border border-zinc-100">
+                    <div className="bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-4 font-mono text-sm overflow-auto max-h-60 border border-zinc-100 dark:border-zinc-800">
                         <pre>{JSON.stringify(healthAzure, null, 2)}</pre>
                     </div>
                 </div>

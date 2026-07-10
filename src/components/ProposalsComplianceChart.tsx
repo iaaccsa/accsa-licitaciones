@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTheme } from "next-themes";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useProposals } from "@/lib/use-proposals";
@@ -25,6 +26,9 @@ interface ChartEntry {
 
 export default function ProposalsComplianceChart({ analysisId }: { analysisId: string }) {
     const { proposals } = useProposals<Proposal>(analysisId);
+    // Recharts takes colors as props, not classes; resolve them from the theme.
+    const { resolvedTheme } = useTheme();
+    const dark = resolvedTheme === "dark";
 
     const data = useMemo<ChartEntry[]>(
         () =>
@@ -55,10 +59,21 @@ export default function ProposalsComplianceChart({ analysisId }: { analysisId: s
             <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={data} margin={{ top: 4, right: 16, left: 0, bottom: 4 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" />
-                        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                        <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                        <Tooltip />
+                        <CartesianGrid strokeDasharray="3 3" stroke={dark ? "#27272a" : "#f4f4f5"} />
+                        <XAxis dataKey="name" tick={{ fontSize: 12, fill: dark ? "#a1a1aa" : "#71717a" }} />
+                        <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: dark ? "#a1a1aa" : "#71717a" }} />
+                        <Tooltip
+                            contentStyle={
+                                dark
+                                    ? {
+                                          backgroundColor: "#18181b",
+                                          border: "1px solid #3f3f46",
+                                          borderRadius: 8,
+                                      }
+                                    : undefined
+                            }
+                            labelStyle={dark ? { color: "#f4f4f5" } : undefined}
+                        />
                         <Legend />
                         <Bar dataKey="Cumple" fill="#10b981" radius={[3, 3, 0, 0]} />
                         <Bar dataKey="No cumple" fill="#ef4444" radius={[3, 3, 0, 0]} />

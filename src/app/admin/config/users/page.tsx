@@ -44,7 +44,7 @@ function errorMessage(code: string | undefined): string {
 }
 
 const selectClass =
-    "h-10 px-3 rounded-md border border-zinc-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50";
+    "h-10 px-3 rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50";
 
 export default function AdminUsersPage() {
     const { data, isLoading: loading, error, mutate } = useSWR<{
@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
                             required
                             placeholder="email@dominio.com"
                             aria-label="Email"
-                            className="flex-1 h-10 px-3 rounded-md border border-zinc-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                            className="flex-1 h-10 px-3 rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
                         />
                         <select
                             value={inviteRole}
@@ -199,9 +199,9 @@ export default function AdminUsersPage() {
                         </Button>
                     </form>
                     {inviteError && (
-                        <p className="mt-3 text-sm text-red-600" role="alert">{inviteError}</p>
+                        <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">{inviteError}</p>
                     )}
-                    {inviteOk && <p className="mt-3 text-sm text-green-700">{inviteOk}</p>}
+                    {inviteOk && <p className="mt-3 text-sm text-green-700 dark:text-green-300">{inviteOk}</p>}
                 </CardContent>
             </Card>
 
@@ -211,9 +211,9 @@ export default function AdminUsersPage() {
                 </CardHeader>
                 <CardContent>
                     {rowError && (
-                        <p className="mb-3 text-sm text-red-600" role="alert">{rowError}</p>
+                        <p className="mb-3 text-sm text-red-600 dark:text-red-400" role="alert">{rowError}</p>
                     )}
-                    {rowOk && <p className="mb-3 text-sm text-green-700">{rowOk}</p>}
+                    {rowOk && <p className="mb-3 text-sm text-green-700 dark:text-green-300">{rowOk}</p>}
 
                     {loading ? (
                         <div className="space-y-3">
@@ -222,11 +222,11 @@ export default function AdminUsersPage() {
                             <Skeleton className="h-12 w-full" />
                         </div>
                     ) : pageError ? (
-                        <p className="text-sm text-red-600" role="alert">{pageError}</p>
+                        <p className="text-sm text-red-600 dark:text-red-400" role="alert">{pageError}</p>
                     ) : users.length === 0 ? (
-                        <p className="text-sm text-zinc-500">No hay usuarios.</p>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400">No hay usuarios.</p>
                     ) : (
-                        <ul className="divide-y divide-zinc-100">
+                        <ul className="divide-y divide-zinc-100 dark:divide-zinc-800">
                             {users.map((user) => {
                                 const isSelf = user.id === callerId;
                                 const busy = busyId === user.id;
@@ -236,19 +236,19 @@ export default function AdminUsersPage() {
                                         className="py-3 flex flex-col sm:flex-row sm:items-center gap-3"
                                     >
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-zinc-800 truncate">
+                                            <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
                                                 {user.email}
                                                 {isSelf && (
-                                                    <span className="ml-2 text-xs text-zinc-400">(usted)</span>
+                                                    <span className="ml-2 text-xs text-zinc-400 dark:text-zinc-500">(usted)</span>
                                                 )}
                                             </p>
-                                            <p className="text-xs text-zinc-500">
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
                                                 {user.pending ? (
-                                                    <Badge variant="outline" className="text-amber-700 border-amber-300">
+                                                    <Badge variant="outline" className="text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800">
                                                         Pendiente
                                                     </Badge>
                                                 ) : (
-                                                    <Badge variant="outline" className="text-green-700 border-green-300">
+                                                    <Badge variant="outline" className="text-green-700 dark:text-green-300 border-green-300 dark:border-green-800">
                                                         Activo
                                                     </Badge>
                                                 )}
@@ -256,7 +256,7 @@ export default function AdminUsersPage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {isSelf ? (
-                                                <span className="text-sm text-zinc-600 px-3">
+                                                <span className="text-sm text-zinc-600 dark:text-zinc-400 px-3">
                                                     {ROLE_LABELS[user.role]}
                                                 </span>
                                             ) : (
@@ -313,7 +313,7 @@ export default function AdminUsersPage() {
                                                         onClick={() => setConfirmDeleteId(user.id)}
                                                         title="Eliminar usuario"
                                                     >
-                                                        <Trash2 className="w-4 h-4 text-red-600" />
+                                                        <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
                                                     </Button>
                                                 ))}
                                         </div>

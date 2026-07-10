@@ -16,15 +16,15 @@ export function AdminPageHeader({
                 <Link
                     href={backHref}
                     aria-label="Volver"
-                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 transition-colors shrink-0"
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors shrink-0"
                 >
                     <ArrowLeft className="w-4 h-4" />
                 </Link>
-                <h1 className="text-2xl font-semibold text-zinc-800 font-serif italic">
+                <h1 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-200 font-serif italic">
                     {title}
                 </h1>
             </div>
-            {description && <p className="text-sm text-zinc-500 mt-1">{description}</p>}
+            {description && <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{description}</p>}
         </div>
     );
 }

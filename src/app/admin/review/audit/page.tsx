@@ -32,16 +32,16 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLE: Record<string, string> = {
-    success: "text-green-700 border-green-300",
-    failure: "text-red-700 border-red-300",
-    denied: "text-amber-700 border-amber-300",
+    success: "text-green-700 dark:text-green-300 border-green-300 dark:border-green-800",
+    failure: "text-red-700 dark:text-red-300 border-red-300 dark:border-red-800",
+    denied: "text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800",
 };
 
 const PAGE_SIZE = 50;
 const selectClass =
-    "h-10 px-3 rounded-md border border-zinc-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50";
+    "h-10 px-3 rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50";
 const inputClass =
-    "h-10 px-3 rounded-md border border-zinc-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50";
+    "h-10 px-3 rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50";
 
 function shortId(id: string | null): string {
     return id ? id.slice(0, 8) : "-";
@@ -118,7 +118,7 @@ export default function AdminAuditPage() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={applyFilters} className="flex flex-col sm:flex-row flex-wrap gap-3 items-end">
-                        <label className="flex flex-col gap-1 text-xs text-zinc-500">
+                        <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-400">
                             Acción
                             <select value={action} onChange={(e) => setAction(e.target.value)} className={selectClass}>
                                 <option value="">Todas</option>
@@ -127,7 +127,7 @@ export default function AdminAuditPage() {
                                 ))}
                             </select>
                         </label>
-                        <label className="flex flex-col gap-1 text-xs text-zinc-500">
+                        <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-400">
                             Análisis ID
                             <input
                                 value={analysisId}
@@ -136,11 +136,11 @@ export default function AdminAuditPage() {
                                 className={inputClass}
                             />
                         </label>
-                        <label className="flex flex-col gap-1 text-xs text-zinc-500">
+                        <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-400">
                             Desde
                             <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={inputClass} />
                         </label>
-                        <label className="flex flex-col gap-1 text-xs text-zinc-500">
+                        <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-400">
                             Hasta
                             <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={inputClass} />
                         </label>
@@ -161,14 +161,14 @@ export default function AdminAuditPage() {
                             <Skeleton className="h-10 w-full" />
                         </div>
                     ) : pageError ? (
-                        <p className="text-sm text-red-600" role="alert">{pageError}</p>
+                        <p className="text-sm text-red-600 dark:text-red-400" role="alert">{pageError}</p>
                     ) : logs.length === 0 ? (
-                        <p className="text-sm text-zinc-500">No hay registros para los filtros aplicados.</p>
+                        <p className="text-sm text-zinc-500 dark:text-zinc-400">No hay registros para los filtros aplicados.</p>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="text-left text-xs text-zinc-500 border-b border-zinc-200">
+                                    <tr className="text-left text-xs text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
                                         <th className="py-2 pr-3 font-medium">Fecha</th>
                                         <th className="py-2 pr-3 font-medium">Usuario</th>
                                         <th className="py-2 pr-3 font-medium">Acción</th>
@@ -178,34 +178,34 @@ export default function AdminAuditPage() {
                                         <th className="py-2 pr-3 font-medium">Detalles</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-zinc-100">
+                                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                                     {logs.map((log) => (
                                         <tr key={log.id} className="align-top">
-                                            <td className="py-2 pr-3 whitespace-nowrap text-zinc-600">{formatDate(log.created_at)}</td>
-                                            <td className="py-2 pr-3 text-zinc-700">{log.user_email ?? "-"}</td>
+                                            <td className="py-2 pr-3 whitespace-nowrap text-zinc-600 dark:text-zinc-400">{formatDate(log.created_at)}</td>
+                                            <td className="py-2 pr-3 text-zinc-700 dark:text-zinc-300">{log.user_email ?? "-"}</td>
                                             <td className="py-2 pr-3">{ACTION_LABELS[log.action] ?? log.action}</td>
                                             <td className="py-2 pr-3">
                                                 <Badge variant="outline" className={STATUS_STYLE[log.status] ?? ""}>
                                                     {log.status}
                                                 </Badge>
                                             </td>
-                                            <td className="py-2 pr-3 text-zinc-600">
+                                            <td className="py-2 pr-3 text-zinc-600 dark:text-zinc-400">
                                                 {log.resource_type ?? "-"}
                                                 {log.resource_id && (
-                                                    <span className="text-zinc-400"> ({shortId(log.resource_id)})</span>
+                                                    <span className="text-zinc-400 dark:text-zinc-500"> ({shortId(log.resource_id)})</span>
                                                 )}
                                             </td>
-                                            <td className="py-2 pr-3 font-mono text-xs text-zinc-500">{shortId(log.analysis_id)}</td>
+                                            <td className="py-2 pr-3 font-mono text-xs text-zinc-500 dark:text-zinc-400">{shortId(log.analysis_id)}</td>
                                             <td className="py-2 pr-3">
                                                 {log.details ? (
                                                     <details>
-                                                        <summary className="cursor-pointer text-zinc-500 text-xs">ver</summary>
-                                                        <pre className="mt-1 max-w-md whitespace-pre-wrap break-all text-xs text-zinc-600">
+                                                        <summary className="cursor-pointer text-zinc-500 dark:text-zinc-400 text-xs">ver</summary>
+                                                        <pre className="mt-1 max-w-md whitespace-pre-wrap break-all text-xs text-zinc-600 dark:text-zinc-400">
                                                             {JSON.stringify(log.details, null, 2)}
                                                         </pre>
                                                     </details>
                                                 ) : (
-                                                    <span className="text-zinc-400">-</span>
+                                                    <span className="text-zinc-400 dark:text-zinc-500">-</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -224,7 +224,7 @@ export default function AdminAuditPage() {
                         >
                             Anterior
                         </Button>
-                        <span className="text-xs text-zinc-500">
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
                             {offset + 1}-{offset + logs.length}
                         </span>
                         <Button

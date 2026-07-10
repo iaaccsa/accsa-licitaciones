@@ -17,7 +17,7 @@ export default function ChangelogPage() {
 
     return (
         <div className="max-w-4xl mx-auto py-12 px-4">
-            <article className="prose prose-sm prose-zinc max-w-none prose-headings:font-semibold prose-h1:text-2xl prose-h2:mt-10 prose-h2:border-b prose-h2:border-zinc-200 prose-h2:pb-2 prose-h3:text-zinc-800 prose-h4:text-zinc-600 prose-li:my-0.5 prose-a:text-blue-600 prose-code:text-zinc-800 prose-code:bg-zinc-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+            <article className="prose prose-sm prose-zinc dark:prose-invert max-w-none prose-headings:font-semibold prose-h1:text-2xl prose-h2:mt-10 prose-h2:border-b prose-h2:border-zinc-200 dark:prose-h2:border-zinc-800 prose-h2:pb-2 prose-h3:text-zinc-800 dark:prose-h3:text-zinc-200 prose-h4:text-zinc-600 dark:prose-h4:text-zinc-400 prose-li:my-0.5 prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-code:text-zinc-800 dark:prose-code:text-zinc-200 prose-code:bg-zinc-100 dark:prose-code:bg-zinc-800 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
                 <ReactMarkdown>{content}</ReactMarkdown>
             </article>
         </div>

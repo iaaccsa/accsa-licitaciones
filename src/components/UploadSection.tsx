@@ -112,8 +112,8 @@ export function UploadSection() {
   }, [handleAnalysis]);
 
   return (
-    <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8 mb-6">
-      <h2 className="text-lg font-medium text-zinc-700 mb-6">
+    <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8 mb-6">
+      <h2 className="text-lg font-medium text-zinc-700 dark:text-zinc-300 mb-6">
         Subir Documentos
       </h2>
 
@@ -132,7 +132,7 @@ export function UploadSection() {
 
       {/* Status Messages */}
       {status === "success" ? (
-        <div className="flex flex-col items-center justify-center gap-2 mb-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700">
+        <div className="flex flex-col items-center justify-center gap-2 mb-4 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-xl text-green-700 dark:text-green-300">
           <div className="flex items-center gap-2">
             <CheckCircle className="h-5 w-5" />
             <span>Análisis iniciado con éxito.</span>
@@ -140,16 +140,16 @@ export function UploadSection() {
           {analysisResult ? (
             <div className="flex flex-col items-center gap-1">
               {analysisResult.slug ? (
-                <p className="text-sm text-green-600">
+                <p className="text-sm text-green-600 dark:text-green-400">
                   ID del análisis:{" "}
-                  <code className="bg-green-100 px-2 py-0.5 rounded font-mono uppercase">
+                  <code className="bg-green-100 dark:bg-green-950 px-2 py-0.5 rounded font-mono uppercase">
                     {String(analysisResult.slug)}
                   </code>
                 </p>
               ) : null}
               <Link
                 href={`/analyses/${analysisResult.id}`}
-                className="text-sm text-blue-600 hover:text-blue-700 underline underline-offset-2"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline underline-offset-2"
               >
                 Ver estado del análisis →
               </Link>
@@ -159,7 +159,7 @@ export function UploadSection() {
       ) : null}
 
       {status === "error" ? (
-        <div className="flex items-center justify-center gap-2 mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+        <div className="flex items-center justify-center gap-2 mb-4 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300">
           <XCircle className="h-5 w-5" />
           <span>{errorMessage || "No se pudo iniciar el análisis."}</span>
         </div>
@@ -167,7 +167,7 @@ export function UploadSection() {
 
       {/* Min files warning */}
       {files.length === 1 ? (
-        <p className="text-sm text-amber-600 mb-4 text-center">
+        <p className="text-sm text-amber-600 dark:text-amber-400 mb-4 text-center">
           Se necesitan al menos 2 archivos para iniciar el análisis.
         </p>
       ) : null}
@@ -177,7 +177,7 @@ export function UploadSection() {
         onClick={handleAnalysisWithTransition}
         variant="outline"
         disabled={!hasMinFiles || isPending}
-        className="w-full py-6 text-lg font-medium text-blue-600 border-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-6 text-lg font-medium text-blue-600 dark:text-blue-400 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isPending ? (
           <>

@@ -47,7 +47,7 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
                     <Skeleton className="h-4 w-20 mb-4" />
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                         {Array.from({ length: 3 }).map((_, i) => (
-                            <div key={i} className="bg-white rounded-xl border border-zinc-200 p-4 shadow-sm">
+                            <div key={i} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 shadow-sm">
                                 <div className="flex justify-between items-start mb-3">
                                     <Skeleton className="h-5 w-28" />
                                     <Skeleton className="h-5 w-5 rounded-full" />
@@ -57,7 +57,7 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
                                     <Skeleton className="h-14 rounded-lg" />
                                     <Skeleton className="h-14 rounded-lg" />
                                 </div>
-                                <div className="flex items-center justify-between pt-2 border-t border-zinc-100">
+                                <div className="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800">
                                     <Skeleton className="h-3 w-24" />
                                     <Skeleton className="h-3 w-16" />
                                 </div>
@@ -71,7 +71,7 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
 
     if (error) {
         return (
-            <div className="text-center py-12 text-zinc-500">
+            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
                 <p>{error}</p>
             </div>
         );
@@ -79,7 +79,7 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
 
     if (analyses.length === 0) {
         return (
-            <div className="text-center py-12 text-zinc-500">
+            <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
                 <p>No hay análisis registrados aún.</p>
             </div>
         );
@@ -109,7 +109,7 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
             {/* Active Analyses */}
             {activeAnalyses.length > 0 && (
                 <div>
-                    <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">
+                    <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">
                         En Curso
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -122,13 +122,13 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
 
             {/* Visual Divider if both sections exist */}
             {activeAnalyses.length > 0 && completedAnalyses.length > 0 && (
-                <div className="border-t border-zinc-200" />
+                <div className="border-t border-zinc-200 dark:border-zinc-800" />
             )}
 
             {/* Completed Analyses */}
             {completedAnalyses.length > 0 && (
                 <div>
-                    <h2 className="text-sm font-semibold text-zinc-500 uppercase tracking-wider mb-4">
+                    <h2 className="text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-4">
                         Completados
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
@@ -142,13 +142,13 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
                             <button
                                 onClick={() => setPage(currentPage - 1)}
                                 disabled={currentPage === 1}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
                             >
                                 Anterior
                             </button>
                             {getPageNumbers(currentPage, totalPages).map((p, i) =>
                                 p === "..." ? (
-                                    <span key={`ellipsis-${i}`} className="px-2 text-sm text-zinc-400">
+                                    <span key={`ellipsis-${i}`} className="px-2 text-sm text-zinc-400 dark:text-zinc-500">
                                         …
                                     </span>
                                 ) : (
@@ -157,8 +157,8 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
                                         onClick={() => setPage(p)}
                                         className={`min-w-9 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                                             p === currentPage
-                                                ? "bg-blue-50 text-blue-700"
-                                                : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
+                                                ? "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300"
+                                                : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                                         }`}
                                     >
                                         {p}
@@ -168,7 +168,7 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
                             <button
                                 onClick={() => setPage(currentPage + 1)}
                                 disabled={currentPage === totalPages}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100 disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-40 disabled:pointer-events-none transition-colors"
                             >
                                 Siguiente
                             </button>

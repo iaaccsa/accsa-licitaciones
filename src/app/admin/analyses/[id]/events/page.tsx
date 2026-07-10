@@ -95,12 +95,12 @@ export default function AnalysisEventsPage() {
     if (error) {
         return (
             <div className="max-w-5xl mx-auto py-12 px-4 text-center">
-                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-zinc-900 mb-2">Error</h2>
-                <p className="text-zinc-600">{error}</p>
+                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 dark:text-red-400" />
+                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
+                <p className="text-zinc-600 dark:text-zinc-400">{error}</p>
                 <button
                     onClick={() => router.back()}
-                    className="mt-4 text-blue-600 hover:underline"
+                    className="mt-4 text-blue-600 dark:text-blue-400 hover:underline"
                 >
                     Volver al análisis
                 </button>
@@ -114,25 +114,25 @@ export default function AnalysisEventsPage() {
                 <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
-                        className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
                     >
-                        <ChevronLeft className="w-5 h-5 text-zinc-600" />
+                        <ChevronLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
                     </button>
-                    <h1 className="text-2xl font-bold text-zinc-900 flex items-center gap-2">
-                        <Cpu className="w-6 h-6 text-purple-600" />
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                        <Cpu className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                         Historial de Eventos
                     </h1>
                 </div>
                 {analysis && (
-                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase">
+                    <span className="font-mono text-sm font-medium text-zinc-500 bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200 uppercase dark:text-zinc-400 dark:bg-zinc-800 dark:border-zinc-800">
                         {analysis.slug}
                     </span>
                 )}
             </div>
 
-            <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
+            <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
                 {isLoading ? (
-                    <div className="space-y-8 pl-6 border-l-2 border-zinc-100">
+                    <div className="space-y-8 pl-6 border-l-2 border-zinc-100 dark:border-zinc-800">
                         {[1, 2, 3, 4, 5].map(i => (
                             <div key={i} className="relative space-y-2">
                                 <div className="flex justify-between">
@@ -146,25 +146,25 @@ export default function AnalysisEventsPage() {
                     </div>
                 ) : events.length > 0 ? (
                     <>
-                        <div className="relative pl-6 border-l-2 border-zinc-100 space-y-8">
+                        <div className="relative pl-6 border-l-2 border-zinc-100 space-y-8 dark:border-zinc-800">
                             {events.map((event) => (
                                 <div key={event.id} className="relative">
                                     {/* Dot */}
-                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-white border-2 border-blue-500"></div>
+                                    <div className="absolute -left-[31px] top-1 w-4 h-4 rounded-full bg-white border-2 border-blue-500 dark:bg-zinc-900"></div>
 
                                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2 mb-1">
-                                        <span className="text-sm font-semibold text-zinc-900 uppercase tracking-wide">
+                                        <span className="text-sm font-semibold text-zinc-900 uppercase tracking-wide dark:text-zinc-100">
                                             {(event.source || 'evento_desconocido').replace(/_/g, ' ')}
                                         </span>
-                                        <span className="text-xs text-zinc-400 font-mono">
+                                        <span className="text-xs text-zinc-400 font-mono dark:text-zinc-500">
                                             {formatDate(event.created_at)}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-zinc-600 leading-relaxed whitespace-pre-wrap">
+                                    <p className="text-sm text-zinc-600 leading-relaxed whitespace-pre-wrap dark:text-zinc-400">
                                         {event.message}
                                     </p>
                                     {event.details && Object.keys(event.details).length > 0 && (
-                                        <pre className="mt-2 text-xs bg-zinc-50 p-2 rounded border border-zinc-100 overflow-x-auto text-zinc-500 font-mono">
+                                        <pre className="mt-2 text-xs bg-zinc-50 p-2 rounded border border-zinc-100 overflow-x-auto text-zinc-500 font-mono dark:bg-zinc-800/50 dark:border-zinc-800 dark:text-zinc-400">
                                             {JSON.stringify(event.details, null, 2)}
                                         </pre>
                                     )}
@@ -173,7 +173,7 @@ export default function AnalysisEventsPage() {
                         </div>
 
                         {hasMore && (
-                            <div className="mt-8 pt-4 flex justify-center border-t border-zinc-100">
+                            <div className="mt-8 pt-4 flex justify-center border-t border-zinc-100 dark:border-zinc-800">
                                 <button
                                     onClick={() => {
                                         const nextOffset = offset + LIMIT;
@@ -181,7 +181,7 @@ export default function AnalysisEventsPage() {
                                         fetchEvents(nextOffset);
                                     }}
                                     disabled={isLoadingMore}
-                                    className="px-4 py-2 bg-white border border-zinc-200 shadow-sm rounded-lg text-sm text-zinc-600 hover:text-blue-600 hover:border-blue-200 font-medium disabled:opacity-50 transition-all flex items-center gap-2"
+                                    className="px-4 py-2 bg-white border border-zinc-200 shadow-sm rounded-lg text-sm text-zinc-600 hover:text-blue-600 hover:border-blue-200 font-medium disabled:opacity-50 transition-all flex items-center gap-2 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 dark:hover:text-blue-400 dark:hover:border-blue-900"
                                 >
                                     {isLoadingMore ? (
                                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -195,7 +195,7 @@ export default function AnalysisEventsPage() {
                     </>
                 ) : (
                     <div className="text-center py-12">
-                        <p className="text-zinc-400 italic">No hay eventos registrados para este análisis.</p>
+                        <p className="text-zinc-400 italic dark:text-zinc-500">No hay eventos registrados para este análisis.</p>
                     </div>
                 )}
             </div>

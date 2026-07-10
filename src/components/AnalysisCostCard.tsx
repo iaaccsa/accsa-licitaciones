@@ -64,12 +64,12 @@ export default function AnalysisCostCard({ analysisId }: { analysisId: string })
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-emerald-600" />
+            <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             Costos de IA
           </span>
-          <span className="text-2xl font-bold text-zinc-900">
+          <span className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
             {fmtUsd(cost.total_cost)}
-            <span className="ml-2 text-xs font-normal text-zinc-400">
+            <span className="ml-2 text-xs font-normal text-zinc-400 dark:text-zinc-500">
               {cost.total_calls} llamadas
             </span>
           </span>
@@ -115,7 +115,7 @@ function CostList({
 }) {
   return (
     <div>
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-400 mb-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-zinc-400 dark:text-zinc-500 mb-2">
         {title}
       </h4>
       <ul className="space-y-1.5">
@@ -124,18 +124,18 @@ function CostList({
             key={i}
             className="flex items-center justify-between gap-2 text-sm"
           >
-            <span className="truncate text-zinc-700">
+            <span className="truncate text-zinc-700 dark:text-zinc-300">
               {r.label}
               {r.sub && (
-                <span className="ml-1 text-xs text-zinc-400">{r.sub}</span>
+                <span className="ml-1 text-xs text-zinc-400 dark:text-zinc-500">{r.sub}</span>
               )}
             </span>
             <span className="shrink-0 text-right">
-              <span className="font-medium text-zinc-900">
+              <span className="font-medium text-zinc-900 dark:text-zinc-100">
                 {fmtUsd(r.cost)}
               </span>
               <span
-                className="ml-2 text-xs text-zinc-400"
+                className="ml-2 text-xs text-zinc-400 dark:text-zinc-500"
                 title="llamadas"
               >
                 {r.calls}

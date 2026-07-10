@@ -24,7 +24,7 @@ interface ComplianceResultsListProps {
 function ComplianceStatusBadge({ status }: { status: string }) {
     if (status === "compliant" || status === "met") {
         return (
-            <Badge variant="default" className="border-emerald-400 text-emerald-400 bg-emerald-50">
+            <Badge variant="default" className="border-emerald-400 text-emerald-400 bg-emerald-50 dark:border-emerald-700 dark:text-emerald-500 dark:bg-emerald-950">
                 <CheckCircle className="w-3 h-3 mr-1" />
                 Cumple
             </Badge>
@@ -32,7 +32,7 @@ function ComplianceStatusBadge({ status }: { status: string }) {
     }
     if (status === "non_compliant" || status === "not_met") {
         return (
-            <Badge variant="destructive" className="border-red-400 text-red-400 bg-red-50">
+            <Badge variant="destructive" className="border-red-400 text-red-400 bg-red-50 dark:border-red-700 dark:text-red-500 dark:bg-red-950">
                 <XCircle className="w-3 h-3 mr-1" />
                 No Cumple
             </Badge>
@@ -40,7 +40,7 @@ function ComplianceStatusBadge({ status }: { status: string }) {
     }
     if (status === "missing_info" || status === "pending") {
         return (
-            <Badge variant="outline" className="border-amber-200 text-amber-700 bg-amber-50">
+            <Badge variant="outline" className="border-amber-200 text-amber-700 bg-amber-50 dark:border-amber-900 dark:text-amber-300 dark:bg-amber-950">
                 <AlertCircle className="w-3 h-3 mr-1" />
                 Info Faltante
             </Badge>
@@ -105,7 +105,7 @@ export default function ComplianceResultsList({ analysisId, proposalId }: Compli
                         </CardHeader>
                         <CardContent>
                             <Skeleton className="h-4 w-full mb-2" />
-                            <Skeleton className="h-20 w-full bg-zinc-50" />
+                            <Skeleton className="h-20 w-full bg-zinc-50 dark:bg-zinc-800/50" />
                         </CardContent>
                     </Card>
                 ))}
@@ -115,7 +115,7 @@ export default function ComplianceResultsList({ analysisId, proposalId }: Compli
 
     if (error) {
         return (
-            <div className="p-4 bg-red-50 text-red-600 rounded-lg flex items-center gap-2">
+            <div className="p-4 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 rounded-lg flex items-center gap-2">
                 <AlertCircle className="w-5 h-5" />
                 <span>{error}</span>
             </div>
@@ -124,22 +124,22 @@ export default function ComplianceResultsList({ analysisId, proposalId }: Compli
 
     if (results.length === 0) {
         return (
-            <div className="p-8 text-center bg-zinc-50 rounded-xl border border-zinc-200 border-dashed">
-                <FileText className="w-10 h-10 text-zinc-300 mx-auto mb-3" />
-                <p className="text-zinc-500">No hay resultados de cumplimiento disponibles.</p>
+            <div className="p-8 text-center bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-800 border-dashed">
+                <FileText className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
+                <p className="text-zinc-500 dark:text-zinc-400">No hay resultados de cumplimiento disponibles.</p>
             </div>
         );
     }
 
     return (
         <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-zinc-900">Resultados de Cumplimiento ({results.length})</h2>
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Resultados de Cumplimiento ({results.length})</h2>
             <div className="space-y-4">
                 {results.map((result, index) => (
                     <Card key={result.id || index} className="overflow-hidden gap-0">
-                        <CardHeader className="bg-zinc-50/50 py-3 border-b border-zinc-100">
+                        <CardHeader className="bg-zinc-50/50 dark:bg-zinc-800/50 py-3 border-b border-zinc-100 dark:border-zinc-800">
                             <div className="flex items-center justify-between">
-                                <Badge variant="outline" className="font-mono text-xs shadow-none bg-white">
+                                <Badge variant="outline" className="font-mono text-xs shadow-none bg-white dark:bg-zinc-900">
                                     {result.requirement_code}
                                 </Badge>
                                 <ComplianceStatusBadge status={result.status} />
@@ -147,20 +147,20 @@ export default function ComplianceResultsList({ analysisId, proposalId }: Compli
                         </CardHeader>
                         <CardContent className="pt-4 space-y-4">
                             <div className="space-y-2">
-                                <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                                     Requisito
                                 </span>
-                                <div className="text-sm text-zinc-800 bg-white border border-zinc-200 rounded-md p-3 shadow-sm">
+                                <div className="text-sm text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-md p-3 shadow-sm">
                                     {result.requirement_text || "Requisito sin descripción"}
                                 </div>
                             </div>
 
                             {result.evidence_quote && (
                                 <div className="space-y-2">
-                                    <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                                         Evidencia
                                     </span>
-                                    <div className="text-sm text-zinc-600 bg-zinc-50 border border-zinc-200 rounded-md p-3 italic">
+                                    <div className="text-sm text-zinc-600 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 rounded-md p-3 italic">
                                         &quot;{result.evidence_quote}&quot;
                                     </div>
                                 </div>
@@ -168,17 +168,17 @@ export default function ComplianceResultsList({ analysisId, proposalId }: Compli
 
                             {result.reasoning && (
                                 <div className="space-y-2">
-                                    <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
+                                    <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                                         Análisis
                                     </span>
-                                    <div className="text-sm text-zinc-700 bg-blue-50/50 border border-blue-100 rounded-md p-3">
+                                    <div className="text-sm text-zinc-700 dark:text-zinc-300 bg-blue-50/50 dark:bg-blue-950/50 border border-blue-100 dark:border-blue-900 rounded-md p-3">
                                         {result.reasoning}
                                     </div>
                                 </div>
                             )}
 
                             {!result.evidence_quote && !result.reasoning && (
-                                <div className="text-sm text-zinc-400 italic pt-2">
+                                <div className="text-sm text-zinc-400 dark:text-zinc-500 italic pt-2">
                                     No se encontró evidencia específica en el documento.
                                 </div>
                             )}

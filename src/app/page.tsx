@@ -8,7 +8,7 @@ export default function StatusPage() {
     return (
         <div className="max-w-7xl mx-auto py-8 px-4">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-semibold text-zinc-800 font-serif italic">
+                <h1 className="text-2xl font-semibold text-zinc-800 dark:text-zinc-200 font-serif italic">
                     Análisis
                 </h1>
                 <Link

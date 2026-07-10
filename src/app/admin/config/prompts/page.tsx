@@ -139,28 +139,28 @@ export default function PromptsPage() {
                     ))}
                 </div>
             ) : loadError ? (
-                <div className="flex items-center justify-center gap-2 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                <div className="flex items-center justify-center gap-2 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300">
                     <XCircle className="h-5 w-5" />
                     <span>{loadError}</span>
                 </div>
             ) : selected ? (
-                <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm p-8">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8">
                     <button
                         type="button"
                         onClick={closeEditor}
-                        className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-700 transition-colors mb-4"
+                        className="inline-flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors mb-4"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Todos los prompts
                     </button>
 
-                    <h2 className="text-lg font-medium text-zinc-800">{selected.title}</h2>
-                    <p className="text-sm text-zinc-500 mt-1">{selected.description}</p>
-                    <p className="text-xs text-zinc-400 mt-1 font-mono">{selected.key}</p>
+                    <h2 className="text-lg font-medium text-zinc-800 dark:text-zinc-200">{selected.title}</h2>
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">{selected.description}</p>
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1 font-mono">{selected.key}</p>
 
                     {selected.required_placeholders.length > 0 ? (
                         <div className="mt-4">
-                            <span className="block text-xs font-medium text-zinc-600 mb-2">
+                            <span className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                                 Placeholders obligatorios
                             </span>
                             <div className="flex flex-wrap gap-2">
@@ -171,8 +171,8 @@ export default function PromptsPage() {
                                             key={p}
                                             className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-mono border ${
                                                 present
-                                                    ? "bg-green-50 border-green-200 text-green-700"
-                                                    : "bg-red-50 border-red-200 text-red-700"
+                                                    ? "bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-900 text-green-700 dark:text-green-300"
+                                                    : "bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-900 text-red-700 dark:text-red-300"
                                             }`}
                                         >
                                             {present ? (
@@ -192,25 +192,25 @@ export default function PromptsPage() {
                         value={draft}
                         onChange={(e) => setDraft(e.target.value)}
                         spellCheck={false}
-                        className="mt-4 w-full h-[28rem] p-4 rounded-xl border border-zinc-200 font-mono text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                        className="mt-4 w-full h-[28rem] p-4 rounded-xl dark:bg-zinc-700 border border-zinc-200 dark:border-zinc-600 font-mono text-sm text-zinc-800 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
                     />
 
                     {status === "success" ? (
-                        <div className="flex items-center justify-center gap-2 mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700">
+                        <div className="flex items-center justify-center gap-2 mt-4 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-900 rounded-xl text-green-700 dark:text-green-300">
                             <CheckCircle className="h-5 w-5" />
                             <span>Prompt guardado con éxito.</span>
                         </div>
                     ) : null}
 
                     {status === "error" ? (
-                        <div className="flex items-center justify-center gap-2 mt-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                        <div className="flex items-center justify-center gap-2 mt-4 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300">
                             <XCircle className="h-5 w-5" />
                             <span>{errorMessage || "No se pudo guardar el prompt."}</span>
                         </div>
                     ) : null}
 
                     {missing.length > 0 ? (
-                        <p className="mt-3 text-sm text-red-600">
+                        <p className="mt-3 text-sm text-red-600 dark:text-red-400">
                             Faltan placeholders obligatorios:{" "}
                             <span className="font-mono">
                                 {missing.map((m) => `{${m}}`).join(", ")}
@@ -222,7 +222,7 @@ export default function PromptsPage() {
                         onClick={handleSave}
                         variant="outline"
                         disabled={!hasChanges || saving || missing.length > 0}
-                        className="w-full mt-4 py-6 text-lg font-medium text-blue-600 border-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full mt-4 py-6 text-lg font-medium text-blue-600 dark:text-blue-400 border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950 hover:text-blue-700 dark:hover:text-blue-300 rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {saving ? (
                             <>
@@ -241,14 +241,14 @@ export default function PromptsPage() {
                             key={p.key}
                             type="button"
                             onClick={() => openEditor(p)}
-                            className="flex flex-col items-start gap-2 p-5 rounded-2xl border border-zinc-200 bg-white text-left shadow-sm transition-all hover:border-zinc-300 hover:shadow"
+                            className="flex flex-col items-start gap-2 p-5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-left shadow-sm transition-all hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow"
                         >
-                            <span className="inline-flex items-center gap-2 text-zinc-400">
+                            <span className="inline-flex items-center gap-2 text-zinc-400 dark:text-zinc-500">
                                 <FileText className="h-4 w-4" />
                                 <span className="text-xs font-mono">{p.service}</span>
                             </span>
-                            <span className="text-sm font-medium text-zinc-800">{p.title}</span>
-                            <span className="text-xs text-zinc-500">{p.description}</span>
+                            <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">{p.title}</span>
+                            <span className="text-xs text-zinc-500 dark:text-zinc-400">{p.description}</span>
                         </button>
                     ))}
                 </div>
