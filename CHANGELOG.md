@@ -12,6 +12,18 @@ se versionan y publican en conjunto.
 
 ### accsa-licitaciones-ui
 
+#### Added
+- Agregar artículo de Ayuda "Cómo se clasifican los requisitos", que explica roles, dominios, métodos de verificación, alcance, peso y citas con ejemplos.
+- Agregar artículo de Ayuda "Tipos de sistema de evaluación", con el catálogo de los 7 sistemas que detecta el clasificador, incluyendo fórmulas y advertencias.
+- Agregar enlaces cruzados hacia los nuevos artículos de Ayuda desde "Requisitos extraídos", "Requisitos de admisibilidad" y "Sistema de evaluación".
+
+#### Changed
+- Ampliar el artículo de Ayuda "Revisión y auditoría" con el detalle de qué acciones de usuario se registran.
+
+#### Removed
+- Eliminar la sección "Docs" de la interfaz (ruta `/docs`, su entrada en la barra de navegación y sus 11 páginas); el contenido útil para usuarios se trasladó a la Ayuda y el resto quedó como documentación interna del repositorio.
+- Eliminar la ruta proxy `/api/tender-evaluation-types` (listado), que solo usaba la sección "Docs"; se mantiene `/api/tender-evaluation-types/by-label`.
+
 ### accsa-licitaciones-api
 
 ### accsa-licitaciones-services

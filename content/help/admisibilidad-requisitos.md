@@ -4,7 +4,7 @@ title: Requisitos de admisibilidad
 section: Requisitos y admisibilidad
 order: 20
 keywords: [admisibilidad, excluyente, obligatoria, subsanable, requisitos, rechazo]
-updated_at: 2026-06-25
+updated_at: 2026-07-09
 ---
 
 La sección **Admisibilidad** muestra los **requisitos excluyentes**: los que
@@ -25,3 +25,6 @@ confirmados** / **Desmarcar todos**.
 Estos requisitos son los que luego se evalúan, propuesta por propuesta, en la
 **Admisibilidad de la propuesta**, y determinan el veredicto **Admitida** o
 **Rechazada**.
+
+El significado de cada rol, dominio y método de verificación está explicado en
+[[clasificacion-requisitos]].

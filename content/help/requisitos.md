@@ -4,7 +4,7 @@ title: Requisitos extraídos
 section: Requisitos y admisibilidad
 order: 10
 keywords: [requisitos, rol, dominio, confianza, citas, confirmar, verificar, peso, factores]
-updated_at: 2026-06-25
+updated_at: 2026-07-09
 ---
 
 La sección **Requisitos** lista lo que el sistema extrajo del pliego. Cada
@@ -24,6 +24,9 @@ requisito es una tarjeta con:
 - **Peso** y **factores** asociados cuando el requisito puntúa.
 - **Citas**: el pasaje del documento (archivo y página) de donde se extrajo.
   Despliéguelas para verificar.
+
+El significado de cada rol, dominio, método de verificación y alcance está
+explicado en [[clasificacion-requisitos]].
 
 Puede **Confirmar** cada requisito (revisado y validado por usted) o usar
 **Marcar todos como confirmados** / **Desmarcar todos**. La lista se carga a

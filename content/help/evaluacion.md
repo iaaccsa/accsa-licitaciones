@@ -4,7 +4,7 @@ title: Sistema de evaluación
 section: Requisitos y admisibilidad
 order: 30
 keywords: [evaluacion, sistema, factores, evidencia, puntaje, clasificacion, tipo]
-updated_at: 2026-06-25
+updated_at: 2026-07-09
 ---
 
 La sección **Evaluación** muestra cómo el sistema interpretó el **mecanismo de
@@ -23,3 +23,6 @@ Verá:
 Si la clasificación aún no está disponible, la sección lo indica: puede que el
 pipeline todavía no haya llegado a ese paso o que el pliego no tuviera datos
 suficientes.
+
+Los tipos de sistema que se detectan y cómo funciona cada uno están descritos en
+[[tipos-evaluacion]].
