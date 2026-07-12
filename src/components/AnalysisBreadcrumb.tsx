@@ -22,6 +22,7 @@ interface Proposal {
 const SEGMENT_LABELS: Record<string, string> = {
     requirements: "Requisitos",
     admissibility: "Admisibilidad",
+    "admissibility-requirements": "Requisitos de Admisibilidad",
     files: "Archivos",
     flow: "Flujo",
     proposals: "Propuestas",

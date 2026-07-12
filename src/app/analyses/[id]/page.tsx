@@ -17,7 +17,6 @@ import {
   Ban,
   PauseCircle,
   Play,
-  Users,
   ShieldCheck,
   UserCheck,
   Bot,
@@ -438,6 +437,51 @@ export default function AnalysisDetailPage() {
         </a>
 
         <a
+          href={`/analyses/${id}/admissibility-requirements`}
+          className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-green-300 dark:hover:border-green-800 hover:shadow-md transition-all group text-center"
+        >
+          {analysis.status === "awaiting_approval" &&
+            analysis.paused_at_service === "service-requirement-extractor" && (
+              <span className="absolute top-2 right-2 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+              </span>
+            )}
+          <div className="p-3 bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 rounded-lg group-hover:bg-green-600 group-hover:text-white transition-colors">
+            <ClipboardList className="w-8 h-8" />
+          </div>
+          <div className="flex-1 space-y-1">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+              Requisitos de Admisibilidad
+            </h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Excluyentes</p>
+          </div>
+        </a>
+
+        <a
+          href={`/analyses/${id}/admissibility`}
+          className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-violet-300 dark:hover:border-violet-800 hover:shadow-md transition-all group text-center"
+        >
+          {analysis.status === "awaiting_approval" &&
+            (analysis.paused_at_service === "service-compliance-matcher" ||
+              analysis.paused_at_service === "service-admissibility-gate") && (
+              <span className="absolute top-2 right-2 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+              </span>
+            )}
+          <div className="p-3 bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400 rounded-lg group-hover:bg-violet-600 group-hover:text-white transition-colors">
+            <ShieldCheck className="w-8 h-8" />
+          </div>
+          <div className="flex-1 space-y-1">
+            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
+              Admisibilidad
+            </h3>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">Admisibilidad de propuestas</p>
+          </div>
+        </a>
+
+        <a
           href={`/analyses/${id}/requirements`}
           className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-green-300 dark:hover:border-green-800 hover:shadow-md transition-all group text-center"
         >
@@ -453,54 +497,9 @@ export default function AnalysisDetailPage() {
           </div>
           <div className="flex-1 space-y-1">
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
-              Requisitos
+              Otros Requisitos
             </h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Ver requisitos</p>
-          </div>
-        </a>
-
-        <a
-          href={`/analyses/${id}/admissibility`}
-          className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-violet-300 dark:hover:border-violet-800 hover:shadow-md transition-all group text-center"
-        >
-          {analysis.status === "awaiting_approval" &&
-            analysis.paused_at_service === "service-requirement-extractor" && (
-              <span className="absolute top-2 right-2 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
-              </span>
-            )}
-          <div className="p-3 bg-violet-50 dark:bg-violet-950 text-violet-600 dark:text-violet-400 rounded-lg group-hover:bg-violet-600 group-hover:text-white transition-colors">
-            <ShieldCheck className="w-8 h-8" />
-          </div>
-          <div className="flex-1 space-y-1">
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">
-              Admisibilidad
-            </h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Requisitos excluyentes</p>
-          </div>
-        </a>
-
-        <a
-          href={`/analyses/${id}/proposals`}
-          className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-orange-300 dark:hover:border-orange-800 hover:shadow-md transition-all group text-center"
-        >
-          {analysis.status === "awaiting_approval" &&
-            (analysis.paused_at_service === "service-compliance-matcher" ||
-              analysis.paused_at_service === "service-admissibility-gate") && (
-              <span className="absolute top-2 right-2 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
-              </span>
-            )}
-          <div className="p-3 bg-orange-50 dark:bg-orange-950 text-orange-600 dark:text-orange-400 rounded-lg group-hover:bg-orange-600 group-hover:text-white transition-colors">
-            <Users className="w-8 h-8" />
-          </div>
-          <div className="flex-1 space-y-1">
-            <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
-              Propuestas
-            </h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Propuestas y cumplimiento</p>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">No excluyentes</p>
           </div>
         </a>
       </div>

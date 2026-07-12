@@ -63,7 +63,7 @@ async function discover(request: APIRequestContext): Promise<Discovery | null> {
     return cached;
 }
 
-const ANALYSIS_VIEWS = ["", "/files", "/flow", "/requirements", "/admissibility", "/proposals"];
+const ANALYSIS_VIEWS = ["", "/files", "/flow", "/requirements", "/admissibility", "/admissibility-requirements", "/proposals"];
 
 for (const view of ANALYSIS_VIEWS) {
     test(`renders /analyses/[id]${view}`, async ({ page, request }) => {
