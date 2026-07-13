@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/swr";
 import {
@@ -8,6 +8,7 @@ import {
     HelpCircle, Loader2, AlertCircle,
     FileText, Filter, Search, X, ShieldCheck, ClipboardEdit, Save,
 } from "lucide-react";
+import { Pagination } from "@/components/Pagination";
 import type { AdmissibilityResult, ComplianceVerdict, Confidence } from "@/lib/admissibility-types";
 import { isExclusionary } from "@/lib/admissibility-types";
 
@@ -65,6 +66,7 @@ const SCOPE_LABELS: Record<string, string> = {
 const ALL_VERDICTS = Object.keys(VERDICT_CONFIG) as ComplianceVerdict[];
 
 const LIMIT = 500;
+const PAGE_SIZE = 10;
 
 interface EditDraft {
     verdict: ComplianceVerdict | null;
@@ -115,6 +117,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
         manualVerificationRequired: null,
     });
     const [search, setSearch] = useState("");
+    const [page, setPage] = useState(1);
 
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -148,6 +151,21 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
         }
         return true;
     });
+
+    // Reset to first page when filters or search change
+    useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPage(1);
+    }, [filters, search]);
+
+    const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+    const safePage = Math.min(page, totalPages);
+    const pageItems = visible.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+    const goToPage = (p: number) => {
+        setPage(p);
+        window.scrollTo({ top: 0 });
+    };
 
     function patchLocal(entryId: string, updated: Partial<AdmissibilityResult>) {
         mutate(
@@ -340,7 +358,7 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
             {/* Entries */}
             {!loading && !error && visible.length > 0 && (
                 <div className="space-y-4">
-                    {visible.map((entry) => {
+                    {pageItems.map((entry) => {
                         const isExpanded = expandedId === entry.id;
                         const isEditing = editingId === entry.id;
                         const req = entry.requirement;
@@ -644,6 +662,8 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                             </div>
                         );
                     })}
+
+                    <Pagination page={safePage} totalPages={totalPages} onPageChange={goToPage} />
                 </div>
             )}
         </div>

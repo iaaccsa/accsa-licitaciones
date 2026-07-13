@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   ChevronDown,
-  ChevronRight,
   CheckCircle2,
   XCircle,
   AlertTriangle,
@@ -19,10 +18,8 @@ import {
   ShieldCheck,
   ClipboardEdit,
   Save,
-  ChevronLeft,
-  ChevronsLeft,
-  ChevronsRight,
 } from "lucide-react";
+import { Pagination } from "@/components/Pagination";
 
 // ---- Types ----
 
@@ -185,21 +182,23 @@ const SCOPE_LABELS: Record<string, string> = {
 };
 
 const VERIFICATION_METHOD_LABELS: Record<string, string> = {
-  documento_adjunto: "Doc. Adjunto",
-  declaracion_jurada: "Decl. Jurada",
-  certificado_externo: "Cert. Externo",
-  inspeccion: "Inspección",
-  muestra: "Muestra",
-  visita_tecnica: "Visita Técnica",
-  auto_verificable_desde_oferta: "Auto-verificable",
-  otro: "Otro",
+  attached_document: "Doc. Adjunto",
+  sworn_statement: "Decl. Jurada",
+  external_certificate: "Cert. Externo",
+  inspection: "Inspección",
+  sample: "Muestra",
+  site_visit: "Visita Técnica",
+  auto_verifiable_from_offer: "Auto-verificable",
+  other: "Otro",
 };
 
 const ALL_VERDICTS = Object.keys(VERDICT_CONFIG) as ComplianceVerdict[];
 const ALL_ROLES = Object.keys(ROLE_LABELS);
 const ALL_VERIFICATION_METHODS = Object.keys(VERIFICATION_METHOD_LABELS);
 
-const LIMIT = 50;
+const PAGE_SIZE = 10;
+// The backend view endpoint caps limit at 50 (le=50), so fetch in batches of 50.
+const FETCH_BATCH = 50;
 
 // ---- Helpers ----
 
@@ -230,22 +229,6 @@ function ConfidenceLabel({ confidence }: { confidence: string }) {
   );
 }
 
-function buildPageList(current: number, total: number): (number | "...")[] {
-  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-  const pages: (number | "...")[] = [1];
-  if (current > 3) pages.push("...");
-  for (
-    let i = Math.max(2, current - 1);
-    i <= Math.min(total - 1, current + 1);
-    i++
-  ) {
-    pages.push(i);
-  }
-  if (current < total - 2) pages.push("...");
-  pages.push(total);
-  return pages;
-}
-
 // ---- Main component ----
 
 interface ComplianceMatrixProps {
@@ -260,10 +243,7 @@ export default function ComplianceMatrix({
   const [entries, setEntries] = useState<ComplianceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [lastPageConfirmed, setLastPageConfirmed] = useState(false);
+  const [page, setPage] = useState(1);
 
   const [filters, setFilters] = useState<Filters>({
     verdicts: [],
@@ -280,64 +260,49 @@ export default function ComplianceMatrix({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const buildParams = useCallback(
-    (offset: number) => {
-      const p = new URLSearchParams();
-      filters.roles.forEach((r) => p.append("role", r));
-      filters.verificationMethods.forEach((vm) =>
-        p.append("verification_method", vm),
-      );
-      p.set("order", "asc");
-      p.set("limit", String(LIMIT));
-      p.set("offset", String(offset));
-      return p.toString();
-    },
-    [filters.roles, filters.verificationMethods],
-  );
-
-  const fetchPage = useCallback(
-    async (page: number) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const offset = (page - 1) * LIMIT;
-        const qs = buildParams(offset);
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const all: ComplianceEntry[] = [];
+      let offset = 0;
+      while (true) {
         const res = await fetch(
-          `/api/analyses/${analysisId}/proposals/${proposalId}/matrix?${qs}`,
+          `/api/analyses/${analysisId}/proposals/${proposalId}/matrix?order=asc&limit=${FETCH_BATCH}&offset=${offset}`,
         );
         if (!res.ok) throw new Error(`Error ${res.status}`);
         const data: ComplianceEntry[] = await res.json();
-        setEntries(data);
-        setCurrentPage(page);
-        if (data.length < LIMIT) {
-          setTotalPages(page);
-          setLastPageConfirmed(true);
-        } else {
-          setTotalPages((prev) => Math.max(prev, page + 1));
-        }
-      } catch {
-        setError("No se pudo cargar la matriz de cumplimiento.");
-      } finally {
-        setLoading(false);
+        const items = Array.isArray(data) ? data : [];
+        all.push(...items);
+        if (items.length < FETCH_BATCH) break;
+        offset += items.length;
       }
-    },
-    [analysisId, proposalId, buildParams],
-  );
+      setEntries(all);
+    } catch {
+      setError("No se pudo cargar la matriz de cumplimiento.");
+    } finally {
+      setLoading(false);
+    }
+  }, [analysisId, proposalId]);
 
-  // Reset to page 1 when filters (server-side) change.
-  // Page-discovery pagination; useSWRInfinite rewrite pending, needs live QA.
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
-    setCurrentPage(1);
-    setTotalPages(1);
-    setLastPageConfirmed(false);
-    fetchPage(1);
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [fetchPage]);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAll();
+  }, [fetchAll]);
 
   // Client-side filtering
   const visible = entries.filter((e) => {
     if (filters.verdicts.length > 0 && !filters.verdicts.includes(e.verdict))
+      return false;
+    if (
+      filters.roles.length > 0 &&
+      !filters.roles.some((r) => e.requirement_roles.includes(r))
+    )
+      return false;
+    if (
+      filters.verificationMethods.length > 0 &&
+      !filters.verificationMethods.includes(e.requirement_verification_method)
+    )
       return false;
     if (filters.isVerified !== null && e.is_verified !== filters.isVerified)
       return false;
@@ -427,12 +392,25 @@ export default function ComplianceMatrix({
     }
   }
 
+  // Reset to first page when filters or search change
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPage(1);
+  }, [filters, search]);
+
   // ---- Render ----
 
-  const pageList = buildPageList(currentPage, totalPages);
-  const canPrev = currentPage > 1;
-  const canNext = !lastPageConfirmed || currentPage < totalPages;
-  const canLast = lastPageConfirmed && currentPage < totalPages;
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageItems = visible.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+
+  const goToPage = (p: number) => {
+    setPage(p);
+    window.scrollTo({ top: 0 });
+  };
 
   return (
     <div className="space-y-4">
@@ -616,9 +594,7 @@ export default function ComplianceMatrix({
         <p className="text-sm text-zinc-500 dark:text-zinc-400 px-1">
           {visible.length} resultado{visible.length !== 1 ? "s" : ""}
           {search ? ` para "${search}"` : ""}
-          {entries.length !== visible.length
-            ? ` (de ${entries.length} en esta página)`
-            : ""}
+          {entries.length !== visible.length ? ` (de ${entries.length})` : ""}
         </p>
       )}
 
@@ -650,7 +626,7 @@ export default function ComplianceMatrix({
       {/* Entries */}
       {!loading && !error && visible.length > 0 && (
         <div className="space-y-4">
-          {visible.map((entry) => {
+          {pageItems.map((entry) => {
             const isExpanded = expandedId === entry.id;
             const isEditing = editingId === entry.id;
 
@@ -1047,72 +1023,12 @@ export default function ComplianceMatrix({
       )}
 
       {/* Pagination */}
-      {!loading && !error && totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1 pt-2">
-          {/* Primera */}
-          <button
-            onClick={() => fetchPage(1)}
-            disabled={!canPrev}
-            className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-            title="Primera página"
-          >
-            <ChevronsLeft className="w-4 h-4" />
-          </button>
-
-          {/* Anterior */}
-          <button
-            onClick={() => fetchPage(currentPage - 1)}
-            disabled={!canPrev}
-            className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-            title="Página anterior"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          {/* Números de página */}
-          {pageList.map((item, i) =>
-            item === "..." ? (
-              <span
-                key={`ellipsis-${i}`}
-                className="px-1 text-sm text-zinc-400 dark:text-zinc-500 select-none"
-              >
-                ...
-              </span>
-            ) : (
-              <button
-                key={item}
-                onClick={() => item !== currentPage && fetchPage(item)}
-                className={`min-w-8 h-8 px-2 rounded-lg text-sm font-medium transition-colors ${
-                  item === currentPage
-                    ? "bg-zinc-900 dark:bg-zinc-700 text-white"
-                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {item}
-              </button>
-            ),
-          )}
-
-          {/* Siguiente */}
-          <button
-            onClick={() => fetchPage(currentPage + 1)}
-            disabled={!canNext}
-            className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-            title="Página siguiente"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-
-          {/* Última */}
-          <button
-            onClick={() => fetchPage(totalPages)}
-            disabled={!canLast}
-            className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:pointer-events-none transition-colors"
-            title="Última página"
-          >
-            <ChevronsRight className="w-4 h-4" />
-          </button>
-        </div>
+      {!loading && !error && visible.length > 0 && (
+        <Pagination
+          page={safePage}
+          totalPages={totalPages}
+          onPageChange={goToPage}
+        />
       )}
     </div>
   );
