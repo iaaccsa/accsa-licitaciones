@@ -122,12 +122,7 @@ export default function AnalysisDetailPage() {
       revalidateOnFocus: false,
     },
   );
-  const [isCancelling, setIsCancelling] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
-  const [cancelMessage, setCancelMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
@@ -162,38 +157,6 @@ export default function AnalysisDetailPage() {
       setIsSavingName(false);
     }
   }, [analysis, id, nameDraft, isSavingName, mutate]);
-
-  const handleCancel = useCallback(async () => {
-    if (!analysis || isCancelling) return;
-    const confirmed = window.confirm(
-      "Esta acción no se puede deshacer. Los jobs en ejecución serán detenidos.",
-    );
-    if (!confirmed) return;
-    setIsCancelling(true);
-    setCancelMessage(null);
-    try {
-      const res = await fetch(`/api/analyses/${id}/cancel`, { method: "POST" });
-      if (res.ok) {
-        if (analysis) mutate({ ...analysis, status: "cancelled" }, { revalidate: false });
-        setCancelMessage({
-          type: "success",
-          text: "Análisis cancelado correctamente.",
-        });
-      } else {
-        setCancelMessage({
-          type: "error",
-          text: "Error al cancelar el análisis. Intenta nuevamente.",
-        });
-      }
-    } catch {
-      setCancelMessage({
-        type: "error",
-        text: "Error al cancelar el análisis. Intenta nuevamente.",
-      });
-    } finally {
-      setIsCancelling(false);
-    }
-  }, [id, analysis, isCancelling, mutate]);
 
   const handleResume = useCallback(async () => {
     if (!analysis || isResuming) return;
@@ -305,24 +268,6 @@ export default function AnalysisDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {(analysis.status === "pending" ||
-                analysis.status === "processing" ||
-                analysis.status === "awaiting_approval") && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleCancel}
-                  disabled={isCancelling}
-                  className="text-red-600 dark:text-red-400 border-red-300 dark:border-red-800 hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-700 dark:hover:text-red-300"
-                >
-                  {isCancelling ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Ban className="h-3.5 w-3.5" />
-                  )}
-                  Cancelar
-                </Button>
-              )}
               <StatusBadge
                 status={analysis.status}
                 isSuccess={analysis.is_success}
@@ -382,14 +327,6 @@ export default function AnalysisDetailPage() {
           </div>
         </div>
       </div>
-
-      {cancelMessage && (
-        <div
-          className={`rounded-lg px-4 py-3 text-sm font-medium ${cancelMessage.type === "success" ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-900" : "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900"}`}
-        >
-          {cancelMessage.text}
-        </div>
-      )}
 
       {/* Workflow Phases */}
       <WorkflowPhases

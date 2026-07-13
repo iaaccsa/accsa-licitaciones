@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Cpu,
   FileText,
-  Ban,
   RefreshCw,
   PauseCircle,
   Play,
@@ -70,23 +69,7 @@ export default function AdminAnalysisDetailPage() {
       revalidateOnFocus: false,
     },
   );
-  const [isCancelling, setIsCancelling] = useState(false);
   const [isResuming, setIsResuming] = useState(false);
-
-  const handleCancel = useCallback(async () => {
-    if (!analysis || isCancelling) return;
-    setIsCancelling(true);
-    try {
-      const res = await fetch(`/api/analyses/${id}/cancel`, { method: "POST" });
-      if (res.ok) {
-        mutate({ ...analysis, status: "failed" }, { revalidate: false });
-      }
-    } catch (err) {
-      console.error("Error cancelling analysis:", err);
-    } finally {
-      setIsCancelling(false);
-    }
-  }, [id, analysis, isCancelling, mutate]);
 
   const handleResume = useCallback(async () => {
     if (!analysis || isResuming) return;
@@ -152,24 +135,6 @@ export default function AdminAnalysisDetailPage() {
                   <Play className="h-3.5 w-3.5" />
                 )}
                 Continuar
-              </Button>
-            )}
-            {(analysis.status === "pending" ||
-              analysis.status === "processing" ||
-              analysis.status === "awaiting_approval") && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancel}
-                disabled={isCancelling}
-                className="text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-950 dark:hover:text-red-300"
-              >
-                {isCancelling ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Ban className="h-3.5 w-3.5" />
-                )}
-                Cancelar
               </Button>
             )}
           </div>
