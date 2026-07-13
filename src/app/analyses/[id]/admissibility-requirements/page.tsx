@@ -1,35 +1,19 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { ShieldCheck, AlertCircle, ChevronDown, ChevronUp, CheckCircle2, CheckCheck, XCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Pagination } from "@/components/Pagination";
 import type { AdmissibilityRequirement, AdmissibilityRequirementCitation } from "@/lib/admissibility-types";
-import { isExclusionary } from "@/lib/admissibility-types";
 
-const LIMIT = 30;
+const PAGE_SIZE = 10;
+const FETCH_BATCH = 200;
 
 const DOMAIN_LABELS: Record<string, string> = {
     technical: "Técnico", administrative: "Administrativo", legal: "Legal",
     financial: "Económico / Financiero", hr: "Recursos Humanos", logistics: "Logístico",
     environmental: "Ambiental", quality: "Calidad", safety: "Seguridad", other: "Otro",
-};
-
-const ROLE_LABELS: Record<string, string> = {
-    admisibilidad_obligatoria: "Admisibilidad obligatoria",
-    admisibilidad_subsanable: "Admisibilidad subsanable",
-};
-
-const ROLE_COLORS: Record<string, string> = {
-    admisibilidad_obligatoria: "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-100 dark:border-red-900",
-    admisibilidad_subsanable: "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-100 dark:border-orange-900",
-};
-
-const VERIFICATION_LABELS: Record<string, string> = {
-    attached_document: "Documento adjunto", sworn_statement: "Declaración jurada",
-    external_certificate: "Certificado externo", inspection: "Inspección",
-    sample: "Muestra", site_visit: "Visita técnica",
-    auto_verifiable_from_offer: "Auto-verificable desde la oferta", other: "Otro",
 };
 
 const SCOPE_LABELS: Record<string, string> = {
@@ -82,52 +66,30 @@ export default function AdmissibilityRequirementsPage() {
     const id = params.id as string;
 
     const [requirements, setRequirements] = useState<AdmissibilityRequirement[]>([]);
-    const [analysis, setAnalysis] = useState<{ slug: string; user_assigned_name?: string; generated_name?: string } | null>(null);
+    const [page, setPage] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
-    const [isFetchingMore, setIsFetchingMore] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [verifyingAll, setVerifyingAll] = useState<boolean | null>(null);
 
-    const sentinelRef = useRef<HTMLDivElement>(null);
-    const isFetchingRef = useRef(false);
-    const offsetRef = useRef(0);
-    const hasMoreRef = useRef(true);
-
-    // Infinite-scroll fetch; deps intentionally minimal (refs hold cursor state).
-    // useSWRInfinite migration pending, needs live QA.
-    // eslint-disable-next-line react-hooks/preserve-manual-memoization
-    const fetchPage = useCallback(async (off: number, append: boolean) => {
-        if (isFetchingRef.current) return;
-        isFetchingRef.current = true;
-        if (append) setIsFetchingMore(true);
-        else setIsLoading(true);
+    const fetchAll = useCallback(async () => {
         try {
-            const response = await fetch(`/api/analyses/${id}/admissibility-requirements?limit=${LIMIT}&offset=${off}`);
-            if (!response.ok) throw new Error("Error al cargar los requisitos de admisibilidad");
-            const data: AdmissibilityRequirement[] = await response.json();
-            const items = Array.isArray(data) ? data : [];
-            setRequirements(prev => append ? [...prev, ...items] : items);
-            const more = items.length === LIMIT;
-            setHasMore(more);
-            hasMoreRef.current = more;
-            offsetRef.current = off + items.length;
+            const all: AdmissibilityRequirement[] = [];
+            let offset = 0;
+            while (true) {
+                const response = await fetch(`/api/analyses/${id}/admissibility-requirements?limit=${FETCH_BATCH}&offset=${offset}`);
+                if (!response.ok) throw new Error("Error al cargar los requisitos de admisibilidad");
+                const data: AdmissibilityRequirement[] = await response.json();
+                const items = Array.isArray(data) ? data : [];
+                all.push(...items);
+                if (items.length < FETCH_BATCH) break;
+                offset += items.length;
+            }
+            setRequirements(all);
         } catch (err) {
             console.error(err);
             setError("Error al cargar los datos");
         } finally {
-            if (append) setIsFetchingMore(false);
-            else setIsLoading(false);
-            isFetchingRef.current = false;
-            // If sentinel still visible after load, fetch next batch
-            setTimeout(() => {
-                if (hasMoreRef.current && sentinelRef.current && !isFetchingRef.current) {
-                    const rect = sentinelRef.current.getBoundingClientRect();
-                    if (rect.top < window.innerHeight) {
-                        fetchPage(offsetRef.current, true);
-                    }
-                }
-            }, 50);
+            setIsLoading(false);
         }
     }, [id]);
 
@@ -161,35 +123,18 @@ export default function AdmissibilityRequirementsPage() {
         }
     }, [id]);
 
-    // Infinite scroll
     useEffect(() => {
-        const sentinel = sentinelRef.current;
-        if (!sentinel) return;
-        const observer = new IntersectionObserver(
-            (entries) => {
-                if (entries[0].isIntersecting && hasMoreRef.current && !isFetchingRef.current) {
-                    fetchPage(offsetRef.current, true);
-                }
-            },
-            { threshold: 0.1 }
-        );
-        observer.observe(sentinel);
-        return () => observer.disconnect();
-    }, [fetchPage, isLoading]);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (id) fetchAll();
+    }, [id, fetchAll]);
 
-    // Initial load
-    useEffect(() => {
-        if (id) fetchPage(0, false);
-    }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+    const totalPages = Math.max(1, Math.ceil(requirements.length / PAGE_SIZE));
+    const pageItems = requirements.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    useEffect(() => {
-        if (id) {
-            fetch(`/api/analyses/${id}`)
-                .then(res => res.ok ? res.json() : null)
-                .then(data => { if (data) setAnalysis(data); })
-                .catch(console.error);
-        }
-    }, [id]);
+    const goToPage = (p: number) => {
+        setPage(p);
+        window.scrollTo({ top: 0 });
+    };
 
     if (error) {
         return (
@@ -203,19 +148,10 @@ export default function AdmissibilityRequirementsPage() {
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        <ShieldCheck className="w-6 h-6 text-violet-600 dark:text-violet-400" />
-                        Requisitos de Admisibilidad
-                    </h1>
-                </div>
-                {analysis && (
-                    <span className="font-mono text-sm font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 uppercase">
-                        {analysis.user_assigned_name || analysis.generated_name || analysis.slug}
-                    </span>
-                )}
-            </div>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                <ShieldCheck className="w-6 h-6 text-violet-600 dark:text-violet-400" />
+                Requisitos de Admisibilidad
+            </h1>
 
             <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 Requisitos excluyentes extraídos con la pasada dedicada de admisibilidad.
@@ -260,7 +196,7 @@ export default function AdmissibilityRequirementsPage() {
             ) : (
                 <div className="space-y-4">
                     {requirements.length > 0 ? (
-                        requirements.map((req) => (
+                        pageItems.map((req) => (
                             <div
                                 key={req.id}
                                 className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all duration-200"
@@ -284,24 +220,8 @@ export default function AdmissibilityRequirementsPage() {
                                     </div>
                                 </div>
 
-                                {/* Tag row 1: roles + domain + temporal_scope */}
-                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                    {isExclusionary(req.roles) && (
-                                        <span
-                                            title="El incumplimiento de este requisito rechaza la propuesta"
-                                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border border-amber-100 dark:border-amber-900"
-                                        >
-                                            Excluyente
-                                        </span>
-                                    )}
-                                    {req.roles.map(role => (
-                                        <span
-                                            key={role}
-                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${ROLE_COLORS[role] ?? "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800"}`}
-                                        >
-                                            Rol: {ROLE_LABELS[role] ?? role}
-                                        </span>
-                                    ))}
+                                {/* Tags: domain + temporal_scope + confidence */}
+                                <div className="flex flex-wrap items-center gap-2 mb-3">
                                     {req.domain && (
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900">
                                             Dominio: {DOMAIN_LABELS[req.domain] ?? req.domain}
@@ -310,15 +230,6 @@ export default function AdmissibilityRequirementsPage() {
                                     {req.temporal_scope && (
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
                                             Alcance: {SCOPE_LABELS[req.temporal_scope] ?? req.temporal_scope}
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Tag row 2: verification_method + confidence */}
-                                <div className="flex flex-wrap items-center gap-2 mb-3">
-                                    {req.verification_method && (
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
-                                            Verificación: {VERIFICATION_LABELS[req.verification_method] ?? req.verification_method}
                                         </span>
                                     )}
                                     {req.confidence && (
@@ -361,30 +272,7 @@ export default function AdmissibilityRequirementsPage() {
                         </div>
                     )}
 
-                    {/* Sentinel for infinite scroll */}
-                    <div ref={sentinelRef} className="py-2">
-                        {isFetchingMore && (
-                            <div className="space-y-4">
-                                {Array.from({ length: 3 }).map((_, i) => (
-                                    <div key={i} className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm space-y-3">
-                                        <div className="flex gap-4">
-                                            <Skeleton className="h-6 w-24 rounded" />
-                                            <Skeleton className="h-6 flex-1 rounded" />
-                                        </div>
-                                        <div className="flex gap-2 pt-2">
-                                            <Skeleton className="h-5 w-28 rounded-full" />
-                                            <Skeleton className="h-5 w-20 rounded-full" />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        {!hasMore && requirements.length > 0 && (
-                            <p className="text-center text-xs text-zinc-400 dark:text-zinc-500 py-4">
-                                {requirements.length} requisitos cargados
-                            </p>
-                        )}
-                    </div>
+                    <Pagination page={page} totalPages={totalPages} onPageChange={goToPage} />
                 </div>
             )}
         </div>
