@@ -13,26 +13,26 @@ export default function ProposalRequirementsPage() {
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
-            <div className="flex flex-col gap-3">
-                <Button
-                    variant="ghost"
-                    className="w-fit -ml-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                    onClick={() => router.back()}
-                >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Volver a la propuesta
-                </Button>
+            <Button
+                variant="ghost"
+                className="w-fit -ml-2 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                onClick={() => router.back()}
+            >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Volver a la propuesta
+            </Button>
 
-                <div className="flex items-center gap-3">
-                    <div className="p-2.5 bg-green-50 dark:bg-green-950 rounded-lg text-green-600 dark:text-green-400 shrink-0">
-                        <ClipboardList className="w-6 h-6" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Matriz de Cumplimiento</h1>
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 md:p-8 space-y-6">
+                <div className="border-b border-zinc-200 dark:border-zinc-800 pb-4">
+                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                        <ClipboardList className="w-6 h-6 text-green-600 dark:text-green-400" />
+                        Matriz de Cumplimiento
+                    </h1>
                 </div>
-            </div>
 
-            <div className="min-w-0">
-                <ComplianceMatrix analysisId={analysisId} proposalId={proposalId} />
+                <div className="min-w-0">
+                    <ComplianceMatrix analysisId={analysisId} proposalId={proposalId} />
+                </div>
             </div>
         </div>
     );

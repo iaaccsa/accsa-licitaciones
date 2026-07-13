@@ -23,7 +23,6 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
 // ---- Types ----
 
@@ -155,6 +154,34 @@ const ROLE_LABELS: Record<string, string> = {
   informativo: "Informativo",
   preferencia_legal: "Preferencia Legal",
   desconocido_pendiente_pliego_general: "Pendiente",
+};
+
+const ROLE_COLORS: Record<string, string> = {
+  admisibilidad_obligatoria: "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border-red-100 dark:border-red-900",
+  admisibilidad_subsanable: "bg-orange-50 dark:bg-orange-950 text-orange-700 dark:text-orange-300 border-orange-100 dark:border-orange-900",
+  puntuable: "bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border-blue-100 dark:border-blue-900",
+  penalizador: "bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border-purple-100 dark:border-purple-900",
+  informativo: "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800",
+  preferencia_legal: "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-100 dark:border-indigo-900",
+  desconocido_pendiente_pliego_general: "bg-yellow-50 dark:bg-yellow-950 text-yellow-700 dark:text-yellow-300 border-yellow-100 dark:border-yellow-900",
+};
+
+const DOMAIN_LABELS: Record<string, string> = {
+  technical: "Técnico", administrative: "Administrativo", legal: "Legal",
+  financial: "Económico / Financiero", hr: "Recursos Humanos", logistics: "Logístico",
+  environmental: "Ambiental", quality: "Calidad", safety: "Seguridad", other: "Otro",
+};
+
+const VERIFICATION_LABELS: Record<string, string> = {
+  attached_document: "Documento adjunto", sworn_statement: "Declaración jurada",
+  external_certificate: "Certificado externo", inspection: "Inspección",
+  sample: "Muestra", site_visit: "Visita técnica",
+  auto_verifiable_from_offer: "Auto-verificable desde la oferta", other: "Otro",
+};
+
+const SCOPE_LABELS: Record<string, string> = {
+  at_bid_time: "Al momento de ofertar", pre_award: "Previo a la adjudicación",
+  during_execution: "Durante la ejecución", post_sale: "Postventa", other: "Otro",
 };
 
 const VERIFICATION_METHOD_LABELS: Record<string, string> = {
@@ -410,7 +437,7 @@ export default function ComplianceMatrix({
   return (
     <div className="space-y-4">
       {/* Filter bar */}
-      <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-3">
+      <div className="rounded-lg bg-zinc-50 dark:bg-zinc-800/30 p-4 space-y-3">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500" />
@@ -419,7 +446,7 @@ export default function ComplianceMatrix({
             placeholder="Buscar por código o texto del requisito..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-zinc-50 dark:bg-zinc-700 dark:text-zinc-100 dark:border-zinc-600"
+            className="w-full pl-9 pr-4 py-2 text-sm border border-zinc-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-300 bg-white dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-600"
           />
           {search && (
             <button
@@ -622,7 +649,7 @@ export default function ComplianceMatrix({
 
       {/* Entries */}
       {!loading && !error && visible.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-4">
           {visible.map((entry) => {
             const isExpanded = expandedId === entry.id;
             const isEditing = editingId === entry.id;
@@ -630,76 +657,66 @@ export default function ComplianceMatrix({
             return (
               <div
                 key={entry.id}
-                className={`cv-auto bg-white dark:bg-zinc-900 rounded-xl border transition-all ${
-                  isExpanded
-                    ? "border-zinc-300 dark:border-zinc-700 shadow-sm"
-                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
-                }`}
+                className="cv-auto bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-all duration-200"
               >
-                {/* Row header */}
-                <button
-                  className="w-full text-left px-4 py-3 flex items-center gap-3"
+                {/* Header: code + text + expand toggle */}
+                <div
+                  className="flex items-start gap-3 md:gap-6 cursor-pointer select-none pb-4 border-b border-zinc-200 dark:border-zinc-800"
                   onClick={() => setExpandedId(isExpanded ? null : entry.id)}
                 >
-                  <span className="text-zinc-400 dark:text-zinc-500 shrink-0">
-                    {isExpanded ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </span>
-
-                  <span className="font-mono text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 px-2 py-0.5 rounded shrink-0">
+                  <span className="min-w-[80px] md:min-w-[100px] shrink-0 text-sm font-bold text-zinc-900 dark:text-zinc-100">
                     {entry.requirement_code}
                   </span>
-
-                  <span className="flex-1 text-sm text-zinc-700 dark:text-zinc-300 truncate min-w-0">
-                    {entry.requirement_summary ??
-                      entry.requirement_text.slice(0, 100)}
-                  </span>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {entry.is_verified && (
-                      <span title="Verificado">
-                        <ShieldCheck className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
-                      </span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 leading-relaxed">
+                      {entry.requirement_text}
+                    </p>
+                    {entry.requirement_summary && (
+                      <p className="text-zinc-400 dark:text-zinc-500 text-xs mt-1 leading-relaxed">
+                        {entry.requirement_summary}
+                      </p>
                     )}
-                    <ConfidenceLabel confidence={entry.confidence} />
-                    <VerdictBadge verdict={entry.verdict} />
                   </div>
-                </button>
+                  <ChevronDown
+                    className={`w-5 h-5 shrink-0 text-zinc-400 dark:text-zinc-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                  />
+                </div>
 
                 {/* Expanded content */}
                 {isExpanded && (
-                  <div className="px-4 pb-4 pt-1 border-t border-zinc-100 dark:border-zinc-800 space-y-4">
-                    {/* Requirement details */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge
-                          variant="outline"
-                          className="text-xs font-normal"
+                  <div className="pt-4 space-y-4">
+                    {/* Requirement tags */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {entry.requirement_roles.map((r) => (
+                        <span
+                          key={r}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${ROLE_COLORS[r] ?? "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800"}`}
                         >
-                          {entry.requirement_domain}
-                        </Badge>
-                        {entry.requirement_roles.map((r) => (
-                          <Badge
-                            key={r}
-                            variant="secondary"
-                            className="text-xs font-normal"
-                          >
-                            {ROLE_LABELS[r] ?? r}
-                          </Badge>
-                        ))}
-                        <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                          {entry.requirement_verification_method}
+                          Rol: {ROLE_LABELS[r] ?? r}
                         </span>
-                        <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                          {entry.requirement_temporal_scope}
+                      ))}
+                      {entry.requirement_domain && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900">
+                          Dominio:{" "}
+                          {DOMAIN_LABELS[entry.requirement_domain] ??
+                            entry.requirement_domain}
                         </span>
-                      </div>
-                      <p className="text-sm text-zinc-800 dark:text-zinc-200 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg p-3 leading-relaxed">
-                        {entry.requirement_text}
-                      </p>
+                      )}
+                      {entry.requirement_temporal_scope && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
+                          Alcance:{" "}
+                          {SCOPE_LABELS[entry.requirement_temporal_scope] ??
+                            entry.requirement_temporal_scope}
+                        </span>
+                      )}
+                      {entry.requirement_verification_method && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
+                          Verificación:{" "}
+                          {VERIFICATION_LABELS[
+                            entry.requirement_verification_method
+                          ] ?? entry.requirement_verification_method}
+                        </span>
+                      )}
                     </div>
 
                     {/* Reasoning */}
@@ -996,17 +1013,33 @@ export default function ComplianceMatrix({
                           <ClipboardEdit className="w-3.5 h-3.5" />
                           Editar
                         </button>
-                        {entry.manual_verification_required &&
-                          !entry.is_verified && (
-                            <span className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
-                              <HelpCircle className="w-3.5 h-3.5" />
-                              Pendiente de revisión manual
-                            </span>
-                          )}
                       </div>
                     )}
                   </div>
                 )}
+
+                {/* Footer: review status + verdict */}
+                <div className="flex items-center justify-between gap-4 mt-4">
+                  <div className="flex items-center gap-3">
+                    {entry.is_verified && (
+                      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        Verificado
+                      </span>
+                    )}
+                    {entry.manual_verification_required &&
+                      !entry.is_verified && (
+                        <span className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400">
+                          <HelpCircle className="w-3.5 h-3.5" />
+                          Pendiente de revisión manual
+                        </span>
+                      )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ConfidenceLabel confidence={entry.confidence} />
+                    <VerdictBadge verdict={entry.verdict} />
+                  </div>
+                </div>
               </div>
             );
           })}
