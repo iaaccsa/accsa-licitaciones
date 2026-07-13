@@ -256,17 +256,17 @@ export default function WorkflowPhases({ analysisId }: WorkflowPhasesProps) {
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
           Progreso del análisis
         </h2>
-        <div className="text-sm text-zinc-500 dark:text-zinc-400">
-          Progreso global:{" "}
-          <strong className="text-zinc-900 dark:text-zinc-100 font-semibold">{overall}%</strong>
-        </div>
       </header>
 
-      <div className="h-1.5 w-full rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden mt-4 mb-10">
+      <div className="h-5 w-full rounded-full bg-zinc-200/60 dark:bg-zinc-800 overflow-hidden mt-4 mb-10">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 transition-all duration-700 ease-out"
+          className="flex h-full min-w-fit items-center justify-end rounded-full bg-gradient-to-r from-blue-500 to-green-500 px-2 transition-all duration-700 ease-out"
           style={{ width: `${overall}%` }}
-        />
+        >
+          <span className="text-[11px] font-semibold leading-none text-white">
+            {overall}%
+          </span>
+        </div>
       </div>
 
       <div className="flex items-start">
