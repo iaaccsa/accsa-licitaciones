@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/swr";
 import { Check, AlertTriangle } from "lucide-react";
@@ -21,6 +21,7 @@ interface Phase {
 
 interface WorkflowPhasesProps {
   analysisId: string;
+  headerAction?: ReactNode;
 }
 
 type UiStatus = "done" | "running" | "pending" | "warning";
@@ -202,7 +203,10 @@ function FragmentKey({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function WorkflowPhases({ analysisId }: WorkflowPhasesProps) {
+export default function WorkflowPhases({
+  analysisId,
+  headerAction,
+}: WorkflowPhasesProps) {
   const { data: phases = [], isLoading } = useSWR<Phase[]>(
     analysisId ? `/api/analyses/${analysisId}/phases` : null,
     fetcher,
@@ -252,10 +256,11 @@ export default function WorkflowPhases({ analysisId }: WorkflowPhasesProps) {
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-      <header className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+      <header className="flex flex-wrap items-center justify-between gap-2 mb-2">
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
           Progreso del análisis
         </h2>
+        {headerAction}
       </header>
 
       <div className="h-5 w-full rounded-full bg-zinc-200/60 dark:bg-zinc-800 overflow-hidden mt-4 mb-10">

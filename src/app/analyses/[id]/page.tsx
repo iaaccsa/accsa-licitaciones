@@ -305,21 +305,6 @@ export default function AnalysisDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {analysis.status === "awaiting_approval" && (
-                <Button
-                  size="sm"
-                  onClick={handleResume}
-                  disabled={isResuming}
-                  className="bg-green-600 text-white hover:bg-green-700"
-                >
-                  {isResuming ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Play className="h-3.5 w-3.5" />
-                  )}
-                  Continuar
-                </Button>
-              )}
               {(analysis.status === "pending" ||
                 analysis.status === "processing" ||
                 analysis.status === "awaiting_approval") && (
@@ -407,7 +392,26 @@ export default function AnalysisDetailPage() {
       )}
 
       {/* Workflow Phases */}
-      <WorkflowPhases analysisId={id} />
+      <WorkflowPhases
+        analysisId={id}
+        headerAction={
+          analysis.status === "awaiting_approval" ? (
+            <Button
+              size="sm"
+              onClick={handleResume}
+              disabled={isResuming}
+              className="bg-green-600 text-white hover:bg-green-700"
+            >
+              {isResuming ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Play className="h-3.5 w-3.5" />
+              )}
+              Continuar
+            </Button>
+          ) : undefined
+        }
+      />
 
       {/* Navigation Buttons */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
