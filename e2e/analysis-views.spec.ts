@@ -86,7 +86,7 @@ for (const view of FILE_VIEWS) {
     });
 }
 
-const PROPOSAL_VIEWS = ["", "/requirements", "/admissibility"];
+const PROPOSAL_VIEWS = ["", "/requirements", "/admissibility-requirements"];
 
 for (const view of PROPOSAL_VIEWS) {
     test(`renders /analyses/[id]/proposals/[proposalId]${view}`, async ({ page, request }) => {

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building2, Loader2, AlertCircle, FileText, CheckCircle2, XCircle, Clock } from "lucide-react";
 import Link from "next/link";
+import { Building2, Loader2, AlertCircle, FileText, CheckCircle2, XCircle, Clock } from "lucide-react";
 
 type AdmissibilityStatus = "failed" | "pending" | "admitida" | "rechazada" | "evaluating";
 
@@ -47,7 +47,13 @@ export default function AdmissibilityPage() {
         load();
     }, [id]);
 
-    const handleOverride = async (proposal: Proposal, next: "admitida" | "rechazada") => {
+    const handleOverride = async (
+        e: React.MouseEvent,
+        proposal: Proposal,
+        next: "admitida" | "rechazada",
+    ) => {
+        e.preventDefault();
+        e.stopPropagation();
         if (overridingId) return;
         setOverridingId(proposal.id);
         const prev = proposal.admissibility_status;
@@ -81,9 +87,10 @@ export default function AdmissibilityPage() {
         const resolved = status === "admitida" || status === "rechazada";
 
         return (
-            <div
+            <Link
                 key={proposal.id}
-                className="flex flex-col bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-5"
+                href={`/analyses/${id}/proposals/${proposal.id}/admissibility-requirements`}
+                className="flex flex-col bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all p-5"
             >
                 <div className="flex items-start gap-3">
                     <div className="p-2 bg-blue-50 dark:bg-blue-950 rounded-lg text-blue-500 dark:text-blue-400 shrink-0">
@@ -108,7 +115,7 @@ export default function AdmissibilityPage() {
                         {status === "admitida" ? (
                             <button
                                 type="button"
-                                onClick={() => handleOverride(proposal, "rechazada")}
+                                onClick={(e) => handleOverride(e, proposal, "rechazada")}
                                 disabled={overridingId === proposal.id}
                                 className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
@@ -122,7 +129,7 @@ export default function AdmissibilityPage() {
                         ) : (
                             <button
                                 type="button"
-                                onClick={() => handleOverride(proposal, "admitida")}
+                                onClick={(e) => handleOverride(e, proposal, "admitida")}
                                 disabled={overridingId === proposal.id}
                                 className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-950 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
@@ -136,7 +143,7 @@ export default function AdmissibilityPage() {
                         )}
                     </div>
                 )}
-            </div>
+            </Link>
         );
     };
 
@@ -146,16 +153,6 @@ export default function AdmissibilityPage() {
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
-            <div className="flex items-center gap-3">
-                <Link
-                    href={`/analyses/${id}`}
-                    className="flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Volver al análisis
-                </Link>
-            </div>
-
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Admisibilidad de propuestas</h1>
                 {!isLoading && !error && (

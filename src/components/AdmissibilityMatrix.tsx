@@ -41,7 +41,6 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 const ALL_VERDICTS = Object.keys(VERDICT_CONFIG) as ComplianceVerdict[];
-const ALL_ROLES = Object.keys(ROLE_LABELS);
 
 const LIMIT = 500;
 
@@ -57,7 +56,6 @@ interface EditDraft {
 
 interface Filters {
     verdicts: ComplianceVerdict[];
-    roles: string[];
     isVerified: boolean | null;
     manualVerificationRequired: boolean | null;
 }
@@ -91,7 +89,6 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
 
     const [filters, setFilters] = useState<Filters>({
         verdicts: [],
-        roles: [],
         isVerified: null,
         manualVerificationRequired: null,
     });
@@ -104,7 +101,6 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
     const [saveError, setSaveError] = useState<string | null>(null);
 
     const listParams = new URLSearchParams();
-    filters.roles.forEach((r) => listParams.append("role", r));
     listParams.set("limit", String(LIMIT));
     listParams.set("offset", "0");
     const { data, isLoading: loading, error: swrError, mutate } = useSWR<AdmissibilityResult[]>(
@@ -251,41 +247,6 @@ export default function AdmissibilityMatrix({ analysisId, proposalId }: Admissib
                     {filters.verdicts.length > 0 && (
                         <button
                             onClick={() => setFilters((f) => ({ ...f, verdicts: [] }))}
-                            className="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
-                        >
-                            Limpiar
-                        </button>
-                    )}
-                </div>
-
-                {/* Role filter chips (server-side) */}
-                <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-zinc-400 dark:text-zinc-500 shrink-0">Rol:</span>
-                    {ALL_ROLES.map((r) => {
-                        const active = filters.roles.includes(r);
-                        return (
-                            <button
-                                key={r}
-                                onClick={() =>
-                                    setFilters((f) => ({
-                                        ...f,
-                                        roles: active
-                                            ? f.roles.filter((x) => x !== r)
-                                            : [...f.roles, r],
-                                    }))
-                                }
-                                className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${active
-                                    ? "bg-zinc-800 text-white border-zinc-800"
-                                    : "bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
-                                    }`}
-                            >
-                                {ROLE_LABELS[r]}
-                            </button>
-                        );
-                    })}
-                    {filters.roles.length > 0 && (
-                        <button
-                            onClick={() => setFilters((f) => ({ ...f, roles: [] }))}
                             className="text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
                         >
                             Limpiar

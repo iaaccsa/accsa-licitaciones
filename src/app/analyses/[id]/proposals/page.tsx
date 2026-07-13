@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building2, Calendar, AlertTriangle, Loader2, AlertCircle, FileText, CheckCircle2, XCircle, Clock, Coins } from "lucide-react";
+import { Building2, Calendar, AlertTriangle, Loader2, AlertCircle, FileText, CheckCircle2, XCircle, Clock, Coins } from "lucide-react";
 import Link from "next/link";
 import { formatAmount, type EconomicOffer } from "@/components/EconomicOfferCard";
 
@@ -156,16 +156,6 @@ export default function ProposalsPage() {
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
-            <div className="flex items-center gap-3">
-                <Link
-                    href={`/analyses/${id}`}
-                    className="flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Volver al análisis
-                </Link>
-            </div>
-
             <div className="flex items-center justify-between">
                 <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">Propuestas</h1>
                 {!isLoading && !error && (

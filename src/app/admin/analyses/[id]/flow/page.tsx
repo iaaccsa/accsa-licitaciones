@@ -3,8 +3,8 @@
 import React from "react";
 import useSWR from "swr";
 import { fetcher, postFetcher } from "@/lib/swr";
-import { useParams, useRouter } from "next/navigation";
-import { AlertCircle, ChevronLeft, GitBranch, CheckCircle2, XCircle, Clock, Settings, Layers, Play, Pause } from "lucide-react";
+import { useParams } from "next/navigation";
+import { AlertCircle, GitBranch, CheckCircle2, XCircle, Clock, Settings, Layers, Play, Pause } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface WorkflowStep {
@@ -51,7 +51,6 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function AnalysisFlowPage() {
     const params = useParams();
-    const router = useRouter();
     const id = params.id as string;
 
     const { data: stepsData, error: stepsError, isLoading } = useSWR<WorkflowStep[]>(
@@ -88,9 +87,6 @@ export default function AnalysisFlowPage() {
                 <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4 dark:text-red-400" />
                 <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
                 <p className="text-zinc-600 dark:text-zinc-400">{error}</p>
-                <button onClick={() => router.back()} className="mt-4 text-blue-600 dark:text-blue-400 hover:underline">
-                    Volver al análisis
-                </button>
             </div>
         );
     }
@@ -99,12 +95,6 @@ export default function AnalysisFlowPage() {
         <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => router.back()}
-                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-                    >
-                        <ChevronLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
-                    </button>
                     <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                         <GitBranch className="w-6 h-6 text-orange-500 dark:text-orange-400" />
                         Flujo de Proceso

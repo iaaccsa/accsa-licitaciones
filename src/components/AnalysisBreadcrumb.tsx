@@ -28,6 +28,8 @@ const SEGMENT_LABELS: Record<string, string> = {
     proposals: "Propuestas",
     chat: "Chat",
     chunks: "Chunks",
+    events: "Eventos",
+    evaluation_system: "Sistema de Evaluación",
 };
 
 const NAME_MAX_CHARS = 40;
@@ -53,13 +55,14 @@ export function AnalysisBreadcrumb() {
         { revalidateOnFocus: false },
     );
 
-    const basePath = `/analyses/${id}`;
+    const isAdmin = pathname.startsWith("/admin/");
+    const basePath = isAdmin ? `/admin/analyses/${id}` : `/analyses/${id}`;
     const analysisName = analysis
         ? truncateName(analysis.user_assigned_name || analysis.generated_name || analysis.slug)
         : null;
 
     const items: { label: ReactNode; href: string }[] = [
-        { label: "Análisis", href: "/analyses" },
+        { label: "Análisis", href: isAdmin ? "/admin" : "/analyses" },
         {
             label: analysisName ?? <Skeleton className="inline-block h-3.5 w-40 align-middle" />,
             href: basePath,

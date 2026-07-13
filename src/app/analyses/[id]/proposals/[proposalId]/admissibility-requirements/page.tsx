@@ -20,7 +20,7 @@ export default function ProposalAdmissibilityPage() {
                     onClick={() => router.back()}
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Volver a la propuesta
+                    Volver
                 </Button>
 
                 <div className="flex items-center gap-3">

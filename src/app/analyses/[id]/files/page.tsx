@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { FileText, Download, Eye, ChevronLeft, AlertCircle, MessageSquare, HelpCircle, ArrowRightLeft, X, Loader2, Ban } from "lucide-react";
+import { useParams } from "next/navigation";
+import { FileText, Download, Eye, AlertCircle, MessageSquare, HelpCircle, ArrowRightLeft, X, Loader2, Ban } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
@@ -62,7 +62,6 @@ function formatBytes(bytes: number, decimals = 2) {
 
 export default function AnalysisFilesPage() {
     const params = useParams();
-    const router = useRouter();
     const id = params.id as string;
 
     const [files, setFiles] = useState<AnalysisFile[]>([]);
@@ -184,12 +183,6 @@ export default function AnalysisFilesPage() {
                 <AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100 mb-2">Error</h2>
                 <p className="text-zinc-600 dark:text-zinc-400">{error}</p>
-                <button
-                    onClick={() => router.back()}
-                    className="mt-4 text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                    Volver al análisis
-                </button>
             </div>
         );
     }
@@ -202,12 +195,6 @@ export default function AnalysisFilesPage() {
         <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
             <div className="flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => router.back()}
-                        className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-                    >
-                        <ChevronLeft className="w-5 h-5 text-zinc-600 dark:text-zinc-400" />
-                    </button>
                     <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                         <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                         Archivos del Análisis

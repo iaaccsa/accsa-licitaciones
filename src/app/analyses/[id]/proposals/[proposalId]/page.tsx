@@ -310,7 +310,7 @@ export default function ProposalDetailPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <a
-                        href={`/analyses/${analysisId}/proposals/${proposalId}/admissibility`}
+                        href={`/analyses/${analysisId}/proposals/${proposalId}/admissibility-requirements`}
                         className="relative flex items-center gap-4 p-5 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-violet-300 hover:shadow-md transition-all group"
                     >
                         {analysis?.status === "awaiting_approval" && analysis.paused_at_service === "service-admissibility-gate" && (
