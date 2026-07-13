@@ -38,9 +38,22 @@ interface Analysis {
   status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
   is_success: boolean | null;
   paused_at_service: string | null;
+  primary_model: "gemini" | "openai" | null;
+  intelligence_level: "low" | "medium" | "high" | null;
   created_at: string;
   updated_at: string;
 }
+
+const MODEL_LABELS: Record<string, string> = {
+  gemini: "Gemini",
+  openai: "OpenAI",
+};
+
+const LEVEL_LABELS: Record<string, string> = {
+  low: "Baja",
+  medium: "Media",
+  high: "Alta",
+};
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleString("es-ES", {
@@ -173,6 +186,24 @@ export default function AdminAnalysisDetailPage() {
             label="Pausado en"
             value={analysis.paused_at_service || "—"}
             mono
+          />
+          <DetailField
+            label="Modelo"
+            value={
+              analysis.primary_model
+                ? (MODEL_LABELS[analysis.primary_model] ??
+                  analysis.primary_model)
+                : "—"
+            }
+          />
+          <DetailField
+            label="Inteligencia"
+            value={
+              analysis.intelligence_level
+                ? (LEVEL_LABELS[analysis.intelligence_level] ??
+                  analysis.intelligence_level)
+                : "—"
+            }
           />
           <DetailField label="Creado" value={formatDate(analysis.created_at)} />
           <DetailField

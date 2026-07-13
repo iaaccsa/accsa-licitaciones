@@ -6,8 +6,7 @@ import { fetcher } from "@/lib/swr";
 import { useParams } from "next/navigation";
 import {
   Loader2,
-  Calendar,
-  Mail,
+  Tag,
   CheckCircle,
   XCircle,
   Clock,
@@ -19,8 +18,6 @@ import {
   ShieldCheck,
   UserCheck,
   Bot,
-  Cpu,
-  Gauge,
   Pencil,
   Check,
   X,
@@ -37,7 +34,6 @@ interface Analysis {
   slug: string;
   user_assigned_name: string | null;
   generated_name: string | null;
-  user_email: string | null;
   status:
     | "pending"
     | "processing"
@@ -48,28 +44,13 @@ interface Analysis {
   is_success: boolean | null;
   paused_at_service: string | null;
   hitl: boolean;
-  primary_model: "gemini" | "openai" | null;
-  intelligence_level: "low" | "medium" | "high" | null;
   created_at: string;
   updated_at: string;
 }
 
-const MODEL_LABELS: Record<string, string> = {
-  gemini: "Gemini",
-  openai: "OpenAI",
-};
-
-const LEVEL_LABELS: Record<string, string> = {
-  low: "Baja",
-  medium: "Media",
-  high: "Alta",
-};
-
 const CHIP_TONES = {
   neutral: "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800",
-  indigo: "bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-900",
-  violet: "bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-900",
-  amber: "bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900",
+  blue: "bg-white dark:bg-blue-950 text-blue-600 dark:text-blue-300 border-blue-300 dark:border-blue-900",
 } as const;
 
 function InfoChip({
@@ -77,19 +58,23 @@ function InfoChip({
   label,
   value,
   tone = "neutral",
+  mono = false,
 }: {
   icon: LucideIcon;
   label?: string;
   value: string;
   tone?: keyof typeof CHIP_TONES;
+  mono?: boolean;
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs ${CHIP_TONES[tone]}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs ${CHIP_TONES[tone]}`}
     >
       <Icon className="w-3.5 h-3.5 shrink-0" />
       {label && <span className="opacity-60">{label}</span>}
-      <span className="font-medium">{value}</span>
+      <span className={mono ? "font-mono font-semibold uppercase" : "font-medium"}>
+        {value}
+      </span>
     </span>
   );
 }
@@ -200,72 +185,34 @@ export default function AnalysisDetailPage() {
     <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
       {/* Header */}
       <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-        <div className="flex flex-col gap-5">
-          {/* Top: title block + status / actions */}
+        <div className="flex flex-col gap-4">
+          {/* Top: metadata chips + status */}
           <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 space-y-1.5">
-              {isEditingName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    autoFocus
-                    type="text"
-                    value={nameDraft}
-                    onChange={(e) => setNameDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSaveName();
-                      if (e.key === "Escape") setIsEditingName(false);
-                    }}
-                    maxLength={200}
-                    placeholder={analysis.generated_name || analysis.slug}
-                    className="flex-1 min-w-0 text-2xl font-bold text-zinc-900 dark:text-zinc-100 bg-transparent border-b border-zinc-300 dark:border-zinc-700 focus:outline-none focus:border-blue-500"
-                  />
-                  <button
-                    onClick={handleSaveName}
-                    disabled={isSavingName}
-                    title="Guardar"
-                    className="shrink-0 text-zinc-500 dark:text-zinc-400 hover:text-green-600 dark:hover:text-green-400 disabled:opacity-50"
-                  >
-                    {isSavingName ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <Check className="h-5 w-5" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => setIsEditingName(false)}
-                    disabled={isSavingName}
-                    title="Cancelar"
-                    className="shrink-0 text-zinc-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                    {analysis.user_assigned_name || analysis.generated_name || (
-                      <span className="font-mono uppercase">{analysis.slug}</span>
-                    )}
-                  </h1>
-                  <button
-                    onClick={startEditName}
-                    title="Editar nombre"
-                    className="shrink-0 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="font-mono uppercase text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 px-2 py-0.5 rounded">
-                  {analysis.slug}
-                </span>
-                {analysis.user_assigned_name && analysis.generated_name && (
-                  <span className="text-sm text-zinc-400 dark:text-zinc-500 truncate">
-                    {analysis.generated_name}
-                  </span>
-                )}
-              </div>
+            <div className="flex flex-wrap items-center gap-2 min-w-0">
+              <InfoChip
+                icon={Clock}
+                label="Creado"
+                value={formatDate(analysis.created_at)}
+              />
+              <InfoChip
+                icon={Clock}
+                label={
+                  FINISHED_STATUSES.includes(analysis.status)
+                    ? "Finalizado"
+                    : "Actualizado"
+                }
+                value={formatDate(analysis.updated_at)}
+              />
+              <InfoChip
+                icon={analysis.hitl ? UserCheck : Bot}
+                value={
+                  analysis.hitl
+                    ? "Con validación humana"
+                    : "Sin validación humana"
+                }
+                tone={analysis.hitl ? "blue" : "neutral"}
+              />
+              <InfoChip icon={Tag} value={analysis.slug} mono />
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <StatusBadge
@@ -275,54 +222,64 @@ export default function AnalysisDetailPage() {
             </div>
           </div>
 
-          <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
-
-          {/* Metadata chips */}
-          <div className="flex flex-wrap items-center gap-2">
-            <InfoChip
-              icon={Calendar}
-              label="Creado"
-              value={formatDate(analysis.created_at)}
-            />
-            <InfoChip
-              icon={Clock}
-              label={
-                FINISHED_STATUSES.includes(analysis.status)
-                  ? "Finalizado"
-                  : "Actualizado"
-              }
-              value={formatDate(analysis.updated_at)}
-            />
-            <InfoChip
-              icon={analysis.hitl ? UserCheck : Bot}
-              value={
-                analysis.hitl ? "Con validación humana" : "Sin validación humana"
-              }
-              tone={analysis.hitl ? "amber" : "neutral"}
-            />
-            {analysis.primary_model && (
-              <InfoChip
-                icon={Cpu}
-                label="Modelo"
-                value={
-                  MODEL_LABELS[analysis.primary_model] ?? analysis.primary_model
-                }
-                tone="indigo"
-              />
+          {/* Title */}
+          <div className="min-w-0 space-y-1">
+            {isEditingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  autoFocus
+                  type="text"
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSaveName();
+                    if (e.key === "Escape") setIsEditingName(false);
+                  }}
+                  maxLength={200}
+                  placeholder={analysis.generated_name || analysis.slug}
+                  className="flex-1 min-w-0 text-3xl font-bold text-zinc-900 dark:text-zinc-100 bg-transparent border-b border-zinc-300 dark:border-zinc-700 focus:outline-none focus:border-blue-500"
+                />
+                <button
+                  onClick={handleSaveName}
+                  disabled={isSavingName}
+                  title="Guardar"
+                  className="shrink-0 text-zinc-500 dark:text-zinc-400 hover:text-green-600 dark:hover:text-green-400 disabled:opacity-50"
+                >
+                  {isSavingName ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Check className="h-5 w-5" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setIsEditingName(false)}
+                  disabled={isSavingName}
+                  title="Cancelar"
+                  className="shrink-0 text-zinc-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                  {analysis.user_assigned_name || analysis.generated_name || (
+                    <span className="font-mono uppercase">{analysis.slug}</span>
+                  )}
+                </h1>
+                <button
+                  onClick={startEditName}
+                  title="Editar nombre"
+                  className="shrink-0 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              </div>
             )}
-            {analysis.intelligence_level && (
-              <InfoChip
-                icon={Gauge}
-                label="Inteligencia"
-                value={
-                  LEVEL_LABELS[analysis.intelligence_level] ??
-                  analysis.intelligence_level
-                }
-                tone="violet"
-              />
-            )}
-            {analysis.user_email && (
-              <InfoChip icon={Mail} value={analysis.user_email} />
+            {analysis.user_assigned_name && analysis.generated_name && (
+              <p className="text-sm text-zinc-400 dark:text-zinc-500 truncate">
+                {analysis.generated_name}
+              </p>
             )}
           </div>
         </div>
