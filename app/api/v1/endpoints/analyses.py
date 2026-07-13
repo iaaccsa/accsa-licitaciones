@@ -4,7 +4,7 @@ from uuid import UUID
 from app.core.audit import Actor, get_actor
 from app.services.audit_service import audit_service
 from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
-from app.schemas.job import CancelPipelineResponse, ResumePipelineResponse, RetryJobRequest
+from app.schemas.job import ResumePipelineResponse, RetryJobRequest
 from app.schemas.proposal import ProposalRead
 from app.schemas.model_tier import AnalysisModelConfig
 from app.schemas.ai_usage import AiUsageCostSummary
@@ -38,21 +38,6 @@ def get_analysis(analysis_id: UUID):
         return analysis
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/{analysis_id}/cancel", response_model=CancelPipelineResponse)
-def cancel_analysis(analysis_id: UUID):
-    """
-    Cancel an analysis and stop all running Azure jobs.
-    """
-    try:
-        cancelled_count = job_orchestrator_service.cancel_pipeline(analysis_id)
-        return CancelPipelineResponse(
-            analysis_id=analysis_id,
-            cancelled_jobs=cancelled_count,
-            message=f"Análisis cancelado. {cancelled_count} jobs detenidos.",
-        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

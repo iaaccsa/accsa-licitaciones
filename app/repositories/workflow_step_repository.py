@@ -98,18 +98,4 @@ class WorkflowStepRepository(BaseRepository):
         )
         return response.data["status"] if response.data else None
 
-    def cancel_pending_by_analysis(self, analysis_id: str) -> int:
-        """Cancel all workflow steps that are running or pending."""
-        cancelled_count = 0
-        for step_status in ["running", "pending"]:
-            response = (
-                supabase.table(self.table_name)
-                .update({"status": "cancelled"})
-                .eq("analysis_id", analysis_id)
-                .eq("status", step_status)
-                .execute()
-            )
-            cancelled_count += len(response.data) if response.data else 0
-        return cancelled_count
-
 workflow_step_repository = WorkflowStepRepository()
