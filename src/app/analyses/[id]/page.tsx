@@ -15,7 +15,6 @@ import {
   FileText,
   ClipboardList,
   Ban,
-  PauseCircle,
   Play,
   ShieldCheck,
   UserCheck,
@@ -559,12 +558,7 @@ function StatusBadge({
         <Clock className="w-3 h-3" /> Pendiente
       </span>
     );
-  if (status === "awaiting_approval")
-    return (
-      <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 flex items-center gap-1">
-        <PauseCircle className="w-3 h-3" /> Esperando Aprovación
-      </span>
-    );
+  if (status === "awaiting_approval") return null;
   if (status === "cancelled")
     return (
       <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-400 flex items-center gap-1">
