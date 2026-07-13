@@ -130,9 +130,9 @@ function CitationsToggle({ citations }: { citations: Citation[] }) {
     );
 }
 
-function RequirementCard({ req, onVerifyToggle }: {
+function RequirementCard({ req, onVerifySet }: {
     req: AnalysisRequirementRead;
-    onVerifyToggle: (req: AnalysisRequirementRead) => void;
+    onVerifySet: (req: AnalysisRequirementRead, isVerified: boolean) => void;
 }) {
     const [expanded, setExpanded] = useState(false);
     const weightVisible = req.weight && req.weight.type !== "none";
@@ -230,16 +230,29 @@ function RequirementCard({ req, onVerifyToggle }: {
                         <p className="text-xs text-zinc-400 dark:text-zinc-500 italic">{req.notes}</p>
                     )}
                 </div>
-                <button
-                    onClick={() => onVerifyToggle(req)}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-colors ${req.is_verified
-                        ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 border-green-200 dark:border-green-900 hover:bg-green-100 dark:hover:bg-green-950"
-                        : "bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                        }`}
-                >
-                    <CheckCircle2 className={`w-3.5 h-3.5 ${req.is_verified ? "text-green-600 dark:text-green-400" : "text-zinc-400 dark:text-zinc-500"}`} />
-                    {req.is_verified ? "Confirmado" : "Confirmar requisito"}
-                </button>
+                <div className="inline-flex items-center rounded-full border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                    <button
+                        onClick={() => onVerifySet(req, true)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium transition-colors ${req.is_verified
+                            ? "bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300"
+                            : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                            }`}
+                    >
+                        <CheckCircle2 className={`w-3.5 h-3.5 ${req.is_verified ? "text-green-600 dark:text-green-400" : "text-zinc-400 dark:text-zinc-500"}`} />
+                        Confirmar
+                    </button>
+                    <span className="self-stretch w-px bg-zinc-200 dark:bg-zinc-800" />
+                    <button
+                        onClick={() => onVerifySet(req, false)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium transition-colors ${!req.is_verified
+                            ? "bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300"
+                            : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                            }`}
+                    >
+                        <XCircle className={`w-3.5 h-3.5 ${!req.is_verified ? "text-red-600 dark:text-red-400" : "text-zinc-400 dark:text-zinc-500"}`} />
+                        Rechazar
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -277,8 +290,8 @@ export default function RequirementsPage() {
         }
     }, [id]);
 
-    const handleVerifyToggle = useCallback(async (req: AnalysisRequirementRead) => {
-        const newValue = !req.is_verified;
+    const handleVerifySet = useCallback(async (req: AnalysisRequirementRead, newValue: boolean) => {
+        if (req.is_verified === newValue) return;
         setRequirements(prev => prev.map(r => r.id === req.id ? { ...r, is_verified: newValue } : r));
         try {
             const response = await fetch(`/api/requirements/${req.id}`, {
@@ -348,15 +361,15 @@ export default function RequirementsPage() {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-green-200 dark:border-green-900 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <CheckCheck className="w-4 h-4" />
-                        {verifyingAll === true ? "Verificando..." : "Marcar todos como confirmados"}
+                        {verifyingAll === true ? "Confirmando..." : "Confirmar todos"}
                     </button>
                     <button
                         onClick={() => handleVerifyAll(false)}
                         disabled={verifyingAll !== null}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-950 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <XCircle className="w-4 h-4" />
-                        {verifyingAll === false ? "Desmarcando..." : "Desmarcar todos"}
+                        {verifyingAll === false ? "Rechazando..." : "Rechazar todos"}
                     </button>
                 </div>
 
@@ -380,7 +393,7 @@ export default function RequirementsPage() {
                     <div className="space-y-4">
                         {requirements.length > 0 ? (
                             pageItems.map((req) => (
-                                <RequirementCard key={req.id} req={req} onVerifyToggle={handleVerifyToggle} />
+                                <RequirementCard key={req.id} req={req} onVerifySet={handleVerifySet} />
                             ))
                         ) : (
                             <div className="text-center py-16 rounded-xl border border-zinc-200 dark:border-zinc-800 border-dashed">
