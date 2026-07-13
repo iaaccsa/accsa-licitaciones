@@ -12,7 +12,21 @@ se versionan y publican en conjunto.
 
 ### accsa-licitaciones-ui
 
+### accsa-licitaciones-api
+
+### accsa-licitaciones-services
+
+## [2.1.0] - 2026-07-13
+
+### accsa-licitaciones-ui
+
 #### Added
+- Agregar modo oscuro en toda la aplicación (páginas, componentes, gráficos y visualización del workflow), con selector de tema claro/oscuro/sistema.
+- Agregar sección de Ayuda (`/ayuda`) con 29 artículos de documentación para el usuario, organizados por grupos con índice lateral, tabla de contenidos, resaltado de la sección visible y búsqueda local; nueva entrada "Ayuda" en la barra de navegación.
+- Agregar asistente de documentación: widget de chat flotante disponible en toda la aplicación que responde preguntas sobre el uso del sistema consultando los artículos de Ayuda, con proxy del lado del servidor hacia el chatbot de documentación.
+- Agregar menú de usuario en la barra de navegación (correo de la sesión, cambio de tema y cierre de sesión) y rediseñar las páginas de autenticación (login, confirmación de invitación y creación de contraseña); el login ahora aclara que las cuentas nuevas las crea un administrador.
+- Agregar vista "Admisibilidad" del análisis con las propuestas agrupadas en admitidas, rechazadas y sin resolver y un toggle para admitir o rechazar cada una; la vista de requisitos de admisibilidad pasa a su propia ruta y las tarjetas de navegación del análisis se reorganizan (se quita la tarjeta "Propuestas").
+- Agregar página de credenciales de infraestructura en el admin, con campos de solo escritura enmascarados para las claves de proveedores (Qdrant, OpenAI, Google, Mistral), estado por clave (configurada y última actualización) y aviso cuando falta una clave requerida.
 - Agregar artículo de Ayuda "Cómo se clasifican los requisitos", que explica roles, dominios, métodos de verificación, alcance, peso y citas con ejemplos.
 - Agregar artículo de Ayuda "Tipos de sistema de evaluación", con el catálogo de los 7 sistemas que detecta el clasificador, incluyendo fórmulas y advertencias.
 - Agregar enlaces cruzados hacia los nuevos artículos de Ayuda desde "Requisitos extraídos", "Requisitos de admisibilidad" y "Sistema de evaluación".
@@ -27,14 +41,39 @@ se versionan y publican en conjunto.
 - Rediseñar la vista de archivos del análisis: englobar el contenido en una sola tarjeta titulada "Archivos del análisis", presentar cada sección (pliego y normativas, oferta por proveedor y sin clasificar) como tarjeta con su conteo de archivos, y simplificar cada fila de archivo con una barra de acciones (mover, excluir, chunks, chat, ver y descargar); se quitan el tamaño del archivo y la insignia "chunks: N" (los chunks quedan como ícono).
 - Rediseñar las vistas "Requisitos" y "Requisitos de admisibilidad": englobar el contenido en una sola tarjeta con el título, las acciones masivas ("Confirmar todos" y "Rechazar todos") y la paginación, y presentar cada requisito como tarjeta colapsable; colapsada muestra el código, el texto, el resumen y el toggle Confirmar/Rechazar (verde o rojo según el estado), y expandida muestra las etiquetas (rol, dominio, alcance, verificación, confianza), el peso, los factores y las citas abiertas por defecto. En admisibilidad se agregan las etiquetas de rol y método de verificación, que existían en los datos pero no se mostraban.
 - Rediseñar la "Matriz de Cumplimiento" y la "Admisibilidad" de cada propuesta con el mismo formato de tarjetas colapsables que las vistas de requisitos: tarjeta contenedora con el título, los filtros sobre franja gris, y cada resultado colapsado muestra el código, el texto completo, el resumen, y al pie el estado de revisión (verificado o pendiente de revisión manual), la confianza y el veredicto; al expandir se muestran las etiquetas del requisito con nombres en español (antes aparecían los valores internos en inglés), el razonamiento, las citas, los elementos faltantes y las acciones de revisión (verificar y editar). Ambas vistas paginan de a 10 resultados con el mismo paginador que las vistas de requisitos (la matriz ahora carga todos los resultados y los filtros de rol y método aplican sobre el total, además de quedar corregido el filtro por método que usaba claves que no coincidían con los datos), y se elimina el enlace "Volver".
+- Rediseñar el encabezado del detalle del análisis (chips tipo píldora con fechas, validación humana y slug sobre un título más grande) y mover la información de modelo y nivel de inteligencia al resumen del análisis en el admin.
+- Rediseñar la tarjeta de progreso del workflow: barra de progreso global como píldora con degradado y porcentaje integrado, y botón de reanudar movido al encabezado de la tarjeta.
+- Mover la sección "Evaluación" (sistema de evaluación) solo a la vista de administración; se quita su tarjeta de la vista de usuario del análisis.
+- Migrar la carga de datos de 8 componentes a SWR (caché y revalidación automáticas).
 
 #### Removed
 - Eliminar la sección "Docs" de la interfaz (ruta `/docs`, su entrada en la barra de navegación y sus 11 páginas); el contenido útil para usuarios se trasladó a la Ayuda y el resto quedó como documentación interna del repositorio.
 - Eliminar la ruta proxy `/api/tender-evaluation-types` (listado), que solo usaba la sección "Docs"; se mantiene `/api/tender-evaluation-types/by-label`.
+- Eliminar la acción de cancelar un análisis (botón y ruta proxy) de las vistas de usuario y de admin; la insignia de estado "cancelado" se mantiene para datos existentes. También se deja de mostrar la insignia "a la espera de aprobación" en el encabezado del detalle (el estado se ve en el workflow).
+
+#### Fixed
+- Corregir la URL del proxy del chat de documentación cuando `CHATBOT_DOCS_URL` está configurada con barra final (se generaba una doble barra en la petición).
 
 ### accsa-licitaciones-api
 
+#### Added
+- Agregar configuración de infraestructura centralizada: las credenciales de proveedores (Qdrant, OpenAI, Google, Mistral) se guardan cifradas en Supabase Vault y el orquestador arma e inyecta el entorno de ejecución completo (29 variables) en cada job del pipeline, de modo que las imágenes de los services ya no necesitan configuración propia. Nuevos endpoints `GET`/`PUT` de configuración de infraestructura (el PUT queda auditado, registrando solo los nombres de las claves) y verificación previa al iniciar el pipeline que falla limpio (evento y estado de error, sin lanzar jobs) si falta una credencial.
+
+#### Changed
+- Hacer obligatoria la variable de entorno `SERVICE_API_BASE_URL` (antes traía la URL de producción como valor por defecto); la API falla al arrancar si no está definida.
+
+#### Removed
+- Eliminar el endpoint de cancelación de análisis (`POST /analyses/{id}/cancel`) y su lógica interna de cancelación de jobs y de pasos pendientes; el monitor de timeouts conserva su propio mecanismo para detener jobs.
+
 ### accsa-licitaciones-services
+
+#### Changed
+- Dejar las imágenes Docker sin configuración de aplicación (solo código y dependencias): se elimina toda la configuración de los 15 Dockerfiles, de los scripts de build y del pipeline de CI; el orquestador inyecta el entorno completo al lanzar cada job.
+- Eliminar los valores por defecto de configuración: una variable de entorno no definida ahora corta la ejecución de inmediato en lugar de caer silenciosamente en un valor por defecto.
+
+#### Fixed
+- Corregir el extractor de requisitos para que un batch exitoso con 0 requisitos extraídos no cuente como fallido; en documentos con pocos requisitos esto disparaba por error el umbral de aborto del 10%.
+- Corregir el renderizado de los prompts editables desde la base de datos: se sustituyen solo los placeholders conocidos (con `replace()` en lugar de `str.format()`), porque las llaves de los ejemplos JSON incluidos en los prompts hacían fallar el clasificador de documentos.
 
 ## [2.0.0] - 2026-06-24
 
