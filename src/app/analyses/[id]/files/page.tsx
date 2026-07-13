@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
-import { FileText, Download, Eye, AlertCircle, MessageSquare, HelpCircle, ArrowRightLeft, X, Loader2, Ban } from "lucide-react";
+import { useEffect, useState, useCallback, type ReactNode } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Download, Eye, AlertCircle, MessageSquare, ArrowRightLeft, X, Loader2, Ban, Layers } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
@@ -31,6 +31,11 @@ interface Source {
     label: string;
 }
 
+interface AnalysisInfo {
+    status: string;
+    paused_at_service: string | null;
+}
+
 const SUPABASE_STORAGE_URL = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_URL;
 
 const STORAGE_PATH_REGEX = /^[a-zA-Z0-9/_\-][a-zA-Z0-9/_\-.]*$/;
@@ -51,21 +56,111 @@ function getViewUrl(file: { storage_path: string }): string | null {
     return `${SUPABASE_STORAGE_URL}/${file.storage_path}`;
 }
 
-function formatBytes(bytes: number, decimals = 2) {
-    if (!+bytes) return '0 Bytes';
-    const k = 1024;
-    const dm = decimals < 0 ? 0 : decimals;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+function SectionCard({ title, count, children }: { title: string; count: number; children: ReactNode }) {
+    return (
+        <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-6">
+            <div className="flex items-center justify-between gap-4 pb-3 border-b border-zinc-900 dark:border-zinc-100">
+                <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 truncate">{title}</h2>
+                <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{count}</span>
+            </div>
+            {children}
+        </section>
+    );
+}
+
+function FileRow({
+    file,
+    analysisId,
+    isExcluding,
+    onMove,
+    onExclude,
+}: {
+    file: AnalysisFile;
+    analysisId: string;
+    isExcluding: boolean;
+    onMove: (file: AnalysisFile) => void;
+    onExclude: (file: AnalysisFile) => void;
+}) {
+    const viewUrl = getViewUrl(file);
+    const downloadUrl = getDownloadUrl(file);
+    return (
+        <li className="flex items-center justify-between gap-4 py-2 border-b border-zinc-200 dark:border-zinc-800">
+            <span className="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-200">{file.file_name}</span>
+            <div className="flex items-center gap-1 shrink-0 rounded-lg bg-zinc-100 dark:bg-zinc-800/60 px-2 py-1">
+                {file.is_reorderable && (
+                    <button
+                        onClick={() => onMove(file)}
+                        className="flex items-center gap-1 px-1.5 py-1 text-xs font-semibold text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300 transition-colors"
+                        title="Mover archivo"
+                    >
+                        <ArrowRightLeft className="w-3.5 h-3.5" />
+                        Mover
+                    </button>
+                )}
+                {file.is_reorderable && file.category !== "unclassified" && (
+                    <button
+                        onClick={() => onExclude(file)}
+                        disabled={isExcluding}
+                        className="flex items-center gap-1 px-1.5 py-1 text-xs font-semibold text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+                        title="Excluir archivo"
+                    >
+                        {isExcluding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Ban className="w-3.5 h-3.5" />}
+                        Excluir
+                    </button>
+                )}
+                {(file.total_chunks || 0) > 0 && (
+                    <a
+                        href={`/analyses/${analysisId}/files/${file.id}/chunks`}
+                        className="p-1.5 text-zinc-400 dark:text-zinc-500 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+                        title={`Ver chunks extraídos (${file.total_chunks})`}
+                    >
+                        <Layers className="w-4 h-4" />
+                    </a>
+                )}
+                {file.is_merged && (
+                    <a
+                        href={`/analyses/${analysisId}/files/${file.id}/chat`}
+                        className="p-1.5 text-zinc-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                        title="Chat con este documento"
+                    >
+                        <MessageSquare className="w-4 h-4" />
+                    </a>
+                )}
+                {viewUrl && (
+                    <a
+                        href={viewUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                        title="Ver documento"
+                    >
+                        <Eye className="w-4 h-4" />
+                    </a>
+                )}
+                {downloadUrl && (
+                    <a
+                        href={downloadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
+                        title="Descargar documento"
+                        download={file.file_name}
+                    >
+                        <Download className="w-4 h-4" />
+                    </a>
+                )}
+            </div>
+        </li>
+    );
 }
 
 export default function AnalysisFilesPage() {
     const params = useParams();
+    const router = useRouter();
     const id = params.id as string;
 
     const [files, setFiles] = useState<AnalysisFile[]>([]);
-    const [analysis, setAnalysis] = useState<{ slug: string; user_assigned_name?: string; generated_name?: string } | null>(null);
+    const [analysis, setAnalysis] = useState<AnalysisInfo | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [moveFile, setMoveFile] = useState<AnalysisFile | null>(null);
@@ -74,6 +169,8 @@ export default function AnalysisFilesPage() {
     const [isMoving, setIsMoving] = useState(false);
     const [selectedSource, setSelectedSource] = useState<Source | null>(null);
     const [excludingFileId, setExcludingFileId] = useState<string | null>(null);
+    const [isResuming, setIsResuming] = useState(false);
+    const [showValidateConfirm, setShowValidateConfirm] = useState(false);
 
     const openMoveModal = useCallback(async (file: AnalysisFile) => {
         setMoveFile(file);
@@ -144,6 +241,21 @@ export default function AnalysisFilesPage() {
         }
     }, [excludingFileId, refreshFiles]);
 
+    const handleValidateAndContinue = useCallback(async () => {
+        if (isResuming) return;
+        setIsResuming(true);
+        try {
+            const res = await fetch(`/api/analyses/${id}/resume`, { method: "POST" });
+            if (res.ok) {
+                router.push(`/analyses/${id}`);
+                return;
+            }
+        } catch (err) {
+            console.error("Error resuming analysis:", err);
+        }
+        setIsResuming(false);
+    }, [id, isResuming, router]);
+
     useEffect(() => {
         const fetchData = async () => {
             setIsLoading(true);
@@ -161,8 +273,7 @@ export default function AnalysisFilesPage() {
                 }
 
                 if (analysisRes.ok) {
-                    const analysisData = await analysisRes.json();
-                    setAnalysis(analysisData);
+                    setAnalysis(await analysisRes.json());
                 }
             } catch (err) {
                 console.error(err);
@@ -191,292 +302,138 @@ export default function AnalysisFilesPage() {
     const proposalFiles = files.filter(f => f.category === 'proposal');
     const unclassifiedFiles = files.filter(f => f.category === 'unclassified');
 
+    const proposalGroups = Object.entries(proposalFiles.reduce((acc, file) => {
+        const key = file.proposal_id || 'sin-propuesta';
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(file);
+        return acc;
+    }, {} as Record<string, AnalysisFile[]>));
+
+    const awaitingFileValidation =
+        analysis?.status === "awaiting_approval" &&
+        analysis?.paused_at_service === "service-documents-grouper";
+
     return (
-        <div className="max-w-6xl mx-auto py-8 px-4 space-y-6">
-            <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                        <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                        Archivos del Análisis
-                    </h1>
-                </div>
-                {analysis && (
-                    <span className="font-mono text-sm font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 uppercase">
-                        {analysis.user_assigned_name || analysis.generated_name || analysis.slug}
-                    </span>
+        <div className="max-w-6xl mx-auto py-8 px-4">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-6 md:p-8 space-y-6">
+                <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 pb-3 border-b border-zinc-900 dark:border-zinc-100">
+                    Archivos del análisis
+                </h1>
+
+                {isLoading ? (
+                    <div className="space-y-6">
+                        <Skeleton className="h-56 rounded-2xl" />
+                        <Skeleton className="h-56 rounded-2xl" />
+                    </div>
+                ) : (
+                    <>
+                        {unclassifiedFiles.length > 0 && (
+                            <SectionCard title="Sin clasificar" count={unclassifiedFiles.length}>
+                                <ul>
+                                    {unclassifiedFiles.map(file => (
+                                        <FileRow
+                                            key={file.id}
+                                            file={file}
+                                            analysisId={id}
+                                            isExcluding={excludingFileId === file.id}
+                                            onMove={openMoveModal}
+                                            onExclude={handleExclude}
+                                        />
+                                    ))}
+                                </ul>
+                            </SectionCard>
+                        )}
+
+                        <SectionCard title="Pliego y normativas" count={tenderFiles.length}>
+                            {tenderFiles.length > 0 ? (
+                                <ul>
+                                    {tenderFiles.map(file => (
+                                        <FileRow
+                                            key={file.id}
+                                            file={file}
+                                            analysisId={id}
+                                            isExcluding={excludingFileId === file.id}
+                                            onMove={openMoveModal}
+                                            onExclude={handleExclude}
+                                        />
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic pt-4">No hay archivos de pliego.</p>
+                            )}
+                        </SectionCard>
+
+                        {proposalGroups.length > 0 ? (
+                            proposalGroups.map(([proposalId, groupFiles]) => {
+                                const label = groupFiles[0].proposal_label || groupFiles[0].proposal_provider_name || 'Sin etiqueta';
+                                return (
+                                    <SectionCard key={proposalId} title={`Oferta: ${label}`} count={groupFiles.length}>
+                                        <ul>
+                                            {groupFiles.map(file => (
+                                                <FileRow
+                                                    key={file.id}
+                                                    file={file}
+                                                    analysisId={id}
+                                                    isExcluding={excludingFileId === file.id}
+                                                    onMove={openMoveModal}
+                                                    onExclude={handleExclude}
+                                                />
+                                            ))}
+                                        </ul>
+                                    </SectionCard>
+                                );
+                            })
+                        ) : (
+                            <SectionCard title="Ofertas" count={0}>
+                                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic pt-4">No hay archivos de oferta.</p>
+                            </SectionCard>
+                        )}
+
+                        {awaitingFileValidation && (
+                            <button
+                                onClick={() => setShowValidateConfirm(true)}
+                                disabled={isResuming}
+                                className="w-full flex items-center justify-center gap-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 py-3.5 text-base font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-60"
+                            >
+                                Validar y continuar
+                            </button>
+                        )}
+                    </>
                 )}
             </div>
 
-            {isLoading ? (
-                <div className="grid md:grid-cols-2 gap-6">
-                    <Skeleton className="h-64 rounded-xl" />
-                    <Skeleton className="h-64 rounded-xl" />
-                </div>
-            ) : (
-                <div className="space-y-6">
-                    {/* Unclassified Files */}
-                    {unclassifiedFiles.length > 0 && (
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-amber-200 dark:border-amber-900 p-6 shadow-sm">
-                            <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
-                                <HelpCircle className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-                                Sin Clasificar
-                            </h2>
-                            <ul className="space-y-3">
-                                {unclassifiedFiles.map(file => (
-                                    <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800 group hover:border-amber-200 dark:hover:border-amber-900 transition-colors">
-                                        <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
-                                            <span className="truncate font-medium text-zinc-700 dark:text-zinc-300">{file.file_name}</span>
-                                            <span className="text-zinc-400 dark:text-zinc-500 text-xs whitespace-nowrap font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
-                                                {formatBytes(file.file_size)}
-                                            </span>
-                                            {(file.total_chunks || 0) > 0 && (
-                                                <a
-                                                    href={`/analyses/${id}/files/${file.id}/chunks`}
-                                                    className="flex items-center gap-1 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 dark:hover:bg-orange-950 transition-colors"
-                                                    title="Ver chunks extraídos"
-                                                >
-                                                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
-                                                    chunks: {file.total_chunks}
-                                                </a>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            {file.is_reorderable && (
-                                                <button
-                                                    onClick={() => openMoveModal(file)}
-                                                    className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors p-1.5 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-md flex items-center gap-1 text-xs font-medium"
-                                                    title="Mover archivo"
-                                                >
-                                                    <ArrowRightLeft className="w-4 h-4" />
-                                                    Mover
-                                                </button>
-                                            )}
-                                            {getViewUrl(file) && (
-                                                <a
-                                                    href={getViewUrl(file)!}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950 rounded-md"
-                                                    title="Ver documento"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </a>
-                                            )}
-                                            {getDownloadUrl(file) && (
-                                                <a
-                                                    href={getDownloadUrl(file)!}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-md"
-                                                    title="Descargar documento"
-                                                    download={file.file_name}
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </a>
-                                            )}
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
+            {/* Validate Confirmation Modal */}
+            {showValidateConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !isResuming && setShowValidateConfirm(false)}>
+                    <div className="relative bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-lg w-full max-w-xl mx-4 p-8" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => !isResuming && setShowValidateConfirm(false)}
+                            className="absolute top-3 right-3 p-1.5 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
+                        >
+                            <X className="w-4 h-4 text-zinc-700 dark:text-zinc-300" />
+                        </button>
+                        <h3 className="text-2xl font-bold text-center text-zinc-900 dark:text-zinc-100 mb-3">¡Atención!</h3>
+                        <p className="text-sm text-center text-zinc-700 dark:text-zinc-300 mb-8">
+                            Una vez validado no podrá volver a editar la clasificación
+                        </p>
+                        <div className="flex items-center gap-4">
+                            <button
+                                onClick={handleValidateAndContinue}
+                                disabled={isResuming}
+                                className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white py-3 font-medium transition-colors disabled:opacity-60"
+                            >
+                                {isResuming && <Loader2 className="w-4 h-4 animate-spin" />}
+                                Validar
+                            </button>
+                            <button
+                                onClick={() => setShowValidateConfirm(false)}
+                                disabled={isResuming}
+                                className="flex-1 rounded-lg bg-zinc-700 hover:bg-zinc-800 text-white py-3 font-medium transition-colors disabled:opacity-60"
+                            >
+                                Cancelar
+                            </button>
                         </div>
-                    )}
-
-                    {/* Tender Files */}
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-                        <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            Pliego y Normativas
-                        </h2>
-                        {tenderFiles.length > 0 ? (
-                            <ul className="space-y-3">
-                                {tenderFiles.map(file => (
-                                    <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800 group hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
-                                        <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
-                                            <span className="truncate font-medium text-zinc-700 dark:text-zinc-300">{file.file_name}</span>
-                                            <span className="text-zinc-400 dark:text-zinc-500 text-xs whitespace-nowrap font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
-                                                {formatBytes(file.file_size)}
-                                            </span>
-                                            {(file.total_chunks || 0) > 0 && (
-                                                <a
-                                                    href={`/analyses/${id}/files/${file.id}/chunks`}
-                                                    className="flex items-center gap-1 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 dark:hover:bg-orange-950 transition-colors"
-                                                    title="Ver chunks extraídos"
-                                                >
-                                                    <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
-                                                    chunks: {file.total_chunks}
-                                                </a>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                            {file.is_reorderable && (
-                                                <>
-                                                    <button
-                                                        onClick={() => openMoveModal(file)}
-                                                        className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors p-1.5 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-md flex items-center gap-1 text-xs font-medium"
-                                                        title="Mover archivo"
-                                                    >
-                                                        <ArrowRightLeft className="w-4 h-4" />
-                                                        Mover
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleExclude(file)}
-                                                        disabled={excludingFileId === file.id}
-                                                        className="text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1.5 hover:bg-red-50 dark:hover:bg-red-950 rounded-md flex items-center gap-1 text-xs font-medium disabled:opacity-50"
-                                                        title="Excluir archivo"
-                                                    >
-                                                        {excludingFileId === file.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
-                                                        Excluir
-                                                    </button>
-                                                </>
-                                            )}
-                                            {file.is_merged && (
-                                                <a
-                                                    href={`/analyses/${id}/files/${file.id}/chat`}
-                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors p-1.5 hover:bg-violet-50 dark:hover:bg-violet-950 rounded-md"
-                                                    title="Chat con este documento"
-                                                >
-                                                    <MessageSquare className="w-4 h-4" />
-                                                </a>
-                                            )}
-                                            {getViewUrl(file) && (
-                                                <a
-                                                    href={getViewUrl(file)!}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950 rounded-md"
-                                                    title="Ver documento"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                </a>
-                                            )}
-                                            {getDownloadUrl(file) && (
-                                                <a
-                                                    href={getDownloadUrl(file)!}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-md"
-                                                    title="Descargar documento"
-                                                    download={file.file_name}
-                                                >
-                                                    <Download className="w-4 h-4" />
-                                                </a>
-                                            )}
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">No hay archivos de pliego.</p>
-                        )}
                     </div>
-
-                    {/* Proposal Files */}
-                    <div className="space-y-6">
-                        {proposalFiles.length > 0 ? (
-                            Object.entries(proposalFiles.reduce((acc, file) => {
-                                const key = file.proposal_id || 'sin-propuesta';
-                                if (!acc[key]) acc[key] = [];
-                                acc[key].push(file);
-                                return acc;
-                            }, {} as Record<string, AnalysisFile[]>)).map(([proposalId, files]) => {
-                            const label = files[0].proposal_label || files[0].proposal_provider_name || 'Sin etiqueta';
-                            return (
-                                <div key={proposalId} className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-                                    <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
-                                        <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                        Oferta: {label}
-                                    </h2>
-                                    <ul className="space-y-3">
-                                        {files.map(file => (
-                                            <li key={file.id} className="flex items-center justify-between text-sm p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-lg border border-zinc-100 dark:border-zinc-800 group hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
-                                                <div className="flex items-center gap-2 overflow-hidden flex-1 mr-4">
-                                                    <span className="truncate font-medium text-zinc-700 dark:text-zinc-300">{file.file_name}</span>
-                                                    <span className="text-zinc-400 dark:text-zinc-500 text-xs whitespace-nowrap font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded">
-                                                        {formatBytes(file.file_size)}
-                                                    </span>
-                                                    {(file.total_chunks || 0) > 0 && (
-                                                        <a
-                                                            href={`/analyses/${id}/files/${file.id}/chunks`}
-                                                            className="flex items-center gap-1 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wider hover:bg-orange-100 dark:hover:bg-orange-950 transition-colors"
-                                                            title="Ver chunks extraídos"
-                                                        >
-                                                            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
-                                                            chunks: {file.total_chunks}
-                                                        </a>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    {file.is_reorderable && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => openMoveModal(file)}
-                                                                className="text-amber-500 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 transition-colors p-1.5 hover:bg-amber-50 dark:hover:bg-amber-950 rounded-md flex items-center gap-1 text-xs font-medium"
-                                                                title="Mover archivo"
-                                                            >
-                                                                <ArrowRightLeft className="w-4 h-4" />
-                                                                Mover
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleExclude(file)}
-                                                                disabled={excludingFileId === file.id}
-                                                                className="text-red-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1.5 hover:bg-red-50 dark:hover:bg-red-950 rounded-md flex items-center gap-1 text-xs font-medium disabled:opacity-50"
-                                                                title="Excluir archivo"
-                                                            >
-                                                                {excludingFileId === file.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
-                                                                Excluir
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                    {file.is_merged && (
-                                                        <a
-                                                            href={`/analyses/${id}/files/${file.id}/chat`}
-                                                            className="text-zinc-400 dark:text-zinc-500 hover:text-violet-600 dark:hover:text-violet-400 transition-colors p-1.5 hover:bg-violet-50 dark:hover:bg-violet-950 rounded-md"
-                                                            title="Chat con este documento"
-                                                        >
-                                                            <MessageSquare className="w-4 h-4" />
-                                                        </a>
-                                                    )}
-                                                    {getViewUrl(file) && (
-                                                        <a
-                                                            href={getViewUrl(file)!}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-zinc-400 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950 rounded-md"
-                                                            title="Ver documento"
-                                                        >
-                                                            <Eye className="w-4 h-4" />
-                                                        </a>
-                                                    )}
-                                                    {getDownloadUrl(file) && (
-                                                        <a
-                                                            href={getDownloadUrl(file)!}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-zinc-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors p-1.5 hover:bg-blue-50 dark:hover:bg-blue-950 rounded-md"
-                                                            title="Descargar documento"
-                                                            download={file.file_name}
-                                                        >
-                                                            <Download className="w-4 h-4" />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            );
-                            })
-                        ) : (
-                            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6 shadow-sm">
-                                <h2 className="text-lg font-semibold text-zinc-800 dark:text-zinc-200 mb-4 flex items-center gap-2">
-                                    <FileText className="w-5 h-5 text-green-600 dark:text-green-400" />
-                                    Ofertas
-                                </h2>
-                                <p className="text-sm text-zinc-400 dark:text-zinc-500 italic">No hay archivos de oferta.</p>
-                            </div>
-                        )}
-                    </div>
-
                 </div>
             )}
 

@@ -19,10 +19,12 @@ se versionan y publican en conjunto.
 - Agregar breadcrumb de navegación en todas las vistas de un análisis, con el nombre del análisis y la sección actual (archivos, propuestas, requisitos, etc.).
 - Agregar la variable de entorno `AUTH_DISABLED` (solo desarrollo) que deshabilita la autenticación para revisar el sitio completo sin sesión; en builds de producción es inerte.
 - Agregar suite de tests e2e con Playwright (`pnpm test:e2e`) que recorre todas las vistas de la aplicación con la autenticación deshabilitada.
+- Agregar el botón "Validar y continuar" en la vista de archivos del análisis, visible solo cuando el análisis está a la espera de validar la clasificación de archivos, con un diálogo de confirmación que advierte que una vez validada la clasificación no podrá volver a editarse antes de reanudar el pipeline.
 
 #### Changed
 - Ampliar el artículo de Ayuda "Revisión y auditoría" con el detalle de qué acciones de usuario se registran.
 - Unificar el ancho de todas las vistas para que el contenido quede alineado con la barra de navegación y el pie de página; las páginas de lectura (términos, changelog, chat de archivo) mantienen su ancho angosto.
+- Rediseñar la vista de archivos del análisis: englobar el contenido en una sola tarjeta titulada "Archivos del análisis", presentar cada sección (pliego y normativas, oferta por proveedor y sin clasificar) como tarjeta con su conteo de archivos, y simplificar cada fila de archivo con una barra de acciones (mover, excluir, chunks, chat, ver y descargar); se quitan el tamaño del archivo y la insignia "chunks: N" (los chunks quedan como ícono).
 
 #### Removed
 - Eliminar la sección "Docs" de la interfaz (ruta `/docs`, su entrada en la barra de navegación y sus 11 páginas); el contenido útil para usuarios se trasladó a la Ayuda y el resto quedó como documentación interna del repositorio.
