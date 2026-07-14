@@ -105,7 +105,7 @@ class ProposalSummaryStart(BaseModel):
 
 class ProposalSummaryResult(BaseModel):
     summarizing_completed_at: datetime
-    compliance_rate:          float = Field(ge=0, le=100)
+    compliance_rate:          Optional[float] = Field(default=None, ge=0, le=100)
     compliance_counts:        Dict[str, int]
     compliance_summary:       str
     critical_failures_count:  int = Field(ge=0)

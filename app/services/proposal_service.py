@@ -115,7 +115,7 @@ class ProposalService:
         data = self.repository.update_by_id(proposal_id, {
             "matching_status":           "completed",
             "summarizing_completed_at":  body.summarizing_completed_at.isoformat(),
-            "compliance_rate":           float(body.compliance_rate),
+            "compliance_rate":           float(body.compliance_rate) if body.compliance_rate is not None else None,
             "compliance_counts":         body.compliance_counts,
             "compliance_summary":        body.compliance_summary,
             "critical_failures_count":   body.critical_failures_count,
