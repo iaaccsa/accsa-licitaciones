@@ -36,7 +36,7 @@ interface Proposal {
 }
 
 function fmtUsd(n: number) {
-  return `$${n.toFixed(4)}`;
+  return `$${n.toFixed(2).replace(".", ",")}`;
 }
 
 export default function AnalysisCostCard({ analysisId }: { analysisId: string }) {
