@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { InactivityWatcher } from "@/components/InactivityWatcher";
 import { DocsChatWidget } from "@/components/docs-chat/DocsChatWidget";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -33,6 +34,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col`}
       >
         <ThemeProvider>
+          <InactivityWatcher />
           <Navbar />
           <main className="flex-1">
             {children}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
+import { ACTIVITY_COOKIE, ACTIVITY_COOKIE_MAX_AGE } from "@/lib/session-timeout";
 
 const bodySchema = z.object({
     email: z.email(),
@@ -30,5 +31,13 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "invalid_credentials" }, { status: 401 });
     }
 
-    return NextResponse.json({ ok: true });
+    const res = NextResponse.json({ ok: true });
+    res.cookies.set(ACTIVITY_COOKIE, String(Date.now()), {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: ACTIVITY_COOKIE_MAX_AGE,
+    });
+    return res;
 }

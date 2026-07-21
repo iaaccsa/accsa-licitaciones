@@ -12,6 +12,9 @@ se versionan y publican en conjunto.
 
 ### accsa-licitaciones-ui
 
+#### Fixed
+- La sesión ahora expira tras un período de inactividad (30 minutos por defecto, configurable con `NEXT_PUBLIC_INACTIVITY_TIMEOUT_MINUTES`): al volver a operar se solicita iniciar sesión de nuevo y no se muestran datos protegidos. Antes la sesión no vencía por inactividad ni al cerrar y volver a abrir el navegador.
+
 ### accsa-licitaciones-api
 
 ### accsa-licitaciones-services
