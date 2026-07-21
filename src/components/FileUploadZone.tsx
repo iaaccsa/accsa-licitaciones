@@ -4,6 +4,21 @@ import React, { useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, FileStack, Upload, X, BookOpen, Receipt } from "lucide-react";
 
+function matchesAccept(file: File, accept: string): boolean {
+    if (!accept || accept === "*" || accept === "*/*") return true;
+    const tokens = accept
+        .split(",")
+        .map((t) => t.trim().toLowerCase())
+        .filter(Boolean);
+    const name = file.name.toLowerCase();
+    const type = file.type.toLowerCase();
+    return tokens.some((token) => {
+        if (token.startsWith(".")) return name.endsWith(token);
+        if (token.endsWith("/*")) return type.startsWith(token.slice(0, -1));
+        return type === token;
+    });
+}
+
 interface FileUploadZoneProps {
     title: string;
     description: string;
@@ -27,6 +42,7 @@ export function FileUploadZone({
 }: FileUploadZoneProps) {
     const [files, setFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const iconMap = {
         document: FileText,
@@ -41,16 +57,31 @@ export function FileUploadZone({
             if (!newFiles) return;
 
             const fileArray = Array.from(newFiles);
+            const rejected: string[] = [];
             const validFiles = fileArray.filter((file) => {
+                if (!matchesAccept(file, accept)) {
+                    rejected.push(file.name);
+                    return false;
+                }
                 const sizeMB = file.size / (1024 * 1024);
-                return sizeMB <= maxSizeMB;
+                if (sizeMB > maxSizeMB) {
+                    rejected.push(file.name);
+                    return false;
+                }
+                return true;
             });
+
+            setError(
+                rejected.length
+                    ? `Archivos no válidos (solo ${accept}, máx. ${maxSizeMB} MB): ${rejected.join(", ")}`
+                    : null
+            );
 
             const updatedFiles = [...files, ...validFiles].slice(0, maxFiles);
             setFiles(updatedFiles);
             onFilesChange?.(updatedFiles);
         },
-        [files, maxFiles, maxSizeMB, onFilesChange]
+        [files, accept, maxFiles, maxSizeMB, onFilesChange]
     );
 
     const removeFile = useCallback(
@@ -156,6 +187,9 @@ export function FileUploadZone({
                         </div>
                     )}
                 </div>
+                {error ? (
+                    <p className="text-xs text-red-600 dark:text-red-400 mt-2">{error}</p>
+                ) : null}
             </CardContent>
         </Card >
     );
