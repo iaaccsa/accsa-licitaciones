@@ -96,7 +96,7 @@ function StatusIcon({ status, isSuccess }: { status: string; isSuccess: boolean 
 function StatusBadge({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {
     if (status === "processing") return <span className="text-blue-600 dark:text-blue-400">Procesando</span>;
     if (status === "pending") return <span className="text-zinc-500 dark:text-zinc-400">Pendiente</span>;
-    if (status === "awaiting_approval") return <span className="text-amber-600 dark:text-amber-400">Esperando Aprovación</span>;
+    if (status === "awaiting_approval") return <span className="text-amber-600 dark:text-amber-400">Esperando Aprobación</span>;
     if (status === "ready") {
         return isSuccess ? (
             <span className="text-green-600 dark:text-green-400">Completado</span>

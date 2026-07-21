@@ -86,6 +86,10 @@ export default function SetPasswordPage() {
                                 minLength={6}
                                 className={inputClass}
                             />
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                Mínimo 6 caracteres. Se admiten letras (a-z, A-Z),
+                                números (0-9) y símbolos (por ejemplo ! @ # $ % & * - _).
+                            </p>
                         </div>
                         <div className="space-y-2">
                             <label

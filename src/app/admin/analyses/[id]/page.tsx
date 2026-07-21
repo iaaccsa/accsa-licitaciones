@@ -369,7 +369,7 @@ function StatusBadge({
   if (status === "awaiting_approval")
     return (
       <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 flex items-center gap-1 w-fit dark:bg-amber-950 dark:text-amber-300">
-        <PauseCircle className="w-3 h-3" /> Esperando Aprovación
+        <PauseCircle className="w-3 h-3" /> Esperando Aprobación
       </span>
     );
   if (status === "ready") {
