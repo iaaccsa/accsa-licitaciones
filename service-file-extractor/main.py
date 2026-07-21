@@ -74,6 +74,30 @@ def api_request(method: str, path: str, json_data: dict | None = None) -> dict |
         return None
 
 
+PDF_HEADER = b"%PDF-"
+
+
+def pdf_rejection_reason(file_path: Path) -> str | None:
+    """
+    Return why the file is not a valid PDF (a .pdf extension plus the %PDF-
+    signature near the start), or None if it is a valid PDF.
+    """
+    if file_path.suffix.lower() != ".pdf":
+        return "la extensión no es .pdf"
+    try:
+        with open(file_path, "rb") as f:
+            header = f.read(1024)
+    except OSError as e:
+        return f"no se pudo leer el archivo: {e}"
+    if PDF_HEADER not in header:
+        return "el contenido no es un PDF válido"
+    return None
+
+
+class NoValidPdfError(Exception):
+    """Raised when no valid PDF remains to process after skipping."""
+
+
 def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_dir: Path):
     """
     Walk through the extracted files, upload them to 'files' bucket,
@@ -94,6 +118,19 @@ def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_d
                 continue
 
             file_path = Path(current_root) / filename
+
+            # Skip anything that is not a valid PDF and record it as an event
+            reason = pdf_rejection_reason(file_path)
+            if reason:
+                logger.warning(f"Skipping non-PDF file {filename}: {reason}")
+                log_event(
+                    analysis_id,
+                    "warning",
+                    f"Archivo omitido (no es PDF): {filename} - {reason}",
+                    EVENT_SOURCE,
+                    {"file_name": filename, "reason": reason},
+                )
+                continue
 
             # 1. Determine storage path
             # Generate UUID for the file storage keys
@@ -133,6 +170,13 @@ def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_d
             }
 
             files_to_insert.append(file_record)
+
+    # Guard: fail the analysis if no valid PDF remained after skipping
+    if not files_to_insert:
+        raise NoValidPdfError(
+            "No se encontró ningún archivo PDF válido para procesar. "
+            "Todos los archivos fueron omitidos."
+        )
 
     # 4. Insert file records via API
     if files_to_insert:
@@ -321,6 +365,9 @@ def main():
     except zipfile.BadZipFile as e:
         error_msg = f"Invalid ZIP file: {e}"
         notify_failure(error_msg)
+        sys.exit(0)
+    except NoValidPdfError as e:
+        notify_failure(str(e))
         sys.exit(0)
     except Exception as e:
         error_msg = f"Failed during processing: {str(e)}"
