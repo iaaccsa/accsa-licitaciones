@@ -1,0 +1,741 @@
+import logging
+from typing import List, Optional
+from uuid import UUID
+
+from app.core.azure import azure_container_apps_client
+from app.core.config import get_settings
+from app.config.jobs_config import get_root_jobs, get_next_jobs, get_parent_jobs, is_valid_job, is_final_job, get_final_jobs, is_fan_out_job, get_fan_out_type, is_pause_after_job, get_requires_admitida, get_step_code_for_service
+from app.repositories.admissibility_requirement_repository import admissibility_requirement_repository
+from app.repositories.original_file_repository import original_file_repository
+from app.repositories.processed_file_repository import processed_file_repository
+from app.repositories.proposal_repository import proposal_repository
+from app.schemas.event import EventBase
+from app.services.event_service import event_service
+from app.repositories.analysis_repository import analysis_repository
+from app.repositories.job_repository import job_repository
+from app.services.workflow_step_service import workflow_step_service
+from app.services.workflow_phase_service import workflow_phase_service
+from app.repositories.workflow_step_repository import workflow_step_repository
+from app.services.email_service import email_service
+from app.services.app_settings_service import app_settings_service
+from app.services.infra_config_service import infra_config_service
+
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+# Control-plane API route paths injected into every service job. Single source of
+# truth; must stay aligned with the prefixes mounted in app/api/v1/router.py.
+SERVICE_API_PATHS = {
+    "API_EVENTS_PATH": "/api/v1/events/",
+    "API_JOBS_CALLBACK": "/api/v1/jobs/callback",
+    "API_ANALYSES_PATH": "/api/v1/analyses/",
+    "API_PROCESSED_FILES_PATH": "/api/v1/processed-files/",
+    "API_ORIGINAL_FILES_PATH": "/api/v1/original-files/",
+    "API_PROPOSALS_PATH": "/api/v1/proposals/",
+    "API_PROPOSAL_ECONOMIC_OFFERS_PATH": "/api/v1/proposal-economic-offers/",
+    "API_TENDERS_PATH": "/api/v1/tenders/",
+    "API_TENDER_CLASSIFICATIONS_PATH": "/api/v1/tender-classifications/",
+    "API_ANALYSIS_REQUIREMENTS_PATH": "/api/v1/analysis-requirements/",
+    "API_COMPLIANCE_MATRIX_PATH": "/api/v1/analysis-compliance-matrix/",
+    "API_ADMISSIBILITY_REQUIREMENTS_PATH": "/api/v1/admissibility-requirements/",
+    "API_ADMISSIBILITY_RESULTS_PATH": "/api/v1/admissibility-results/",
+    # Read by shared global modules baked into every image (prompt_loader,
+    # ai_usage_logger). Values match the code defaults; injected for single source.
+    "API_PROMPTS_PATH": "/api/v1/prompts",
+    "API_PRICING_PATH": "/api/v1/ai-pricing/",
+    "API_USAGE_PATH": "/api/v1/ai-usage/",
+}
+
+
+class JobOrchestratorService:
+    def __init__(self):
+        self.client = azure_container_apps_client
+        self.resource_group = settings.AZURE_RESOURCE_GROUP
+        self.registry = settings.AZURE_CONTAINER_REGISTRY
+
+    def start_pipeline(self, analysis_id: UUID, proposal_id: Optional[UUID] = None) -> str:
+        """Start the pipeline by launching the root job(s)."""
+        root_jobs = get_root_jobs()
+        if not root_jobs:
+            raise ValueError("No root jobs found in the jobs tree configuration.")
+
+        first_job = root_jobs[0]
+
+        # Pre-flight: every provider credential must be present BEFORE launching any
+        # job, so a misconfiguration fails clean without spending compute.
+        provider = infra_config_service.get_runtime_env()
+        missing = [k for k, v in provider.items() if not v]
+        if missing:
+            self._log_event(
+                analysis_id, "error",
+                f"Falta configuración de servicios: {', '.join(missing)}. "
+                f"Configurar las credenciales en /admin antes de ejecutar análisis.",
+                {"missing_provider_keys": missing},
+            )
+            try:
+                workflow_step_service.fail_step_by_service(str(analysis_id), first_job)
+            except Exception as step_error:
+                logger.error(f"Failed to fail workflow step for {first_job}: {step_error}")
+            analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+            raise ValueError(f"Provider configuration missing: {missing}")
+
+        try:
+            # 1. Complete the initial workflow step (parent)
+            try:
+                # We need to find which service has 'is_initial': True to complete it
+                # For now, we know from the config that 'service-queue' is the initial one,
+                # but let's complete it using its service name
+                workflow_step_service.complete_step_by_service(str(analysis_id), "service-queue")
+            except Exception as e:
+                logger.error(f"Failed to complete initial workflow step: {e}")
+
+            # 2. Start the workflow step for the first job
+            try:
+                workflow_step_service.start_step_by_service(str(analysis_id), first_job, instances_count=1)
+            except Exception as e:
+                logger.error(f"Failed to start workflow step for first job {first_job}: {e}")
+
+            # 3. Launch the ACA job and wait for ack
+            azure_response = self._launch_job(first_job, analysis_id, proposal_id)
+
+            # 4. Log success event
+            self._log_event(analysis_id, "info", f"Started job {first_job}", azure_response)
+
+            # 5. Update analysis status to processing
+            analysis_repository.update_by_id(str(analysis_id), {"status": "processing"})
+
+        except Exception as e:
+            logger.error(f"Failed to start pipeline for analysis_id={analysis_id}: {e}")
+
+            # Mark the workflow step of the first job as failed
+            try:
+                workflow_step_service.fail_step_by_service(str(analysis_id), first_job)
+            except Exception as step_error:
+                logger.error(f"Failed to fail workflow step for {first_job}: {step_error}")
+
+            # Log error event
+            self._log_event(analysis_id, "error", f"Failed to start job {first_job}", {"error": str(e)})
+
+            # Update analysis to ready with is_success=false
+            analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+
+            raise
+
+        logger.info(
+            f"Pipeline started for analysis_id={analysis_id}, "
+            f"launched root job: {first_job}"
+        )
+        return first_job
+
+    def on_job_completed(
+        self,
+        service_name: str,
+        analysis_id: UUID,
+        proposal_id: Optional[UUID] = None,
+        file_id: Optional[UUID] = None,
+        original_file_id: Optional[UUID] = None,
+        status: str = "success",
+        error_message: Optional[str] = None,
+    ) -> List[str]:
+        """Handle job completion callback and launch next jobs if successful."""
+        if not is_valid_job(service_name):
+            logger.warning(f"Received callback for unknown job: {service_name}")
+            return []
+
+        job_status = "succeeded" if status == "success" else "failed"
+        file_id_str = str(file_id) if file_id else None
+        original_file_id_str = str(original_file_id) if original_file_id else None
+        proposal_id_str = str(proposal_id) if proposal_id else None
+        job_repository.update_job_status(str(analysis_id), service_name, job_status, file_id=file_id_str, original_file_id=original_file_id_str, proposal_id=proposal_id_str)
+
+        if status == "failed":
+            logger.error(
+                f"Job {service_name} failed for analysis_id={analysis_id}"
+                f" file_id={file_id}. Error: {error_message}. Pipeline halted."
+            )
+            try:
+                workflow_step_service.fail_step_by_service(str(analysis_id), service_name)
+            except Exception as e:
+                logger.error(f"Failed to mark workflow step as failed for {service_name}: {e}")
+            analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+            self._log_event(analysis_id, "error", f"Job {service_name} failed with error: {error_message}", {"error": error_message, "file_id": str(file_id) if file_id else None})
+            self._notify_by_email(analysis_id, "failed")
+            return []
+
+        # Job succeeded — check if fan-out job needs to wait for all instances
+        if is_fan_out_job(service_name):
+            total = job_repository.count_jobs_by_service(str(analysis_id), service_name)
+            completed = job_repository.count_completed_jobs(str(analysis_id), service_name)
+            logger.info(
+                f"Fan-out job {service_name}: {completed}/{total} completed "
+                f"for analysis_id={analysis_id}"
+            )
+            if completed < total:
+                # Not all instances done yet — wait
+                return []
+
+        # All instances done (or not a fan-out job) — atomically complete workflow step.
+        # Returns False if another concurrent callback already completed it.
+        try:
+            step_claimed = workflow_step_service.complete_step_by_service_if_running(str(analysis_id), service_name)
+        except Exception as e:
+            logger.error(f"Failed to complete workflow step for {service_name}: {e}")
+            step_claimed = False
+
+        if not step_claimed:
+            logger.info(
+                f"Workflow step for {service_name} already completed by a concurrent callback "
+                f"— skipping for analysis_id={analysis_id}"
+            )
+            return []
+
+        # Nothing extracted from the pliego: there is no admissibility to approve or
+        # check, so skip the remaining jobs instead of pausing on an empty list.
+        if service_name == "service-admissibility-extractor" and not admissibility_requirement_repository.get_by_analysis_id(str(analysis_id), limit=1):
+            self._log_event(
+                analysis_id, "info",
+                "No se extrajeron requisitos de admisibilidad del pliego: se omiten los jobs restantes y se finaliza el análisis.",
+                {"admissibility_requirement_count": 0},
+            )
+            self._complete_downstream_and_finalize(analysis_id, service_name)
+            return []
+
+        # Check if pipeline should pause for user approval (skip when hitl is disabled)
+        should_pause = is_pause_after_job(service_name)
+        if should_pause:
+            analysis = analysis_repository.get_by_id(str(analysis_id))
+            if analysis and analysis.get("hitl") is False:
+                should_pause = False
+                self._log_event(
+                    analysis_id, "info",
+                    f"Se continua automaticamente: no hitl (después de {service_name}).",
+                    {"service": service_name, "hitl": False}
+                )
+
+        if should_pause:
+            analysis_repository.update_by_id(
+                str(analysis_id),
+                {"status": "awaiting_approval", "paused_at_service": service_name, "is_success": None}
+            )
+            self._log_event(
+                analysis_id, "info",
+                f"Pipeline pausado después de {service_name}. Esperando aprobación del usuario.",
+                {"paused_at_service": service_name}
+            )
+            logger.info(
+                f"Pipeline paused after {service_name} for analysis_id={analysis_id}. "
+                f"Awaiting approval."
+            )
+            self._notify_by_email(analysis_id, "awaiting_approval")
+            return []
+
+        # After the admissibility gate: if no proposal is admitida there is nothing
+        # left to match/summarize, so skip the remaining jobs and finalize.
+        if service_name == "service-admissibility-gate" and not proposal_repository.get_admitidas_by_analysis_id(analysis_id):
+            self._log_event(
+                analysis_id, "info",
+                "Sin propuestas admitidas tras el chequeo de admisibilidad: se omiten los jobs restantes y se finaliza el análisis.",
+                {"admitidas": 0}
+            )
+            self._complete_downstream_and_finalize(analysis_id, service_name)
+            return []
+
+        # Find and launch next jobs
+        next_jobs = get_next_jobs(service_name)
+        launched = []
+
+        for next_job in next_jobs:
+            try:
+                launched += self._launch_next_job(next_job, analysis_id, proposal_id, service_name)
+            except Exception as e:
+                logger.error(
+                    f"Failed to launch job {next_job} after {service_name}: {e}"
+                )
+                try:
+                    workflow_step_service.fail_step_by_service(str(analysis_id), next_job)
+                except Exception as step_error:
+                    logger.error(f"Failed to fail workflow step for {next_job}: {step_error}")
+                self._log_event(analysis_id, "error", f"Failed to start job {next_job}", {"error": str(e)})
+                analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+
+        if is_final_job(service_name):
+            self._maybe_finalize_pipeline(analysis_id, service_name)
+
+        return launched
+
+    def _launch_next_job(
+        self,
+        next_job: str,
+        analysis_id: UUID,
+        proposal_id: Optional[UUID],
+        previous_job: str,
+    ) -> List[str]:
+        """Launch the next job(s). If it's a fan-out job, launch one instance per file."""
+        launched = []
+        fan_out_type = get_fan_out_type(next_job)
+
+        if fan_out_type in ("processed_file", "original_file", "merged_file", "file_with_metadata", "proposal"):
+            if fan_out_type == "merged_file":
+                items = processed_file_repository.get_merged_by_analysis_id(analysis_id)
+            elif fan_out_type == "file_with_metadata":
+                items = processed_file_repository.get_with_metadata_by_analysis_id(analysis_id)
+            elif fan_out_type == "proposal":
+                if get_requires_admitida(next_job):
+                    items = proposal_repository.get_admitidas_by_analysis_id(analysis_id)
+                else:
+                    items = proposal_repository.get_by_analysis_id(analysis_id)
+            elif fan_out_type == "original_file":
+                items = original_file_repository.get_by_analysis_id(analysis_id)
+            else:  # "processed_file"
+                items = processed_file_repository.get_by_analysis_id(analysis_id)
+            if not items:
+                logger.warning(f"No {fan_out_type} items found for analysis_id={analysis_id}, skipping fan-out job {next_job}")
+                try:
+                    workflow_step_service.start_step_by_service(str(analysis_id), next_job, instances_count=0)
+                    workflow_step_service.complete_step_by_service(str(analysis_id), next_job)
+                except Exception as e:
+                    logger.error(f"Failed to auto-complete empty {next_job}: {e}")
+                if is_final_job(next_job):
+                    self._maybe_finalize_pipeline(analysis_id, next_job)
+                else:
+                    for downstream in get_next_jobs(next_job):
+                        launched += self._launch_next_job(downstream, analysis_id, proposal_id, next_job)
+                return launched
+
+            logger.info(f"Fan-out: launching {len(items)} instances of {next_job} for analysis_id={analysis_id}")
+
+            # Start workflow step once for the fan-out group
+            try:
+                workflow_step_service.start_step_by_service(str(analysis_id), next_job, instances_count=len(items))
+            except Exception as step_error:
+                logger.error(f"Failed to start workflow step for {next_job}: {step_error}")
+
+            for item_data in items:
+                item_id = item_data["id"]
+                if fan_out_type == "proposal":
+                    azure_response = self._launch_job(next_job, analysis_id, proposal_id=UUID(item_id))
+                    self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for proposal {item_id}", azure_response)
+                    logger.info(f"Launched fan-out job: {next_job} proposal_id={item_id} for analysis_id={analysis_id}")
+                elif fan_out_type == "original_file":
+                    azure_response = self._launch_job(next_job, analysis_id, proposal_id, original_file_id=UUID(item_id))
+                    self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for original_file {item_id}", azure_response)
+                    logger.info(f"Launched fan-out job: {next_job} original_file_id={item_id} for analysis_id={analysis_id}")
+                else:
+                    azure_response = self._launch_job(next_job, analysis_id, proposal_id, file_id=UUID(item_id))
+                    self._log_event(analysis_id, "info", f"Started fan-out job {next_job} for file {item_id}", azure_response)
+                    logger.info(f"Launched fan-out job: {next_job} file_id={item_id} for analysis_id={analysis_id}")
+                launched.append(next_job)
+        else:
+            # Fan-in gate: if multiple services converge to next_job, wait for all to complete.
+            parent_jobs = get_parent_jobs(next_job)
+            if len(parent_jobs) > 1:
+                for parent in parent_jobs:
+                    if not workflow_step_service.is_step_completed_by_service(str(analysis_id), parent):
+                        logger.info(
+                            f"Fan-in: {parent} not yet completed, deferring launch of {next_job} "
+                            f"for analysis_id={analysis_id}"
+                        )
+                        return launched
+
+            # Atomic gate: only proceed if we can claim the step (pending → running).
+            # Prevents duplicate Azure launches when multiple concurrent fan-out
+            # callbacks all pass the completed >= total check simultaneously.
+            claimed = workflow_step_service.start_step_by_service_if_pending(str(analysis_id), next_job)
+            if not claimed:
+                logger.warning(
+                    f"Skipping duplicate launch of {next_job} for analysis_id={analysis_id} "
+                    f"— step already claimed by another callback"
+                )
+                return launched
+            azure_response = self._launch_job(next_job, analysis_id, proposal_id)
+            self._log_event(analysis_id, "info", f"Started job {next_job}", azure_response)
+            launched.append(next_job)
+            logger.info(f"Launched next job: {next_job} after {previous_job} for analysis_id={analysis_id}")
+
+        return launched
+
+    def _control_plane_env(self) -> dict:
+        """Host config injected into every job (not stored in DB): Settings + route paths."""
+        artifacts_base = settings.SUPABASE_ARTIFACTS_BASE_URL or (
+            f"{settings.SUPABASE_URL}/storage/v1/object/public/artifacts/"
+        )
+        env = {
+            "API_BASE_URL": settings.SERVICE_API_BASE_URL,
+            "API_KEY": settings.BACKEND_API_KEY,
+            "SUPABASE_URL": settings.SUPABASE_URL,
+            "SUPABASE_SERVICE_KEY": settings.SUPABASE_KEY,
+            "SUPABASE_ARTIFACTS_BASE_URL": artifacts_base,
+        }
+        env.update(SERVICE_API_PATHS)
+        return env
+
+    def build_service_env(
+        self,
+        analysis_id: UUID,
+        proposal_id: Optional[UUID] = None,
+        file_id: Optional[UUID] = None,
+    ) -> List[dict]:
+        """Assemble the full runtime environment for a job: dynamic (per execution) +
+        control plane (Settings + paths) + provider plane (Vault, cached)."""
+        env = {
+            "ANALYSIS_ID": str(analysis_id),
+            "PROPOSAL_ID": str(proposal_id) if proposal_id else "",
+        }
+        if file_id:
+            env["FILE_ID"] = str(file_id)
+        env.update(self._control_plane_env())
+        env.update(infra_config_service.get_runtime_env())
+        return [{"name": k, "value": v} for k, v in env.items()]
+
+    def _launch_job(
+        self,
+        service_name: str,
+        analysis_id: UUID,
+        proposal_id: Optional[UUID] = None,
+        file_id: Optional[UUID] = None,
+        original_file_id: Optional[UUID] = None,
+    ) -> dict:
+        """Launch a single Azure Container Apps Job and create a record in the jobs table."""
+        image = f"{self.registry}/{service_name}:latest"
+
+        effective_file_id = file_id or original_file_id
+        env_vars = self.build_service_env(analysis_id, proposal_id, effective_file_id)
+
+        template = {
+            "containers": [
+                {
+                    "name": service_name,
+                    "image": image,
+                    "env": env_vars,
+                }
+            ]
+        }
+
+        logger.info(
+            f"Launching Azure job: {service_name} with image: {image}"
+            + (f" for file_id={file_id}" if file_id else "")
+            + (f" for original_file_id={original_file_id}" if original_file_id else "")
+        )
+
+        poller = self.client.jobs.begin_start(
+            resource_group_name=self.resource_group,
+            job_name=service_name,
+            template=template,
+        )
+
+        result = poller.result()
+        azure_response = result.as_dict() if result else {}
+
+        input_payload = {
+            "ANALYSIS_ID": str(analysis_id),
+            "PROPOSAL_ID": str(proposal_id) if proposal_id else "",
+        }
+        if effective_file_id:
+            input_payload["FILE_ID"] = str(effective_file_id)
+
+        job_record = {
+            "analysis_id": str(analysis_id),
+            "service_name": service_name,
+            "azure_execution_id": azure_response.get("id", ""),
+            "execution_name": azure_response.get("name", ""),
+            "input_payload": input_payload,
+        }
+        if file_id:
+            job_record["file_id"] = str(file_id)
+        if original_file_id:
+            job_record["original_file_id"] = str(original_file_id)
+        if proposal_id:
+            job_record["proposal_id"] = str(proposal_id)
+        job_repository.create(job_record)
+
+        return azure_response
+
+    def retry_job(self, analysis_id: UUID, service_name: str) -> List[str]:
+        """Manually retry a failed job by resetting its workflow step and re-launching."""
+        if not is_valid_job(service_name):
+            raise ValueError(f"Unknown job: {service_name}")
+
+        code = get_step_code_for_service(service_name)
+        if code:
+            workflow_step_repository.update_status_by_code(analysis_id, code, "pending")
+
+        analysis_repository.update_by_id(str(analysis_id), {"status": "processing", "is_success": None})
+
+        parent_services = get_parent_jobs(service_name)
+        previous_job = parent_services[0] if parent_services else service_name
+
+        launched = []
+        try:
+            launched = self._launch_next_job(service_name, analysis_id, None, previous_job)
+        except Exception as e:
+            logger.error(f"Failed to retry job {service_name} for analysis_id={analysis_id}: {e}")
+            try:
+                workflow_step_service.fail_step_by_service(str(analysis_id), service_name)
+            except Exception as step_error:
+                logger.error(f"Failed to fail workflow step for {service_name}: {step_error}")
+            self._log_event(analysis_id, "error", f"Retry of {service_name} failed: {e}", {"error": str(e)})
+            analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+            raise
+
+        self._log_event(analysis_id, "info", f"Job {service_name} relanzado manualmente.", {"launched_jobs": launched})
+        logger.info(f"Retried job {service_name} for analysis_id={analysis_id}. Launched: {launched}")
+        return launched
+
+    def resume_pipeline(self, analysis_id: UUID) -> List[str]:
+        """Resume a paused pipeline after user approval."""
+        analysis = analysis_repository.get_by_id(str(analysis_id))
+        if not analysis:
+            raise ValueError(f"Analysis {analysis_id} not found")
+        if analysis["status"] != "awaiting_approval":
+            raise ValueError(
+                f"Analysis {analysis_id} is not awaiting approval "
+                f"(current status: {analysis['status']})"
+            )
+
+        paused_at_service = analysis.get("paused_at_service")
+        if not paused_at_service:
+            raise ValueError(f"Analysis {analysis_id} has no paused_at_service recorded")
+
+        # Lock file reordering before launching service-joiner
+        if paused_at_service == "service-documents-grouper":
+            original_file_repository.lock_reordering(str(analysis_id))
+            logger.info(f"Set is_reorderable=False for all original files in analysis {analysis_id}")
+
+        # Complete the approval phase that was activated when the pipeline paused
+        try:
+            workflow_phase_service.complete_approval_phase_after_service(str(analysis_id), paused_at_service)
+        except Exception as e:
+            logger.error(f"Failed to complete approval phase for {paused_at_service}: {e}")
+
+        # Clear paused state, return to processing
+        analysis_repository.update_by_id(
+            str(analysis_id),
+            {"status": "processing", "paused_at_service": None}
+        )
+
+        # Same cut as on_job_completed, which never runs for a job that pauses:
+        # with no admitida proposal there is nothing left to extract or match.
+        if paused_at_service == "service-admissibility-gate" and not proposal_repository.get_admitidas_by_analysis_id(analysis_id):
+            self._log_event(
+                analysis_id, "info",
+                "Sin propuestas admitidas tras el chequeo de admisibilidad: se omiten los jobs restantes y se finaliza el análisis.",
+                {"admitidas": 0}
+            )
+            self._complete_downstream_and_finalize(analysis_id, paused_at_service)
+            return []
+
+        # Launch next jobs from where we paused
+        next_jobs = get_next_jobs(paused_at_service)
+        launched = []
+
+        for next_job in next_jobs:
+            try:
+                launched += self._launch_next_job(next_job, analysis_id, None, paused_at_service)
+            except Exception as e:
+                logger.error(f"Failed to launch job {next_job} during resume: {e}")
+                try:
+                    workflow_step_service.fail_step_by_service(str(analysis_id), next_job)
+                except Exception as step_error:
+                    logger.error(f"Failed to fail workflow step for {next_job}: {step_error}")
+                self._log_event(analysis_id, "error", f"Failed to start job {next_job}", {"error": str(e)})
+                analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
+
+        self._log_event(
+            analysis_id, "info",
+            f"Pipeline reanudado. Jobs lanzados: {', '.join(launched)}",
+            {"launched_jobs": launched}
+        )
+        logger.info(f"Pipeline resumed for analysis_id={analysis_id}. Launched: {launched}")
+
+        return launched
+
+    def fail_timed_out_analysis(self, analysis_id: str, timed_out_step_codes: list) -> None:
+        """Marca un análisis como fallido por timeout. Llamado por el background monitor."""
+        from uuid import UUID
+        analysis_uuid = UUID(analysis_id)
+
+        logger.warning(
+            f"[JobMonitor] Timing out analysis_id={analysis_id}. "
+            f"Timed-out steps: {timed_out_step_codes}"
+        )
+
+        # Detener Azure executions — best-effort
+        running_jobs = job_repository.get_running_jobs(analysis_id)
+        for job in running_jobs:
+            execution_name = job.get("execution_name")
+            service_name = job.get("service_name")
+            if execution_name and service_name:
+                try:
+                    self.client.jobs.begin_stop_execution(
+                        resource_group_name=self.resource_group,
+                        job_name=service_name,
+                        job_execution_name=execution_name,
+                    )
+                    logger.info(
+                        f"[JobMonitor] Stopped Azure execution {execution_name} "
+                        f"for job {service_name} (analysis_id={analysis_id})"
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"[JobMonitor] Failed to stop Azure execution {execution_name} "
+                        f"for job {service_name}: {e}"
+                    )
+
+        # Marcar todos los jobs no-terminales como failed
+        job_repository.fail_all_running_jobs(analysis_id)
+
+        # Marcar los workflow steps timed-out como failed
+        for code in timed_out_step_codes:
+            try:
+                workflow_step_repository.update_status_by_code(analysis_uuid, code, "failed")
+            except Exception as e:
+                logger.error(f"[JobMonitor] Failed to update workflow step {code} to failed: {e}")
+
+        # Marcar el análisis como fallido
+        analysis_repository.update_by_id(
+            analysis_id,
+            {"status": "ready", "is_success": False}
+        )
+
+        self._log_event(
+            analysis_uuid,
+            "error",
+            f"Análisis cancelado por timeout. Steps timed-out: {timed_out_step_codes}",
+            {"timed_out_steps": timed_out_step_codes, "source": "job_monitor"},
+        )
+
+    def _complete_downstream_and_finalize(self, analysis_id: UUID, from_service: str) -> None:
+        """Auto-complete every job downstream of from_service (0 instances) and mark the analysis ready."""
+        visited = set()
+        queue = list(get_next_jobs(from_service))
+        while queue:
+            svc = queue.pop(0)
+            if svc in visited:
+                continue
+            visited.add(svc)
+            try:
+                workflow_step_service.start_step_by_service(str(analysis_id), svc, instances_count=0)
+                workflow_step_service.complete_step_by_service(str(analysis_id), svc)
+            except Exception as e:
+                logger.error(f"Failed to auto-complete downstream step {svc} for analysis_id={analysis_id}: {e}")
+            queue.extend(get_next_jobs(svc))
+
+        # No proposal passed admissibility: flag the admissibility phase (warning) and
+        # leave the final phase as not-reached instead of completed.
+        workflow_phase_service.apply_admissibility_cut(str(analysis_id))
+
+        analysis_repository.update_by_id(
+            str(analysis_id),
+            {"status": "ready", "is_success": True},
+        )
+        logger.info(f"Pipeline finalized (no admitida proposals) for analysis_id={analysis_id}.")
+        self._notify_by_email(analysis_id, "completed")
+
+    def _maybe_finalize_pipeline(self, analysis_id: UUID, completed_service: str) -> None:
+        """If every is_final service has its workflow step completed, flip analysis to ready."""
+        final_services = get_final_jobs()
+        all_done = all(
+            workflow_step_service.is_step_completed_by_service(str(analysis_id), s)
+            for s in final_services
+        )
+        if not all_done:
+            logger.info(
+                f"Final job {completed_service} done, but other finals still pending "
+                f"for analysis_id={analysis_id}. Waiting."
+            )
+            return
+
+        # If the pipeline reached the end with no admitida proposals (e.g. HITL resume
+        # cascaded empty fan-outs), flag the admissibility phase and leave the final
+        # phase as not-reached instead of completed.
+        if not proposal_repository.get_admitidas_by_analysis_id(analysis_id):
+            workflow_phase_service.apply_admissibility_cut(str(analysis_id))
+
+        analysis_repository.update_by_id(
+            str(analysis_id),
+            {"status": "ready", "is_success": True},
+        )
+        logger.info(
+            f"Pipeline completed for analysis_id={analysis_id}. "
+            f"All final jobs done: {final_services}"
+        )
+        self._notify_by_email(analysis_id, "completed")
+
+    def _notify_by_email(self, analysis_id: UUID, reason: str) -> None:
+        """Send email notification if user_email is set and belongs to the allowed domain."""
+        analysis = analysis_repository.get_by_id(analysis_id)
+        if not analysis:
+            return
+        if not app_settings_service.get_notifications_config().email_enabled:
+            self._log_event(
+                analysis_id, "info",
+                "Notificacion por email omitida (deshabilitada globalmente)",
+                {"reason": reason},
+            )
+            return
+        user_email = analysis.get("user_email")
+        if not user_email:
+            return
+        try:
+            if reason == "awaiting_approval":
+                summary = None
+                if analysis.get("paused_at_service") == "service-admissibility-gate":
+                    summary = self._build_admissibility_summary(analysis_id)
+                email_service.send_awaiting_approval(str(analysis_id), user_email, summary)
+            elif reason == "completed":
+                email_service.send_pipeline_completed(str(analysis_id), user_email)
+            elif reason == "failed":
+                email_service.send_pipeline_failed(str(analysis_id), user_email)
+            else:
+                return
+            self._log_event(
+                analysis_id, "info",
+                f"Notificacion por email enviada",
+                {"to": user_email, "reason": reason},
+            )
+        except Exception as e:
+            logger.error(f"Failed to send {reason} email for analysis_id={analysis_id}: {e}")
+
+    def _build_admissibility_summary(self, analysis_id: UUID) -> Optional[dict]:
+        """Collect admitidas/rechazadas (with blocking requirement codes) for the email.
+        Reasons are precomputed by service-admissibility-gate in proposals.admissibility_reasons;
+        only obligatoria failures block, so subsanable reason types are excluded."""
+        proposals = proposal_repository.get_by_analysis_id(analysis_id)
+        admitidas: List[str] = []
+        rechazadas: List[dict] = []
+        for p in proposals:
+            name = p.get("provider_name") or p.get("label") or "Propuesta"
+            status = p.get("admissibility_status")
+            if status == "admitida":
+                admitidas.append(name)
+            elif status == "rechazada":
+                codes = [
+                    r.get("requirement_code")
+                    for r in (p.get("admissibility_reasons") or [])
+                    if r.get("requirement_code") and "subsanable" not in (r.get("type") or "")
+                ]
+                rechazadas.append({"name": name, "codes": codes})
+        if not admitidas and not rechazadas:
+            return None
+        return {"admitidas": admitidas, "rechazadas": rechazadas}
+
+    def _log_event(
+        self,
+        analysis_id: UUID,
+        level: str,
+        message: str,
+        details: dict,
+    ) -> None:
+        """Log an event to the events table."""
+        event_data = EventBase(
+            analysis_id=analysis_id,
+            level=level,
+            source="BACKEND",
+            message=message,
+            details=details,
+        )
+        event_service.create_event(event_data)
+
+
+job_orchestrator_service = JobOrchestratorService()
+

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Error en el análisis</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f7;
+      font-family: Arial, sans-serif;
+      color: #333333;
+    }
+    .wrapper {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    .header {
+      background-color: #1a56db;
+      padding: 32px 40px;
+      text-align: center;
+    }
+    .header h1 {
+      margin: 0;
+      color: #ffffff;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .body {
+      padding: 36px 40px;
+    }
+    .body p {
+      margin: 0 0 16px;
+      font-size: 15px;
+      line-height: 1.6;
+      color: #444444;
+    }
+    .status-badge {
+      display: inline-block;
+      background-color: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .cta-block {
+      text-align: center;
+      margin: 28px 0;
+    }
+    .cta-button {
+      display: inline-block;
+      background-color: #1a56db;
+      color: #ffffff !important;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .divider {
+      border: none;
+      border-top: 1px solid #e5e7eb;
+      margin: 28px 0;
+    }
+    .footer {
+      background-color: #f9fafb;
+      padding: 20px 40px;
+      text-align: center;
+    }
+    .footer p {
+      margin: 0;
+      font-size: 12px;
+      color: #9ca3af;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="header">
+      <h1>ACCSA - Asistente de Compras Estatales</h1>
+    </div>
+    <div class="body">
+      <span class="status-badge">Error en el análisis</span>
+      <p>Se produjo un error durante el procesamiento de la licitación y el análisis no pudo completarse.</p>
+      <p>Podés acceder al análisis para ver el detalle del error en el registro de eventos.</p>
+      <div class="cta-block">
+        <a href="{{analysis_url}}" class="cta-button">Ver detalle del error</a>
+      </div>
+      <hr class="divider" />
+      <p>Si el botón no funciona, copiá y pegá el siguiente enlace en tu navegador:</p>
+      <p style="word-break: break-all; font-size: 13px; color: #6b7280;">{{analysis_url}}</p>
+    </div>
+    <div class="footer">
+      <p>Este correo fue enviado automáticamente por ACCSA AI.<br />Por favor no respondas a este mensaje.</p>
+    </div>
+  </div>
+</body>
+</html>

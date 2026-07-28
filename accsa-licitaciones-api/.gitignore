@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data
+*.csv
+*.xlsx
+*.sqlite
+*.db
+
+# Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+implement.md
+aaa.json
+chat.md
+.mcp.json
+.DS_Store
+todo-api.md
+classifier.sql
+services.json
+.claude/agent-memory/changelog-keeper/project_changelog.md
+service.md
+frontend.md
+service-admissibility-gate-api.md
+service-admissibility-gate-db.md
+service-economic-offer-extractor-api.md
+service-economic-offer-extractor-db.md
+service-requirement-extractor-db.md
