@@ -41,6 +41,12 @@ servicio, porque cada Dockerfile hace `COPY VERSION .` y
 paso del workflow que lo invoque falla; para leer la version del `package.json`
 se usa `grep`.
 
+**La deteccion por servicio estaba rota.** `git diff --name-only` imprime rutas
+relativas a la raiz del repositorio aunque se lo invoque desde un subdirectorio,
+asi que el `grep '^service-'` original no matcheaba nunca: un cambio normal en
+un servicio resolvia matriz vacia y no se construia ninguna imagen. Solo se
+noto al forzar la construccion completa, porque ese camino no pasa por el grep.
+
 **Cuidado con los patrones amplios en `.dockerignore` de la UI.** Un `*.md`
 dejaba `CHANGELOG.md` fuera del contexto y el prerender de `/changelog` moria
 con `ENOENT`; el mismo patron habria vaciado `content/help/` (31 archivos que
@@ -50,20 +56,18 @@ en el stage de runtime, no solo en el de build.
 
 ## Estado verificado (2026-07-28)
 
-| Imagen | Tamano | Tags |
-|--------|--------|------|
-| `licitaciones-api` | 466 MB | SHA + `latest` |
-| `licitaciones-ui` | 1,14 GB | SHA + `latest` |
+Las **18 imagenes** publicadas, cada una con su SHA y `latest`:
+`licitaciones-api` (466 MB), `licitaciones-ui` (1,14 GB) y los 16 servicios.
 
-VM1 hace `pull` de las dos correctamente. El LV de Docker de VM2 va por 348 MB
-de 35 GB.
+Los 16 servicios se construyeron en **8 minutos** de punta a punta, en serie
+(hay un solo runner). El mas lento tardo menos de un minuto: comparten la capa
+base `python:3.12-slim` y solo se diferencian en el `pip install`.
+
+VM1 hace `pull` correctamente. El LV de Docker de VM2 va por 713 MB de 35 GB,
+con 37 imagenes locales entre las construidas y sus capas intermedias.
 
 ## Pendientes
 
-- **Los 16 servicios no se construyeron todavia:** el primer push no toco
-  `accsa-licitaciones-services/`, asi que `detectar` resolvio lista vacia, que
-  es el comportamiento correcto. Para poblar el registry hace falta un
-  `workflow_dispatch` con `todos: true`.
 - **La UI pesa 1,14 GB** porque arrastra `node_modules` completo. Con
   `output: "standalone"` en `next.config.ts` bajaria muchisimo, pero es un
   cambio en la config de la app y hoy sigue desplegada en Vercel: queda a
