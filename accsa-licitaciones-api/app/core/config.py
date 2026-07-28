@@ -4,7 +4,7 @@ from functools import lru_cache
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Asistente de Licitaciones API"
-    VERSION: str = "2.1.0"
+    VERSION: str = "2.2.0"
     APP_ENV: str = "development"
     
     SUPABASE_URL: str
