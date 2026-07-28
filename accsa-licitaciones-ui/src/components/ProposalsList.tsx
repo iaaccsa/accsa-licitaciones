@@ -1,0 +1,139 @@
+"use client";
+
+import Link from "next/link";
+import { AlertCircle, FileText, Trophy } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useProposals } from "@/lib/use-proposals";
+
+interface Proposal {
+    id: string;
+    provider_name: string;
+    label: string;
+    created_at: string;
+    compliant_count: number | null;
+    non_compliant_count: number | null;
+    missing_info_count: number | null;
+    unprocessable_count: number | null;
+    compliance_score: number | null;
+}
+
+interface ProposalsListProps {
+    analysisId: string;
+}
+
+export default function ProposalsList({ analysisId }: ProposalsListProps) {
+    const { proposals: data, error, isLoading } = useProposals<Proposal>(analysisId);
+    const proposals = data ?? [];
+
+    if (isLoading) {
+        return (
+            <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Propuestas</h2>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[1, 2, 3].map((i) => (
+                        <Card key={i} className="h-40">
+                            <CardHeader className="pb-2">
+                                <Skeleton className="h-4 w-3/4" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-4 w-1/2 mb-2" />
+                                <Skeleton className="h-4 w-full" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-4 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 rounded-lg flex items-center gap-2">
+                <AlertCircle className="w-5 h-5" />
+                <span>Error al cargar las propuestas.</span>
+            </div>
+        );
+    }
+
+    if (proposals.length === 0) {
+        return (
+            <div className="space-y-4">
+                <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Propuestas</h2>
+                <div className="p-8 text-center bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-800 border-dashed">
+                    <FileText className="w-10 h-10 text-zinc-300 dark:text-zinc-600 mx-auto mb-3" />
+                    <p className="text-zinc-500 dark:text-zinc-400">No se encontraron propuestas para este análisis.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const topId = proposals.reduce<string | null>((best, p) => {
+        if (p.compliance_score == null) return best;
+        if (best === null) return p.id;
+        const bestScore = proposals.find((x) => x.id === best)?.compliance_score ?? -Infinity;
+        return p.compliance_score > bestScore ? p.id : best;
+    }, null);
+
+    return (
+        <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">Propuestas ({proposals.length})</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {proposals.map((proposal) => (
+                    <Link key={proposal.id} href={`/analyses/${analysisId}/proposals/${proposal.id}`}>
+                        <Card className={`hover:shadow-md transition-shadow h-full flex flex-col ${proposal.id === topId ? "border-emerald-400 shadow-emerald-100 shadow-md ring-1 ring-emerald-300 dark:ring-emerald-800 dark:border-emerald-700" : ""}`}>
+                            <CardHeader className="pb-2">
+                                <div className="flex items-center justify-between gap-2">
+                                    <CardTitle className="text-sm font-medium">
+                                        {proposal.provider_name || "Proveedor sin nombre"}
+                                    </CardTitle>
+                                    {proposal.id === topId && (
+                                        <span className="inline-flex flex-col items-center px-2 py-1 rounded-lg text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 shrink-0 leading-tight gap-0.5">
+                                            <Trophy className="w-4 h-4" />
+                                            Mejor puntuación
+                                        </span>
+                                    )}
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3 flex flex-col flex-1 justify-end">
+                                <div>
+                                    <div className="text-2xl font-bold">{proposal.label || "Sin etiqueta"}</div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {new Date(proposal.created_at).toLocaleDateString()}
+                                    </p>
+                                </div>
+                                {(proposal.compliant_count != null || proposal.non_compliant_count != null) && (
+                                    <div className="grid grid-cols-4 divide-x divide-zinc-100 dark:divide-zinc-800 border border-zinc-100 dark:border-zinc-800 rounded-lg overflow-hidden bg-zinc-50 dark:bg-zinc-800/50 text-center">
+                                        <div className="py-1.5 px-1">
+                                            <p className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide leading-tight mb-0.5">Cumple</p>
+                                            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{proposal.compliant_count ?? "—"}</p>
+                                        </div>
+                                        <div className="py-1.5 px-1">
+                                            <p className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide leading-tight mb-0.5">No cumple</p>
+                                            <p className="text-sm font-bold text-red-500 dark:text-red-400">{proposal.non_compliant_count ?? "—"}</p>
+                                        </div>
+                                        <div className="py-1.5 px-1">
+                                            <p className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide leading-tight mb-0.5">Sin info</p>
+                                            <p className="text-sm font-bold text-amber-500 dark:text-amber-400">{proposal.missing_info_count ?? "—"}</p>
+                                        </div>
+                                        <div className="py-1.5 px-1">
+                                            <p className="text-[9px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide leading-tight mb-0.5">No procesado</p>
+                                            <p className="text-sm font-bold text-zinc-400 dark:text-zinc-500">{proposal.unprocessable_count ?? "—"}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {proposal.compliance_score != null && (
+                                    <div className="flex items-center justify-between px-3 py-2 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-lg">
+                                        <span className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide">Puntuación</span>
+                                        <span className="text-base font-bold text-zinc-800 dark:text-zinc-200">{proposal.compliance_score}/<span className="text-zinc-400 dark:text-zinc-500 text-sm">100</span></span>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    );
+}
+

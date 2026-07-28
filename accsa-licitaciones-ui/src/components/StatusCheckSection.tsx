@@ -1,0 +1,157 @@
+"use client";
+
+import { useState, useCallback, useEffect, useRef, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Search, AlertCircle } from "lucide-react";
+import { JobStatusDisplay } from "@/components/JobStatusDisplay";
+import type { JobStatus } from "@/components/JobStatusDisplay";
+
+type StatusCheckStatus = "idle" | "success" | "error" | "not_found";
+
+interface StatusCheckSectionProps {
+    initialJobId?: string;
+}
+
+export function StatusCheckSection({ initialJobId }: StatusCheckSectionProps) {
+    const [searchJobId, setSearchJobId] = useState(initialJobId ?? "");
+    const [isPending, startTransition] = useTransition();
+    const [statusCheckStatus, setStatusCheckStatus] =
+        useState<StatusCheckStatus>("idle");
+    const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
+    const [autoRefresh, setAutoRefresh] = useState(false);
+    const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Sync when the parent passes a new job id (e.g. after a new upload).
+    // Adjust state during render instead of in an effect (React-recommended).
+    const [prevInitialJobId, setPrevInitialJobId] = useState(initialJobId);
+    if (initialJobId && initialJobId !== prevInitialJobId) {
+        setPrevInitialJobId(initialJobId);
+        setSearchJobId(initialJobId);
+    }
+
+    const handleCheckStatus = useCallback(async () => {
+        if (!searchJobId.trim()) return;
+
+        setJobStatus(null);
+
+        try {
+            const response = await fetch(
+                `/api/status?job_id=${encodeURIComponent(searchJobId.trim())}`
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                if (!data || Object.keys(data).length === 0) {
+                    setStatusCheckStatus("not_found");
+                } else {
+                    setJobStatus(data);
+                    setStatusCheckStatus("success");
+                }
+            } else {
+                setStatusCheckStatus("error");
+            }
+        } catch (error) {
+            console.error("Error checking status:", error);
+            setStatusCheckStatus("error");
+        }
+    }, [searchJobId]);
+
+    const handleCheckStatusWithTransition = useCallback(() => {
+        startTransition(async () => {
+            await handleCheckStatus();
+        });
+    }, [handleCheckStatus]);
+
+    // Auto-refresh effect
+    useEffect(() => {
+        if (autoRefresh && searchJobId.trim() && statusCheckStatus === "success") {
+            autoRefreshIntervalRef.current = setInterval(() => {
+                handleCheckStatus();
+            }, 30000);
+        }
+
+        return () => {
+            if (autoRefreshIntervalRef.current) {
+                clearInterval(autoRefreshIntervalRef.current);
+                autoRefreshIntervalRef.current = null;
+            }
+        };
+    }, [autoRefresh, searchJobId, statusCheckStatus, handleCheckStatus]);
+
+    return (
+        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8">
+            <h2 className="text-lg font-medium text-zinc-700 dark:text-zinc-300 mb-6">
+                Consultar Estado del Análisis
+            </h2>
+
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <input
+                    type="text"
+                    value={searchJobId}
+                    onChange={(e) => setSearchJobId(e.target.value)}
+                    placeholder="Ingrese el ID del procesamiento (job_id)"
+                    className="flex-1 px-4 py-3 border border-zinc-300 dark:border-zinc-600 dark:bg-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-zinc-700 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+                />
+                <Button
+                    onClick={handleCheckStatusWithTransition}
+                    disabled={!searchJobId.trim() || isPending}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    {isPending ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                        <Search className="h-5 w-5" />
+                    )}
+                    Consultar
+                </Button>
+            </div>
+
+            {/* Auto-refresh checkbox */}
+            {jobStatus && statusCheckStatus === "success" ? (
+                <div className="flex items-center gap-3 mb-6">
+                    <input
+                        type="checkbox"
+                        id="autoRefresh"
+                        checked={autoRefresh}
+                        onChange={(e) => setAutoRefresh(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 dark:text-blue-400 bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 rounded focus:ring-blue-500 cursor-pointer"
+                    />
+                    <label
+                        htmlFor="autoRefresh"
+                        className="text-sm text-zinc-600 dark:text-zinc-400 cursor-pointer"
+                    >
+                        Actualizar automáticamente cada 30 segundos
+                    </label>
+                    {autoRefresh ? (
+                        <span className="text-xs text-blue-500 dark:text-blue-400 flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Activo
+                        </span>
+                    ) : null}
+                </div>
+            ) : null}
+
+            {/* Status messages */}
+            {statusCheckStatus === "error" ? (
+                <div className="flex items-center justify-center gap-2 p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900 rounded-xl text-red-700 dark:text-red-300">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>
+                        No se pudo obtener el estado. Verifique el ID e intente de nuevo.
+                    </span>
+                </div>
+            ) : null}
+
+            {statusCheckStatus === "not_found" ? (
+                <div className="flex items-center justify-center gap-2 p-4 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-900 rounded-xl text-yellow-700 dark:text-yellow-300">
+                    <AlertCircle className="h-5 w-5" />
+                    <span>ID de Análisis no existe.</span>
+                </div>
+            ) : null}
+
+            {/* Job Status Display */}
+            {jobStatus && statusCheckStatus === "success" ? (
+                <JobStatusDisplay jobStatus={jobStatus} />
+            ) : null}
+        </div>
+    );
+}
