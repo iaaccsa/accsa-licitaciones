@@ -1,9 +1,11 @@
+# Ojo con los patrones amplios: la app lee CHANGELOG.md y content/help/*.md
+# desde process.cwd(), asi que un "*.md" rompe el build de /changelog y /ayuda.
+# Lo mismo con "*.png", que se llevaria las imagenes de public/.
 node_modules/
 .next/
 .next-e2e/
 .env
 .env.*
-!.env.example
 .git/
 .agent/
 .agents/
@@ -11,7 +13,11 @@ node_modules/
 e2e/
 playwright-report/
 test-results/
-*.md
-*.png
-openapi.json
+docs/
 tsconfig.tsbuildinfo
+openapi.json
+/phases.html
+/phases.jsx
+/debug-webhook.ts
+/status_page_grouped.png
+/status_page_list_view.png

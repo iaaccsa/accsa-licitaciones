@@ -39,6 +39,11 @@ COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/next.config.ts ./next.config.ts
+# La app resuelve estos desde process.cwd(): /changelog lee CHANGELOG.md y
+# /ayuda lee content/help/. Van tambien al runtime por si alguna ruta los pide
+# en tiempo de peticion y no solo al generar.
+COPY --from=build /app/CHANGELOG.md ./CHANGELOG.md
+COPY --from=build /app/content ./content
 
 USER node
 EXPOSE 3000
