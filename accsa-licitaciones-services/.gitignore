@@ -1,0 +1,66 @@
+# ===========================
+# Secrets & Credentials
+# ===========================
+.env
+credentials
+az-token
+
+# ===========================
+# Temporary / Test Data
+# ===========================
+temp/
+
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+.venv/
+venv/
+env/
+*.whl
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+Thumbs.db
+
+# ===========================
+# IDE / Editor
+# ===========================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ===========================
+# Docker
+# ===========================
+*.log
+
+# ===========================
+# Misc
+# ===========================
+*.zip
+*.bak
+curl
+
+.env.local
+.agents
+.agent/skills/skill-creator
+.agent/skills/skill-creator/*
+service-creator.skill
+.agent/skills/skill-creator/service-creator.skill
+backend-credentials
+api-doc.md
+todo-api.md
+service.md
+.mcp.json
+_review/job-template.yaml

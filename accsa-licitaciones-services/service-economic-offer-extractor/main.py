@@ -1,0 +1,693 @@
+"""
+Economic Offer Extractor Service
+================================
+Given an ANALYSIS_ID and a PROPOSAL_ID, extracts the structured economic
+offer from the proposal's indexed chunks in Qdrant and upserts a single
+record into `proposal_economic_offers`.
+
+Extracts: total_amount, currency, includes_taxes, tax_details,
+payment_terms, validity_days, adjustment_formula, line_items, citations.
+
+Required environment variables:
+  - GOOGLE_API_KEY
+  - OPENAI_API_KEY
+  - QDRANT_URL
+  - QDRANT_API_KEY
+  - API_BASE_URL
+  - API_KEY
+  - API_EVENTS_PATH
+  - API_ANALYSES_PATH
+  - API_PROPOSALS_PATH
+  - API_TENDER_CLASSIFICATIONS_PATH
+  - API_PROPOSAL_ECONOMIC_OFFERS_PATH
+  - API_JOBS_CALLBACK
+  - ANALYSIS_ID        (runtime)
+  - PROPOSAL_ID        (runtime)
+"""
+
+import json
+import os
+import sys
+import time
+from datetime import datetime, timezone
+from decimal import Decimal
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional
+
+import requests
+from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
+from prompt_loader import load_prompt
+from google import genai
+from google.genai import types as genai_types
+from openai import OpenAI
+from pydantic import BaseModel, Field
+from qdrant_client import QdrantClient
+from supabase_logger import SYSTEM_VERSION, log_event, make_session, setup_logger
+
+# ---------------------------------------------------------------------------
+# Configuration
+# ---------------------------------------------------------------------------
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+QDRANT_URL = os.environ.get("QDRANT_URL")
+QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY")
+API_BASE_URL = os.environ.get("API_BASE_URL")
+API_KEY = os.environ.get("API_KEY")
+API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
+API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
+API_PROPOSALS_PATH = os.environ.get("API_PROPOSALS_PATH")
+API_TENDER_CLASSIFICATIONS_PATH = os.environ.get("API_TENDER_CLASSIFICATIONS_PATH")
+API_PROPOSAL_ECONOMIC_OFFERS_PATH = os.environ.get("API_PROPOSAL_ECONOMIC_OFFERS_PATH")
+API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
+ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
+PROPOSAL_ID = os.environ.get("PROPOSAL_ID")
+
+SERVICE_NAME = "service-economic-offer-extractor"
+SERVICE_VERSION = SYSTEM_VERSION
+EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
+EMBEDDING_MODEL = "text-embedding-3-small"
+GEMINI_MODEL = "gemini-2.5-flash"
+OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
+
+# Model selection, resolved at runtime from the analysis (see resolve_model_config).
+# Defaults preserve the prior hardcoded behavior if the API is unreachable.
+PRIMARY_PROVIDER = "gemini"
+PRIMARY_MODEL = GEMINI_MODEL
+FALLBACK_PROVIDER = "openai"
+FALLBACK_MODEL = OPENAI_FALLBACK_MODEL
+
+# AI cost accounting: frozen price snapshot, loaded once in main().
+PRICING: dict = {}
+
+
+def _provider_of(model_id: str) -> str:
+    return "gemini" if str(model_id).startswith("gemini") else "openai"
+
+
+RAG_TOP_K_PER_QUERY = 5
+RAG_MAX_TOTAL_CHUNKS = 20
+LLM_RETRY_ATTEMPTS = 2
+LLM_RETRY_BACKOFF_BASE = 1.5
+
+# Thematic queries used for RAG retrieval on the proposal chunks.
+# Each query is embedded and searched independently; results are deduplicated
+# by chunk_id and capped at RAG_MAX_TOTAL_CHUNKS.
+RAG_QUERIES = [
+    "precio total monto de la oferta económica cotizacion",
+    "moneda de la oferta pesos uruguayos dolares UI UYU USD",
+    "IVA impuestos gravamenes incluidos no incluidos",
+    "plazo de pago condiciones comerciales dias fecha factura",
+    "mantenimiento de oferta plazo de validez de la cotizacion",
+    "formula parametrica de ajuste de precios reajuste",
+    "desglose por items renglones lotes precio unitario cantidad subtotal",
+]
+
+logger = setup_logger(SERVICE_NAME)
+SESSION = make_session()
+
+
+# ---------------------------------------------------------------------------
+# Data Models
+# ---------------------------------------------------------------------------
+class EconomicCitation(BaseModel):
+    chunk_id: str
+    snippet: str
+    header: Optional[str] = None
+    chunk_index: Optional[int] = None
+
+
+class EconomicLineItem(BaseModel):
+    code: Optional[str] = None
+    description: str
+    quantity: Optional[float] = None
+    unit_price: Optional[float] = None
+    subtotal: Optional[float] = None
+    currency: Optional[str] = None
+
+
+class LLMEconomicOffer(BaseModel):
+    total_amount: Optional[float] = None
+    currency: Optional[str] = None
+    includes_taxes: Optional[bool] = None
+    tax_details: Optional[Dict[str, Any]] = None
+    payment_terms: Optional[str] = None
+    validity_days: Optional[int] = None
+    adjustment_formula: Optional[str] = None
+    line_items: List[EconomicLineItem] = Field(default_factory=list)
+    citations: List[EconomicCitation] = Field(default_factory=list)
+    confidence: Literal["alta", "media", "baja", "muy_baja"] = "media"
+    reasoning: Optional[str] = None
+    requires_manual_review: bool = False
+
+
+SYSTEM_PROMPT = None  # loaded at runtime in main() via load_prompt
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+API_HEADERS = {
+    "Content-Type": "application/json",
+    "X-API-Key": API_KEY or "",
+}
+
+
+def api_request(
+    method: str,
+    path: str,
+    json_data: dict | list | None = None,
+    params: dict | None = None,
+) -> dict | list | None:
+    url = f"{API_BASE_URL}{path}"
+    response = SESSION.request(
+        method, url, json=json_data, params=params, headers=API_HEADERS, timeout=60
+    )
+    response.raise_for_status()
+    try:
+        return response.json()
+    except ValueError:
+        return None
+
+
+def resolve_model_config():
+    """Resolve the LLM model for this analysis from the API (global config snapshot)
+    and log a startup event. On any failure keep the hardcoded defaults."""
+    global PRIMARY_PROVIDER, PRIMARY_MODEL, FALLBACK_PROVIDER, FALLBACK_MODEL
+    level = None
+    origin = "configuracion global"
+    try:
+        cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config")
+        if cfg:
+            PRIMARY_PROVIDER = cfg.get("provider") or PRIMARY_PROVIDER
+            PRIMARY_MODEL = cfg.get("model_id") or PRIMARY_MODEL
+            level = cfg.get("level")
+            fb = cfg.get("fallback_model_id")
+            if fb:
+                FALLBACK_MODEL = fb
+                FALLBACK_PROVIDER = _provider_of(fb)
+    except Exception as e:
+        origin = f"valores por defecto (model-config no disponible: {e})"
+    msg = (
+        f"Modelo LLM: {PRIMARY_MODEL} (proveedor {PRIMARY_PROVIDER}"
+        + (f", nivel {level}" if level else "")
+        + f"); fallback {FALLBACK_MODEL}. Origen: {origin}."
+    )
+    log_event(ANALYSIS_ID, "info", msg, EVENT_SOURCE)
+
+
+def validate_env():
+    missing = [
+        var
+        for var, val in [
+            ("GOOGLE_API_KEY", GOOGLE_API_KEY),
+            ("OPENAI_API_KEY", OPENAI_API_KEY),
+            ("QDRANT_URL", QDRANT_URL),
+            ("QDRANT_API_KEY", QDRANT_API_KEY),
+            ("API_BASE_URL", API_BASE_URL),
+            ("API_KEY", API_KEY),
+            ("API_EVENTS_PATH", API_EVENTS_PATH),
+            ("API_ANALYSES_PATH", API_ANALYSES_PATH),
+            ("API_PROPOSALS_PATH", API_PROPOSALS_PATH),
+            ("API_TENDER_CLASSIFICATIONS_PATH", API_TENDER_CLASSIFICATIONS_PATH),
+            ("API_PROPOSAL_ECONOMIC_OFFERS_PATH", API_PROPOSAL_ECONOMIC_OFFERS_PATH),
+            ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
+            ("ANALYSIS_ID", ANALYSIS_ID),
+            ("PROPOSAL_ID", PROPOSAL_ID),
+        ]
+        if not val
+    ]
+    if missing:
+        logger.error(f"Missing required environment variables: {', '.join(missing)}")
+        sys.exit(1)
+
+
+def get_embedding(client: OpenAI, text: str) -> List[float]:
+    text = text.replace("\n", " ")
+    response = client.embeddings.create(input=[text], model=EMBEDDING_MODEL)
+    in_u, out_u, cached = openai_units(response)
+    record_usage(
+        ANALYSIS_ID,
+        SERVICE_NAME,
+        "openai",
+        EMBEDDING_MODEL,
+        "embedding",
+        input_units=in_u,
+        output_units=out_u,
+        cached_input_units=cached,
+        pricing=PRICING,
+        proposal_id=PROPOSAL_ID,
+    )
+    return response.data[0].embedding
+
+
+# ---------------------------------------------------------------------------
+# State transitions
+# ---------------------------------------------------------------------------
+def mark_economic_start(proposal_id: str):
+    now = datetime.now(timezone.utc).isoformat()
+    api_request(
+        "PATCH",
+        f"{API_PROPOSALS_PATH}{proposal_id}/economic-start",
+        {
+            "economic_started_at": now,
+        },
+    )
+    logger.info(f"Proposal {proposal_id} transitioned to extracting.")
+
+
+def mark_economic_result(proposal_id: str):
+    now = datetime.now(timezone.utc).isoformat()
+    api_request(
+        "PATCH",
+        f"{API_PROPOSALS_PATH}{proposal_id}/economic-result",
+        {
+            "economic_completed_at": now,
+        },
+    )
+    logger.info(f"Proposal {proposal_id} transitioned to ready.")
+
+
+def mark_economic_failure(proposal_id: str, error: str):
+    try:
+        now = datetime.now(timezone.utc).isoformat()
+        api_request(
+            "PATCH",
+            f"{API_PROPOSALS_PATH}{proposal_id}/economic-failure",
+            {
+                "economic_completed_at": now,
+                "economic_error": error,
+            },
+        )
+    except Exception as e:
+        logger.error(f"Failed to mark economic-failure: {e}")
+
+
+def notify_success():
+    try:
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "proposal_id": PROPOSAL_ID,
+                "status": "success",
+            },
+        )
+    except Exception as e:
+        logger.error(f"Failed to notify job callback on success: {e}")
+
+
+def notify_failure(error_msg: str):
+    logger.error(f"notify_failure: {error_msg}")
+    log_event(ANALYSIS_ID, "error", error_msg, EVENT_SOURCE)
+    try:
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "proposal_id": PROPOSAL_ID,
+                "status": "failed",
+                "error_message": error_msg,
+            },
+        )
+    except Exception as e:
+        logger.error(f"Failed to notify job callback: {e}")
+
+
+# ---------------------------------------------------------------------------
+# Data loading
+# ---------------------------------------------------------------------------
+def load_analysis(analysis_id: str) -> dict:
+    result = api_request("GET", f"{API_ANALYSES_PATH}{analysis_id}")
+    if not isinstance(result, dict):
+        raise RuntimeError(f"Unexpected response from analyses: {type(result)}")
+    return result
+
+
+def load_proposal(proposal_id: str) -> dict:
+    result = api_request("GET", f"{API_PROPOSALS_PATH}{proposal_id}")
+    if not isinstance(result, dict):
+        raise RuntimeError(f"Unexpected response from proposals: {type(result)}")
+    return result
+
+
+def load_evaluation_profile(analysis_id: str) -> Optional[dict]:
+    try:
+        result = api_request("GET", f"{API_TENDER_CLASSIFICATIONS_PATH}{analysis_id}")
+        if isinstance(result, dict):
+            return result
+    except requests.exceptions.HTTPError as e:
+        # Not blocking: proceed without profile
+        logger.warning(f"tender-classifications not available for {analysis_id}: {e}")
+    return None
+
+
+# ---------------------------------------------------------------------------
+# RAG retrieval (multi-query + dedup)
+# ---------------------------------------------------------------------------
+def rag_retrieve_economic_chunks(
+    qdrant: QdrantClient,
+    openai_client: OpenAI,
+    collection_name: str,
+    analysis_id: str,
+    proposal_id: str,
+) -> List[Dict]:
+    dedup: Dict[str, Dict] = {}
+    for query in RAG_QUERIES:
+        query_vector = get_embedding(openai_client, query)
+        result = qdrant.query_points(
+            collection_name=collection_name,
+            query=query_vector,
+            limit=RAG_TOP_K_PER_QUERY,
+        )
+        for point in result.points:
+            cid = str(point.id)
+            if cid in dedup:
+                continue
+            payload = point.payload or {}
+            dedup[cid] = {
+                "chunk_id": cid,
+                "header": payload.get("Header 1"),
+                "chunk_index": payload.get("chunk_index"),
+                "text": payload.get("text", ""),
+            }
+            if len(dedup) >= RAG_MAX_TOTAL_CHUNKS:
+                break
+        if len(dedup) >= RAG_MAX_TOTAL_CHUNKS:
+            break
+
+    return list(dedup.values())
+
+
+# ---------------------------------------------------------------------------
+# Prompt builder
+# ---------------------------------------------------------------------------
+def build_user_prompt(
+    proposal: dict, profile: Optional[dict], chunks: List[dict]
+) -> str:
+    chunks_text = "\n\n".join(
+        f'  [chunk_id={c["chunk_id"]} header="{c["header"] or ""}" chunk_index={c["chunk_index"]}]\n  {c["text"]}'
+        for c in chunks
+    )
+    profile_text = "none"
+    if profile:
+        profile_text = json.dumps(
+            {
+                "system_type": profile.get("system_type"),
+                "expected_currency": profile.get("expected_currency"),
+                "taxes_included_in_offer": profile.get("taxes_included_in_offer"),
+                "factors": profile.get("factors"),
+            },
+            ensure_ascii=False,
+        )
+
+    return (
+        f"Extract the structured economic offer and return a single JSON object.\n\n"
+        f"<bidder>\n"
+        f"name: {proposal.get('label', '')}\n"
+        f"provider: {proposal.get('provider_name', '')}\n"
+        f"</bidder>\n\n"
+        f"<tender_profile>\n{profile_text}\n</tender_profile>\n\n"
+        f"<retrieved_chunks>\n{chunks_text}\n</retrieved_chunks>"
+    )
+
+
+# ---------------------------------------------------------------------------
+# LLM calls
+# ---------------------------------------------------------------------------
+def _call_gemini(
+    gemini: genai.Client, user_prompt: str, model: str
+) -> LLMEconomicOffer:
+    response = gemini.models.generate_content(
+        model=model,
+        contents=[
+            genai_types.Content(
+                role="user", parts=[genai_types.Part(text=SYSTEM_PROMPT)]
+            ),
+            genai_types.Content(
+                role="model",
+                parts=[
+                    genai_types.Part(
+                        text="Understood. I will return only the JSON economic offer."
+                    )
+                ],
+            ),
+            genai_types.Content(
+                role="user", parts=[genai_types.Part(text=user_prompt)]
+            ),
+        ],
+        config=genai_types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=LLMEconomicOffer,
+        ),
+    )
+    in_u, out_u, cached = gemini_units(response)
+    record_usage(
+        ANALYSIS_ID,
+        SERVICE_NAME,
+        "gemini",
+        model,
+        "chat",
+        input_units=in_u,
+        output_units=out_u,
+        cached_input_units=cached,
+        pricing=PRICING,
+        proposal_id=PROPOSAL_ID,
+    )
+    return LLMEconomicOffer.model_validate_json(response.text)
+
+
+def _call_openai(
+    openai_client: OpenAI, user_prompt: str, model: str
+) -> LLMEconomicOffer:
+    response = openai_client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
+        response_format={"type": "json_object"},
+    )
+    in_u, out_u, cached = openai_units(response)
+    record_usage(
+        ANALYSIS_ID,
+        SERVICE_NAME,
+        "openai",
+        model,
+        "chat",
+        input_units=in_u,
+        output_units=out_u,
+        cached_input_units=cached,
+        pricing=PRICING,
+        proposal_id=PROPOSAL_ID,
+    )
+    return LLMEconomicOffer.model_validate_json(response.choices[0].message.content)
+
+
+def _call_provider(
+    gemini: genai.Client,
+    openai_client: OpenAI,
+    user_prompt: str,
+    provider: str,
+    model: str,
+) -> LLMEconomicOffer:
+    if provider == "gemini":
+        return _call_gemini(gemini, user_prompt, model)
+    return _call_openai(openai_client, user_prompt, model)
+
+
+def call_llm_with_retries(
+    gemini: genai.Client,
+    openai_client: OpenAI,
+    user_prompt: str,
+) -> LLMEconomicOffer:
+    last_error: Optional[Exception] = None
+    for attempt in range(LLM_RETRY_ATTEMPTS + 1):
+        try:
+            return _call_provider(
+                gemini, openai_client, user_prompt, PRIMARY_PROVIDER, PRIMARY_MODEL
+            )
+        except Exception as e_primary:
+            logger.warning(
+                f"attempt {attempt}: primary {PRIMARY_PROVIDER}/{PRIMARY_MODEL} failed ({e_primary}), trying fallback {FALLBACK_PROVIDER}/{FALLBACK_MODEL}..."
+            )
+            try:
+                return _call_provider(
+                    gemini,
+                    openai_client,
+                    user_prompt,
+                    FALLBACK_PROVIDER,
+                    FALLBACK_MODEL,
+                )
+            except Exception as e_fallback:
+                last_error = e_fallback
+                logger.warning(
+                    f"attempt {attempt}: fallback {FALLBACK_PROVIDER}/{FALLBACK_MODEL} also failed ({e_fallback})."
+                )
+                if attempt < LLM_RETRY_ATTEMPTS:
+                    time.sleep(LLM_RETRY_BACKOFF_BASE ** (attempt + 1))
+    raise RuntimeError(f"All LLM attempts exhausted: {last_error}")
+
+
+# ---------------------------------------------------------------------------
+# Post-processing
+# ---------------------------------------------------------------------------
+def post_process(llm: LLMEconomicOffer) -> LLMEconomicOffer:
+    # Normalize currency to uppercase
+    if llm.currency:
+        llm.currency = llm.currency.strip().upper()
+    for item in llm.line_items:
+        if item.currency:
+            item.currency = item.currency.strip().upper()
+
+    # Sanity check: sum of line_items vs total_amount
+    if llm.total_amount is not None and llm.line_items:
+        subtotals = [i.subtotal for i in llm.line_items if i.subtotal is not None]
+        if subtotals:
+            sum_items = sum(subtotals)
+            # Allow 1% tolerance; taxes may account for differences otherwise.
+            if llm.total_amount > 0:
+                diff_ratio = abs(sum_items - llm.total_amount) / llm.total_amount
+                if diff_ratio > 0.01 and llm.includes_taxes is None:
+                    llm.requires_manual_review = True
+                    extra = (
+                        f" La suma de line_items ({sum_items}) difiere del total "
+                        f"declarado ({llm.total_amount}) en {diff_ratio * 100:.1f}%."
+                    )
+                    llm.reasoning = (llm.reasoning or "") + extra
+
+    # Degrade: no usable information extracted
+    if llm.total_amount is None and not llm.line_items:
+        llm.requires_manual_review = True
+        if llm.confidence not in ("baja", "muy_baja"):
+            llm.confidence = "muy_baja"
+
+    return llm
+
+
+# ---------------------------------------------------------------------------
+# Persist
+# ---------------------------------------------------------------------------
+def upsert_economic_offer(analysis_id: str, proposal_id: str, llm: LLMEconomicOffer):
+    payload = {
+        "analysis_id": analysis_id,
+        "proposal_id": proposal_id,
+        **llm.model_dump(),
+        "extracted_by": f"{SERVICE_NAME}@{SERVICE_VERSION}",
+    }
+    api_request("POST", API_PROPOSAL_ECONOMIC_OFFERS_PATH, payload)
+    logger.info(f"Economic offer upserted for proposal {proposal_id}.")
+
+
+# ---------------------------------------------------------------------------
+# Main flow
+# ---------------------------------------------------------------------------
+def process_economic_extraction():
+    logger.info(
+        f"Starting economic-offer-extractor for ANALYSIS_ID={ANALYSIS_ID} PROPOSAL_ID={PROPOSAL_ID}"
+    )
+
+    mark_economic_start(PROPOSAL_ID)
+
+    qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
+
+    try:
+        log_event(
+            ANALYSIS_ID,
+            "info",
+            f"Iniciando extracción económica para propuesta {PROPOSAL_ID}...",
+            EVENT_SOURCE,
+        )
+
+        analysis = load_analysis(ANALYSIS_ID)
+        slug = analysis["slug"]
+        collection_name = f"PROPOSAL_{slug}_{PROPOSAL_ID}"
+        logger.info(f"Target Qdrant collection: {collection_name}")
+
+        proposal = load_proposal(PROPOSAL_ID)
+        profile = load_evaluation_profile(ANALYSIS_ID)
+
+        chunks = rag_retrieve_economic_chunks(
+            qdrant,
+            openai_client,
+            collection_name,
+            ANALYSIS_ID,
+            PROPOSAL_ID,
+        )
+        logger.info(
+            f"Retrieved {len(chunks)} unique chunks from proposal for economic extraction."
+        )
+
+        if not chunks:
+            # No chunks at all -> persist an empty record with manual review flag
+            llm = LLMEconomicOffer(
+                confidence="muy_baja",
+                reasoning="No se encontraron chunks indexados de la propuesta para la extracción económica.",
+                requires_manual_review=True,
+            )
+        else:
+            user_prompt = build_user_prompt(proposal, profile, chunks)
+            llm = call_llm_with_retries(gemini_client, openai_client, user_prompt)
+            llm = post_process(llm)
+
+        upsert_economic_offer(ANALYSIS_ID, PROPOSAL_ID, llm)
+        mark_economic_result(PROPOSAL_ID)
+
+        summary_msg = (
+            f"Extracción económica completada para {proposal.get('label', PROPOSAL_ID)}: "
+            f"total={llm.total_amount} {llm.currency or ''} "
+            f"items={len(llm.line_items)} "
+            f"confidence={llm.confidence} "
+            f"manual_review={llm.requires_manual_review}"
+        )
+        logger.info(summary_msg)
+        log_event(
+            ANALYSIS_ID,
+            "info",
+            summary_msg,
+            EVENT_SOURCE,
+            {
+                "proposal_id": PROPOSAL_ID,
+                "total_amount": str(llm.total_amount)
+                if llm.total_amount is not None
+                else None,
+                "currency": llm.currency,
+                "line_items_count": len(llm.line_items),
+                "confidence": llm.confidence,
+                "requires_manual_review": llm.requires_manual_review,
+            },
+        )
+
+        notify_success()
+
+    except Exception as e:
+        mark_economic_failure(PROPOSAL_ID, str(e))
+        raise
+
+
+def main():
+    global PRICING, SYSTEM_PROMPT
+    validate_env()
+    SYSTEM_PROMPT = load_prompt("service-economic-offer-extractor/economic_offer_extractor")
+    resolve_model_config()
+    PRICING = load_pricing()
+    try:
+        process_economic_extraction()
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"HTTP Error during economic extraction: {e}"
+        if hasattr(e, "response") and e.response is not None:
+            error_msg += f" - Response: {e.response.text}"
+        notify_failure(error_msg)
+        sys.exit(0)
+    except Exception as e:
+        notify_failure(f"Failed during economic extraction: {str(e)}")
+        sys.exit(0)
+
+
+if __name__ == "__main__":
+    main()
