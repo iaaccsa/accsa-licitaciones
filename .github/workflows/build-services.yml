@@ -40,8 +40,7 @@ jobs:
           TODOS: ${{ inputs.todos }}
         run: |
           set -euo pipefail
-          cd accsa-licitaciones-services
-          TODAS=$(find . -maxdepth 1 -name 'service-*' -type d -printf '%f\n' | sort)
+          TODAS=$(find accsa-licitaciones-services -maxdepth 1 -name 'service-*' -type d -printf '%f\n' | sort)
 
           if [ "$TODOS" = "true" ]; then
             LISTA="$TODAS"
@@ -51,14 +50,20 @@ jobs:
             LISTA="$TODAS"
             echo "Sin commit base utilizable: se construyen todos."
           else
-            CAMBIOS=$(git diff --name-only "$ANTERIOR" "$GITHUB_SHA" -- .)
-            # global/ y VERSION entran en TODAS las imagenes: si cambian, hay
-            # que reconstruir los 16.
-            if printf '%s\n' "$CAMBIOS" | grep -qE '^(global/|VERSION$)'; then
+            CAMBIOS=$(git diff --name-only "$ANTERIOR" "$GITHUB_SHA")
+            if printf '%s\n' "$CAMBIOS" | grep -qx '.github/workflows/build-services.yml'; then
+              # Cambio la propia definicion del build: las 16 imagenes se
+              # regeneran con ella.
+              LISTA="$TODAS"
+              echo "Cambio el workflow: se reconstruye todo."
+            elif printf '%s\n' "$CAMBIOS" | grep -qE '^accsa-licitaciones-services/(global/|VERSION$)'; then
+              # global/ y VERSION entran en TODAS las imagenes.
               LISTA="$TODAS"
               echo "Cambio en global/ o VERSION: se reconstruye todo."
             else
-              LISTA=$(printf '%s\n' "$CAMBIOS" | grep -oE '^service-[^/]+' | sort -u || true)
+              LISTA=$(printf '%s\n' "$CAMBIOS" \
+                | grep -oE '^accsa-licitaciones-services/service-[^/]+' \
+                | sed 's|^accsa-licitaciones-services/||' | sort -u || true)
             fi
           fi
 
