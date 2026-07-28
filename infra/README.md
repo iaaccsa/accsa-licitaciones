@@ -20,8 +20,9 @@ entregadas por infraestructura ACCSA.
 | 1. Rotación de credenciales root/sysadmin | Hecho - 2026-07-28 |
 | 2. Hardening base + baseline del SO | Hecho - 2026-07-28 (ver `hardening.md`) |
 | 3. Ampliación de LVM + LV dedicado a Docker (ambas) | Hecho - 2026-07-28 |
-| 4. VM2: Docker + Registry privado | Pendiente |
-| 5. VM2: pipeline GitHub -> registry | Pendiente |
+| 4. VM2: Docker + Registry privado | Hecho - 2026-07-28 |
+| 5. VM2: runner self-hosted de GitHub | Hecho - 2026-07-28 (registrado y escuchando) |
+| 5b. VM2: workflow de build -> registry | Pendiente (unico paso que falta para tener CI) |
 | 6. VM2: runner de jobs (reemplazo de Azure Container Apps Jobs) | Pendiente |
 | 7. VM1: Docker + compose (ui, api, nginx) + TLS | Pendiente |
 | 8. Migración de config y e2e | Pendiente |

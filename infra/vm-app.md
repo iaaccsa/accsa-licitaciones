@@ -93,8 +93,9 @@ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEV+Yqv0g01hWZSxq8cZ5I9/nVc41HkCwg4535tUeMLD
 | AppArmor | Activo, perfiles por defecto de la distro |
 | `unattended-upgrades` | Solo `-security`, sin reinicio automatico |
 | Usuario de servicio | `licitaciones` (sistema, `nologin`, home `/opt/licitaciones`) |
-| Docker | No instalado |
-| Node.js / Python runtime app | No instalados |
+| Docker | Engine 29.6.2 + compose v5.3.1, root en LV dedicado |
+| Registry | `docker login` hecho contra `vm2:5000` como usuario `vm1` |
+| Node.js / Python en el host | No hacen falta: todo va en contenedores |
 
 ## Arquitectura de despliegue prevista
 
@@ -132,11 +133,9 @@ nunca `80:3000`). Los puertos publicados por Docker se saltan `ufw` (ver
 escuchando en todas las interfaces.
 
 Restringir el 8000 a VM2 de verdad necesita una regla en la cadena
-`DOCKER-USER`, porque la de `ufw` no se evalua para trafico a contenedores:
-
-```bash
-iptables -I DOCKER-USER -p tcp --dport 8000 ! -s 10.97.0.12 -j DROP
-```
+`DOCKER-USER`, porque la de `ufw` no se evalua para trafico a contenedores. Ya
+esta puesta, via `licitaciones-docker-firewall.service` (`RETURN` para
+`10.97.0.12`, `DROP` para el resto), y se reaplica en cada arranque de Docker.
 
 ### De donde salen las imagenes
 
@@ -170,18 +169,6 @@ sirve HTTP en el 80.
 - Los secretos van en un `.env` con permisos 600 propiedad de `licitaciones`,
   referenciado desde compose. No se hornean en las imagenes.
 
-### Variables de entorno a migrar
-
-- API (`accsa-licitaciones-api/.env`): `SUPABASE_URL`, `SUPABASE_KEY`,
-  `QDRANT_URL`, `QDRANT_API_KEY`, `BACKEND_API_KEY`, `SERVICE_API_BASE_URL`,
-  `SUPABASE_ARTIFACTS_BASE_URL` y el bloque `AZURE_*` (que se reemplaza por la
-  config del nuevo ejecutor de jobs en VM2).
-- `SERVICE_API_BASE_URL` deja de ser la URL de Vercel y pasa a ser la URL
-  interna de esta VM: es la direccion a la que los jobs de VM2 hacen callback,
-  por lo que debe ser alcanzable desde `10.97.0.12`.
-- UI (`accsa-licitaciones-ui/.env.local`): todas las rutas `API_*` y la URL del
-  backend apuntan ahora a `http://127.0.0.1:8000` (proxy server-side de Next).
-
 ## Checklist
 
 | # | Paso | Estado |
@@ -190,11 +177,11 @@ sirve HTTP en el 80.
 | 2 | Rotacion de contrasenas root/sysadmin | Hecho 2026-07-28 |
 | 3 | Ampliar LV + LV dedicado para `/var/lib/docker` | Hecho 2026-07-28 |
 | 4 | Hardening completo (16 medidas, ver `hardening.md`) | Hecho 2026-07-28 |
-| 5 | Instalar Docker Engine + compose plugin | Pendiente |
+| 5 | Instalar Docker Engine + compose plugin | Hecho 2026-07-28 |
 | 6 | Dockerfile de la API y de la UI (no existen todavia) | Pendiente |
 | 7 | `docker compose` en `/opt/licitaciones` + `.env` | Pendiente |
-| 8 | Regla `DOCKER-USER` para el 8000 + alta en el proxy corporativo | Pendiente |
-| 9 | `docker login` contra el registry de VM2 | Pendiente |
+| 8 | Regla `DOCKER-USER` para el 8000 (hecha) + alta en el proxy corporativo | Parcial |
+| 9 | `docker login` contra el registry de VM2 | Hecho 2026-07-28 |
 | 10 | Conectividad VM1 <-> VM2 (lanzar jobs / recibir callbacks) | Pendiente |
 | 11 | Pruebas e2e del pipeline completo | Pendiente |
 

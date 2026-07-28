@@ -85,13 +85,15 @@ Misma clave publica que VM1 (ver `vm-app.md`).
 | Puertos en escucha | 22 (sshd), 53 (resolver local) |
 | AppArmor | Activo, perfiles por defecto de la distro |
 | `unattended-upgrades` | Solo `-security`, sin reinicio automatico |
-| Usuario de servicio | `deploy` (sistema, `nologin`, home `/opt/deploy`) |
-| Docker | No instalado |
+| Usuario de servicio | `deploy` (sistema, `nologin`, home `/opt/deploy`, en grupo `docker`) |
+| Docker | Engine 29.6.2 + compose v5.3.1, root en LV dedicado |
 
-> **Al instalar Docker:** `docker run -p` se salta las reglas de `ufw`. Publicar
-> el registry como `-p 10.97.0.12:5000:5000` o filtrar en la cadena
-> `DOCKER-USER`, o la regla que lo limita a VM1 no servira de nada. Detalle en
-> `hardening.md`.
+> **Resuelto lo de Docker vs ufw:** el registry se publica sobre la IP concreta
+> (`-p 10.97.0.12:5000:5000`) y el filtrado real lo hace
+> `licitaciones-docker-firewall.service`, que inserta en la cadena
+> `DOCKER-USER` un `RETURN` para `10.97.0.11` y un `DROP` para el resto.
+> Verificado: desde VM1 el pull funciona, desde una estacion por VPN el puerto
+> no responde.
 
 ## Servicios a alojar
 
@@ -126,15 +128,14 @@ API en VM1 ──lanza job──► ejecutor en VM2 ──docker run──► se
                                           callback HTTP ────┘──► API en VM1
 ```
 
-Componentes a instalar en VM2:
+Estado de los componentes de VM2:
 
-| Componente | Detalle |
-|------------|---------|
-| Docker Engine + containerd | Repositorio oficial de Docker para Ubuntu |
-| Registry privado | `registry:2` con almacenamiento en `/var/lib/registry`, auth `htpasswd` y TLS |
-| nginx (opcional) | Terminacion TLS delante del registry, en 443, con `client_max_body_size` alto |
-| Ejecutor de jobs | Reemplazo de Azure Container Apps Jobs (ver abajo) |
-| Runner de GitHub self-hosted | Solo si se elige esa opcion de pipeline |
+| Componente | Estado |
+|------------|--------|
+| Docker Engine 29.6.2 + compose v5.3.1 | Instalado, storage driver `overlayfs`, root en el LV dedicado |
+| Registry privado `registry:3` | Corriendo, TLS + htpasswd, unidad `licitaciones-registry.service` |
+| Runner de GitHub self-hosted | Registrado y escuchando (`github-runner.md`) |
+| Ejecutor de jobs | **Pendiente** (reemplazo de Azure Container Apps Jobs, ver abajo) |
 
 ### Registry
 
@@ -143,14 +144,38 @@ Sirve **18 imagenes**, no 16: los 16 servicios mas `licitaciones-ui` y
 su propio hardware (2 vCPU / 4 GB no dan para un `next build` comodo). La regla
 de `ufw` que abre el 5000 solo a `10.97.0.11` es justamente para eso.
 
-- Nombre previsto: `vm2:5000` o `registry.licitaciones.local`.
-- Auth basica con `htpasswd`: usuario de escritura para el pipeline, usuario
-  read-only para el ejecutor local y para VM1.
-- TLS obligatorio: sin el, cada cliente Docker necesita `insecure-registries`,
-  que hay que configurar en cada nodo y no escala. VM1 necesitara ademas confiar
-  en la CA que firme ese certificado.
-- Politica de retencion: `latest` + tag por commit SHA. Con 18 imagenes y 35 GB
-  de LV hace falta garbage collection periodica (`registry garbage-collect`).
+Desplegado el 2026-07-28:
+
+| Item | Valor |
+|------|-------|
+| Endpoint | `https://vm2:5000` (tambien `registry.licitaciones.local`, `10.97.0.12`) |
+| Imagen | `registry:3` |
+| Datos | volumen `licitaciones-registry-data` (queda en el LV de Docker) |
+| Config | `/etc/licitaciones-registry/{certs,auth}`, modo 700 |
+| Unidad | `licitaciones-registry.service`, enabled |
+| Borrado | `REGISTRY_STORAGE_DELETE_ENABLED=true` (necesario para el GC) |
+
+Los nombres `vm1`, `vm2` y `registry.licitaciones.local` se resuelven por
+`/etc/hosts` en ambas VMs: no hay DNS interno.
+
+**TLS con CA propia.** No habia CA corporativa disponible, asi que se genero una
+en VM2 (`ACCSA Licitaciones Internal CA`, 10 anos) y con ella el certificado del
+registry (5 anos, SAN para los tres nombres y las dos IPs). La CA esta instalada
+en las dos VMs, en `/etc/docker/certs.d/vm2:5000/ca.crt` y en el almacen del
+sistema. Asi se evita `insecure-registries`.
+
+**Auth basica con htpasswd (bcrypt), dos cuentas:** `pipeline` y `vm1`. Ojo:
+el registry con htpasswd **no tiene ACL por usuario**, las dos pueden leer y
+escribir. Estan separadas para poder rotar o revocar por origen, no por permiso.
+Contrasenas en `vm-credentials.md`.
+
+**El `docker login` vive en las maquinas, no en GitHub:** `deploy` en VM2 (para
+el runner) y `root` en VM1 (que es quien corre los contenedores).
+**Retencion pendiente de definir:** la idea es `latest` + tag por commit SHA.
+Con 18 imagenes y 35 GB de LV hace falta garbage collection periodica. Ojo con
+un detalle del registry: `registry garbage-collect` libera los blobs pero **deja
+el repositorio vacio en el catalogo**; para que desaparezca hay que borrar su
+directorio de `/var/lib/registry/docker/registry/v2/repositories/`.
 
 ### Ejecutor de jobs (el cambio de mayor impacto)
 
@@ -209,9 +234,9 @@ recomendable en un runner de 4 vCPU).
 | 2 | Rotacion de contrasenas root/sysadmin | Hecho 2026-07-28 |
 | 3 | Particionado: LV dedicado para `/var/lib/docker` + ampliar `/` | Hecho 2026-07-28 |
 | 4 | Hardening completo (16 medidas, ver `hardening.md`) | Hecho 2026-07-28 |
-| 5 | Instalar Docker Engine | Pendiente |
-| 6 | Desplegar registry privado con TLS + htpasswd | Pendiente |
-| 7 | Elegir e implementar la estrategia de pipeline GitHub | Pendiente |
+| 5 | Instalar Docker Engine | Hecho 2026-07-28 |
+| 6 | Desplegar registry privado con TLS + htpasswd | Hecho 2026-07-28 |
+| 7 | Runner self-hosted registrado y operativo | Hecho 2026-07-28 |
 | 8 | Portar la matriz de build de Azure DevOps a GitHub Actions | Pendiente |
 | 9 | Implementar el ejecutor de jobs + limite de concurrencia | Pendiente |
 | 10 | Cambiar `_launch_job` en la API para usar el ejecutor | Pendiente |

@@ -50,16 +50,28 @@ Elegir **Linux / x64**. GitHub muestra una pagina con la URL de registro y un
 **token temporal (caduca en 1 hora)**. Hacen falta esos dos valores para
 configurar el runner en VM2; no se guardan en el repo.
 
-### 5. Secretos
+### 5. Secretos: no hace falta ninguno para el registry
 
-`Settings -> Secrets and variables -> Actions`. Se necesitan para el `docker
-login` del workflow contra el registry local:
+El runner corre en **la misma VM que el registry**, asi que el `docker login` ya
+esta hecho en la maquina, como el usuario `deploy`:
 
-| Secreto | Valor |
-|---------|-------|
-| `REGISTRY_URL` | `localhost:5000` (el runner corre en la misma VM que el registry) |
-| `REGISTRY_USER` | Usuario de escritura del `htpasswd` del registry |
-| `REGISTRY_PASSWORD` | Su contrasena |
+```
+/opt/deploy/.docker/config.json   (0600, propiedad de deploy)
+```
+
+El workflow pushea a `vm2:5000/...` sin declarar credenciales y GitHub nunca ve
+la contrasena del registry. Estan en `vm-credentials.md`.
+
+Guardar la contrasena como secreto de GitHub no habria agregado seguridad real
+en esta topologia: quien pueda ejecutar un workflow ya tiene root en VM2 y puede
+leer el `htpasswd` del registry directamente. El control que importa es quien
+puede disparar workflows (pasos 3 y 6).
+
+Cuando aparezca un secreto que **si** tenga que venir de GitHub (una API key
+para tests, por ejemplo), la eleccion entre secreto de repositorio y de
+*environment* depende del plan: en repos privados, los *environments* y sus
+secretos requieren GitHub Pro, Team o Enterprise. Con Free solo hay secretos de
+repositorio, visibles desde cualquier rama.
 
 ### 6. Proteger la rama
 
@@ -67,25 +79,70 @@ login` del workflow contra el registry local:
 de mergear. Quien pueda escribir en `main` puede ejecutar codigo arbitrario en
 VM2 (ver "Riesgo").
 
-## Lo que se hace despues en VM2
+## Estado actual (2026-07-28)
 
-Con la URL y el token del paso 4:
+Runner **registrado y en marcha**.
+
+| Item | Valor |
+|------|-------|
+| Version | 2.336.0 |
+| Nombre | `vm2-licitaciones` |
+| Etiquetas | `self-hosted`, `Linux`, `X64`, `vm2` |
+| Repo | `iaaccsa/accsa-licitaciones` |
+| Ruta | `/opt/deploy/actions-runner`, work dir `/opt/deploy/_work` |
+| Usuario | `deploy` (sistema, `nologin`) |
+| Servicio | `actions.runner.iaaccsa-accsa-licitaciones.vm2-licitaciones.service`, enabled + active |
+| Consumo en reposo | 48 MB de RAM |
+
+Log de arranque: `Connected to GitHub` / `Listening for Jobs`.
 
 ```bash
-sudo -u deploy -H bash            # usuario de servicio ya creado
-mkdir -p /opt/deploy/actions-runner && cd /opt/deploy/actions-runner
-curl -o actions-runner.tar.gz -L <URL del tarball que muestra GitHub>
-tar xzf actions-runner.tar.gz
-./config.sh --url <URL del repo u organizacion> --token <TOKEN> \
-            --name vm2-licitaciones --labels self-hosted,linux,x64,vm2 \
-            --work /opt/deploy/_work --unattended
-exit
-sudo ./svc.sh install deploy      # servicio systemd corriendo como 'deploy'
-sudo ./svc.sh start
+ssh vm2-services 'systemctl status actions.runner.iaaccsa-accsa-licitaciones.vm2-licitaciones --no-pager'
 ```
 
-El usuario `deploy` tiene que estar en el grupo `docker` para poder construir
-imagenes. Eso se hace al instalar el engine.
+Docker esta instalado y `deploy` pertenece al grupo `docker`. **Un cambio de
+grupo no lo toma un servicio ya arrancado**: hubo que reiniciar la unidad del
+runner despues de `usermod -aG docker deploy`.
+
+Verificado de punta a punta: `deploy` construye, etiqueta y hace push a
+`vm2:5000`, y VM1 hace pull de esa misma imagen.
+
+Lo unico que falta para tener CI es **el workflow**.
+
+## Lo que se hizo en VM2 (referencia)
+
+Con la URL y el token del paso 4, como root:
+
+```bash
+VER=$(curl -s https://api.github.com/repos/actions/runner/releases/latest \
+      | grep -m1 '"tag_name"' | sed 's/.*"v\([^"]*\)".*/\1/')
+install -d -o deploy -g deploy /opt/deploy/actions-runner /opt/deploy/_work
+cd /opt/deploy/actions-runner
+curl -fsSL -o runner.tar.gz \
+  "https://github.com/actions/runner/releases/download/v${VER}/actions-runner-linux-x64-${VER}.tar.gz"
+tar xzf runner.tar.gz && rm -f runner.tar.gz
+chown -R deploy:deploy /opt/deploy/actions-runner
+./bin/installdependencies.sh
+
+# config.sh se niega a correr como root: va con runuser
+runuser -u deploy -- ./config.sh \
+  --url https://github.com/iaaccsa/accsa-licitaciones --token <TOKEN> \
+  --name vm2-licitaciones --labels vm2 \
+  --work /opt/deploy/_work --unattended --replace
+
+./svc.sh install deploy    # servicio systemd corriendo como 'deploy'
+./svc.sh start
+```
+
+Detalles que importan:
+
+- `self-hosted`, `Linux` y `X64` se agregan solas; en `--labels` va solo lo
+  propio (`vm2`).
+- `deploy` tiene shell `nologin`, asi que hay que usar `runuser -u deploy --`
+  (o `sudo -u`), no `su`.
+- El tarball son 216 MB; `installdependencies.sh` instala lo que .NET necesita.
+- Para poder construir imagenes, `deploy` tiene que quedar en el grupo `docker`.
+  Eso se hace al instalar el engine.
 
 ## Riesgo que hay que tener presente
 
