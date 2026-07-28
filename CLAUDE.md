@@ -98,18 +98,25 @@ service-file-extractor
         ├─ service-file-metadata-extractor (fan-out per file)
         └─ service-digital-sig-extractor (fan-out per original file)
             → service-documents-classifier (fan-in)
-              → service-documents-grouper
-                  ├─ service-tender-classifier
-                  │     → service-requirement-extractor ─┐
-                  └─ service-build-proposal-index ───────┤
-                       (fan-out per proposal →           │
-                        PROPOSAL_{slug}_{proposal_id})   │
-                                                         ↓
-                                          service-compliance-matcher
-                                          (fan-in; fan-out per proposal)
-                                            → service-admissibility-gate
-                                              → service-compliance-summarizer
+              → service-documents-grouper [pause_after]
+                → service-admissibility-extractor [pause_after]
+                  → service-build-proposal-index
+                     (fan-out per proposal → PROPOSAL_{slug}_{proposal_id})
+                    → service-admissibility-matcher (fan-out per proposal)
+                      → service-admissibility-gate [pause_after]
+                        → service-tender-classifier
+                          → service-requirement-extractor [pause_after]
+                            → service-compliance-matcher
+                               (fan-out per admitida proposal)
+                              ├─ service-compliance-summarizer
+                              └─ service-economic-offer-extractor
 ```
+
+The chain is linear, so `analyses.paused_at_service` (a scalar) is enough to
+resume: there is only ever one pending approval. `on_job_completed` cuts the
+pipeline short when `service-admissibility-extractor` produced zero requirements,
+and `resume_pipeline` cuts it when no proposal is admitida after the gate (that
+cut cannot live in `on_job_completed` because the gate pauses first).
 
 **Orchestration flow:**
 1. `POST /api/v1/analyses/` -> uploads ZIP to Supabase Storage, creates record, initializes workflow steps, calls `job_orchestrator_service.start_pipeline()`

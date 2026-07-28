@@ -92,10 +92,7 @@
   },
   {
     "service": "service-documents-grouper",
-    "next_services": [
-      "service-tender-classifier",
-      "service-build-proposal-index"
-    ],
+    "next_services": ["service-admissibility-extractor"],
     "code": "documents_grouper",
     "display_name": "Agrupación de Documentos",
     "parent": "documents_classifier",
@@ -106,48 +103,36 @@
     "phase": "document_processing"
   },
   {
-    "service": "service-tender-classifier",
-    "next_services": ["service-requirement-extractor"],
-    "code": "tender_classifier",
-    "display_name": "Determinación Sistema de Evaluación",
+    "service": "service-admissibility-extractor",
+    "next_services": ["service-build-proposal-index"],
+    "code": "admissibility_extraction",
+    "display_name": "Extracción de Requisitos de Admisibilidad",
     "parent": "documents_grouper",
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
-    "pause_after": false,
-    "phase": "requirement_extraction"
+    "pause_after": true,
+    "phase": "admissibility_extraction"
   },
   {
     "service": "service-build-proposal-index",
-    "next_services": [],
+    "next_services": ["service-admissibility-matcher"],
     "code": "build_proposal_index",
     "display_name": "Indexación por Propuesta",
-    "parent": "documents_grouper",
+    "parent": "admissibility_extraction",
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
     "pause_after": false,
     "fan_out_by": "proposal",
-    "phase": "requirement_extraction"
-  },
-  {
-    "service": "service-requirement-extractor",
-    "next_services": ["service-admissibility-matcher"],
-    "code": "requirement_extraction",
-    "display_name": "Extracción de Requisitos",
-    "parent": "tender_classifier",
-    "initial_status": "pending",
-    "is_initial": false,
-    "is_final": false,
-    "pause_after": true,
-    "phase": "requirement_extraction"
+    "phase": "award_check"
   },
   {
     "service": "service-admissibility-matcher",
     "next_services": ["service-admissibility-gate"],
     "code": "admissibility_matcher",
     "display_name": "Match de Admisibilidad",
-    "parent": "requirement_extraction",
+    "parent": "build_proposal_index",
     "initial_status": "pending",
     "is_initial": false,
     "is_final": false,
@@ -157,7 +142,7 @@
   },
   {
     "service": "service-admissibility-gate",
-    "next_services": ["service-compliance-matcher"],
+    "next_services": ["service-tender-classifier"],
     "code": "admissibility_gate",
     "display_name": "Chequeo de Admisibilidad",
     "parent": "admissibility_matcher",
@@ -169,6 +154,30 @@
     "phase": "award_check"
   },
   {
+    "service": "service-tender-classifier",
+    "next_services": ["service-requirement-extractor"],
+    "code": "tender_classifier",
+    "display_name": "Determinación Sistema de Evaluación",
+    "parent": "admissibility_gate",
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false,
+    "pause_after": false,
+    "phase": "requirement_extraction"
+  },
+  {
+    "service": "service-requirement-extractor",
+    "next_services": ["service-compliance-matcher"],
+    "code": "requirement_extraction",
+    "display_name": "Extracción de Otros Requisitos",
+    "parent": "tender_classifier",
+    "initial_status": "pending",
+    "is_initial": false,
+    "is_final": false,
+    "pause_after": true,
+    "phase": "requirement_extraction"
+  },
+  {
     "service": "service-compliance-matcher",
     "next_services": [
       "service-compliance-summarizer",
@@ -176,7 +185,7 @@
     ],
     "code": "compliance_matcher",
     "display_name": "Matcher de Cumplimiento",
-    "parent": "admissibility_gate",
+    "parent": "requirement_extraction",
     "require_admitida": true,
     "initial_status": "pending",
     "is_initial": false,

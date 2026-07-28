@@ -12,14 +12,14 @@
     "type": "approval"
   },
   {
-    "code": "requirement_extraction",
-    "display_name": "Extracción de Requisitos",
+    "code": "admissibility_extraction",
+    "display_name": "Extracción de Requisitos de Admisibilidad",
     "order": 3,
     "type": "processing"
   },
   {
-    "code": "requirement_approval",
-    "display_name": "Esperando Aprobación de Requisitos",
+    "code": "admissibility_req_approval",
+    "display_name": "Esperando Aprobación de Requisitos de Admisibilidad",
     "order": 4,
     "type": "approval"
   },
@@ -36,9 +36,21 @@
     "type": "approval"
   },
   {
+    "code": "requirement_extraction",
+    "display_name": "Extracción de Otros Requisitos",
+    "order": 7,
+    "type": "processing"
+  },
+  {
+    "code": "requirement_approval",
+    "display_name": "Esperando Aprobación de Requisitos",
+    "order": 8,
+    "type": "approval"
+  },
+  {
     "code": "final_compliance_check",
     "display_name": "Chequeo Final",
-    "order": 7,
+    "order": 9,
     "type": "processing"
   }
 ]

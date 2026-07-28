@@ -5,6 +5,7 @@ from uuid import UUID
 from app.core.azure import azure_container_apps_client
 from app.core.config import get_settings
 from app.config.jobs_config import get_root_jobs, get_next_jobs, get_parent_jobs, is_valid_job, is_final_job, get_final_jobs, is_fan_out_job, get_fan_out_type, is_pause_after_job, get_requires_admitida, get_step_code_for_service
+from app.repositories.admissibility_requirement_repository import admissibility_requirement_repository
 from app.repositories.original_file_repository import original_file_repository
 from app.repositories.processed_file_repository import processed_file_repository
 from app.repositories.proposal_repository import proposal_repository
@@ -186,6 +187,17 @@ class JobOrchestratorService:
                 f"Workflow step for {service_name} already completed by a concurrent callback "
                 f"— skipping for analysis_id={analysis_id}"
             )
+            return []
+
+        # Nothing extracted from the pliego: there is no admissibility to approve or
+        # check, so skip the remaining jobs instead of pausing on an empty list.
+        if service_name == "service-admissibility-extractor" and not admissibility_requirement_repository.get_by_analysis_id(str(analysis_id), limit=1):
+            self._log_event(
+                analysis_id, "info",
+                "No se extrajeron requisitos de admisibilidad del pliego: se omiten los jobs restantes y se finaliza el análisis.",
+                {"admissibility_requirement_count": 0},
+            )
+            self._complete_downstream_and_finalize(analysis_id, service_name)
             return []
 
         # Check if pipeline should pause for user approval (skip when hitl is disabled)
@@ -500,6 +512,17 @@ class JobOrchestratorService:
             str(analysis_id),
             {"status": "processing", "paused_at_service": None}
         )
+
+        # Same cut as on_job_completed, which never runs for a job that pauses:
+        # with no admitida proposal there is nothing left to extract or match.
+        if paused_at_service == "service-admissibility-gate" and not proposal_repository.get_admitidas_by_analysis_id(analysis_id):
+            self._log_event(
+                analysis_id, "info",
+                "Sin propuestas admitidas tras el chequeo de admisibilidad: se omiten los jobs restantes y se finaliza el análisis.",
+                {"admitidas": 0}
+            )
+            self._complete_downstream_and_finalize(analysis_id, paused_at_service)
+            return []
 
         # Launch next jobs from where we paused
         next_jobs = get_next_jobs(paused_at_service)
