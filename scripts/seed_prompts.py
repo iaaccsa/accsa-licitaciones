@@ -61,8 +61,8 @@ PROMPTS = [
         ],
     },
     {
-        "key": "service-requirement-extractor/admissibility_extractor",
-        "service": "service-requirement-extractor",
+        "key": "service-admissibility-extractor/admissibility_extractor",
+        "service": "service-admissibility-extractor",
         "filename": "prompt_admissibility_extractor.md",
         "title": "Extractor de admisibilidad",
         "description": "Extrae requisitos de admisibilidad del pliego.",

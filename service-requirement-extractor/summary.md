@@ -3,6 +3,8 @@
 ## Proposito
 Extrae todos los requerimientos atomicos del pliego (ya indexado en Qdrant) y los clasifica con un esquema multi-eje (7 ejes), alineado al evaluation_profile detectado previamente por service-tender-classifier.
 
+Los requisitos de admisibilidad se extraen aparte, antes en el pipeline, por `service-admissibility-extractor` y viven en la tabla `admissibility_requirements`. Este servicio puede seguir marcando el rol `admisibilidad_*` en sus propios requerimientos (`analysis_requirements`), pero no los persiste como requisitos de admisibilidad.
+
 ## Flujo
 
 1. Carga el evaluation_profile via `GET /api/v1/tender-classifications/{analysis_id}` (exige profile_version=2).

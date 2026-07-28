@@ -1,11 +1,13 @@
 """
-Requirement Extractor Service
-==============================
-Extracts atomic requirements from a unified tender document already indexed in
-Qdrant, classifies each requirement on 7 axes (roles, mapped_factors, domain,
-weight, verification_method, temporal_scope, citations), deduplicates across
-batches, validates against the evaluation_profile produced by
-service-tender-classifier, and persists the result via the backend API.
+Admissibility Extractor Service
+===============================
+Extracts admissibility requirements (excluyentes: obligatoria / subsanable) from
+a unified tender document already indexed in Qdrant, deduplicates across batches,
+assigns ADM-nnn codes and persists the result via the backend API.
+
+Runs a single LLM pass per batch with a dedicated admissibility prompt. It does
+NOT read the evaluation_profile and has no dependency on service-tender-classifier;
+the general (7-axis) extraction lives in service-requirement-extractor.
 
 Required environment variables:
   - GOOGLE_API_KEY
@@ -17,8 +19,7 @@ Required environment variables:
   - API_EVENTS_PATH
   - API_ANALYSES_PATH
   - API_PROCESSED_FILES_PATH
-  - API_TENDER_CLASSIFICATIONS_PATH
-  - API_ANALYSIS_REQUIREMENTS_PATH
+  - API_ADMISSIBILITY_REQUIREMENTS_PATH
   - API_JOBS_CALLBACK
   - ANALYSIS_ID
 """
@@ -33,8 +34,7 @@ import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Annotated, Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import Annotated, Any, Callable, Dict, List, Literal, Optional, Tuple
 
 import requests
 from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
@@ -44,7 +44,6 @@ from google.genai import types as genai_types
 from openai import OpenAI
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 from qdrant_client import QdrantClient
-from qdrant_client.http import models
 from supabase_logger import log_event, make_session, setup_logger
 
 # ---------------------------------------------------------------------------
@@ -59,12 +58,13 @@ API_KEY = os.environ.get("API_KEY")
 API_EVENTS_PATH = os.environ.get("API_EVENTS_PATH")
 API_ANALYSES_PATH = os.environ.get("API_ANALYSES_PATH")
 API_PROCESSED_FILES_PATH = os.environ.get("API_PROCESSED_FILES_PATH")
-API_TENDER_CLASSIFICATIONS_PATH = os.environ.get("API_TENDER_CLASSIFICATIONS_PATH")
-API_ANALYSIS_REQUIREMENTS_PATH = os.environ.get("API_ANALYSIS_REQUIREMENTS_PATH")
+API_ADMISSIBILITY_REQUIREMENTS_PATH = os.environ.get(
+    "API_ADMISSIBILITY_REQUIREMENTS_PATH"
+)
 API_JOBS_CALLBACK = os.environ.get("API_JOBS_CALLBACK")
 ANALYSIS_ID = os.environ.get("ANALYSIS_ID")
 
-SERVICE_NAME = "service-requirement-extractor"
+SERVICE_NAME = "service-admissibility-extractor"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 # Primary: OpenAI. Fallback: Gemini.
 OPENAI_MODEL = "gpt-4.1-mini"
@@ -103,15 +103,7 @@ SESSION = make_session()
 # ---------------------------------------------------------------------------
 # Constrained value types
 # ---------------------------------------------------------------------------
-RequirementRole = Literal[
-    "admisibilidad_obligatoria",
-    "admisibilidad_subsanable",
-    "puntuable",
-    "penalizador",
-    "informativo",
-    "preferencia_legal",
-    "desconocido_pendiente_pliego_general",
-]
+AdmissibilityRole = Literal["admisibilidad_obligatoria", "admisibilidad_subsanable"]
 
 RequirementVerificationMethod = Literal[
     "attached_document",
@@ -172,23 +164,10 @@ ROLE_ALIASES: Dict[str, str] = {
     "obligatoria": "admisibilidad_obligatoria",
     "admisibilidad": "admisibilidad_obligatoria",
     "subsanable": "admisibilidad_subsanable",
-    "puntua": "puntuable",
-    "puntuado": "puntuable",
-    "penaliza": "penalizador",
-    "informacion": "informativo",
-    "informativa": "informativo",
-    "preferencia": "preferencia_legal",
-    "pliego_general": "desconocido_pendiente_pliego_general",
-    "desconocido": "desconocido_pendiente_pliego_general",
 }
 ROLE_ALLOWED = {
     "admisibilidad_obligatoria",
     "admisibilidad_subsanable",
-    "puntuable",
-    "penalizador",
-    "informativo",
-    "preferencia_legal",
-    "desconocido_pendiente_pliego_general",
 }
 DOMAIN_ALIASES: Dict[str, str] = {
     "tecnico": "technical",
@@ -295,78 +274,18 @@ CONFIDENCE_ALIASES: Dict[str, str] = {
     "muy_low": "muy_baja",
 }
 CONFIDENCE_ALLOWED = {"alta", "media", "baja", "muy_baja"}
-WEIGHT_TYPE_ALIASES: Dict[str, str] = {
-    "puntos": "points",
-    "puntaje": "points",
-    "puntajes": "points",
-    "porcentaje": "percent",
-    "porcentajes": "percent",
-    "porciento": "percent",
-    "percentual": "percent",
-    "formula": "formula",
-    "fórmula": "formula",
-    "ninguno": "none",
-    "sin": "none",
-    "n_a": "none",
-    "na": "none",
-}
-WEIGHT_TYPE_ALLOWED = {"points", "percent", "formula", "none"}
-BLOCK_ALIASES: Dict[str, str] = {
-    "cualitativo": "cualitativo",
-    "calidad": "cualitativo",
-    "cuantitativo": "cuantitativo",
-    "cantidad": "cuantitativo",
-}
-BLOCK_ALLOWED = {"cualitativo", "cuantitativo"}
 
 _normalize_role = _make_normalizer(ROLE_ALIASES, ROLE_ALLOWED)
 _normalize_domain = _make_normalizer(DOMAIN_ALIASES, DOMAIN_ALLOWED)
 _normalize_verification = _make_normalizer(VERIFICATION_ALIASES, VERIFICATION_ALLOWED)
 _normalize_temporal = _make_normalizer(TEMPORAL_ALIASES, TEMPORAL_ALLOWED)
 _normalize_confidence = _make_normalizer(CONFIDENCE_ALIASES, CONFIDENCE_ALLOWED)
-_normalize_weight_type = _make_normalizer(WEIGHT_TYPE_ALIASES, WEIGHT_TYPE_ALLOWED)
-_normalize_block = _make_normalizer(BLOCK_ALIASES, BLOCK_ALLOWED)
 
 
 # ---------------------------------------------------------------------------
 # Data Models
 # ---------------------------------------------------------------------------
 CONFIDENCE_ORDER = {"alta": 3, "media": 2, "baja": 1, "muy_baja": 0}
-
-
-class MappedFactor(BaseModel):
-    factor_id: str
-    weight_type: Literal["points", "percent", "formula", "none"]
-    weight_value: Optional[float] = None
-    formula: Optional[str] = None
-    block: Optional[Literal["cualitativo", "cuantitativo"]] = None
-
-    @field_validator("weight_type", mode="before")
-    @classmethod
-    def _norm_weight_type(cls, v):
-        return _normalize_weight_type(v)
-
-    @field_validator("block", mode="before")
-    @classmethod
-    def _norm_block(cls, v):
-        return _normalize_block(v) if v is not None else v
-
-
-class RequirementWeight(BaseModel):
-    type: Literal["points", "percent", "formula", "none"] = "none"
-    value: Optional[float] = None
-    formula: Optional[str] = None
-    block: Optional[Literal["cualitativo", "cuantitativo"]] = None
-
-    @field_validator("type", mode="before")
-    @classmethod
-    def _norm_type(cls, v):
-        return _normalize_weight_type(v)
-
-    @field_validator("block", mode="before")
-    @classmethod
-    def _norm_block(cls, v):
-        return _normalize_block(v) if v is not None else v
 
 
 class RequirementCitation(BaseModel):
@@ -376,14 +295,32 @@ class RequirementCitation(BaseModel):
     snippet: str
 
 
-class RawRequirement(BaseModel):
+def _drop_uncited_requirements(data):
+    """Drop requirements the model returned without citations.
+
+    gpt-4.1-mini occasionally emits a requirement with empty `citations`. Such a
+    requirement is ungrounded and could never pass `min_length=1` downstream, so
+    dropping just that item lets the rest of the batch validate instead of failing
+    the whole batch and falling back to Gemini.
+    """
+    if isinstance(data, dict):
+        reqs = data.get("requirements")
+        if isinstance(reqs, list):
+            data = {
+                **data,
+                "requirements": [
+                    r for r in reqs if not isinstance(r, dict) or r.get("citations")
+                ],
+            }
+    return data
+
+
+class AdmissibilityRawRequirement(BaseModel):
     requirement_text: str
     requirement_summary: Optional[str] = None
-    roles: Annotated[List[RequirementRole], Field(min_length=1)]
-    mapped_factors: List[MappedFactor] = Field(default_factory=list)
+    roles: Annotated[List[AdmissibilityRole], Field(min_length=1)]
     domain: RequirementDomain = "other"
-    weight: RequirementWeight = Field(default_factory=RequirementWeight)
-    verification_method: RequirementVerificationMethod = "other"
+    verification_method: RequirementVerificationMethod = "auto_verifiable_from_offer"
     temporal_scope: RequirementTemporalScope = "at_bid_time"
     citations: Annotated[List[RequirementCitation], Field(min_length=1)]
     confidence: Literal["alta", "media", "baja", "muy_baja"] = "media"
@@ -418,28 +355,8 @@ class RawRequirement(BaseModel):
         return _normalize_confidence(v)
 
 
-def _drop_uncited_requirements(data):
-    """Drop requirements the model returned without citations.
-
-    gpt-4.1-mini occasionally emits a requirement with empty `citations`. Such a
-    requirement is ungrounded and could never pass `min_length=1` downstream, so
-    dropping just that item lets the rest of the batch validate instead of failing
-    the whole batch and falling back to Gemini.
-    """
-    if isinstance(data, dict):
-        reqs = data.get("requirements")
-        if isinstance(reqs, list):
-            data = {
-                **data,
-                "requirements": [
-                    r for r in reqs if not isinstance(r, dict) or r.get("citations")
-                ],
-            }
-    return data
-
-
-class BatchResponse(BaseModel):
-    requirements: List[RawRequirement]
+class AdmissibilityBatchResponse(BaseModel):
+    requirements: List[AdmissibilityRawRequirement]
 
     @model_validator(mode="before")
     @classmethod
@@ -447,14 +364,14 @@ class BatchResponse(BaseModel):
         return _drop_uncited_requirements(data)
 
 
-class FinalRequirement(RawRequirement):
+class FinalAdmissibilityRequirement(AdmissibilityRawRequirement):
     requirement_code: str
 
 
 # ---------------------------------------------------------------------------
-# System Prompts
+# System Prompt
 # ---------------------------------------------------------------------------
-SYSTEM_PROMPT = None  # loaded at runtime in main() via load_prompt
+ADMISSIBILITY_SYSTEM_PROMPT = None  # loaded at runtime in main() via load_prompt
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -521,8 +438,10 @@ def validate_env():
             ("API_EVENTS_PATH", API_EVENTS_PATH),
             ("API_ANALYSES_PATH", API_ANALYSES_PATH),
             ("API_PROCESSED_FILES_PATH", API_PROCESSED_FILES_PATH),
-            ("API_TENDER_CLASSIFICATIONS_PATH", API_TENDER_CLASSIFICATIONS_PATH),
-            ("API_ANALYSIS_REQUIREMENTS_PATH", API_ANALYSIS_REQUIREMENTS_PATH),
+            (
+                "API_ADMISSIBILITY_REQUIREMENTS_PATH",
+                API_ADMISSIBILITY_REQUIREMENTS_PATH,
+            ),
             ("API_JOBS_CALLBACK", API_JOBS_CALLBACK),
             ("ANALYSIS_ID", ANALYSIS_ID),
         ]
@@ -531,6 +450,21 @@ def validate_env():
     if missing:
         logger.error(f"Missing required environment variables: {', '.join(missing)}")
         sys.exit(1)
+
+
+def notify_success():
+    try:
+        api_request(
+            "POST",
+            API_JOBS_CALLBACK,
+            {
+                "service_name": SERVICE_NAME,
+                "analysis_id": ANALYSIS_ID,
+                "status": "success",
+            },
+        )
+    except Exception as e:
+        logger.error(f"Failed to notify job callback on success: {e}")
 
 
 def notify_failure(error_msg: str):
@@ -557,31 +491,6 @@ def notify_failure(error_msg: str):
         )
     except Exception as e:
         logger.error(f"Failed to notify job callback: {e}")
-
-
-# ---------------------------------------------------------------------------
-# Profile
-# ---------------------------------------------------------------------------
-def get_evaluation_profile(analysis_id: str) -> dict:
-    profile = api_request("GET", f"{API_TENDER_CLASSIFICATIONS_PATH}{analysis_id}")
-    if not isinstance(profile, dict):
-        raise RuntimeError(
-            f"Unexpected response type from tender-classifications: {type(profile)}"
-        )
-    profile_version = profile.get("profile_version")
-    if profile_version is not None and profile_version != 2:
-        raise RuntimeError(
-            f"evaluation_profile version mismatch: expected 2, got {profile_version}. "
-            "Re-run service-tender-classifier for this analysis before extracting requirements."
-        )
-    if not profile.get("enabled_roles"):
-        raise RuntimeError(
-            "evaluation_profile has no enabled_roles. Cannot extract requirements without a valid profile."
-        )
-    logger.info(
-        f"Loaded evaluation profile: system_type={profile.get('system_type')}, factors={len(profile.get('factors', []))}"
-    )
-    return profile
 
 
 # ---------------------------------------------------------------------------
@@ -678,19 +587,16 @@ def make_batches(chunks: List[dict], size: int, overlap: int) -> List[List[dict]
 # ---------------------------------------------------------------------------
 # LLM extraction
 # ---------------------------------------------------------------------------
-def build_user_prompt(profile: dict, batch: List[dict]) -> str:
-    profile_json = json.dumps(profile, ensure_ascii=False, indent=2)
+def build_admissibility_user_prompt(batch: List[dict]) -> str:
     chunks_text = "\n\n".join(
         f"[chunk_id={c['chunk_id']} page_number={c['page_number'] or ''} filename={c.get('filename') or ''}]"
         f"\n{c['text']}"
         for c in batch
     )
     return (
-        f"EVALUATION PROFILE (already detected for this pliego):\n"
-        f"<json>\n{profile_json}\n</json>\n\n"
         f"BATCH (chunks from the unified pliego document, ordered by position):\n"
         f"<chunks>\n{chunks_text}\n</chunks>\n\n"
-        "Extract every atomic requirement from these chunks following the rules above "
+        "Extract every admissibility requirement from these chunks following the rules above "
         "and respond with a single JSON object."
     )
 
@@ -744,7 +650,7 @@ def _log_dropped_uncited(batch_id, label, provider, raw, result) -> None:
 
 @dataclass
 class BatchOutcome:
-    requirements: List["RawRequirement"] = field(default_factory=list)
+    requirements: List["AdmissibilityRawRequirement"] = field(default_factory=list)
     duration_seconds: float = 0.0
     primary_used: bool = False
     primary_unavailable: bool = False
@@ -756,8 +662,8 @@ class BatchOutcome:
 def _call_with_retry(
     label: str,
     batch_id: int,
-    fn: Callable[[], BatchResponse],
-) -> Tuple[Optional[BatchResponse], Optional[Exception]]:
+    fn: Callable[[], AdmissibilityBatchResponse],
+) -> Tuple[Optional[AdmissibilityBatchResponse], Optional[Exception]]:
     last_err: Optional[Exception] = None
     unavailable_attempts = 0
     for attempt in range(1, MAX_LLM_RETRIES + 1):
@@ -965,43 +871,38 @@ def _run_llm_pass(
 def extract_batch(
     gemini_client: genai.Client,
     openai_client: OpenAI,
-    profile: dict,
     batch: List[dict],
     batch_id: int,
 ) -> BatchOutcome:
     outcome = BatchOutcome(primary_used=True)
     start = time.time()
 
-    # General pass (with the evaluation profile)
-    gen_user_prompt = build_user_prompt(profile, batch)
-    gen_result, gen_err, gen_primary_unavail, gen_fb_used, gen_fb_failed = (
-        _run_llm_pass(
-            gemini_client,
-            openai_client,
-            SYSTEM_PROMPT,
-            gen_user_prompt,
-            BatchResponse,
-            batch_id,
-            "general",
-        )
+    user_prompt = build_admissibility_user_prompt(batch)
+    result, err, primary_unavail, fb_used, fb_failed = _run_llm_pass(
+        gemini_client,
+        openai_client,
+        ADMISSIBILITY_SYSTEM_PROMPT,
+        user_prompt,
+        AdmissibilityBatchResponse,
+        batch_id,
+        "admissibility",
     )
-    if gen_primary_unavail:
-        outcome.primary_unavailable = True
-    if gen_fb_used:
-        outcome.fallback_used = True
-    if gen_fb_failed:
-        outcome.fallback_failed = True
-    if gen_result is not None:
-        for req in gen_result.requirements:
+    outcome.primary_unavailable = primary_unavail
+    outcome.fallback_used = fb_used
+    outcome.fallback_failed = fb_failed
+
+    if result is not None:
+        for req in result.requirements:
             req.extraction_batch_id = batch_id
-        outcome.requirements = gen_result.requirements
+        outcome.requirements = result.requirements
         logger.info(
-            f"Batch {batch_id}[general]: extracted {len(gen_result.requirements)} requirements."
+            f"Batch {batch_id}[admissibility]: extracted {len(result.requirements)} requirements."
         )
     else:
         outcome.failure_reason = (
-            f"{type(gen_err).__name__}: {str(gen_err)[:200]}" if gen_err else "unknown"
+            f"{type(err).__name__}: {str(err)[:200]}" if err else "unknown"
         )
+        logger.warning(f"Batch {batch_id}[admissibility]: pass failed.")
 
     outcome.duration_seconds = time.time() - start
     return outcome
@@ -1020,13 +921,15 @@ def _confidence_rank(c: str) -> int:
     return CONFIDENCE_ORDER.get(c, 0)
 
 
-def _best_by_confidence(items: List[RawRequirement], attr: str):
+def _best_by_confidence(items: List[AdmissibilityRawRequirement], attr: str):
     best = max(items, key=lambda r: _confidence_rank(r.confidence))
     return getattr(best, attr)
 
 
-def deduplicate(raw_reqs: List[RawRequirement]) -> List[RawRequirement]:
-    groups: Dict[str, List[RawRequirement]] = {}
+def deduplicate_admissibility(
+    raw_reqs: List[AdmissibilityRawRequirement],
+) -> List[AdmissibilityRawRequirement]:
+    groups: Dict[str, List[AdmissibilityRawRequirement]] = {}
     for req in raw_reqs:
         key = hashlib.sha1(normalize_text(req.requirement_text).encode()).hexdigest()
         groups.setdefault(key, []).append(req)
@@ -1037,32 +940,17 @@ def deduplicate(raw_reqs: List[RawRequirement]) -> List[RawRequirement]:
             merged.append(group[0])
             continue
 
-        # requirement_text: longest
         req_text = max((r.requirement_text for r in group), key=len)
-
-        # requirement_summary: first non-None
         req_summary = next(
             (r.requirement_summary for r in group if r.requirement_summary), None
         )
 
-        # roles: union, preserve first-seen order
         seen_roles: Dict[str, None] = {}
         for r in group:
             for role in r.roles:
                 seen_roles[role] = None
         roles = list(seen_roles)
 
-        # mapped_factors: union by factor_id; prefer higher confidence
-        factors_by_id: Dict[str, Tuple[MappedFactor, int]] = {}
-        for r in group:
-            rank = _confidence_rank(r.confidence)
-            for mf in r.mapped_factors:
-                existing = factors_by_id.get(mf.factor_id)
-                if existing is None or rank > existing[1]:
-                    factors_by_id[mf.factor_id] = (mf, rank)
-        mapped_factors = [mf for mf, _ in factors_by_id.values()]
-
-        # citations: union deduped by chunk_id
         seen_cids: Dict[str, RequirementCitation] = {}
         for r in group:
             for c in r.citations:
@@ -1070,30 +958,20 @@ def deduplicate(raw_reqs: List[RawRequirement]) -> List[RawRequirement]:
                     seen_cids[c.chunk_id] = c
         citations = list(seen_cids.values())
 
-        # single-value fields: highest-confidence item wins
         domain = _best_by_confidence(group, "domain")
         verification_method = _best_by_confidence(group, "verification_method")
         temporal_scope = _best_by_confidence(group, "temporal_scope")
-        weight = _best_by_confidence(group, "weight")
-
-        # confidence: maximum of the group
         confidence = max((r.confidence for r in group), key=_confidence_rank)
-
-        # notes: concatenate unique non-None
         all_notes = [r.notes for r in group if r.notes]
-        unique_notes = list(dict.fromkeys(all_notes))
-        notes = " | ".join(unique_notes) if unique_notes else None
-
+        notes = " | ".join(dict.fromkeys(all_notes)) if all_notes else None
         extraction_batch_id = group[0].extraction_batch_id
 
         merged.append(
-            RawRequirement(
+            AdmissibilityRawRequirement(
                 requirement_text=req_text,
                 requirement_summary=req_summary,
                 roles=roles,
-                mapped_factors=mapped_factors,
                 domain=domain,
-                weight=weight,
                 verification_method=verification_method,
                 temporal_scope=temporal_scope,
                 citations=citations,
@@ -1109,148 +987,43 @@ def deduplicate(raw_reqs: List[RawRequirement]) -> List[RawRequirement]:
 # ---------------------------------------------------------------------------
 # Code assignment
 # ---------------------------------------------------------------------------
-def assign_codes(
-    reqs: List[RawRequirement], chunk_index_map: Dict[str, int]
-) -> List[FinalRequirement]:
-    def first_position(req: RawRequirement) -> int:
+def assign_codes_admissibility(
+    reqs: List[AdmissibilityRawRequirement], chunk_index_map: Dict[str, int]
+) -> List[FinalAdmissibilityRequirement]:
+    def first_position(req: AdmissibilityRawRequirement) -> int:
         positions = [chunk_index_map.get(c.chunk_id, 999999) for c in req.citations]
         return min(positions) if positions else 999999
 
     sorted_reqs = sorted(reqs, key=first_position)
-    result = []
-    for i, req in enumerate(sorted_reqs, start=1):
-        result.append(
-            FinalRequirement(
-                **req.model_dump(),
-                requirement_code=f"REQ-{i:03d}",
-            )
+    return [
+        FinalAdmissibilityRequirement(
+            **req.model_dump(), requirement_code=f"ADM-{i:03d}"
         )
-    return result
-
-
-# ---------------------------------------------------------------------------
-# Profile validation
-# ---------------------------------------------------------------------------
-def validate_against_profile(
-    reqs: List[FinalRequirement],
-    profile: dict,
-) -> Tuple[List[FinalRequirement], List[str]]:
-    enabled_roles = profile.get("enabled_roles", {})
-    enabled_role_ids = {
-        r for r, v in enabled_roles.items() if isinstance(v, dict) and v.get("enabled")
-    }
-    valid_factor_ids = {f["id"] for f in profile.get("factors", [])}
-    system_type = profile.get("system_type", "")
-
-    cleaned: List[FinalRequirement] = []
-    warnings: List[str] = []
-
-    for req in reqs:
-        # --- Eje 1: strip disallowed roles ---
-        valid_roles = [r for r in req.roles if r in enabled_role_ids]
-        if not valid_roles:
-            warnings.append(
-                f"{req.requirement_code}: all roles {req.roles} are not enabled "
-                f"in the profile (enabled: {sorted(enabled_role_ids)}). Requirement discarded."
-            )
-            continue
-
-        # solo_precio_exclusivo: downgrade puntuable/penalizador
-        if system_type == "solo_precio_exclusivo":
-            replaced = []
-            for r in valid_roles:
-                if r in ("puntuable", "penalizador"):
-                    warnings.append(
-                        f"{req.requirement_code}: role '{r}' not allowed under "
-                        f"solo_precio_exclusivo; downgraded to admisibilidad_obligatoria."
-                    )
-                    replaced.append("admisibilidad_obligatoria")
-                else:
-                    replaced.append(r)
-            valid_roles = list(dict.fromkeys(replaced))
-
-        # --- Eje 2: strip invalid mapped_factors ---
-        valid_factors = [
-            mf for mf in req.mapped_factors if mf.factor_id in valid_factor_ids
-        ]
-        invalid_fids = [
-            mf.factor_id
-            for mf in req.mapped_factors
-            if mf.factor_id not in valid_factor_ids
-        ]
-        if invalid_fids:
-            warnings.append(
-                f"{req.requirement_code}: removed mapped_factors with unknown factor_ids: {invalid_fids}."
-            )
-
-        # If puntuable/penalizador but no valid mapped_factors after strip, degrade
-        scoring_roles = {"puntuable", "penalizador"}
-        has_scoring_role = any(r in scoring_roles for r in valid_roles)
-        if has_scoring_role and not valid_factors:
-            for sr in scoring_roles:
-                if sr in valid_roles:
-                    valid_roles = [r for r in valid_roles if r != sr]
-                    warnings.append(
-                        f"{req.requirement_code}: role '{sr}' downgraded to 'informativo' "
-                        f"because mapped_factors is empty after validation."
-                    )
-                    if (
-                        "informativo" not in valid_roles
-                        and "informativo" in enabled_role_ids
-                    ):
-                        valid_roles.append("informativo")
-
-        if not valid_roles:
-            warnings.append(
-                f"{req.requirement_code}: no valid roles remain after validation. Discarded."
-            )
-            continue
-
-        cleaned.append(
-            FinalRequirement(
-                **{
-                    **req.model_dump(),
-                    "roles": valid_roles,
-                    "mapped_factors": valid_factors,
-                },
-            )
-        )
-
-    # Strategy-level cross-requirement checks
-    if system_type == "solo_precio_con_AN":
-        has_an_penalizador = any(
-            "penalizador" in r.roles
-            and any(mf.factor_id == "antecedentes_negativos" for mf in r.mapped_factors)
-            for r in cleaned
-        )
-        if not has_an_penalizador:
-            warnings.append(
-                "Strategy is solo_precio_con_AN but no requirement with role 'penalizador' "
-                "mapped to 'antecedentes_negativos' was found. Check that the AN annex is indexed."
-            )
-
-    return cleaned, warnings
+        for i, req in enumerate(sorted_reqs, start=1)
+    ]
 
 
 # ---------------------------------------------------------------------------
 # Persist
 # ---------------------------------------------------------------------------
-def post_bulk(analysis_id: str, reqs: List[FinalRequirement]):
+def post_admissibility_bulk(
+    analysis_id: str, reqs: List[FinalAdmissibilityRequirement]
+):
     payload = [r.model_dump() for r in reqs]
     api_request(
         "POST",
-        f"{API_ANALYSIS_REQUIREMENTS_PATH}bulk",
+        f"{API_ADMISSIBILITY_REQUIREMENTS_PATH}bulk",
         payload,
         params={"analysis_id": analysis_id},
     )
-    logger.info(f"POST bulk: {len(reqs)} requirements saved.")
+    logger.info(f"POST admissibility bulk: {len(reqs)} requirements saved.")
 
 
 # ---------------------------------------------------------------------------
 # Main flow
 # ---------------------------------------------------------------------------
 def process_extraction():
-    logger.info(f"Starting requirement-extractor for ANALYSIS_ID={ANALYSIS_ID}")
+    logger.info(f"Starting admissibility-extractor for ANALYSIS_ID={ANALYSIS_ID}")
 
     qdrant = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
     gemini_client = genai.Client(api_key=GOOGLE_API_KEY)
@@ -1259,42 +1032,32 @@ def process_extraction():
     log_event(
         ANALYSIS_ID,
         "info",
-        "Iniciando extracción de requisitos con clasificación multi-eje...",
+        "Iniciando extracción de requisitos de admisibilidad...",
         EVENT_SOURCE,
     )
 
     # 1. Get analysis slug
     analysis = api_request("GET", f"{API_ANALYSES_PATH}{ANALYSIS_ID}")
     slug = analysis["slug"]
-    logger.info(f"Target Qdrant collection: {slug}")
+    logger.info(f"Target Qdrant collection prefix: FILE_{slug}_*")
 
-    # 2. Load evaluation profile
-    profile = get_evaluation_profile(ANALYSIS_ID)
-
-    # 3. Scroll all tender chunks
+    # 2. Scroll all tender chunks
     chunks = scroll_all_chunks(qdrant, slug, ANALYSIS_ID)
     if not chunks:
         msg = "No tender chunks found for this analysis in Qdrant."
         logger.warning(msg)
         log_event(ANALYSIS_ID, "warning", msg, EVENT_SOURCE)
-        api_request(
-            "POST",
-            API_JOBS_CALLBACK,
-            {
-                "service_name": SERVICE_NAME,
-                "analysis_id": ANALYSIS_ID,
-                "status": "success",
-            },
-        )
+        notify_success()
         return
 
     chunk_index_map = {c["chunk_id"]: c["chunk_index"] for c in chunks}
     chunk_info_map = {c["chunk_id"]: c for c in chunks}
 
-    # 4. Build batches
+    # 3. Build batches
     batches = make_batches(chunks, BATCH_SIZE, BATCH_OVERLAP)
     logger.info(
-        f"Processing {len(chunks)} chunks in {len(batches)} batches (size={BATCH_SIZE}, overlap={BATCH_OVERLAP})."
+        f"Processing {len(chunks)} chunks in {len(batches)} batches "
+        f"(size={BATCH_SIZE}, overlap={BATCH_OVERLAP})."
     )
     log_event(
         ANALYSIS_ID,
@@ -1303,15 +1066,15 @@ def process_extraction():
         EVENT_SOURCE,
     )
 
-    # 5. Parallel batch extraction
-    raw_results: List[RawRequirement] = []
+    # 4. Parallel batch extraction
+    raw_results: List[AdmissibilityRawRequirement] = []
     failed_batches = 0
     outcomes: Dict[int, BatchOutcome] = {}
 
     with ThreadPoolExecutor(max_workers=MAX_PARALLEL_BATCHES) as executor:
         futures = {
             executor.submit(
-                extract_batch, gemini_client, openai_client, profile, batch, batch_id
+                extract_batch, gemini_client, openai_client, batch, batch_id
             ): batch_id
             for batch_id, batch in enumerate(batches, start=1)
         }
@@ -1320,8 +1083,8 @@ def process_extraction():
             try:
                 outcome = future.result()
                 outcomes[batch_id] = outcome
-                # A batch with 0 requirements is a valid outcome; failed means
-                # the LLM pass errored (failure_reason set).
+                # A batch with 0 requirements is a valid outcome (most chunks
+                # carry no admissibility content); failed = failure_reason set.
                 if outcome.failure_reason:
                     failed_batches += 1
                 else:
@@ -1330,12 +1093,11 @@ def process_extraction():
                 msg = f"Batch {batch_id} raised unexpected exception: {type(e).__name__}: {e}"
                 logger.error(msg)
                 log_event(ANALYSIS_ID, "warning", msg[:500], EVENT_SOURCE)
-                outcomes[batch_id] = BatchOutcome()
-                outcomes[batch_id].failure_reason = msg[:200]
+                outcomes[batch_id] = BatchOutcome(failure_reason=msg[:200])
                 failed_batches += 1
 
     logger.info(
-        f"Extraction complete: {len(raw_results)} raw requirements, "
+        f"Extraction complete: {len(raw_results)} raw admissibility requirements, "
         f"{failed_batches}/{len(batches)} batches failed."
     )
 
@@ -1349,39 +1111,15 @@ def process_extraction():
             "Aborting to avoid incomplete results."
         )
 
-    if not raw_results:
-        msg = "No requirements extracted from any batch."
-        logger.warning(msg)
-        log_event(ANALYSIS_ID, "warning", msg, EVENT_SOURCE)
-        api_request(
-            "POST",
-            API_JOBS_CALLBACK,
-            {
-                "service_name": SERVICE_NAME,
-                "analysis_id": ANALYSIS_ID,
-                "status": "success",
-            },
-        )
-        return
-
-    # 6. General bucket: deduplicate -> assign codes -> validate against profile
-    deduped = deduplicate(raw_results)
+    # 5. Deduplicate -> assign codes -> enrich citations
+    deduped = deduplicate_admissibility(raw_results)
     logger.info(
         f"After deduplication: {len(deduped)} requirements (from {len(raw_results)} raw)."
     )
 
-    with_codes = assign_codes(deduped, chunk_index_map)
+    with_codes = assign_codes_admissibility(deduped, chunk_index_map)
 
-    cleaned, validation_warnings = validate_against_profile(with_codes, profile)
-    for w in validation_warnings:
-        logger.warning(f"profile_validation: {w}")
-        log_event(ANALYSIS_ID, "warning", w, EVENT_SOURCE)
-    logger.info(
-        f"After validation: {len(cleaned)} requirements remain ({len(with_codes) - len(cleaned)} discarded)."
-    )
-
-    # Enrich citations with canonical filename + page_number from Qdrant
-    for req in cleaned:
+    for req in with_codes:
         for cit in req.citations:
             info = chunk_info_map.get(cit.chunk_id)
             if info:
@@ -1389,13 +1127,16 @@ def process_extraction():
                 if cit.page_number is None:
                     cit.page_number = info.get("page_number")
 
-    # 7. Persist
-    post_bulk(ANALYSIS_ID, cleaned)
+    # 6. Persist
+    if with_codes:
+        post_admissibility_bulk(ANALYSIS_ID, with_codes)
+    else:
+        logger.warning("No admissibility requirements to persist.")
 
-    # 8. Summary + notify success
+    # 7. Summary + notify success
     domain_counts: Dict[str, int] = {}
     role_counts: Dict[str, int] = {}
-    for r in cleaned:
+    for r in with_codes:
         domain_counts[r.domain] = domain_counts.get(r.domain, 0) + 1
         for role in r.roles:
             role_counts[role] = role_counts.get(role, 0) + 1
@@ -1412,17 +1153,10 @@ def process_extraction():
         ((bid, o.duration_seconds) for bid, o in outcomes.items()), key=lambda x: -x[1]
     )
     slowest_batch_id, slowest_batch_seconds = durations[0] if durations else (None, 0.0)
-    duration_values = sorted(o.duration_seconds for o in outcomes.values())
-    p95_batch_seconds = (
-        duration_values[int(len(duration_values) * 0.95) - 1]
-        if duration_values
-        else 0.0
-    )
 
     summary = (
-        f"Extracción completada: {len(cleaned)} requisitos generales | "
-        f"batches fallidos: {failed_batches}/{len(batches)} | "
-        f"warnings de validacion: {len(validation_warnings)}"
+        f"Extracción completada: {len(with_codes)} requisitos de admisibilidad | "
+        f"batches fallidos: {failed_batches}/{len(batches)}"
     )
     logger.info(summary)
     log_event(
@@ -1431,8 +1165,8 @@ def process_extraction():
         summary,
         EVENT_SOURCE,
         {
-            "requirement_count": len(cleaned),
-            "raw_count": len(raw_results),
+            "admissibility_requirement_count": len(with_codes),
+            "raw_admissibility_count": len(raw_results),
             "batch_count": len(batches),
             "failed_batches": failed_batches,
             "failed_batch_ids": failed_batch_ids,
@@ -1441,31 +1175,20 @@ def process_extraction():
             "fallbacks_failed": fallbacks_failed,
             "slowest_batch_id": slowest_batch_id,
             "slowest_batch_seconds": round(slowest_batch_seconds, 2),
-            "p95_batch_seconds": round(p95_batch_seconds, 2),
-            "validation_warnings": len(validation_warnings),
             "domain_distribution": domain_counts,
             "role_distribution": role_counts,
         },
     )
 
-    try:
-        api_request(
-            "POST",
-            API_JOBS_CALLBACK,
-            {
-                "service_name": SERVICE_NAME,
-                "analysis_id": ANALYSIS_ID,
-                "status": "success",
-            },
-        )
-    except Exception as e:
-        logger.error(f"Failed to notify job callback on success: {e}")
+    notify_success()
 
 
 def main():
-    global PRICING, SYSTEM_PROMPT
+    global PRICING, ADMISSIBILITY_SYSTEM_PROMPT
     validate_env()
-    SYSTEM_PROMPT = load_prompt("service-requirement-extractor/requirements_extractor")
+    ADMISSIBILITY_SYSTEM_PROMPT = load_prompt(
+        "service-admissibility-extractor/admissibility_extractor"
+    )
     resolve_model_config()
     PRICING = load_pricing()
     try:

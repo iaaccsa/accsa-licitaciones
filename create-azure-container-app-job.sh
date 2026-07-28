@@ -12,6 +12,7 @@ VALID_SERVICES=(
   "service-digital-sig-extractor"
   "service-documents-classifier"
   "service-documents-grouper"
+  "service-admissibility-extractor"
   "service-tender-classifier"
   "service-requirement-extractor"
   "service-build-proposal-index"

@@ -44,6 +44,8 @@ strategy:
       SERVICE_NAME: "service-economic-offer-extractor"
     service-admissibility-matcher:
       SERVICE_NAME: "service-admissibility-matcher"
+    service-admissibility-extractor:
+      SERVICE_NAME: "service-admissibility-extractor"
 
 steps:
   - script: |

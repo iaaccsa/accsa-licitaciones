@@ -8,23 +8,31 @@ file-extractor → files-converter-mistral → qdrant-by-file (fan-out per file)
   ├─ file-metadata-extractor (fan-out per file)
   └─ digital-sig-extractor (fan-out per original file)
       → documents-classifier (fan-in: waits both parents)
-        → documents-grouper
-            ├─ tender-classifier → requirement-extractor ─┐
-            └─ build-proposal-index (fan-out per proposal) ┤
-                                                           → compliance-matcher (fan-in;
-                                                              fan-out per proposal)
-                                                              → admissibility-gate
-                                                                → compliance-summarizer
+        → documents-grouper [pausa]
+          → admissibility-extractor [pausa]
+            → build-proposal-index (fan-out per proposal)
+              → admissibility-matcher (fan-out per proposal)
+                → admissibility-gate [pausa]
+                  → tender-classifier
+                    → requirement-extractor [pausa]
+                      → compliance-matcher (fan-out per admitida proposal)
+                        ├─ compliance-summarizer
+                        └─ economic-offer-extractor
 ```
+
+The chain is linear: only one approval pause is pending at a time. Admissibility
+runs before the general extraction, so a pliego with no admissibility requirements
+(or an analysis where no proposal is admitida) is cut short by the API before any
+of the downstream LLM work runs.
 
 Qdrant model:
 - `FILE_{analysis_slug}_{file_id}` — source of truth; one per processed file (created by
-  `service-qdrant-by-file`). Tender services (tender-classifier, requirement-extractor)
-  iterate these directly.
+  `service-qdrant-by-file`). Tender services (admissibility-extractor, tender-classifier,
+  requirement-extractor) iterate these directly.
 - `PROPOSAL_{analysis_slug}_{proposal_id}` — built by `service-build-proposal-index` (one
   job per proposal). Copies all points (vectors + payload) from the proposal's
-  `FILE_{...}` collections. Compliance-matcher issues a single ANN query per requirement
-  against this collection.
+  `FILE_{...}` collections. Admissibility-matcher and compliance-matcher issue a single
+  ANN query per requirement against this collection.
 
 See root `CLAUDE.md` for cross-project context and common rules.
 
@@ -39,12 +47,15 @@ See root `CLAUDE.md` for cross-project context and common rules.
 | `service-digital-sig-extractor` | Extracts digital signatures from original PDFs |
 | `service-documents-classifier` | Classifies each file into category (tender, proposal, ...) |
 | `service-documents-grouper` | Groups files into proposals |
-| `service-tender-classifier` | Determines evaluation system; queries per-file tender collections |
-| `service-requirement-extractor` | Extracts requirements; scrolls per-file tender collections, sorts by filename + chunk_index |
+| `service-admissibility-extractor` | Extracts admissibility requirements (ADM-nnn); scrolls per-file tender collections, sorts by filename + chunk_index |
 | `service-build-proposal-index` | Per proposal, copies all points from `FILE_{slug}_{file_id}` of that proposal into `PROPOSAL_{slug}_{proposal_id}` |
+| `service-admissibility-matcher` | Verdict per admissibility requirement vs proposal; single ANN query against `PROPOSAL_{slug}_{proposal_id}` |
+| `service-admissibility-gate` | Admitida/rechazada per proposal, from the admissibility results |
+| `service-tender-classifier` | Determines evaluation system; queries per-file tender collections |
+| `service-requirement-extractor` | Extracts the other (non-admissibility) requirements (REQ-nnn), classified on 7 axes against the evaluation_profile |
 | `service-compliance-matcher` | Verdict per requirement vs proposal; single ANN query against `PROPOSAL_{slug}_{proposal_id}` |
-| `service-admissibility-gate` | Admissibility check from compliance results |
 | `service-compliance-summarizer` | Summarizes compliance per proposal |
+| `service-economic-offer-extractor` | Extracts the economic offer per proposal |
 
 **Naming constraint:** Service name must be < 32 characters (Azure ACA Job limit).
 
