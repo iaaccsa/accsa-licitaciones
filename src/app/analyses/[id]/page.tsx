@@ -338,7 +338,7 @@ export default function AnalysisDetailPage() {
           className="relative flex flex-col items-center gap-4 p-6 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-green-300 dark:hover:border-green-800 hover:shadow-md transition-all group text-center"
         >
           {analysis.status === "awaiting_approval" &&
-            analysis.paused_at_service === "service-requirement-extractor" && (
+            analysis.paused_at_service === "service-admissibility-extractor" && (
               <span className="absolute top-2 right-2 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />

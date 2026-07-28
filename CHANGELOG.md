@@ -12,12 +12,28 @@ se versionan y publican en conjunto.
 
 ### accsa-licitaciones-ui
 
+#### Changed
+- El análisis ahora se detiene a pedir aprobación en cuatro momentos en vez de tres: se agrega una pausa propia tras la extracción de requisitos de admisibilidad, con su punto rojo en la tarjeta "Requisitos de Admisibilidad" y su correo de aviso. Las fases del análisis pasan a ser nueve y en el orden nuevo: la admisibilidad se resuelve completa antes de la extracción de los otros requisitos.
+
 #### Fixed
 - La sesión ahora expira tras un período de inactividad (30 minutos por defecto, configurable con `NEXT_PUBLIC_INACTIVITY_TIMEOUT_MINUTES`): al volver a operar se solicita iniciar sesión de nuevo y no se muestran datos protegidos. Antes la sesión no vencía por inactividad ni al cerrar y volver a abrir el navegador.
 
 ### accsa-licitaciones-api
 
+#### Changed
+- Reordenar el pipeline para resolver la admisibilidad primero: agrupación de documentos, extracción de requisitos de admisibilidad, indexación por propuesta, match y chequeo de admisibilidad, y recién después la determinación del sistema de evaluación y la extracción de los otros requisitos.
+
+#### Added
+- Si el pliego no tiene requisitos de admisibilidad, el análisis se cierra como completado sin ejecutar los pasos restantes, dejando registrado el motivo en los eventos.
+- Si ninguna propuesta queda admitida, ya no se ejecutan la determinación del sistema de evaluación, la extracción de otros requisitos ni el chequeo de cumplimiento, tampoco cuando la admisibilidad se aprueba manualmente. Antes ese ahorro solo ocurría con la aprobación automática desactivada.
+
 ### accsa-licitaciones-services
+
+#### Added
+- Agregar `service-admissibility-extractor`, que extrae los requisitos de admisibilidad del pliego con un prompt propio, editable por separado desde la pantalla de prompts del admin.
+
+#### Changed
+- `service-requirement-extractor` queda solo con la extracción de los otros requisitos: ya no hace la segunda pasada de admisibilidad.
 
 ## [2.1.0] - 2026-07-13
 
