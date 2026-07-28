@@ -9,6 +9,7 @@ entregadas por infraestructura ACCSA.
 | [`vm-services.md`](vm-services.md) | ACCSA-SerProIA-VM2 (`10.97.0.12`) | Capa de servicios (jobs Docker) + Docker Registry privado |
 | [`hardening.md`](hardening.md) | Ambas | Las 16 medidas de hardening aplicadas + hallazgos que condicionan el diseño |
 | [`github-runner.md`](github-runner.md) | VM2 | Pasos en GitHub para el runner self-hosted + riesgos |
+| [`ci.md`](ci.md) | VM2 | Los tres workflows de build, uno por proyecto |
 | `scripts/` | Ambas | `harden-base.sh`, `harden-ssh.sh`, `harden-firewall.sh` (idempotentes) |
 | `vm-credentials.md` | Ambas | **Secreto.** Contrasenas de `root` y `sysadmin`. Ignorado por git, permisos 600 |
 
@@ -22,7 +23,7 @@ entregadas por infraestructura ACCSA.
 | 3. Ampliación de LVM + LV dedicado a Docker (ambas) | Hecho - 2026-07-28 |
 | 4. VM2: Docker + Registry privado | Hecho - 2026-07-28 |
 | 5. VM2: runner self-hosted de GitHub | Hecho - 2026-07-28 (registrado y escuchando) |
-| 5b. VM2: workflow de build -> registry | Pendiente (unico paso que falta para tener CI) |
+| 5b. VM2: workflow de build -> registry | Hecho - 2026-07-28 (ver `ci.md`) |
 | 6. VM2: runner de jobs (reemplazo de Azure Container Apps Jobs) | Pendiente |
 | 7. VM1: Docker + compose (ui, api, nginx) + TLS | Pendiente |
 | 8. Migración de config y e2e | Pendiente |
