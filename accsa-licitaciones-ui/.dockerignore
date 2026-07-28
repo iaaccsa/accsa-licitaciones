@@ -1,6 +1,6 @@
-# Ojo con los patrones amplios: la app lee CHANGELOG.md y content/help/*.md
-# desde process.cwd(), asi que un "*.md" rompe el build de /changelog y /ayuda.
-# Lo mismo con "*.png", que se llevaria las imagenes de public/.
+# Careful with broad patterns: the app reads CHANGELOG.md and content/help/*.md
+# from process.cwd(), so a "*.md" breaks the build of /changelog and /ayuda.
+# Same with "*.png", which would drop the images under public/.
 node_modules/
 .next/
 .next-e2e/

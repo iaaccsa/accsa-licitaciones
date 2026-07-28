@@ -1,28 +1,28 @@
-# --- Secretos: NUNCA versionar ---
-# Nota: git no admite comentarios al final de linea dentro de un patron.
+# --- Secrets: NEVER commit ---
+# Note: git does not accept trailing comments inside a pattern.
 .env
 .env.local
-# clave de OpenAI que consume graphify.sh
+# OpenAI key consumed by graphify.sh
 .env.graphify
-# contrasena SMTP de Mailgun en texto plano
+# Mailgun SMTP password in plain text
 smtp-config
-# token personal de Supabase
+# Supabase personal access token
 .mcp.json
 opencode.json
-# cache de OAuth de Microsoft Graph
+# Microsoft Graph OAuth cache
 tools/planner/token_cache.bin
 .claude/settings.local.json
 infra/vm-credentials.md
 
-# --- Proyectos independientes, con su propio repositorio ---
+# --- Independent projects, each with its own repository ---
 accsa-chatbot-documentation/
 accsa-admissibility-lab/
 
-# --- Generado o volcados de datos ---
+# --- Generated output and data dumps ---
 graphify-out/
 supabase-backup/
 .tokensave/
 tools/planner/venv/
 
-# --- Ruido del sistema ---
+# --- OS noise ---
 .DS_Store

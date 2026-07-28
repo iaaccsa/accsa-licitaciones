@@ -21,29 +21,29 @@ jobs:
     timeout-minutes: 45
     env:
       IMAGE: vm2:5000/licitaciones-ui
-      # Las NEXT_PUBLIC_* se incrustan en el bundle durante el build. Viven en
-      # la VM y no en GitHub, igual que las credenciales del registry.
+      # NEXT_PUBLIC_* values are baked into the browser bundle at build time.
+      # They live on the VM, not in GitHub, same as the registry credentials.
       BUILD_ENV: /opt/deploy/ui-build.env
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verificar la config de build
+      - name: Check the build configuration
         run: |
           set -euo pipefail
           if [ ! -f "$BUILD_ENV" ]; then
-            echo "Falta $BUILD_ENV en el runner." >&2
-            echo "Debe definir las NEXT_PUBLIC_* con los valores del entorno destino." >&2
+            echo "Missing $BUILD_ENV on the runner." >&2
+            echo "It must define the NEXT_PUBLIC_* values for the target environment." >&2
             exit 1
           fi
-          echo "Variables definidas: $(grep -c '^NEXT_PUBLIC' "$BUILD_ENV")"
+          echo "Variables defined: $(grep -c '^NEXT_PUBLIC' "$BUILD_ENV")"
 
-      - name: Construir y publicar
+      - name: Build and push
         working-directory: accsa-licitaciones-ui
         run: |
           set -euo pipefail
           ARGS=()
-          while IFS='=' read -r k v; do
-            case "$k" in NEXT_PUBLIC_*) ARGS+=(--build-arg "$k=$v") ;; esac
+          while IFS='=' read -r key value; do
+            case "$key" in NEXT_PUBLIC_*) ARGS+=(--build-arg "$key=$value") ;; esac
           done < <(grep -E '^NEXT_PUBLIC_' "$BUILD_ENV")
 
           docker build "${ARGS[@]}" \
@@ -53,16 +53,16 @@ jobs:
           docker push "$IMAGE:${GITHUB_SHA}"
           docker push "$IMAGE:latest"
 
-      - name: Resumen
+      - name: Summary
         if: always()
         run: |
           {
             echo "### UI"
             echo ""
-            echo "- Imagen: \`$IMAGE:${GITHUB_SHA::7}\` y \`:latest\`"
-            echo "- Version declarada: \`$(grep -m1 '"version"' accsa-licitaciones-ui/package.json | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')\`"
+            echo "- Image: \`$IMAGE:${GITHUB_SHA::7}\` and \`:latest\`"
+            echo "- Declared version: \`$(grep -m1 '"version"' accsa-licitaciones-ui/package.json | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Limpiar capas sueltas
+      - name: Prune dangling layers
         if: always()
         run: docker image prune -f > /dev/null

@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
-# La app no necesita root
+# The app does not need root
 RUN useradd --system --no-create-home --shell /usr/sbin/nologin api
 USER api
 

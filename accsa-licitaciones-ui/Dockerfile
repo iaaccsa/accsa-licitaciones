@@ -1,6 +1,6 @@
-# Las NEXT_PUBLIC_* se incrustan en el bundle del navegador durante el build, no
-# se leen en runtime. Por eso llegan como build args y no como variables del
-# contenedor: la imagen queda atada al entorno con el que se construyo.
+# NEXT_PUBLIC_* values are inlined into the browser bundle during the build, not
+# read at run time. That is why they arrive as build args and not as container
+# environment: the image ends up tied to the environment it was built for.
 FROM node:22-slim AS deps
 WORKDIR /app
 RUN corepack enable
@@ -39,9 +39,9 @@ COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/next.config.ts ./next.config.ts
-# La app resuelve estos desde process.cwd(): /changelog lee CHANGELOG.md y
-# /ayuda lee content/help/. Van tambien al runtime por si alguna ruta los pide
-# en tiempo de peticion y no solo al generar.
+# The app resolves these from process.cwd(): /changelog reads CHANGELOG.md and
+# /ayuda reads content/help/. They are copied into the runtime stage too, in
+# case a route asks for them at request time and not only while prerendering.
 COPY --from=build /app/CHANGELOG.md ./CHANGELOG.md
 COPY --from=build /app/content ./content
 
