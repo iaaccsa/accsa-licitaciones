@@ -19,7 +19,7 @@ Ninguno usa secretos de GitHub: el `docker login` esta hecho en la maquina, como
 
 ## Los servicios se construyen de a uno, no los 16
 
-`build-services.yml` tiene un job `detectar` que compara el commit anterior
+`build-services.yml` tiene un job `detect` que compara el commit anterior
 (`github.event.before`) con el actual y arma la matriz de servicios a construir:
 
 - Si cambio `global/` o `VERSION`, se reconstruyen **los 16**: todos los
@@ -27,9 +27,12 @@ Ninguno usa secretos de GitHub: el `docker login` esta hecho en la maquina, como
 - Si no, solo los directorios `service-*` tocados por el push.
 - Si no hay commit base utilizable (primer push, force-push), se construyen
   todos por precaucion.
-- `workflow_dispatch` acepta `todos: true` para forzar la reconstruccion completa.
+- `workflow_dispatch` acepta `rebuild_all: true` para forzar la reconstruccion completa.
 
-El job de construccion se salta entero cuando la lista queda vacia.
+El job `build` se salta entero cuando la lista queda vacia.
+
+Los identificadores del workflow estan en ingles, como el resto del codigo;
+esta documentacion sigue en espanol a proposito.
 
 El contexto de build es `accsa-licitaciones-services/` y no la carpeta del
 servicio, porque cada Dockerfile hace `COPY VERSION .` y
