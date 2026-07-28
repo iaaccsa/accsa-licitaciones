@@ -1,0 +1,17 @@
+node_modules/
+.next/
+.next-e2e/
+.env
+.env.*
+!.env.example
+.git/
+.agent/
+.agents/
+.claude/
+e2e/
+playwright-report/
+test-results/
+*.md
+*.png
+openapi.json
+tsconfig.tsbuildinfo

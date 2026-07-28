@@ -1,0 +1,68 @@
+name: build ui
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "accsa-licitaciones-ui/**"
+      - ".github/workflows/build-ui.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: build-ui
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: [self-hosted, vm2]
+    timeout-minutes: 45
+    env:
+      IMAGE: vm2:5000/licitaciones-ui
+      # Las NEXT_PUBLIC_* se incrustan en el bundle durante el build. Viven en
+      # la VM y no en GitHub, igual que las credenciales del registry.
+      BUILD_ENV: /opt/deploy/ui-build.env
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verificar la config de build
+        run: |
+          set -euo pipefail
+          if [ ! -f "$BUILD_ENV" ]; then
+            echo "Falta $BUILD_ENV en el runner." >&2
+            echo "Debe definir las NEXT_PUBLIC_* con los valores del entorno destino." >&2
+            exit 1
+          fi
+          echo "Variables definidas: $(grep -c '^NEXT_PUBLIC' "$BUILD_ENV")"
+
+      - name: Construir y publicar
+        working-directory: accsa-licitaciones-ui
+        run: |
+          set -euo pipefail
+          ARGS=()
+          while IFS='=' read -r k v; do
+            case "$k" in NEXT_PUBLIC_*) ARGS+=(--build-arg "$k=$v") ;; esac
+          done < <(grep -E '^NEXT_PUBLIC_' "$BUILD_ENV")
+
+          docker build "${ARGS[@]}" \
+            -t "$IMAGE:${GITHUB_SHA}" \
+            -t "$IMAGE:latest" \
+            .
+          docker push "$IMAGE:${GITHUB_SHA}"
+          docker push "$IMAGE:latest"
+
+      - name: Resumen
+        if: always()
+        run: |
+          {
+            echo "### UI"
+            echo ""
+            echo "- Imagen: \`$IMAGE:${GITHUB_SHA::7}\` y \`:latest\`"
+            echo "- Version declarada: \`$(node -p "require('./accsa-licitaciones-ui/package.json').version")\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Limpiar capas sueltas
+        if: always()
+        run: docker image prune -f > /dev/null

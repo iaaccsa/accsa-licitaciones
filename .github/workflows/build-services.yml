@@ -1,0 +1,104 @@
+name: build services
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "accsa-licitaciones-services/**"
+      - ".github/workflows/build-services.yml"
+  workflow_dispatch:
+    inputs:
+      todos:
+        description: "Reconstruir los 16 servicios"
+        type: boolean
+        default: false
+
+concurrency:
+  group: build-services
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  detectar:
+    runs-on: [self-hosted, vm2]
+    timeout-minutes: 5
+    outputs:
+      servicios: ${{ steps.calcular.outputs.servicios }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: calcular
+        name: Que servicios cambiaron
+        env:
+          # SHA anterior del push. Va por env y no interpolado en el script,
+          # por higiene: nada de github.event.* dentro de un run.
+          ANTERIOR: ${{ github.event.before }}
+          TODOS: ${{ inputs.todos }}
+        run: |
+          set -euo pipefail
+          cd accsa-licitaciones-services
+          TODAS=$(find . -maxdepth 1 -name 'service-*' -type d -printf '%f\n' | sort)
+
+          if [ "$TODOS" = "true" ]; then
+            LISTA="$TODAS"
+            echo "Reconstruccion completa pedida a mano."
+          elif [ -z "$ANTERIOR" ] || [ "$ANTERIOR" = "0000000000000000000000000000000000000000" ] \
+               || ! git cat-file -e "${ANTERIOR}^{commit}" 2>/dev/null; then
+            LISTA="$TODAS"
+            echo "Sin commit base utilizable: se construyen todos."
+          else
+            CAMBIOS=$(git diff --name-only "$ANTERIOR" "$GITHUB_SHA" -- .)
+            # global/ y VERSION entran en TODAS las imagenes: si cambian, hay
+            # que reconstruir los 16.
+            if printf '%s\n' "$CAMBIOS" | grep -qE '^(global/|VERSION$)'; then
+              LISTA="$TODAS"
+              echo "Cambio en global/ o VERSION: se reconstruye todo."
+            else
+              LISTA=$(printf '%s\n' "$CAMBIOS" | grep -oE '^service-[^/]+' | sort -u || true)
+            fi
+          fi
+
+          echo "Servicios a construir:"
+          printf '  %s\n' ${LISTA:-"(ninguno)"}
+          JSON=$(printf '%s\n' $LISTA | jq -R . | jq -sc 'map(select(length > 0))')
+          echo "servicios=$JSON" >> "$GITHUB_OUTPUT"
+
+  construir:
+    needs: detectar
+    if: needs.detectar.outputs.servicios != '[]'
+    runs-on: [self-hosted, vm2]
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      # El runner es uno solo, asi que los jobs de la matriz se ejecutan de a
+      # uno igual. El limite queda explicito por si algun dia se agrega otro.
+      max-parallel: 2
+      matrix:
+        servicio: ${{ fromJson(needs.detectar.outputs.servicios) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir y publicar
+        env:
+          SERVICIO: ${{ matrix.servicio }}
+        run: |
+          set -euo pipefail
+          IMAGE="vm2:5000/$SERVICIO"
+          # El contexto es la raiz del proyecto: los Dockerfile copian VERSION y
+          # global/ ademas de su propia carpeta.
+          docker build \
+            -f "accsa-licitaciones-services/$SERVICIO/Dockerfile" \
+            -t "$IMAGE:${GITHUB_SHA}" \
+            -t "$IMAGE:latest" \
+            accsa-licitaciones-services
+          docker push "$IMAGE:${GITHUB_SHA}"
+          docker push "$IMAGE:latest"
+          echo "- \`$SERVICIO\` -> \`${GITHUB_SHA::7}\`, \`latest\`" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Limpiar capas sueltas
+        if: always()
+        run: docker image prune -f > /dev/null
