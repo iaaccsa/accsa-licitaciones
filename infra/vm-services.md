@@ -214,6 +214,23 @@ Azure eso escalaba solo; en 4 vCPU / 6 GB no. El ejecutor **debe** limitar los
 contenedores simultaneos (arranque sugerido: 3-4) y encolar el resto, ademas de
 fijar `--memory` y `--cpus` por contenedor.
 
+### Las imagenes viven en el LV, pero hubo que forzarlo
+
+Docker 29 guarda las imagenes a traves del **image store de containerd**, cuyo
+root por defecto es `/var/lib/containerd`. Esa ruta **no** cuelga de
+`/var/lib/docker`, asi que el LV dedicado tenia solo los volumenes y la cache de
+build mientras las imagenes crecian en `/`: exactamente lo que el LV existe para
+evitar. Se detecto el 2026-07-29 porque `df` del LV daba 749M con 54 imagenes
+cargadas.
+
+Corregido con `scripts/containerd-relocate.sh` (idempotente): mueve los datos con
+`rsync -aHAX` (el `-H` importa, el content store usa hardlinks) y fija
+`root = "/var/lib/docker/containerd"` en `/etc/containerd/config.toml`. Es
+disruptivo: para Docker y con el todos los contenedores del host.
+
+Ojo si algun dia se reinstala Docker o se resetea ese config: el default vuelve a
+`/var/lib/containerd` sin avisar, y el sintoma es que el LV deja de crecer.
+
 ## Pipeline GitHub -> registry
 
 **Decidido: runner self-hosted en VM2.** Los runners alojados por GitHub no

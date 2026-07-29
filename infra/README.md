@@ -10,7 +10,7 @@ entregadas por infraestructura ACCSA.
 | [`hardening.md`](hardening.md) | Ambas | Las 16 medidas de hardening aplicadas + hallazgos que condicionan el diseño |
 | [`github-runner.md`](github-runner.md) | VM2 | Pasos en GitHub para el runner self-hosted + riesgos |
 | [`ci.md`](ci.md) | VM2 | Los tres workflows de build, uno por proyecto |
-| `scripts/` | Ambas | Idempotentes. Hardening: `harden-base.sh`, `harden-ssh.sh`, `harden-firewall.sh`, `docker-firewall.sh`. Despliegue: `docker-install.sh`, `registry-deploy.sh` y `executor-deploy.sh` (VM2), `app-deploy.sh` (VM1) |
+| `scripts/` | Ambas | Idempotentes. Hardening: `harden-base.sh`, `harden-ssh.sh`, `harden-firewall.sh`, `docker-firewall.sh`. Despliegue: `docker-install.sh`, `registry-deploy.sh` y `executor-deploy.sh` (VM2), `app-deploy.sh` (VM1), `containerd-relocate.sh` (ambas) |
 | `vm-credentials.md` | Ambas | **Secreto.** Contrasenas de `root` y `sysadmin`. Ignorado por git, permisos 600 |
 
 ## Estado global
