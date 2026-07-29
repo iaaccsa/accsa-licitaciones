@@ -19,6 +19,8 @@ accsa-chatbot-documentation/
 accsa-admissibility-lab/
 
 # --- Generated output and data dumps ---
+# Per-machine runtime marker (PID + local proxy port), rewritten every session
+.claude/.headroom_wrap_marker.json
 graphify-out/
 supabase-backup/
 .tokensave/
