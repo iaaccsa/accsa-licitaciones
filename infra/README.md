@@ -10,7 +10,7 @@ entregadas por infraestructura ACCSA.
 | [`hardening.md`](hardening.md) | Ambas | Las 16 medidas de hardening aplicadas + hallazgos que condicionan el diseño |
 | [`github-runner.md`](github-runner.md) | VM2 | Pasos en GitHub para el runner self-hosted + riesgos |
 | [`ci.md`](ci.md) | VM2 | Los tres workflows de build, uno por proyecto |
-| `scripts/` | Ambas | `harden-base.sh`, `harden-ssh.sh`, `harden-firewall.sh` (idempotentes) |
+| `scripts/` | Ambas | Idempotentes. Hardening: `harden-base.sh`, `harden-ssh.sh`, `harden-firewall.sh`, `docker-firewall.sh`. Despliegue: `docker-install.sh`, `registry-deploy.sh` y `executor-deploy.sh` (VM2), `app-deploy.sh` (VM1) |
 | `vm-credentials.md` | Ambas | **Secreto.** Contrasenas de `root` y `sysadmin`. Ignorado por git, permisos 600 |
 
 ## Estado global
@@ -24,8 +24,8 @@ entregadas por infraestructura ACCSA.
 | 4. VM2: Docker + Registry privado | Hecho - 2026-07-28 |
 | 5. VM2: runner self-hosted de GitHub | Hecho - 2026-07-28 (registrado y escuchando) |
 | 5b. VM2: workflow de build -> registry | Hecho - 2026-07-28 (ver `ci.md`) |
-| 6. VM2: runner de jobs (reemplazo de Azure Container Apps Jobs) | Pendiente |
-| 7. VM1: Docker + compose (ui, api, nginx) + TLS | Pendiente |
+| 6. VM2: runner de jobs (reemplazo de Azure Container Apps Jobs) | Código hecho 2026-07-28, sin desplegar (ver `features/pending/12-ejecutor-jobs-on-prem.md`) |
+| 7. VM1: Docker + compose (ui, api) | Script escrito (`scripts/app-deploy.sh`), sin ejecutar. Sin nginx: el TLS lo termina el proxy corporativo |
 | 8. Migración de config y e2e | Pendiente |
 
 ## Acceso rápido

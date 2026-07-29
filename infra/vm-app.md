@@ -178,12 +178,40 @@ sirve HTTP en el 80.
 | 3 | Ampliar LV + LV dedicado para `/var/lib/docker` | Hecho 2026-07-28 |
 | 4 | Hardening completo (16 medidas, ver `hardening.md`) | Hecho 2026-07-28 |
 | 5 | Instalar Docker Engine + compose plugin | Hecho 2026-07-28 |
-| 6 | Dockerfile de la API y de la UI (no existen todavia) | Pendiente |
-| 7 | `docker compose` en `/opt/licitaciones` + `.env` | Pendiente |
+| 6 | Dockerfile de la API y de la UI | Hecho 2026-07-28 (junto con los workflows de build) |
+| 7 | `docker compose` en `/opt/licitaciones` + `.env` | Script escrito (`scripts/app-deploy.sh`), sin ejecutar |
 | 8 | Regla `DOCKER-USER` para el 8000 (hecha) + alta en el proxy corporativo | Parcial |
 | 9 | `docker login` contra el registry de VM2 | Hecho 2026-07-28 |
 | 10 | Conectividad VM1 <-> VM2 (lanzar jobs / recibir callbacks) | Pendiente |
 | 11 | Pruebas e2e del pipeline completo | Pendiente |
+
+### `scripts/app-deploy.sh`
+
+Crea `/opt/licitaciones` con `docker-compose.yml`, `.env.api` y `.env.ui` (600,
+de `licitaciones`), la unidad `licitaciones-app.service`, levanta los dos
+contenedores y verifica. **Son dos archivos de entorno, no uno**: el contenedor
+de la UI no tiene por que llevar la service key de Supabase, la del ejecutor ni
+las credenciales de proveedores.
+
+Prerrequisitos, en orden:
+
+1. El ejecutor desplegado en VM2 (`executor-deploy.sh`), porque el chequeo final
+   del script pega a `/api/v1/health/executor`.
+2. `/opt/deploy/ui-build.env` en **VM2** con los `NEXT_PUBLIC_*` del entorno
+   on-prem: `build-ui.yml` los lee de ahi y los hornea en el bundle. No se
+   pueden cambiar despues por entorno del contenedor; hay que reconstruir.
+   `NEXT_PUBLIC_APP_VERSION` no va: sale de `package.json` via `next.config.ts`.
+3. Las imagenes `licitaciones-api` y `licitaciones-ui` publicadas en el registry.
+4. Credenciales de proveedores cargadas en Vault, o `start_pipeline` aborta en
+   el pre-flight.
+
+El chequeo que importa es el de `/api/v1/health/executor`: es el que demuestra
+que VM1 alcanza el 8080 de VM2 a traves de la regla `DOCKER-USER` que solo deja
+entrar a `10.97.0.11`.
+
+Nota: `.env.ui` todavia define `API_HEALTH_AZURE_PATH`, que es lo que lee la UI
+hoy. Pasa a `API_HEALTH_EXECUTOR_PATH` en la FASE 4 de
+`features/pending/12-ejecutor-jobs-on-prem.md`.
 
 ## Decisiones abiertas
 

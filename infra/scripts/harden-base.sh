@@ -98,7 +98,11 @@ Cmnd_Alias LIC_UNITS = /usr/bin/systemctl start docker.service, \
                        /usr/bin/systemctl start licitaciones-executor.service, \
                        /usr/bin/systemctl stop licitaciones-executor.service, \
                        /usr/bin/systemctl restart licitaciones-executor.service, \
-                       /usr/bin/systemctl status licitaciones-executor.service
+                       /usr/bin/systemctl status licitaciones-executor.service, \
+                       /usr/bin/systemctl start licitaciones-app.service, \
+                       /usr/bin/systemctl stop licitaciones-app.service, \
+                       /usr/bin/systemctl restart licitaciones-app.service, \
+                       /usr/bin/systemctl status licitaciones-app.service
 sysadmin ALL=(root) NOPASSWD: LIC_UNITS
 EOF
 fi
