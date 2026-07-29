@@ -179,11 +179,36 @@ sirve HTTP en el 80.
 | 4 | Hardening completo (16 medidas, ver `hardening.md`) | Hecho 2026-07-28 |
 | 5 | Instalar Docker Engine + compose plugin | Hecho 2026-07-28 |
 | 6 | Dockerfile de la API y de la UI | Hecho 2026-07-28 (junto con los workflows de build) |
-| 7 | `docker compose` en `/opt/licitaciones` + `.env` | Script escrito (`scripts/app-deploy.sh`), sin ejecutar |
+| 7 | `docker compose` en `/opt/licitaciones` + `.env` | Hecho 2026-07-29 (`scripts/app-deploy.sh`) |
 | 8 | Regla `DOCKER-USER` para el 8000 (hecha) + alta en el proxy corporativo | Parcial |
 | 9 | `docker login` contra el registry de VM2 | Hecho 2026-07-28 |
-| 10 | Conectividad VM1 <-> VM2 (lanzar jobs / recibir callbacks) | Pendiente |
+| 10 | Conectividad VM1 -> VM2 (lanzar jobs) | Hecho 2026-07-29: `/api/v1/health/executor` responde `backend: local` |
 | 11 | Pruebas e2e del pipeline completo | Pendiente |
+| 12 | **Abrir el 80 desde la VPN en el FortiGate** | **Pendiente, bloquea el acceso desde estaciones** |
+
+### El FortiGate solo deja pasar SSH hacia la vLAN de servidores
+
+Verificado el 2026-07-29 con `tcpdump -ni any tcp port 80` en VM1 mientras se
+hacia `curl http://10.97.0.11` desde una estacion por VPN: **no llega un solo
+paquete**. Solo aparece trafico al 22. Desde la propia VM1 el mismo `curl`
+devuelve 307, y `ufw` tiene `80/tcp ALLOW 10.97.0.0/28`, asi que ni la VM ni sus
+reglas son la causa.
+
+Consecuencia: mientras no se abra el 80 en la politica del Forti, la UI no es
+accesible desde una estacion. Mientras tanto, tunel SSH sobre el 22:
+
+```bash
+ssh -f -N -L 8081:10.97.0.11:80 vm1-app   # luego http://localhost:8081
+```
+
+Ojo con el tunel y Supabase Auth: la app redirige a `http://localhost:8081/login`,
+asi que esa URL tiene que estar en las redirect URLs permitidas del proyecto para
+los flujos de invitacion y magic link. El login con contrasena no depende de eso.
+
+Esto tambien relativiza las pruebas de puertos desde una estacion: que 5000 u
+8080 aparezcan filtrados **no** prueba que las reglas `DOCKER-USER` funcionen,
+porque el Forti ya los estaba cortando antes. Esas reglas se verifican desde la
+otra VM, no desde una estacion.
 
 ### `scripts/app-deploy.sh`
 

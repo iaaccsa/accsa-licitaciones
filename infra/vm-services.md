@@ -246,8 +246,8 @@ recomendable en un runner de 4 vCPU).
 | 6 | Desplegar registry privado con TLS + htpasswd | Hecho 2026-07-28 |
 | 7 | Runner self-hosted registrado y operativo | Hecho 2026-07-28 |
 | 8 | Portar la matriz de build de Azure DevOps a GitHub Actions | Hecho 2026-07-28 (`ci.md`) |
-| 9 | Implementar el ejecutor de jobs + limite de concurrencia | Especificado, sin implementar |
-| 10 | Cambiar `_launch_job` en la API para usar el ejecutor | Especificado, sin implementar |
+| 9 | Implementar el ejecutor de jobs + limite de concurrencia | Hecho 2026-07-29, desplegado (3 slots, 1 CPU / 1,5 GB) |
+| 10 | Cambiar `_launch_job` en la API para usar el ejecutor | Hecho 2026-07-29, `JOB_EXECUTOR=local` en VM1 |
 | 11 | Retencion / garbage collection del registry | Pendiente |
 | 12 | Pruebas e2e del pipeline completo | Pendiente |
 

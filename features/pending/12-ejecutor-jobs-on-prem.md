@@ -525,15 +525,18 @@ sobre `licitaciones-executor.service`. No hay que tocar sudoers.
   `file_id` nulo, que es justo lo que el entorno del contenedor no permite
   distinguir. Artefactos del test borrados de VM2.
 
-### FASE 2 - CI y despliegue en VM2 (codigo HECHO 2026-07-28)
+### FASE 2 - CI y despliegue en VM2 (HECHA 2026-07-29)
 - [x] `.github/workflows/build-executor.yml`.
 - [x] `infra/scripts/executor-deploy.sh`. Escribe `executor.env` (600), crea
       `/var/log/licitaciones-jobs` y la unidad, y **falla temprano si la imagen
       no esta local**: en VM2 solo el usuario del runner tiene `docker login`,
       asi que `root` no puede hacer pull. Hay que correr el workflow antes.
 - [x] Regla 8080 en `infra/scripts/docker-firewall.sh`.
-- [ ] Desplegar y verificar: `GET /health` desde VM1 responde, desde una
-      estacion por VPN no. Requiere acceso a VM2, pendiente.
+- [x] Desplegado y verificado 2026-07-29: `GET /health` responde desde VM1
+      (`docker: ok`, `capacity: 3`) y no desde una estacion. **Ojo**: que no
+      responda desde la estacion no prueba la regla `DOCKER-USER`, porque el
+      FortiGate ya corta todo salvo el 22 hacia esa vLAN. La prueba valida es
+      la de VM1.
 
 ### FASE 3 - API (HECHA 2026-07-28)
 - [x] `config.py`: flag, variables del ejecutor, `AZURE_*` opcionales,

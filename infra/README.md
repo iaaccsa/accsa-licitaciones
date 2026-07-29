@@ -24,9 +24,9 @@ entregadas por infraestructura ACCSA.
 | 4. VM2: Docker + Registry privado | Hecho - 2026-07-28 |
 | 5. VM2: runner self-hosted de GitHub | Hecho - 2026-07-28 (registrado y escuchando) |
 | 5b. VM2: workflow de build -> registry | Hecho - 2026-07-28 (ver `ci.md`) |
-| 6. VM2: runner de jobs (reemplazo de Azure Container Apps Jobs) | Código hecho 2026-07-28, sin desplegar (ver `features/pending/12-ejecutor-jobs-on-prem.md`) |
-| 7. VM1: Docker + compose (ui, api) | Script escrito (`scripts/app-deploy.sh`), sin ejecutar. Sin nginx: el TLS lo termina el proxy corporativo |
-| 8. Migración de config y e2e | Pendiente |
+| 6. VM2: runner de jobs (reemplazo de Azure Container Apps Jobs) | Desplegado 2026-07-29, sano (ver `features/pending/12-ejecutor-jobs-on-prem.md`) |
+| 7. VM1: Docker + compose (ui, api) | Desplegado 2026-07-29. Sin nginx: el TLS lo termina el proxy corporativo |
+| 8. Migración de config y e2e | Pendiente. Bloqueado para estaciones: el Forti no deja pasar el 80 (ver `vm-app.md`) |
 
 ## Acceso rápido
 
