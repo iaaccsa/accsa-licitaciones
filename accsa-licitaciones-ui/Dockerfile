@@ -30,7 +30,6 @@ RUN pnpm build
 
 FROM node:22-slim AS runtime
 WORKDIR /app
-RUN corepack enable
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000
@@ -48,4 +47,8 @@ COPY --from=build /app/content ./content
 USER node
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+# next directly, not `pnpm start`: pnpm 11 runs a dependency check before the
+# script and tries to `pnpm install`, which needs to write into /app. The image
+# runs as node and /app belongs to root, so that check fails with EACCES and the
+# container never starts. Nothing here needs a package manager at run time.
+CMD ["node_modules/.bin/next", "start"]

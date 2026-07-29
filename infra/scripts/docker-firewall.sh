@@ -47,7 +47,11 @@ ExecStart=/usr/local/sbin/licitaciones-docker-firewall $ROLE
 WantedBy=multi-user.target docker.service
 EOF
 systemctl daemon-reload
-systemctl enable --now licitaciones-docker-firewall > /dev/null 2>&1
+systemctl enable licitaciones-docker-firewall > /dev/null 2>&1
+# restart, not `enable --now`: this is a oneshot with RemainAfterExit, so once
+# it is active `--now` does nothing and a re-run would leave the old rules in
+# place while reporting success.
+systemctl restart licitaciones-docker-firewall
 echo "  service: $(systemctl is-enabled licitaciones-docker-firewall) / $(systemctl is-active licitaciones-docker-firewall)"
 echo "  DOCKER-USER rules:"
 iptables -L DOCKER-USER -n --line-numbers | sed 's/^/    /'
