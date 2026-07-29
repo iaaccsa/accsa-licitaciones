@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from app.core.supabase import supabase
+from app.core.config import get_settings
 from app.core.security import get_api_key
 from app.core.qdrant import verify_qdrant_connection
 from app.core.azure import verify_azure_connection
+from app.core.executor import executor_client
 from app.api.v1.endpoints import analyses, events, requirements, original_files, processed_files, proposals, tenders, workflow_steps, workflow_phases, compliance_results, compliance_matrix, qdrant, jobs, chat, cleanup, upload_token, tender_classifications, tender_evaluation_types, economic_offers, admissibility_requirements, admissibility_results, model_tiers, ai_pricing, ai_usage, settings, audit_logs, prompts
 
 api_router = APIRouter(dependencies=[Depends(get_api_key)])
@@ -84,6 +86,30 @@ async def qdrant_health_check():
             detail="Qdrant connection failed"
         )
     return {"status": "ok", "service": "qdrant"}
+
+@api_router.get("/health/executor", tags=["health"], summary="Check Job Execution Backend")
+async def executor_health_check():
+    """
+    Report the active job execution backend. With JOB_EXECUTOR=local it also
+    returns the on-prem agent's queue occupancy.
+    """
+    if get_settings().JOB_EXECUTOR != "local":
+        return {"status": "ok", "backend": "azure"}
+    try:
+        health = executor_client.health()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Executor connection failed: {str(e)}"
+        )
+    return {
+        "status": health.get("status", "unknown"),
+        "backend": "local",
+        "docker": health.get("docker"),
+        "running": health.get("running"),
+        "queued": health.get("queued"),
+        "capacity": health.get("capacity"),
+    }
 
 @api_router.get("/health/azure", tags=["health"], summary="Check Azure Connection")
 async def azure_health_check():

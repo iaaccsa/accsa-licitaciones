@@ -21,6 +21,26 @@ class JobRepository(BaseRepository):
         response = query.execute()
         return response.data[0] if response.data else None
 
+    def get_non_terminal_job(self, analysis_id: str, service_name: str, file_id: str = None, original_file_id: str = None, proposal_id: str = None):
+        """Busca un job de esta identidad que todavia no llego a estado terminal.
+        Misma identidad que update_job_status: es la forma de saber si un callback
+        corresponde a una ejecucion viva o es un duplicado de una ya cerrada."""
+        query = (
+            supabase.table(self.table_name)
+            .select("id, status")
+            .eq("analysis_id", analysis_id)
+            .eq("service_name", service_name)
+            .not_.in_("status", ["succeeded", "failed", "cancelled"])
+        )
+        if file_id:
+            query = query.eq("file_id", file_id)
+        if original_file_id:
+            query = query.eq("original_file_id", original_file_id)
+        if proposal_id:
+            query = query.eq("proposal_id", proposal_id)
+        response = query.limit(1).execute()
+        return response.data[0] if response.data else None
+
     def count_jobs_by_service(self, analysis_id: str, service_name: str) -> int:
         response = (
             supabase.table(self.table_name)

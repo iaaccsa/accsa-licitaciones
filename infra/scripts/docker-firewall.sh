@@ -16,6 +16,10 @@ case "$1" in
     # RETURN (iptables -I inserts at position 1).
     add -p tcp --dport 5000 -j DROP
     add -p tcp --dport 5000 -s 10.97.0.11 -j RETURN
+    # Job executor: VM1 only. Its API key alone would let anyone on the VPN run
+    # an allowlisted image on this host.
+    add -p tcp --dport 8080 -j DROP
+    add -p tcp --dport 8080 -s 10.97.0.11 -j RETURN
     ;;
   app)
     # API: only the job callbacks from VM2. The UI reaches it over the internal

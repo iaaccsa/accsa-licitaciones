@@ -1,0 +1,50 @@
+name: build executor
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "accsa-licitaciones-executor/**"
+      - ".github/workflows/build-executor.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: build-executor
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: [self-hosted, vm2]
+    timeout-minutes: 30
+    env:
+      IMAGE: vm2:5000/licitaciones-executor
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and push
+        working-directory: accsa-licitaciones-executor
+        run: |
+          set -euo pipefail
+          docker build \
+            -t "$IMAGE:${GITHUB_SHA}" \
+            -t "$IMAGE:latest" \
+            .
+          docker push "$IMAGE:${GITHUB_SHA}"
+          docker push "$IMAGE:latest"
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Executor"
+            echo ""
+            echo "- Image: \`$IMAGE:${GITHUB_SHA::7}\` and \`:latest\`"
+            echo "- Declared version: \`$(grep -oE '"[0-9]+\.[0-9]+\.[0-9]+"' accsa-licitaciones-executor/app/config.py | head -1 | tr -d '\"')\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Prune dangling layers
+        if: always()
+        run: docker image prune -f > /dev/null

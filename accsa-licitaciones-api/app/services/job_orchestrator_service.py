@@ -2,8 +2,9 @@ import logging
 from typing import List, Optional
 from uuid import UUID
 
-from app.core.azure import azure_container_apps_client
+from app.core.azure import get_azure_client
 from app.core.config import get_settings
+from app.core.executor import executor_client
 from app.config.jobs_config import get_root_jobs, get_next_jobs, get_parent_jobs, is_valid_job, is_final_job, get_final_jobs, is_fan_out_job, get_fan_out_type, is_pause_after_job, get_requires_admitida, get_step_code_for_service
 from app.repositories.admissibility_requirement_repository import admissibility_requirement_repository
 from app.repositories.original_file_repository import original_file_repository
@@ -48,11 +49,6 @@ SERVICE_API_PATHS = {
 
 
 class JobOrchestratorService:
-    def __init__(self):
-        self.client = azure_container_apps_client
-        self.resource_group = settings.AZURE_RESOURCE_GROUP
-        self.registry = settings.AZURE_CONTAINER_REGISTRY
-
     def start_pipeline(self, analysis_id: UUID, proposal_id: Optional[UUID] = None) -> str:
         """Start the pipeline by launching the root job(s)."""
         root_jobs = get_root_jobs()
@@ -146,6 +142,21 @@ class JobOrchestratorService:
         file_id_str = str(file_id) if file_id else None
         original_file_id_str = str(original_file_id) if original_file_id else None
         proposal_id_str = str(proposal_id) if proposal_id else None
+
+        # The local executor synthesizes a 'failed' callback for a container that
+        # died without reporting, so a service that both reports and then exits
+        # non-zero produces two. With every job of this identity already closed,
+        # this one is a duplicate: acting on it would send a second failure email
+        # or relaunch the downstream step. A retry inserts a fresh non-terminal
+        # row, so it does not get caught here.
+        if not job_repository.get_non_terminal_job(str(analysis_id), service_name, file_id=file_id_str, original_file_id=original_file_id_str, proposal_id=proposal_id_str):
+            logger.info(
+                f"Ignoring duplicate callback for {service_name} "
+                f"(analysis_id={analysis_id}, file_id={file_id}, proposal_id={proposal_id}): "
+                f"no live job left for that identity"
+            )
+            return []
+
         job_repository.update_job_status(str(analysis_id), service_name, job_status, file_id=file_id_str, original_file_id=original_file_id_str, proposal_id=proposal_id_str)
 
         if status == "failed":
@@ -395,36 +406,23 @@ class JobOrchestratorService:
         file_id: Optional[UUID] = None,
         original_file_id: Optional[UUID] = None,
     ) -> dict:
-        """Launch a single Azure Container Apps Job and create a record in the jobs table."""
-        image = f"{self.registry}/{service_name}:latest"
-
+        """Launch a single job instance on the active backend and record it in the
+        jobs table. Returns the backend response, which is logged as event details."""
         effective_file_id = file_id or original_file_id
         env_vars = self.build_service_env(analysis_id, proposal_id, effective_file_id)
 
-        template = {
-            "containers": [
-                {
-                    "name": service_name,
-                    "image": image,
-                    "env": env_vars,
-                }
-            ]
-        }
-
         logger.info(
-            f"Launching Azure job: {service_name} with image: {image}"
+            f"Launching job: {service_name} on {settings.JOB_EXECUTOR}"
             + (f" for file_id={file_id}" if file_id else "")
             + (f" for original_file_id={original_file_id}" if original_file_id else "")
         )
 
-        poller = self.client.jobs.begin_start(
-            resource_group_name=self.resource_group,
-            job_name=service_name,
-            template=template,
-        )
-
-        result = poller.result()
-        azure_response = result.as_dict() if result else {}
+        if settings.JOB_EXECUTOR == "local":
+            execution_id, execution_name, response = self._launch_local(
+                service_name, analysis_id, proposal_id, file_id, original_file_id, env_vars
+            )
+        else:
+            execution_id, execution_name, response = self._launch_azure(service_name, env_vars)
 
         input_payload = {
             "ANALYSIS_ID": str(analysis_id),
@@ -436,8 +434,8 @@ class JobOrchestratorService:
         job_record = {
             "analysis_id": str(analysis_id),
             "service_name": service_name,
-            "azure_execution_id": azure_response.get("id", ""),
-            "execution_name": azure_response.get("name", ""),
+            "azure_execution_id": execution_id,
+            "execution_name": execution_name,
             "input_payload": input_payload,
         }
         if file_id:
@@ -448,7 +446,55 @@ class JobOrchestratorService:
             job_record["proposal_id"] = str(proposal_id)
         job_repository.create(job_record)
 
-        return azure_response
+        return response
+
+    def _launch_azure(self, service_name: str, env_vars: List[dict]) -> tuple:
+        """Start an Azure Container Apps Job. Synchronous: waits for the ARM ack."""
+        image = f"{settings.AZURE_CONTAINER_REGISTRY}/{service_name}:latest"
+        template = {
+            "containers": [
+                {
+                    "name": service_name,
+                    "image": image,
+                    "env": env_vars,
+                }
+            ]
+        }
+
+        poller = get_azure_client().jobs.begin_start(
+            resource_group_name=settings.AZURE_RESOURCE_GROUP,
+            job_name=service_name,
+            template=template,
+        )
+
+        result = poller.result()
+        response = result.as_dict() if result else {}
+        return response.get("id", ""), response.get("name", ""), response
+
+    def _launch_local(
+        self,
+        service_name: str,
+        analysis_id: UUID,
+        proposal_id: Optional[UUID],
+        file_id: Optional[UUID],
+        original_file_id: Optional[UUID],
+        env_vars: List[dict],
+    ) -> tuple:
+        """Queue the job on the VM2 executor. The API never names the image: the
+        agent derives it from service_name against its own allowlist."""
+        # build_service_env keeps Azure's [{name, value}] shape as the single
+        # source of truth; the agent takes a plain dict.
+        env = {item["name"]: item["value"] for item in env_vars}
+
+        response = executor_client.start_job(
+            service_name=service_name,
+            analysis_id=analysis_id,
+            proposal_id=proposal_id,
+            file_id=file_id,
+            original_file_id=original_file_id,
+            env=env,
+        )
+        return response.get("execution_id", ""), response.get("execution_name", ""), response
 
     def retry_job(self, analysis_id: UUID, service_name: str) -> List[str]:
         """Manually retry a failed job by resetting its workflow step and re-launching."""
@@ -559,27 +605,35 @@ class JobOrchestratorService:
             f"Timed-out steps: {timed_out_step_codes}"
         )
 
-        # Detener Azure executions — best-effort
+        # Detener las ejecuciones en curso — best-effort
         running_jobs = job_repository.get_running_jobs(analysis_id)
         for job in running_jobs:
+            execution_id = job.get("azure_execution_id")
             execution_name = job.get("execution_name")
             service_name = job.get("service_name")
-            if execution_name and service_name:
-                try:
-                    self.client.jobs.begin_stop_execution(
-                        resource_group_name=self.resource_group,
+            try:
+                if settings.JOB_EXECUTOR == "local":
+                    if not execution_id:
+                        continue
+                    # A DELETE also drops it from the queue if it never started.
+                    executor_client.stop_job(execution_id)
+                else:
+                    if not (execution_name and service_name):
+                        continue
+                    get_azure_client().jobs.begin_stop_execution(
+                        resource_group_name=settings.AZURE_RESOURCE_GROUP,
                         job_name=service_name,
                         job_execution_name=execution_name,
                     )
-                    logger.info(
-                        f"[JobMonitor] Stopped Azure execution {execution_name} "
-                        f"for job {service_name} (analysis_id={analysis_id})"
-                    )
-                except Exception as e:
-                    logger.warning(
-                        f"[JobMonitor] Failed to stop Azure execution {execution_name} "
-                        f"for job {service_name}: {e}"
-                    )
+                logger.info(
+                    f"[JobMonitor] Stopped execution {execution_name} "
+                    f"for job {service_name} (analysis_id={analysis_id})"
+                )
+            except Exception as e:
+                logger.warning(
+                    f"[JobMonitor] Failed to stop execution {execution_name} "
+                    f"for job {service_name}: {e}"
+                )
 
         # Marcar todos los jobs no-terminales como failed
         job_repository.fail_all_running_jobs(analysis_id)

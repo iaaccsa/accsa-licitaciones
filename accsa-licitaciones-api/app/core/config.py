@@ -19,13 +19,21 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str
     UPSTASH_REDIS_REST_URL: str
 
-    # Azure Container Apps
-    AZURE_TENANT_ID: str
-    AZURE_CLIENT_ID: str
-    AZURE_CLIENT_SECRET: str
-    AZURE_SUBSCRIPTION_ID: str
-    AZURE_RESOURCE_GROUP: str
-    AZURE_CONTAINER_REGISTRY: str
+    # Where pipeline jobs run: "azure" (Container Apps Jobs) or "local" (the
+    # on-prem executor agent on VM2). The Azure path stays alive until the local
+    # one has carried several real analyses.
+    JOB_EXECUTOR: str = "azure"
+    EXECUTOR_BASE_URL: str = ""
+    EXECUTOR_API_KEY: str = ""
+
+    # Azure Container Apps. Only required with JOB_EXECUTOR=azure, hence the
+    # empty defaults: an on-prem deployment starts with none of them set.
+    AZURE_TENANT_ID: str = ""
+    AZURE_CLIENT_ID: str = ""
+    AZURE_CLIENT_SECRET: str = ""
+    AZURE_SUBSCRIPTION_ID: str = ""
+    AZURE_RESOURCE_GROUP: str = ""
+    AZURE_CONTAINER_REGISTRY: str = ""
 
     API_TENDER_CLASSIFICATIONS_PATH: str = "/api/v1/tender-classifications/"
 
@@ -36,7 +44,9 @@ class Settings(BaseSettings):
     # Public Supabase Storage base for artifacts. Empty -> derived from SUPABASE_URL.
     SUPABASE_ARTIFACTS_BASE_URL: str = ""
 
-    JOB_TIMEOUT_MINUTES: int = 65
+    # With the local executor a step is 'running' from the moment the API queues
+    # it, so this budget now includes the wait for a free slot, not just the run.
+    JOB_TIMEOUT_MINUTES: int = 150
     JOB_MONITOR_INTERVAL_SECONDS: int = 60
 
     MAILGUN_API_KEY: str

@@ -179,6 +179,14 @@ directorio de `/var/lib/registry/docker/registry/v2/repositories/`.
 
 ### Ejecutor de jobs (el cambio de mayor impacto)
 
+> **Decidido y especificado.** El diseno completo, con contrato HTTP, limites,
+> riesgos y plan por fases, esta en
+> `features/pending/12-ejecutor-jobs-on-prem.md`. Resumen: agente HTTP propio en
+> VM2 (proyecto nuevo `accsa-licitaciones-executor`, imagen en el registry, con
+> el socket de Docker montado), 3 contenedores simultaneos de 1 CPU / 1,5 GB, y
+> flag `JOB_EXECUTOR=local|azure` en la API para poder volver atras. Esta
+> seccion se reescribe al implementarlo (FASE 5 del feature).
+
 Hoy la API llama al SDK de Azure:
 `azure_container_apps_client.jobs.begin_start(resource_group, job_name, template)`
 con la lista de variables de entorno del job
@@ -237,16 +245,18 @@ recomendable en un runner de 4 vCPU).
 | 5 | Instalar Docker Engine | Hecho 2026-07-28 |
 | 6 | Desplegar registry privado con TLS + htpasswd | Hecho 2026-07-28 |
 | 7 | Runner self-hosted registrado y operativo | Hecho 2026-07-28 |
-| 8 | Portar la matriz de build de Azure DevOps a GitHub Actions | Pendiente |
-| 9 | Implementar el ejecutor de jobs + limite de concurrencia | Pendiente |
-| 10 | Cambiar `_launch_job` en la API para usar el ejecutor | Pendiente |
+| 8 | Portar la matriz de build de Azure DevOps a GitHub Actions | Hecho 2026-07-28 (`ci.md`) |
+| 9 | Implementar el ejecutor de jobs + limite de concurrencia | Especificado, sin implementar |
+| 10 | Cambiar `_launch_job` en la API para usar el ejecutor | Especificado, sin implementar |
 | 11 | Retencion / garbage collection del registry | Pendiente |
 | 12 | Pruebas e2e del pipeline completo | Pendiente |
 
 ## Decisiones abiertas
 
-1. **Estrategia del pipeline** (tabla de arriba). Bloquea las fases 7 y 8.
-2. **Ejecutor de jobs** (tabla de arriba). Bloquea las fases 9 y 10.
+1. ~~**Estrategia del pipeline**~~. Cerrada: runner self-hosted en VM2, un
+   workflow por proyecto con filtro por `paths`. Ver `ci.md`.
+2. ~~**Ejecutor de jobs**~~. Cerrada: agente HTTP en VM2, ver
+   `features/pending/12-ejecutor-jobs-on-prem.md`.
 3. **Registry propio o GitHub Container Registry.** Si `ghcr.io` es aceptable, el
    pipeline se simplifica muchisimo (runners alojados, sin registry que
    mantener) y VM2 solo tendria que hacer `pull`. El usuario pidio registry

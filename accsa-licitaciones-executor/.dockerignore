@@ -1,0 +1,18 @@
+# Only app/ and requirements.txt are needed at build time. Keep the patterns
+# explicit rather than broad: a blanket "*.md" or "*.env*" is how the UI image
+# lost files it reads at runtime.
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+.env
+.env.example
+.gitignore
+README.md
+Dockerfile
+.dockerignore
+.DS_Store
+.idea/
+.vscode/
