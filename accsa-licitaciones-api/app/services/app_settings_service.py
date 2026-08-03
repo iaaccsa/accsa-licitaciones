@@ -2,6 +2,7 @@ from app.repositories.app_settings_repository import app_settings_repository
 from app.schemas.app_setting import (
     LlmConfig,
     LlmConfigRead,
+    LlmConfigUpdate,
     HitlConfig,
     HitlConfigRead,
     NotificationsConfig,
@@ -24,8 +25,14 @@ class AppSettingsService:
             return LlmConfigRead(primary_model="openai", intelligence_level="medium")
         return LlmConfigRead(**row["value"], updated_at=row.get("updated_at"))
 
-    def update_llm_config(self, config: LlmConfig) -> LlmConfigRead:
-        row = self.repository.upsert_value(LLM_CONFIG_KEY, config.model_dump())
+    def update_llm_config(self, update: LlmConfigUpdate) -> LlmConfigRead:
+        # Patch, not replace: the admin view only edits the reasoning of each
+        # model, and primary_model/intelligence_level still feed model_tiers.
+        current = self.get_llm_config()
+        merged = LlmConfig(
+            **{**current.model_dump(exclude={"updated_at"}), **update.model_dump()}
+        )
+        row = self.repository.upsert_value(LLM_CONFIG_KEY, merged.model_dump(mode="json"))
         return LlmConfigRead(**row["value"], updated_at=row.get("updated_at"))
 
     def get_hitl_config(self) -> HitlConfigRead:

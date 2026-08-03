@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 
 from app.schemas.app_setting import (
-    LlmConfig,
     LlmConfigRead,
+    LlmConfigUpdate,
     HitlConfig,
     HitlConfigRead,
     NotificationsConfig,
@@ -27,7 +27,7 @@ def get_llm_config():
 
 
 @router.put("/llm-config", response_model=LlmConfigRead)
-def update_llm_config(config: LlmConfig, actor: Actor = Depends(get_actor)):
+def update_llm_config(config: LlmConfigUpdate, actor: Actor = Depends(get_actor)):
     try:
         result = app_settings_service.update_llm_config(config)
         audit_service.log(

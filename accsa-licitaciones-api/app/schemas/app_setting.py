@@ -1,13 +1,48 @@
 from datetime import datetime
+from enum import Enum
 from typing import Optional
 from pydantic import BaseModel
 
 from app.schemas.analysis import PrimaryModel, IntelligenceLevel
 
 
+class OpenAiReasoningEffort(str, Enum):
+    """`reasoning_effort` values the gpt-5.6 family accepts on chat.completions,
+    verified against the API. Omitting the parameter is the same as "medium"."""
+
+    none = "none"
+    low = "low"
+    medium = "medium"
+    high = "high"
+    xhigh = "xhigh"
+
+
+class GeminiThinkingLevel(str, Enum):
+    """`thinking_level` values gemini-3.6-flash accepts inside generation_config.
+    There is no "off": "minimal" is the floor. Default is "medium"."""
+
+    minimal = "minimal"
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+
 class LlmConfig(BaseModel):
+    """Stored shape. primary_model and intelligence_level still drive analysis
+    creation through model_tiers, so they stay until that table is reworked."""
+
     primary_model: PrimaryModel
     intelligence_level: IntelligenceLevel
+    openai_reasoning_effort: OpenAiReasoningEffort = OpenAiReasoningEffort.medium
+    gemini_thinking_level: GeminiThinkingLevel = GeminiThinkingLevel.medium
+
+
+class LlmConfigUpdate(BaseModel):
+    """What /admin/config/llm-config edits: the reasoning of each model. Anything
+    else already stored is preserved by the service."""
+
+    openai_reasoning_effort: OpenAiReasoningEffort
+    gemini_thinking_level: GeminiThinkingLevel
 
 
 class LlmConfigRead(LlmConfig):

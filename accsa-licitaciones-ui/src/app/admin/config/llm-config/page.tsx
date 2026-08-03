@@ -7,24 +7,34 @@ import { AdminPageHeader } from "@/components/AdminPageHeader";
 import {
     Brain,
     CheckCircle,
+    CircleOff,
     Cpu,
     Gauge,
     Loader2,
+    Minimize2,
+    Rocket,
     Sparkles,
     XCircle,
     Zap,
     type LucideIcon,
 } from "lucide-react";
 
-type PrimaryModel = "gemini" | "openai";
-type IntelligenceLevel = "low" | "medium" | "high";
+type OpenAiReasoningEffort = "none" | "low" | "medium" | "high" | "xhigh";
+type GeminiThinkingLevel = "minimal" | "low" | "medium" | "high";
 
-const MODELS: { value: PrimaryModel; label: string; desc: string; Icon: LucideIcon }[] = [
-    { value: "gemini", label: "Gemini", desc: "Modelos de Google.", Icon: Sparkles },
-    { value: "openai", label: "OpenAI", desc: "Modelos GPT de OpenAI.", Icon: Cpu },
+// Values verified against each provider's API: OpenAI takes none..xhigh on
+// chat.completions and rejects "minimal"; Gemini takes minimal..high on
+// thinking_level and has no "off". Both default to "medium".
+const OPENAI_EFFORTS: { value: OpenAiReasoningEffort; label: string; desc: string; Icon: LucideIcon }[] = [
+    { value: "none", label: "Ninguno", desc: "Sin razonamiento.", Icon: CircleOff },
+    { value: "low", label: "Bajo", desc: "Más rápido y económico.", Icon: Zap },
+    { value: "medium", label: "Medio", desc: "Equilibrio velocidad/calidad.", Icon: Gauge },
+    { value: "high", label: "Alto", desc: "Más capaz, más lento.", Icon: Brain },
+    { value: "xhigh", label: "Máximo", desc: "El más capaz, el más caro.", Icon: Rocket },
 ];
 
-const LEVELS: { value: IntelligenceLevel; label: string; desc: string; Icon: LucideIcon }[] = [
+const GEMINI_LEVELS: { value: GeminiThinkingLevel; label: string; desc: string; Icon: LucideIcon }[] = [
+    { value: "minimal", label: "Mínimo", desc: "El menor razonamiento posible.", Icon: Minimize2 },
     { value: "low", label: "Bajo", desc: "Más rápido y económico.", Icon: Zap },
     { value: "medium", label: "Medio", desc: "Equilibrio velocidad/calidad.", Icon: Gauge },
     { value: "high", label: "Alto", desc: "Más capaz, más lento.", Icon: Brain },
@@ -64,12 +74,42 @@ function SelectableCard({
     );
 }
 
+function ModelHeader({
+    Icon,
+    role,
+    provider,
+    model,
+    note,
+}: {
+    Icon: LucideIcon;
+    role: string;
+    provider: string;
+    model: string;
+    note: string;
+}) {
+    return (
+        <div className="flex items-start gap-3 mb-4">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800">
+                <Icon className="h-5 w-5 text-zinc-600 dark:text-zinc-300" />
+            </span>
+            <span className="min-w-0">
+                <span className="flex flex-wrap items-baseline gap-x-2">
+                    <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{role}</span>
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400">{provider}</span>
+                    <code className="text-sm font-mono text-zinc-900 dark:text-zinc-100">{model}</code>
+                </span>
+                <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-1">{note}</span>
+            </span>
+        </div>
+    );
+}
+
 export default function LlmConfigPage() {
-    const [primaryModel, setPrimaryModel] = useState<PrimaryModel>("openai");
-    const [intelligenceLevel, setIntelligenceLevel] = useState<IntelligenceLevel>("medium");
+    const [openaiEffort, setOpenaiEffort] = useState<OpenAiReasoningEffort>("medium");
+    const [geminiLevel, setGeminiLevel] = useState<GeminiThinkingLevel>("medium");
     const [savedConfig, setSavedConfig] = useState<{
-        primary_model: PrimaryModel;
-        intelligence_level: IntelligenceLevel;
+        openai_reasoning_effort: OpenAiReasoningEffort;
+        gemini_thinking_level: GeminiThinkingLevel;
     } | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -84,11 +124,11 @@ export default function LlmConfigPage() {
                 if (!response.ok) throw new Error("fetch failed");
                 const data = await response.json();
                 if (cancelled) return;
-                setPrimaryModel(data.primary_model);
-                setIntelligenceLevel(data.intelligence_level);
+                setOpenaiEffort(data.openai_reasoning_effort);
+                setGeminiLevel(data.gemini_thinking_level);
                 setSavedConfig({
-                    primary_model: data.primary_model,
-                    intelligence_level: data.intelligence_level,
+                    openai_reasoning_effort: data.openai_reasoning_effort,
+                    gemini_thinking_level: data.gemini_thinking_level,
                 });
             } catch {
                 if (!cancelled) {
@@ -106,8 +146,8 @@ export default function LlmConfigPage() {
 
     const hasChanges =
         savedConfig !== null &&
-        (savedConfig.primary_model !== primaryModel ||
-            savedConfig.intelligence_level !== intelligenceLevel);
+        (savedConfig.openai_reasoning_effort !== openaiEffort ||
+            savedConfig.gemini_thinking_level !== geminiLevel);
 
     const handleSave = useCallback(async () => {
         setSaving(true);
@@ -118,15 +158,15 @@ export default function LlmConfigPage() {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    primary_model: primaryModel,
-                    intelligence_level: intelligenceLevel,
+                    openai_reasoning_effort: openaiEffort,
+                    gemini_thinking_level: geminiLevel,
                 }),
             });
             const data = await response.json();
             if (response.ok) {
                 setSavedConfig({
-                    primary_model: data.primary_model,
-                    intelligence_level: data.intelligence_level,
+                    openai_reasoning_effort: data.openai_reasoning_effort,
+                    gemini_thinking_level: data.gemini_thinking_level,
                 });
                 setStatus("success");
             } else {
@@ -139,47 +179,52 @@ export default function LlmConfigPage() {
         } finally {
             setSaving(false);
         }
-    }, [primaryModel, intelligenceLevel]);
+    }, [openaiEffort, geminiLevel]);
 
     return (
         <div className="max-w-6xl mx-auto py-8 px-4">
             <AdminPageHeader
                 backHref="/admin/config"
                 title="Configuración LLM"
-                description="Configuración global del modelo. Aplica a los análisis que se creen a partir de ahora; los análisis en curso o existentes conservan el modelo con el que fueron creados."
+                description="Razonamiento de los modelos que usa el pipeline. Aplica a los análisis que se creen a partir de ahora; los análisis en curso o existentes conservan la configuración con la que fueron creados."
             />
 
             <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm p-8">
                 {loading ? (
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         <div>
-                            <Skeleton className="h-4 w-32 mb-2" />
-                            <div className="grid grid-cols-2 gap-4">
-                                <Skeleton className="h-20 rounded-xl" />
-                                <Skeleton className="h-20 rounded-xl" />
+                            <Skeleton className="h-10 w-64 mb-4" />
+                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <Skeleton key={i} className="h-20 rounded-xl" />
+                                ))}
                             </div>
                         </div>
                         <div>
-                            <Skeleton className="h-4 w-40 mb-2" />
-                            <div className="grid grid-cols-3 gap-4">
-                                <Skeleton className="h-20 rounded-xl" />
-                                <Skeleton className="h-20 rounded-xl" />
-                                <Skeleton className="h-20 rounded-xl" />
+                            <Skeleton className="h-10 w-64 mb-4" />
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                {Array.from({ length: 4 }).map((_, i) => (
+                                    <Skeleton key={i} className="h-20 rounded-xl" />
+                                ))}
                             </div>
                         </div>
                     </div>
                 ) : (
                     <>
-                        <div className="mb-6">
-                            <span className="block text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
-                                Modelo principal
-                            </span>
-                            <div className="grid grid-cols-2 gap-4">
-                                {MODELS.map(({ value, label, desc, Icon }) => (
+                        <div className="mb-8">
+                            <ModelHeader
+                                Icon={Cpu}
+                                role="Modelo principal"
+                                provider="OpenAI"
+                                model="gpt-5.6-terra"
+                                note="Nivel de esfuerzo de razonamiento."
+                            />
+                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                                {OPENAI_EFFORTS.map(({ value, label, desc, Icon }) => (
                                     <SelectableCard
                                         key={value}
-                                        active={primaryModel === value}
-                                        onClick={() => setPrimaryModel(value)}
+                                        active={openaiEffort === value}
+                                        onClick={() => setOpenaiEffort(value)}
                                         Icon={Icon}
                                         label={label}
                                         desc={desc}
@@ -188,16 +233,20 @@ export default function LlmConfigPage() {
                             </div>
                         </div>
 
-                        <div className="mb-6">
-                            <span className="block text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
-                                Nivel de inteligencia
-                            </span>
-                            <div className="grid grid-cols-3 gap-4">
-                                {LEVELS.map(({ value, label, desc, Icon }) => (
+                        <div className="mb-8 pt-8 border-t border-zinc-200 dark:border-zinc-800">
+                            <ModelHeader
+                                Icon={Sparkles}
+                                role="Modelo secundario"
+                                provider="Google"
+                                model="gemini-3.6-flash"
+                                note="Nivel de razonamiento. No admite desactivarlo: el mínimo es Mínimo."
+                            />
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                {GEMINI_LEVELS.map(({ value, label, desc, Icon }) => (
                                     <SelectableCard
                                         key={value}
-                                        active={intelligenceLevel === value}
-                                        onClick={() => setIntelligenceLevel(value)}
+                                        active={geminiLevel === value}
+                                        onClick={() => setGeminiLevel(value)}
                                         Icon={Icon}
                                         label={label}
                                         desc={desc}

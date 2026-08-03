@@ -53,8 +53,8 @@ export async function PUT(request: NextRequest) {
                 ...(await getAuditHeaders(request)),
             },
             body: JSON.stringify({
-                primary_model: body.primary_model,
-                intelligence_level: body.intelligence_level,
+                openai_reasoning_effort: body.openai_reasoning_effort,
+                gemini_thinking_level: body.gemini_thinking_level,
             }),
         });
 

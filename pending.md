@@ -38,6 +38,47 @@ de los placeholders requeridos; NO detecta una llave suelta que rompa `.format()
 en runtime. Si esto causa problemas, agregar a futuro una validacion de
 `.format()` (intentar formatear con valores dummy y capturar `KeyError`/`ValueError`).
 
+## Ajustar `model_tiers` al nuevo esquema de modelos
+
+Contexto (2026-08-03): la vista `/admin/config/llm-config` dejo de elegir
+proveedor + nivel de inteligencia. Ahora muestra dos modelos fijos, cada uno con
+su propio razonamiento: principal `gpt-5.6-terra` (OpenAI, `reasoning_effort`
+none|low|medium|high|xhigh) y secundario `gemini-3.6-flash` (Google,
+`thinking_level` minimal|low|medium|high). Se guardan en `app_settings.llm_config`
+como `openai_reasoning_effort` y `gemini_thinking_level`.
+
+`model_tiers` quedo desalineada. Hoy esta indexada por `(provider, level)` y
+tiene 6 filas con modelos viejos, cada una con su fallback cruzado:
+
+```
+gemini low    -> gemini-3.1-flash-lite  (fallback gpt-5.4-nano)
+gemini medium -> gemini-3.5-flash       (fallback gpt-5.4-mini)
+gemini high   -> gemini-3.1-pro         (fallback gpt-5.5)
+openai low    -> gpt-5.4-nano           (fallback gemini-3.1-flash-lite)
+openai medium -> gpt-5.4-mini           (fallback gemini-3.5-flash)
+openai high   -> gpt-5.5                (fallback gemini-3.1-pro)
+```
+
+Problemas a resolver:
+- El par `(provider, level)` ya no es la clave de seleccion: el modelo es fijo y
+  lo que varia es el razonamiento, con dominios distintos por proveedor
+  (5 valores en OpenAI, 4 en Gemini, y no coinciden: OpenAI no acepta `minimal`,
+  Gemini no acepta `none` ni `xhigh`).
+- El fallback cruzado deja de ser por fila: el secundario es siempre
+  `gemini-3.6-flash`.
+- Faltan los precios de `gpt-5.6-terra` y `gemini-3.6-flash` en
+  `input_price_per_1m` / `output_price_per_1m` (los usa el rollup de costos).
+
+Arrastres a decidir junto con la tabla (siguen vivos y hoy no se tocan):
+- `app_settings.llm_config` conserva `primary_model` + `intelligence_level`
+  porque `analysis_service.create_analysis_from_storage` los copia a
+  `analyses.primary_model` / `analyses.intelligence_level`.
+- `GET /api/v1/analyses/{id}/model-config` resuelve el tier con esos dos campos
+  (`model_tier_service.get_tier`) y es lo que consumen los services para saber
+  con que modelo correr.
+- Enums `PrimaryModel` / `IntelligenceLevel` en `app/schemas/analysis.py` y
+  `ModelTier` en `app/schemas/model_tier.py`.
+
 ## Revision: campo `roles` de admisibilidad (obligatoria vs subsanable)
 
 Contexto (2026-07-13): se elimino de la UI el filtro por rol de la matriz de
