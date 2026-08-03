@@ -163,11 +163,17 @@ def openai_units(response) -> tuple:
 
 def gemini_units(response) -> tuple:
     """Extract (input_units, output_units, cached_input_units) from a Gemini
-    generate_content response. Missing fields default to 0."""
+    generate_content response. Missing fields default to 0.
+
+    Thinking tokens are reported apart from the answer, in `thoughts_token_count`,
+    but Google bills them as output, so they are added here. They are not a
+    rounding error: gemini-3.6-flash answering in 134 tokens spent 705 thinking.
+    """
     meta = getattr(response, "usage_metadata", None)
     if meta is None:
         return 0, 0, 0
     input_units = getattr(meta, "prompt_token_count", 0) or 0
-    output_units = getattr(meta, "candidates_token_count", 0) or 0
+    answer_units = getattr(meta, "candidates_token_count", 0) or 0
+    thinking_units = getattr(meta, "thoughts_token_count", 0) or 0
     cached = getattr(meta, "cached_content_token_count", 0) or 0
-    return input_units, output_units, cached
+    return input_units, answer_units + thinking_units, cached
