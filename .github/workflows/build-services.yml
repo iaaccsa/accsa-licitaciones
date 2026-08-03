@@ -78,6 +78,15 @@ jobs:
     if: needs.detect.outputs.services != '[]'
     runs-on: [self-hosted, vm2]
     timeout-minutes: 40
+    env:
+      # Two registries on purpose: the on-prem executor pulls from VM2 and the
+      # Azure Container Apps Jobs pull from ACR. Both infrastructures have to
+      # keep running the same code.
+      LOCAL_REGISTRY: vm2:5000
+      ACR: accsalicitaciones.azurecr.io
+      # ACR keeps the images one level down (services/<name>), which is what
+      # AZURE_CONTAINER_REGISTRY in the API points at.
+      ACR_PATH: services
     strategy:
       fail-fast: false
       # A single runner handles one job at a time, so the matrix runs serially
@@ -88,22 +97,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Log in to ACR
+        env:
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+        run: |
+          set -euo pipefail
+          # The login to the VM2 registry lives on the machine (user deploy);
+          # ACR is external, so its credentials come from repository secrets.
+          if [ -z "$ACR_USERNAME" ] || [ -z "$ACR_PASSWORD" ]; then
+            echo "Missing ACR_USERNAME / ACR_PASSWORD secrets." >&2
+            exit 1
+          fi
+          printf '%s' "$ACR_PASSWORD" | docker login "$ACR" -u "$ACR_USERNAME" --password-stdin
+
       - name: Build and push
         env:
           SERVICE: ${{ matrix.service }}
         run: |
           set -euo pipefail
-          IMAGE="vm2:5000/$SERVICE"
+          LOCAL_IMAGE="$LOCAL_REGISTRY/$SERVICE"
+          ACR_IMAGE="$ACR/$ACR_PATH/$SERVICE"
           # Build context is the project root, not the service folder: every
           # Dockerfile copies VERSION and global/ besides its own directory.
           docker build \
             -f "accsa-licitaciones-services/$SERVICE/Dockerfile" \
-            -t "$IMAGE:${GITHUB_SHA}" \
-            -t "$IMAGE:latest" \
+            -t "$LOCAL_IMAGE:${GITHUB_SHA}" \
+            -t "$LOCAL_IMAGE:latest" \
+            -t "$ACR_IMAGE:${GITHUB_SHA}" \
+            -t "$ACR_IMAGE:latest" \
             accsa-licitaciones-services
-          docker push "$IMAGE:${GITHUB_SHA}"
-          docker push "$IMAGE:latest"
-          echo "- \`$SERVICE\` -> \`${GITHUB_SHA::7}\`, \`latest\`" >> "$GITHUB_STEP_SUMMARY"
+          # On-prem first: if the link to Azure is down the job still fails, but
+          # VM2 is left with the image already updated.
+          docker push "$LOCAL_IMAGE:${GITHUB_SHA}"
+          docker push "$LOCAL_IMAGE:latest"
+          docker push "$ACR_IMAGE:${GITHUB_SHA}"
+          docker push "$ACR_IMAGE:latest"
+          echo "- \`$SERVICE\` -> \`${GITHUB_SHA::7}\`, \`latest\` (vm2 + acr)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log out of ACR
+        if: always()
+        run: docker logout "$ACR" > /dev/null
 
       - name: Prune dangling layers
         if: always()

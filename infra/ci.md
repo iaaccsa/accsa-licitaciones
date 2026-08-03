@@ -8,14 +8,39 @@ cambios en su propia carpeta. Todos corren en el runner self-hosted de VM2
 |----------|----------------|--------|
 | `build-api.yml` | `accsa-licitaciones-api/**` | `vm2:5000/licitaciones-api` |
 | `build-ui.yml` | `accsa-licitaciones-ui/**` | `vm2:5000/licitaciones-ui` |
-| `build-services.yml` | `accsa-licitaciones-services/**` | `vm2:5000/<service-name>` |
+| `build-services.yml` | `accsa-licitaciones-services/**` | `vm2:5000/<service-name>` **y** `accsalicitaciones.azurecr.io/services/<service-name>` |
 
 Cada imagen se publica con dos tags: el SHA completo del commit y `latest`.
 `latest` es el que consume el orquestador (`_launch_job` arma
 `{registry}/{service_name}:latest`).
 
-Ninguno usa secretos de GitHub: el `docker login` esta hecho en la maquina, como
-`deploy`. Ver `github-runner.md`.
+`build-api.yml` y `build-ui.yml` no usan secretos: el `docker login` contra
+`vm2:5000` esta hecho en la maquina, como `deploy` (ver `github-runner.md`). La
+API y la UI en Azure/Vercel no se despliegan desde imagenes, asi que no tienen
+nada que publicar en ACR.
+
+## Los servicios se publican en los dos registros
+
+Azure sigue en uso: los Container Apps Jobs tiran de ACR y el ejecutor de VM2
+tira del registry local. Si el build publicara solo en VM2, la infra de Azure se
+quedaria congelada en la ultima imagen que dejo Azure DevOps. Por eso
+`build-services.yml` etiqueta cada imagen cuatro veces (SHA y `latest` en cada
+registro) y hace los cuatro `push`.
+
+- El path en ACR es `services/<service-name>`, que es lo que apunta
+  `AZURE_CONTAINER_REGISTRY` en la API (`accsalicitaciones.azurecr.io/services`).
+- Empuja primero a VM2: si el enlace a Azure falla, el job falla, pero on-prem
+  ya quedo actualizado.
+- Credenciales en secretos del repositorio: `ACR_USERNAME` y `ACR_PASSWORD`
+  (las mismas del admin user de ACR que usaba `azure-pipelines.yml` en
+  `AZURE_REGISTRY_USER` / `AZURE_REGISTRY_PASS`). El `docker login` se hace al
+  empezar cada job de la matriz y el `logout` corre siempre al terminar, para no
+  dejarlas en el `~/.docker/config.json` del runner.
+- Requiere salida a internet de VM2 hacia `*.azurecr.io`, que es la unica
+  dependencia nueva del runner ademas de GitHub.
+
+`accsa-licitaciones-services/azure-pipelines.yml` queda como referencia
+historica: el build ya no vive en Azure DevOps.
 
 ## Los servicios se construyen de a uno, no los 16
 
