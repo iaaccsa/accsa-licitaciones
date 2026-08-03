@@ -28,3 +28,4 @@ tools/planner/venv/
 
 # --- OS noise ---
 .DS_Store
+.serena/
