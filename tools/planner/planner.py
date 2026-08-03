@@ -11,6 +11,9 @@ Commands:
   progress TASK_ID                     Set task to In progress (percentComplete=50)
   done TASK_ID [--note TEXT]           Set task Completed (100) + append note to details
   note TASK_ID TEXT                    Append a timestamped note to task details
+  plans                                List plans and buckets with their ids
+  assignees --plan-id ID               Assignee ids of a plan + tasks they carry
+  create --bucket-id ID --title T ...  Create a task in a bucket
 """
 import argparse
 import datetime
@@ -251,6 +254,76 @@ def cmd_note(args):
     print("Note appended.")
 
 
+def cmd_plans(args):
+    token = get_token()
+    for g in gget(token, "/me/memberOf").get("value", []):
+        if not g.get("@odata.type", "").endswith("group"):
+            continue
+        try:
+            plans = gget(token, f"/groups/{g['id']}/planner/plans").get("value", [])
+        except requests.HTTPError:
+            continue
+        for plan in plans:
+            print(f"{plan['title']}  (plan {plan['id']})")
+            for b in gget(token, f"/planner/plans/{plan['id']}/buckets").get("value", []):
+                print(f"    {b['name']:24} --bucket-id {b['id']}")
+
+
+def cmd_assignees(args):
+    """Distinct assignees of a plan, with a few of their task titles.
+
+    The app registration only has User.Read, so Graph refuses to resolve a name
+    or an email into a user id. Recognising someone by the tasks they already
+    carry is the only way left to find the id `create --assign` needs.
+    """
+    token = get_token()
+    me = gget(token, "/me")["id"]
+    by_user = {}
+    for t in gget_all(token, f"/planner/plans/{args.plan_id}/tasks"):
+        for uid in (t.get("assignments") or {}):
+            by_user.setdefault(uid, []).append(t["title"])
+    for uid, titles in sorted(by_user.items(), key=lambda kv: -len(kv[1])):
+        print(f"\n{uid}{'  (you)' if uid == me else ''}  x{len(titles)}")
+        for title in titles[:4]:
+            print(f"    - {title[:70]}")
+
+
+def cmd_create(args):
+    token = get_token()
+    plan_id = gget(token, f"/planner/buckets/{args.bucket_id}")["planId"]
+    body = {"planId": plan_id, "bucketId": args.bucket_id, "title": args.title}
+    if args.assign:
+        body["assignments"] = {
+            uid: {"@odata.type": "#microsoft.graph.plannerAssignment", "orderHint": " !"}
+            for uid in args.assign
+        }
+    if args.due:
+        body["dueDateTime"] = f"{args.due}T12:00:00Z"
+
+    r = requests.post(
+        f"{GRAPH}/planner/tasks",
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        data=json.dumps(body),
+    )
+    r.raise_for_status()
+    task = r.json()
+
+    description = args.details
+    if args.details_file:
+        description = Path(args.details_file).read_text()
+    if description:
+        # Details are a separate resource with their own etag, so they can only
+        # be written after the task exists.
+        d = gget(token, f"/planner/tasks/{task['id']}/details")
+        gpatch(token, f"/planner/tasks/{task['id']}/details", d["@odata.etag"],
+               {"description": description})
+
+    print(f"Created: {task['title']}")
+    print(f"  task_id: {task['id']}")
+    print(f"  plan:    {plan_id}")
+    print(f"  bucket:  {args.bucket_id}")
+
+
 def main():
     p = argparse.ArgumentParser(description="Planner CLI (Microsoft Graph)")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -287,6 +360,21 @@ def main():
     s.add_argument("task_id")
     s.add_argument("text")
     s.set_defaults(func=cmd_note)
+
+    sub.add_parser("plans").set_defaults(func=cmd_plans)
+
+    s = sub.add_parser("assignees")
+    s.add_argument("--plan-id", required=True)
+    s.set_defaults(func=cmd_assignees)
+
+    s = sub.add_parser("create")
+    s.add_argument("--bucket-id", required=True)
+    s.add_argument("--title", required=True)
+    s.add_argument("--details")
+    s.add_argument("--details-file")
+    s.add_argument("--assign", action="append", metavar="USER_ID")
+    s.add_argument("--due", metavar="YYYY-MM-DD")
+    s.set_defaults(func=cmd_create)
 
     args = p.parse_args()
     args.func(args)

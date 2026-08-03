@@ -33,7 +33,17 @@ venv/bin/python planner.py show <TASK_ID>
 venv/bin/python planner.py progress <TASK_ID>            # -> In progress (50%)
 venv/bin/python planner.py done <TASK_ID> --note "what I did"   # -> Completed (100%)
 venv/bin/python planner.py note <TASK_ID> "progress note"
+
+venv/bin/python planner.py plans                      # plans + buckets with their ids
+venv/bin/python planner.py assignees --plan-id <PLAN_ID>
+venv/bin/python planner.py create --bucket-id <BUCKET_ID> --title "..." \
+    --details-file task.txt --assign <USER_ID> --due 2026-08-10
 ```
+
+Assigning needs the assignee's Entra object id. The app registration only asks
+for `User.Read`, so Graph answers 403 to any lookup of another user, by name or
+by email: `assignees` is the way around it, listing the ids already assigned in
+a plan next to the tasks they carry, so a person can be recognised by their work.
 
 Reporting note: Planner comments live in the M365 Group conversation and are not
 writable via delegated Graph, so `--note` appends a timestamped line to the task
