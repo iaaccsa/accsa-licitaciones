@@ -25,7 +25,7 @@ jobs:
       # They live on the VM, not in GitHub, same as the registry credentials.
       BUILD_ENV: /opt/deploy/ui-build.env
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check the build configuration
         run: |

@@ -22,7 +22,7 @@ jobs:
     env:
       IMAGE: vm2:5000/licitaciones-api
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Build and push
         working-directory: accsa-licitaciones-api
