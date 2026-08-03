@@ -49,22 +49,19 @@ FILE_ID = os.environ.get("FILE_ID")
 
 SERVICE_NAME = "service-documents-classifier"
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
-GEMINI_MODEL = "gemini-2.5-flash"
-OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 
-# Model selection, resolved at runtime from the analysis (see resolve_model_config).
-# Defaults preserve the prior hardcoded behavior if the API is unreachable.
-PRIMARY_PROVIDER = "gemini"
-PRIMARY_MODEL = GEMINI_MODEL
-FALLBACK_PROVIDER = "openai"
-FALLBACK_MODEL = OPENAI_FALLBACK_MODEL
+# Models and the reasoning each call must carry, resolved at runtime by
+# resolve_model_config. No defaults on purpose: nothing runs unconfigured.
+PRIMARY_PROVIDER = None
+PRIMARY_MODEL = None
+FALLBACK_PROVIDER = None
+FALLBACK_MODEL = None
+# Keyed by provider: goes to `reasoning_effort` on OpenAI and to `thinking_level`
+# on Gemini.
+REASONING: dict = {}
 
 # AI cost accounting: frozen price snapshot, loaded once in main().
 PRICING: dict = {}
-
-
-def _provider_of(model_id: str) -> str:
-    return "gemini" if str(model_id).startswith("gemini") else "openai"
 
 
 logger = setup_logger(SERVICE_NAME)
@@ -91,29 +88,38 @@ def api_request(method: str, path: str, json_data: dict | list | None = None) ->
 
 
 def resolve_model_config():
-    """Resolve the LLM model for this analysis from the API (global config snapshot)
-    and log a startup event. On any failure keep the hardcoded defaults."""
+    """Resolve the models this analysis runs on and the reasoning each one must
+    be called with, and log it. Raises if the API does not answer or answers
+    incomplete: a job that reasons at a level nobody configured returns a result
+    that looks valid and costs whatever it wants, and nobody would notice."""
     global PRIMARY_PROVIDER, PRIMARY_MODEL, FALLBACK_PROVIDER, FALLBACK_MODEL
-    level = None
-    origin = "configuracion global"
-    try:
-        cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config")
-        if cfg:
-            PRIMARY_PROVIDER = cfg.get("provider") or PRIMARY_PROVIDER
-            PRIMARY_MODEL = cfg.get("model_id") or PRIMARY_MODEL
-            level = cfg.get("level")
-            fb = cfg.get("fallback_model_id")
-            if fb:
-                FALLBACK_MODEL = fb
-                FALLBACK_PROVIDER = _provider_of(fb)
-    except Exception as e:
-        origin = f"valores por defecto (model-config no disponible: {e})"
-    msg = (
-        f"Modelo LLM: {PRIMARY_MODEL} (proveedor {PRIMARY_PROVIDER}"
-        + (f", nivel {level}" if level else "")
-        + f"); fallback {FALLBACK_MODEL}. Origen: {origin}."
+
+    cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config") or {}
+    selections = {}
+    for role in ("primary", "secondary"):
+        sel = cfg.get(role) or {}
+        missing = [k for k in ("provider", "model_id", "reasoning") if not sel.get(k)]
+        if missing:
+            raise RuntimeError(
+                f"model-config no devolvio el modelo {role} completo "
+                f"(falta: {', '.join(missing)})"
+            )
+        selections[role] = sel
+        REASONING[sel["provider"]] = sel["reasoning"]
+
+    PRIMARY_PROVIDER = selections["primary"]["provider"]
+    PRIMARY_MODEL = selections["primary"]["model_id"]
+    FALLBACK_PROVIDER = selections["secondary"]["provider"]
+    FALLBACK_MODEL = selections["secondary"]["model_id"]
+
+    log_event(
+        ANALYSIS_ID,
+        "info",
+        f"Modelo LLM: {PRIMARY_MODEL} (proveedor {PRIMARY_PROVIDER}, razonamiento "
+        f"{REASONING[PRIMARY_PROVIDER]}); fallback {FALLBACK_MODEL} (proveedor "
+        f"{FALLBACK_PROVIDER}, razonamiento {REASONING[FALLBACK_PROVIDER]}).",
+        EVENT_SOURCE,
     )
-    log_event(ANALYSIS_ID, "info", msg, EVENT_SOURCE)
 
 
 def validate_env():
@@ -151,6 +157,7 @@ def _gemini_json(gemini_client: genai.Client, prompt: str, model: str) -> dict:
         contents=prompt,
         config=genai_types.GenerateContentConfig(
             response_mime_type="application/json",
+            thinking_config=genai_types.ThinkingConfig(thinking_level=REASONING["gemini"]),
         ),
     )
     in_u, out_u, cached = gemini_units(response)
@@ -164,6 +171,7 @@ def _openai_json(openai_client: OpenAI, prompt: str, model: str) -> dict:
         model=model,
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
+        reasoning_effort=REASONING["openai"],
     )
     in_u, out_u, cached = openai_units(response)
     record_usage(ANALYSIS_ID, SERVICE_NAME, "openai", model, "chat",
@@ -303,9 +311,9 @@ def main():
     global PRICING, CLASSIFICATION_PROMPT
     validate_env()
     CLASSIFICATION_PROMPT = load_prompt("service-documents-classifier/document_category_classifier")
-    resolve_model_config()
     PRICING = load_pricing()
     try:
+        resolve_model_config()
         process_document_classification()
     except requests.exceptions.HTTPError as e:
         error_msg = f"HTTP Error during processing: {e}"

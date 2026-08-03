@@ -66,22 +66,19 @@ SERVICE_NAME = "service-economic-offer-extractor"
 SERVICE_VERSION = SYSTEM_VERSION
 EVENT_SOURCE = f"ACA: {SERVICE_NAME}"
 EMBEDDING_MODEL = "text-embedding-3-small"
-GEMINI_MODEL = "gemini-2.5-flash"
-OPENAI_FALLBACK_MODEL = "gpt-4.1-mini"
 
-# Model selection, resolved at runtime from the analysis (see resolve_model_config).
-# Defaults preserve the prior hardcoded behavior if the API is unreachable.
-PRIMARY_PROVIDER = "gemini"
-PRIMARY_MODEL = GEMINI_MODEL
-FALLBACK_PROVIDER = "openai"
-FALLBACK_MODEL = OPENAI_FALLBACK_MODEL
+# Models and the reasoning each call must carry, resolved at runtime by
+# resolve_model_config. No defaults on purpose: nothing runs unconfigured.
+PRIMARY_PROVIDER = None
+PRIMARY_MODEL = None
+FALLBACK_PROVIDER = None
+FALLBACK_MODEL = None
+# Keyed by provider: goes to `reasoning_effort` on OpenAI and to `thinking_level`
+# on Gemini.
+REASONING: dict = {}
 
 # AI cost accounting: frozen price snapshot, loaded once in main().
 PRICING: dict = {}
-
-
-def _provider_of(model_id: str) -> str:
-    return "gemini" if str(model_id).startswith("gemini") else "openai"
 
 
 RAG_TOP_K_PER_QUERY = 5
@@ -170,29 +167,38 @@ def api_request(
 
 
 def resolve_model_config():
-    """Resolve the LLM model for this analysis from the API (global config snapshot)
-    and log a startup event. On any failure keep the hardcoded defaults."""
+    """Resolve the models this analysis runs on and the reasoning each one must
+    be called with, and log it. Raises if the API does not answer or answers
+    incomplete: a job that reasons at a level nobody configured returns a result
+    that looks valid and costs whatever it wants, and nobody would notice."""
     global PRIMARY_PROVIDER, PRIMARY_MODEL, FALLBACK_PROVIDER, FALLBACK_MODEL
-    level = None
-    origin = "configuracion global"
-    try:
-        cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config")
-        if cfg:
-            PRIMARY_PROVIDER = cfg.get("provider") or PRIMARY_PROVIDER
-            PRIMARY_MODEL = cfg.get("model_id") or PRIMARY_MODEL
-            level = cfg.get("level")
-            fb = cfg.get("fallback_model_id")
-            if fb:
-                FALLBACK_MODEL = fb
-                FALLBACK_PROVIDER = _provider_of(fb)
-    except Exception as e:
-        origin = f"valores por defecto (model-config no disponible: {e})"
-    msg = (
-        f"Modelo LLM: {PRIMARY_MODEL} (proveedor {PRIMARY_PROVIDER}"
-        + (f", nivel {level}" if level else "")
-        + f"); fallback {FALLBACK_MODEL}. Origen: {origin}."
+
+    cfg = api_request("GET", f"{API_ANALYSES_PATH}/{ANALYSIS_ID}/model-config") or {}
+    selections = {}
+    for role in ("primary", "secondary"):
+        sel = cfg.get(role) or {}
+        missing = [k for k in ("provider", "model_id", "reasoning") if not sel.get(k)]
+        if missing:
+            raise RuntimeError(
+                f"model-config no devolvio el modelo {role} completo "
+                f"(falta: {', '.join(missing)})"
+            )
+        selections[role] = sel
+        REASONING[sel["provider"]] = sel["reasoning"]
+
+    PRIMARY_PROVIDER = selections["primary"]["provider"]
+    PRIMARY_MODEL = selections["primary"]["model_id"]
+    FALLBACK_PROVIDER = selections["secondary"]["provider"]
+    FALLBACK_MODEL = selections["secondary"]["model_id"]
+
+    log_event(
+        ANALYSIS_ID,
+        "info",
+        f"Modelo LLM: {PRIMARY_MODEL} (proveedor {PRIMARY_PROVIDER}, razonamiento "
+        f"{REASONING[PRIMARY_PROVIDER]}); fallback {FALLBACK_MODEL} (proveedor "
+        f"{FALLBACK_PROVIDER}, razonamiento {REASONING[FALLBACK_PROVIDER]}).",
+        EVENT_SOURCE,
     )
-    log_event(ANALYSIS_ID, "info", msg, EVENT_SOURCE)
 
 
 def validate_env():
@@ -442,6 +448,7 @@ def _call_gemini(
         config=genai_types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=LLMEconomicOffer,
+            thinking_config=genai_types.ThinkingConfig(thinking_level=REASONING["gemini"]),
         ),
     )
     in_u, out_u, cached = gemini_units(response)
@@ -470,6 +477,7 @@ def _call_openai(
             {"role": "user", "content": user_prompt},
         ],
         response_format={"type": "json_object"},
+        reasoning_effort=REASONING["openai"],
     )
     in_u, out_u, cached = openai_units(response)
     record_usage(
@@ -674,9 +682,9 @@ def main():
     global PRICING, SYSTEM_PROMPT
     validate_env()
     SYSTEM_PROMPT = load_prompt("service-economic-offer-extractor/economic_offer_extractor")
-    resolve_model_config()
     PRICING = load_pricing()
     try:
+        resolve_model_config()
         process_economic_extraction()
     except requests.exceptions.HTTPError as e:
         error_msg = f"HTTP Error during economic extraction: {e}"

@@ -3,10 +3,17 @@ from typing import List
 from uuid import UUID
 from app.core.audit import Actor, get_actor
 from app.services.audit_service import audit_service
-from app.schemas.analysis import Analysis, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
+from app.schemas.analysis import (
+    Analysis,
+    AnalysisUpdate,
+    AnalysisStatusUpdate,
+    AnalysisSource,
+    ModelTierRole,
+    PrimaryModel,
+)
 from app.schemas.job import ResumePipelineResponse, RetryJobRequest
 from app.schemas.proposal import ProposalRead
-from app.schemas.model_tier import AnalysisModelConfig
+from app.schemas.model_tier import AnalysisModelConfig, ModelSelection
 from app.schemas.ai_usage import AiUsageCostSummary
 from app.services.analysis_service import analysis_service
 from app.services.ai_usage_service import ai_usage_service
@@ -104,22 +111,44 @@ def get_analysis_cost(analysis_id: UUID):
 @router.get("/{analysis_id}/model-config", response_model=AnalysisModelConfig)
 def get_analysis_model_config(analysis_id: UUID):
     """
-    Resolve which LLM model an analysis should use, from its selected
-    primary_model + intelligence_level via the model_tiers table.
+    Resolve which LLM models an analysis runs on: the active primary and
+    secondary from model_tiers, each carrying the reasoning value frozen on the
+    analysis when it was created. Every LLM call must send that value.
     """
     try:
         analysis = analysis_service.get_analysis_by_id(analysis_id)
         if not analysis:
             raise HTTPException(status_code=404, detail="Analysis not found")
-        tier = model_tier_service.get_tier(analysis.primary_model, analysis.intelligence_level)
-        if not tier:
-            raise HTTPException(status_code=404, detail="No active model tier for selection")
+        primary = model_tier_service.get_tier(ModelTierRole.primary)
+        if not primary:
+            raise HTTPException(status_code=404, detail="No active primary model")
+        secondary = model_tier_service.get_tier(ModelTierRole.secondary)
+
+        def selection(tier):
+            reasoning = (
+                analysis.gemini_thinking_level
+                if tier.provider == PrimaryModel.gemini
+                else analysis.openai_reasoning_effort
+            )
+            if reasoning is None:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Analysis has no reasoning configured for {tier.provider.value}",
+                )
+            return ModelSelection(
+                role=tier.role,
+                provider=tier.provider,
+                model_id=tier.model_id,
+                reasoning=reasoning.value,
+            )
+
         return AnalysisModelConfig(
             analysis_id=analysis.id,
-            provider=tier.provider,
-            level=tier.level,
-            model_id=tier.model_id,
-            fallback_model_id=tier.fallback_model_id,
+            primary=selection(primary),
+            secondary=selection(secondary) if secondary else None,
+            provider=primary.provider,
+            model_id=primary.model_id,
+            fallback_model_id=secondary.model_id if secondary else None,
         )
     except HTTPException:
         raise

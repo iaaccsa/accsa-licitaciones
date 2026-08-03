@@ -32,6 +32,11 @@ class AnalysisService:
             "hitl": hitl,
             "primary_model": llm_config.primary_model.value,
             "intelligence_level": llm_config.intelligence_level.value,
+            # Frozen here on purpose: every LLM call of this analysis must use
+            # the reasoning that was configured when it started, even if the
+            # global config changes while it runs.
+            "openai_reasoning_effort": llm_config.openai_reasoning_effort.value,
+            "gemini_thinking_level": llm_config.gemini_thinking_level.value,
         }
         if data.user_assigned_name:
             analysis_data["user_assigned_name"] = data.user_assigned_name

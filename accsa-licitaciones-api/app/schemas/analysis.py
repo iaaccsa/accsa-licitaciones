@@ -13,6 +13,29 @@ class IntelligenceLevel(str, Enum):
     medium = "medium"
     high = "high"
 
+class ModelTierRole(str, Enum):
+    primary = "primary"
+    secondary = "secondary"
+
+class OpenAiReasoningEffort(str, Enum):
+    """`reasoning_effort` values the gpt-5.6 family accepts on chat.completions,
+    verified against the API. Omitting the parameter is the same as "medium"."""
+
+    none = "none"
+    low = "low"
+    medium = "medium"
+    high = "high"
+    xhigh = "xhigh"
+
+class GeminiThinkingLevel(str, Enum):
+    """`thinking_level` values gemini-3.6-flash accepts inside generation_config.
+    There is no "off": "minimal" is the floor. Default is "medium"."""
+
+    minimal = "minimal"
+    low = "low"
+    medium = "medium"
+    high = "high"
+
 class AnalysisBase(BaseModel):
     status: str
     slug: str
@@ -25,6 +48,10 @@ class AnalysisBase(BaseModel):
     hitl: Optional[bool] = None
     primary_model: Optional[PrimaryModel] = None
     intelligence_level: Optional[IntelligenceLevel] = None
+    # Frozen at creation: changing the global config must not alter an analysis
+    # that is already running.
+    openai_reasoning_effort: Optional[OpenAiReasoningEffort] = None
+    gemini_thinking_level: Optional[GeminiThinkingLevel] = None
     created_by: Optional[UUID] = None
 
 class Analysis(AnalysisBase):

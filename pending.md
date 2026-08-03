@@ -38,7 +38,24 @@ de los placeholders requeridos; NO detecta una llave suelta que rompa `.format()
 en runtime. Si esto causa problemas, agregar a futuro una validacion de
 `.format()` (intentar formatear con valores dummy y capturar `KeyError`/`ValueError`).
 
-## Ajustar `model_tiers` al nuevo esquema de modelos
+## Restos del esquema viejo de seleccion de modelo
+
+`model_tiers` ya paso a 2 filas por rol (2026-08-03), pero quedaron piezas del
+esquema anterior que no se tocaron todavia:
+
+- `analyses.primary_model` e `intelligence_level` se siguen escribiendo al crear
+  un analisis y ya no eligen nada. `/admin/analyses/[id]` los muestra, asi que
+  esa vista informa un "nivel de inteligencia" que no tiene efecto. Decidir si
+  se reemplaza por el razonamiento congelado (`openai_reasoning_effort`,
+  `gemini_thinking_level`) y si las columnas viejas se dejan como historico.
+- `AnalysisModelConfig` devuelve `provider`, `model_id` y `fallback_model_id`
+  duplicados solo por compatibilidad con las imagenes de services desplegadas.
+  Sacarlos cuando las 16 imagenes lean `primary` y `secondary`.
+- `model_tiers` tiene `input_price_per_1m` / `output_price_per_1m` /
+  `cached_input_price_per_1m` en null y nadie los lee: el costo sale de
+  `ai_pricing`. Decidir si se completan o se eliminan las columnas.
+
+## (Resuelto 2026-08-03) Ajustar `model_tiers` al nuevo esquema de modelos
 
 Contexto (2026-08-03): la vista `/admin/config/llm-config` dejo de elegir
 proveedor + nivel de inteligencia. Ahora muestra dos modelos fijos, cada uno con

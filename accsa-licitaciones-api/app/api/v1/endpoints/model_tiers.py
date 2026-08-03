@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 
-from app.schemas.analysis import PrimaryModel, IntelligenceLevel
+from app.schemas.analysis import ModelTierRole
 from app.schemas.model_tier import ModelTier
 from app.services.model_tier_service import model_tier_service
 
@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/", response_model=List[ModelTier])
 def list_model_tiers():
     """
-    List all active model tiers (provider x level -> model).
+    List the active models: one primary and one secondary.
     """
     try:
         return model_tier_service.list_active()
@@ -19,13 +19,13 @@ def list_model_tiers():
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/{provider}/{level}", response_model=ModelTier)
-def get_model_tier(provider: PrimaryModel, level: IntelligenceLevel):
+@router.get("/{role}", response_model=ModelTier)
+def get_model_tier(role: ModelTierRole):
     """
-    Resolve the active model tier for a given provider and intelligence level.
+    Resolve the active model for a role: primary or secondary.
     """
     try:
-        tier = model_tier_service.get_tier(provider, level)
+        tier = model_tier_service.get_tier(role)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     if not tier:

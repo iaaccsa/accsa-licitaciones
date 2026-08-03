@@ -12,10 +12,9 @@ class ModelTierService:
     def list_active(self) -> List[ModelTier]:
         return [ModelTier(**row) for row in self.repository.get_all_active()]
 
-    def get_tier(self, provider, level) -> Optional[ModelTier]:
-        provider = provider.value if isinstance(provider, Enum) else provider
-        level = level.value if isinstance(level, Enum) else level
-        row = self.repository.get_by_provider_level(provider, level)
+    def get_tier(self, role) -> Optional[ModelTier]:
+        role = role.value if isinstance(role, Enum) else role
+        row = self.repository.get_by_role(role)
         return ModelTier(**row) if row else None
 
 

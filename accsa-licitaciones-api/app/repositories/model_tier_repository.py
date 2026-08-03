@@ -12,18 +12,16 @@ class ModelTierRepository(BaseRepository):
             supabase.table(self.table_name)
             .select("*")
             .eq("is_active", True)
-            .order("provider")
             .order("sort_order")
             .execute()
         )
         return response.data
 
-    def get_by_provider_level(self, provider: str, level: str) -> Optional[Dict[str, Any]]:
+    def get_by_role(self, role: str) -> Optional[Dict[str, Any]]:
         response = (
             supabase.table(self.table_name)
             .select("*")
-            .eq("provider", provider)
-            .eq("level", level)
+            .eq("role", role)
             .eq("is_active", True)
             .maybe_single()
             .execute()
