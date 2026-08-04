@@ -45,13 +45,13 @@ en runtime. Si esto causa problemas, agregar a futuro una validacion de
 service del repo, y no existia la key que pide `service-admissibility-extractor`
 (`load_prompt` no tiene fallback: sin fila el job falla al arrancar). Se hizo el
 UPDATE sobre la misma fila `0702d457-b445-45bd-b05d-4c5303c93a14`: key y
-`service` al nombre nuevo, y el body pasado al ganador del lab
-`v1.0.0 (variante 1 3.8)` (8128 chars, sha 11ec3fc93a).
+`service` al nombre nuevo, y el body al prompt del lab. El 2026-08-04 se paso a
+`v2.0.0` (9699 chars, sha 6ffe9ea6f1) tras validarlo en el lab.
 
 Consecuencia mientras no se despliegue: si en prod todavia corre la imagen vieja
 de `service-requirement-extractor` haciendo admisibilidad, esa imagen lee la key
-vieja y ahora falla. El body anterior (el ganador del 13/07, identico al lab
-`8.7.26 (variante 13.7) (variante2)`) sigue estando en el lab si hay que volver.
+vieja y ahora falla. Todas las versiones anteriores del prompt siguen en
+`prompt_versions` del lab si hay que volver.
 
 ## Restos del esquema viejo de seleccion de modelo
 

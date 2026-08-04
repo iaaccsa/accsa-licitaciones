@@ -1093,13 +1093,37 @@ The list was produced batch by batch over overlapping chunks, so the same obliga
 
 Your only job is to report which entries state the SAME obligation and must be merged.
 
-Rules:
-- Merge only when the entries impose the same obligation over the same document or act. Different documents are different requirements even if the wording is similar.
-- An entry that bundles several obligations is NOT the same as an entry covering only one of them: do not merge them.
-- When in doubt, do not merge. A surviving duplicate is noise; a wrong merge deletes an admissibility requirement.
-- Report only the groups to merge. Entries with no duplicate must not appear in the output.
-- canonical_id must be the member whose wording is the most complete and precise; the others are discarded.
-- reason: one short sentence in Spanish."""
+WHAT COUNTS AS THE SAME OBLIGATION
+- The same act demanded of the bidder (signing the offer, writing it in Spanish, quoting in a given currency, keeping the offer valid for a term), or the same document the bidder must submit (an annex, a form, a certificate, a sworn statement).
+- A Uruguayan tender is made of several pliegos -- particular, condiciones generales, pliego unico -- and they restate the same obligation with different wording. Those restatements are ONE requirement: merge them. "Document" always means the document the BIDDER submits, never the pliego where the clause appears.
+
+WHAT IS NOT THE SAME OBLIGATION
+- Two different documents the bidder must submit are two requirements even when the wording is nearly identical: Formulario 3.1 and Formulario 3.2 are not the same document.
+- Two obligations that share a subject but demand different things.
+
+CHOOSING THE CANONICAL — READ ITS TEXT AND CHECK
+Every member other than the canonical is DISCARDED: only the canonical's text survives, so anything it does not say is deleted from the analysis.
+Pick the canonical FIRST, then re-read its literal text and drop from the group every member whose demand that text does not already state. Never justify a merge by what some other entry says: only the canonical's own words survive.
+Two tie-breakers when several members qualify: prefer the entry that states concrete values (a number of days, a form number, a currency) over one that points at another clause, and prefer the entry that spells out more of the obligation.
+Differences in DETAIL about how to comply -- which signature modality is accepted, who may sign, how the same term is worded -- do not block the merge.
+
+Worked example:
+[1] Presentar la oferta firmada, con aclaracion de firma; no se admitiran ofertas con firmas insertas.
+[2] Presentar la oferta firmada por el titular o por un representante.
+[3] Presentar la oferta en idioma castellano, debidamente firmada por el titular o representante mediante firma electronica avanzada o manuscrita.
+[4] Presentar la oferta en idioma castellano.
+Correct answer: one group, member_ids [2,3,4], canonical_id 3. The text of entry 3 literally demands the signature that 2 demands and the Spanish that 4 demands, so both are absorbed without loss.
+Entry 1 stays out: it forbids "firmas insertas" and the text of entry 3 says nothing about that, so absorbing it would delete that prohibition.
+
+Counter-example — this is the mistake to avoid:
+[5] Presentar la oferta firmada por el titular o por un representante con facultades suficientes.
+[6] Presentar la oferta en idioma castellano.
+Wrong answer: member_ids [5,6] with canonical_id 5. The text of entry 5 never mentions the language, so the Spanish requirement would be deleted. These two are not merged at all.
+The same applies to a term: "plazo no inferior al establecido en el punto 11 del Pliego" must never be the canonical of "plazo de mantenimiento no inferior a 120 dias calendario", because the concrete term would be lost.
+
+When in doubt, do not merge. A surviving duplicate is noise; a wrong merge deletes an admissibility requirement.
+Report only the groups to merge. Entries with no duplicate must not appear in the output.
+reason: one short sentence in Spanish."""
 
 DEDUP_RESPONSE_FORMAT = {
     "type": "json_schema",
