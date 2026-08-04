@@ -2,10 +2,11 @@
 Admissibility Extractor Service
 ===============================
 Extracts admissibility requirements (excluyentes: obligatoria / subsanable) from
-a unified tender document already indexed in Qdrant, deduplicates across batches,
-assigns ADM-nnn codes and persists the result via the backend API.
+a unified tender document already indexed in Qdrant, deduplicates them, assigns
+ADM-nnn codes and persists the result via the backend API.
 
-Runs a single LLM pass per batch with a dedicated admissibility prompt. It does
+Runs one LLM pass per batch with a dedicated admissibility prompt, plus a single
+semantic deduplication pass over the whole extraction at the end. It does
 NOT read the evaluation_profile and has no dependency on service-tender-classifier;
 the general (7-axis) extraction lives in service-requirement-extractor.
 
@@ -24,17 +25,25 @@ Required environment variables:
   - ANALYSIS_ID
 """
 
-import hashlib
 import json
 import os
 import random
-import re
 import sys
 import time
 import unicodedata
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Callable, Dict, List, Literal, Optional, Tuple
+from typing import (
+    Annotated,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    get_args,
+)
 
 import requests
 from ai_usage_logger import gemini_units, load_pricing, openai_units, record_usage
@@ -88,6 +97,13 @@ SCROLL_PAGE_SIZE = 256
 MAX_FAILED_BATCH_RATIO = 0.10
 MAX_LLM_RETRIES = 3
 LLM_RETRY_BASE_DELAY = 1.0
+# The dedup pass is a single call over the whole extraction, so losing it costs
+# the run its deduplication: it gets more attempts than a batch, which is one of
+# many. The timeout is per attempt and sits well above the worst measurement
+# (284s for 347 requirements at xhigh effort); the SDK's own retries are turned
+# off for that call so the wait stays bounded by this loop.
+MAX_DEDUP_RETRIES = 5
+DEDUP_TIMEOUT_SECONDS = 900.0
 PROVIDER_UNAVAILABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 UNAVAILABLE_MAX_ATTEMPTS = 2
 UNAVAILABLE_RETRY_DELAY = 10.0
@@ -361,6 +377,79 @@ class AdmissibilityBatchResponse(BaseModel):
 
 class FinalAdmissibilityRequirement(AdmissibilityRawRequirement):
     requirement_code: str
+
+
+# Structured Outputs schema, mirroring AdmissibilityBatchResponse. Enums come
+# from the Literal types above so the schema cannot drift from the models. The
+# strict subset demands every property listed in `required` and
+# additionalProperties false, so optional fields are typed as nullable instead of
+# being left out, and extraction_batch_id is absent because this code assigns it,
+# not the model.
+#
+# `citations` deliberately carries no minItems: forcing a citation would make the
+# model invent one for an ungrounded requirement, whereas an empty list lets
+# _drop_uncited_requirements discard that requirement as it does today.
+_CITATION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "chunk_id": {"type": "string"},
+        "page_number": {"type": ["integer", "null"]},
+        "filename": {"type": ["string", "null"]},
+        "snippet": {"type": "string"},
+    },
+    "required": ["chunk_id", "page_number", "filename", "snippet"],
+    "additionalProperties": False,
+}
+_REQUIREMENT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "requirement_text": {"type": "string"},
+        "requirement_summary": {"type": ["string", "null"]},
+        "roles": {
+            "type": "array",
+            "items": {"type": "string", "enum": list(get_args(AdmissibilityRole))},
+        },
+        "domain": {"type": "string", "enum": list(get_args(RequirementDomain))},
+        "verification_method": {
+            "type": "string",
+            "enum": list(get_args(RequirementVerificationMethod)),
+        },
+        "temporal_scope": {
+            "type": "string",
+            "enum": list(get_args(RequirementTemporalScope)),
+        },
+        "citations": {"type": "array", "items": _CITATION_SCHEMA},
+        "confidence": {"type": "string", "enum": list(CONFIDENCE_ORDER)},
+        "notes": {"type": ["string", "null"]},
+    },
+    "required": [
+        "requirement_text",
+        "requirement_summary",
+        "roles",
+        "domain",
+        "verification_method",
+        "temporal_scope",
+        "citations",
+        "confidence",
+        "notes",
+    ],
+    "additionalProperties": False,
+}
+ADMISSIBILITY_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "admissibility_batch",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "requirements": {"type": "array", "items": _REQUIREMENT_SCHEMA}
+            },
+            "required": ["requirements"],
+            "additionalProperties": False,
+        },
+    },
+}
 
 
 # ---------------------------------------------------------------------------
@@ -665,48 +754,50 @@ class BatchOutcome:
 
 def _call_with_retry(
     label: str,
-    batch_id: int,
-    fn: Callable[[], AdmissibilityBatchResponse],
-) -> Tuple[Optional[AdmissibilityBatchResponse], Optional[Exception]]:
+    fn: Callable[[], BaseModel],
+    max_attempts: int = MAX_LLM_RETRIES,
+    unavailable_max_attempts: int = UNAVAILABLE_MAX_ATTEMPTS,
+    abort_on_malformed: bool = True,
+) -> Tuple[Optional[BaseModel], Optional[Exception]]:
     last_err: Optional[Exception] = None
     unavailable_attempts = 0
-    for attempt in range(1, MAX_LLM_RETRIES + 1):
+    for attempt in range(1, max_attempts + 1):
         try:
             return fn(), None
         except Exception as err:
             last_err = err
-            if _is_malformed_response(err):
+            if abort_on_malformed and _is_malformed_response(err):
                 logger.warning(
-                    f"Batch {batch_id}: {label} returned malformed JSON on attempt "
+                    f"{label} returned malformed JSON on attempt "
                     f"{attempt} ({type(err).__name__}). Aborting retries for this provider."
                 )
                 return None, err
             if _is_provider_unavailable(err):
                 unavailable_attempts += 1
-                if unavailable_attempts >= UNAVAILABLE_MAX_ATTEMPTS:
+                if unavailable_attempts >= unavailable_max_attempts:
                     logger.warning(
-                        f"Batch {batch_id}: {label} unavailable after {unavailable_attempts} "
+                        f"{label} unavailable after {unavailable_attempts} "
                         f"attempts ({type(err).__name__}: {err}). Falling back."
                     )
                     return None, err
                 delay = UNAVAILABLE_RETRY_DELAY + random.uniform(0, 1.0)
                 logger.warning(
-                    f"Batch {batch_id}: {label} unavailable on attempt {attempt} "
+                    f"{label} unavailable on attempt {attempt} "
                     f"({type(err).__name__}: {err}). Retrying in {delay:.1f}s..."
                 )
                 time.sleep(delay)
                 continue
-            if attempt < MAX_LLM_RETRIES:
+            if attempt < max_attempts:
                 delay = LLM_RETRY_BASE_DELAY * (2 ** (attempt - 1)) + random.uniform(
                     0, 0.5
                 )
                 logger.warning(
-                    f"Batch {batch_id}: {label} attempt {attempt}/{MAX_LLM_RETRIES} failed "
+                    f"{label} attempt {attempt}/{max_attempts} failed "
                     f"({type(err).__name__}: {err}). Retrying in {delay:.1f}s..."
                 )
                 time.sleep(delay)
     logger.error(
-        f"Batch {batch_id}: {label} exhausted {MAX_LLM_RETRIES} attempts "
+        f"{label} exhausted {max_attempts} attempts "
         f"({type(last_err).__name__}: {last_err})."
     )
     return None, last_err
@@ -718,8 +809,13 @@ def _run_llm_pass(
     system_prompt: str,
     user_prompt: str,
     response_model,
-    batch_id: int,
+    batch_id: Optional[int],
     label: str,
+    openai_response_format: dict = ADMISSIBILITY_RESPONSE_FORMAT,
+    max_attempts: int = MAX_LLM_RETRIES,
+    unavailable_max_attempts: int = UNAVAILABLE_MAX_ATTEMPTS,
+    abort_on_malformed: bool = True,
+    timeout_seconds: Optional[float] = None,
 ) -> Tuple[Optional[Any], Optional[Exception], bool, bool, bool]:
     """Run a single LLM pass with OpenAI->Gemini fallback.
 
@@ -727,6 +823,19 @@ def _run_llm_pass(
     """
     raw_capture = {"openai": "", "gemini": ""}
     attempts = {"openai": 0, "gemini": 0}
+    where = f"Batch {batch_id}[{label}]" if batch_id is not None else f"[{label}]"
+    # A long single call sets its own ceiling and drops the SDK's retries, so the
+    # wait stays bounded by _call_with_retry instead of multiplying with it.
+    oai = (
+        openai_client.with_options(max_retries=0, timeout=timeout_seconds)
+        if timeout_seconds
+        else openai_client
+    )
+    gemini_http = (
+        genai_types.HttpOptions(timeout=int(timeout_seconds * 1000))
+        if timeout_seconds
+        else None
+    )
 
     def _record_usage(
         provider: str, model: str, units, attempt: int, success: bool
@@ -748,13 +857,13 @@ def _run_llm_pass(
 
     def _call_openai(model: str):
         attempts["openai"] += 1
-        oai_response = openai_client.chat.completions.create(
+        oai_response = oai.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            response_format={"type": "json_object"},
+            response_format=openai_response_format,
             reasoning_effort=REASONING["openai"],
         )
         content = oai_response.choices[0].message.content or ""
@@ -792,6 +901,7 @@ def _run_llm_pass(
                 response_mime_type="application/json",
                 response_schema=response_model,
                 thinking_config=genai_types.ThinkingConfig(thinking_level=REASONING["gemini"]),
+                http_options=gemini_http,
             ),
         )
         raw_capture["gemini"] = response.text or ""
@@ -815,9 +925,11 @@ def _run_llm_pass(
 
     source: Optional[str] = None
     result, primary_err = _call_with_retry(
-        f"{PRIMARY_PROVIDER}[{label}]",
-        batch_id,
+        f"{where} {PRIMARY_PROVIDER}",
         _make_call(PRIMARY_PROVIDER, PRIMARY_MODEL),
+        max_attempts=max_attempts,
+        unavailable_max_attempts=unavailable_max_attempts,
+        abort_on_malformed=abort_on_malformed,
     )
     if result is not None:
         source = PRIMARY_PROVIDER
@@ -826,14 +938,16 @@ def _run_llm_pass(
         if _is_provider_unavailable(primary_err):
             primary_unavailable = True
         logger.warning(
-            f"Batch {batch_id}[{label}]: primary {PRIMARY_PROVIDER}/{PRIMARY_MODEL} failed "
+            f"{where}: primary {PRIMARY_PROVIDER}/{PRIMARY_MODEL} failed "
             f"({type(primary_err).__name__}), falling back to {FALLBACK_PROVIDER}/{FALLBACK_MODEL}."
         )
         fallback_used = True
         result, fallback_err = _call_with_retry(
-            f"{FALLBACK_PROVIDER}[{label}]",
-            batch_id,
+            f"{where} {FALLBACK_PROVIDER}",
             _make_call(FALLBACK_PROVIDER, FALLBACK_MODEL),
+            max_attempts=max_attempts,
+            unavailable_max_attempts=unavailable_max_attempts,
+            abort_on_malformed=abort_on_malformed,
         )
         if result is not None:
             source = FALLBACK_PROVIDER
@@ -847,7 +961,7 @@ def _run_llm_pass(
             log_event(
                 ANALYSIS_ID,
                 "warning",
-                f"Batch {batch_id}[{label}] failed after retries on {PRIMARY_PROVIDER} and {FALLBACK_PROVIDER}: "
+                f"{where} failed after retries on {PRIMARY_PROVIDER} and {FALLBACK_PROVIDER}: "
                 f"{type(final_err).__name__}: {str(final_err)[:300]}",
                 EVENT_SOURCE,
                 {
@@ -863,7 +977,11 @@ def _run_llm_pass(
                 },
             )
 
-    if result is not None and source is not None:
+    if (
+        result is not None
+        and source is not None
+        and response_model is AdmissibilityBatchResponse
+    ):
         _log_dropped_uncited(
             batch_id, label, source, raw_capture.get(source, ""), result
         )
@@ -912,78 +1030,235 @@ def extract_batch(
 
 
 # ---------------------------------------------------------------------------
-# Deduplication
+# Merge helpers
 # ---------------------------------------------------------------------------
-def normalize_text(text: str) -> str:
-    text = text.lower()
-    text = re.sub(r"[^\w\s]", "", text)
-    return " ".join(text.split())
-
-
 def _confidence_rank(c: str) -> int:
     return CONFIDENCE_ORDER.get(c, 0)
 
 
-def _best_by_confidence(items: List[AdmissibilityRawRequirement], attr: str):
-    best = max(items, key=lambda r: _confidence_rank(r.confidence))
-    return getattr(best, attr)
+def unique_citations(citations: List[RequirementCitation]) -> List[RequirementCitation]:
+    """One citation per chunk. Models cite the same chunk twice with different
+    snippets often enough that singletons need this too, not only merged groups."""
+    seen: Dict[str, RequirementCitation] = {}
+    for c in citations:
+        seen.setdefault(c.chunk_id, c)
+    return list(seen.values())
 
 
-def deduplicate_admissibility(
-    raw_reqs: List[AdmissibilityRawRequirement],
+def merge_group(
+    group: List[AdmissibilityRawRequirement],
+    canonical: AdmissibilityRawRequirement,
+) -> AdmissibilityRawRequirement:
+    """Collapse duplicates into one requirement. The canonical member decides the
+    wording and the classification; roles and citations are unioned so the merged
+    requirement keeps every chunk that grounds it."""
+    seen_roles: Dict[str, None] = {}
+    for r in group:
+        for role in r.roles:
+            seen_roles[role] = None
+    all_notes = [r.notes for r in group if r.notes]
+
+    return AdmissibilityRawRequirement(
+        requirement_text=canonical.requirement_text,
+        requirement_summary=canonical.requirement_summary
+        or next((r.requirement_summary for r in group if r.requirement_summary), None),
+        roles=list(seen_roles),
+        domain=canonical.domain,
+        verification_method=canonical.verification_method,
+        temporal_scope=canonical.temporal_scope,
+        citations=unique_citations([c for r in group for c in r.citations]),
+        confidence=max((r.confidence for r in group), key=_confidence_rank),
+        notes=" | ".join(dict.fromkeys(all_notes)) if all_notes else None,
+        extraction_batch_id=canonical.extraction_batch_id,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Semantic deduplication (one LLM pass over the whole extraction)
+# ---------------------------------------------------------------------------
+# The overlapping batches make the model restate the same obligation with
+# different words, so comparing normalized strings is useless here: across every
+# run measured it collapsed nothing while real duplicates survived. This pass
+# shows the analysis' own models the full list and asks which entries state the
+# same obligation.
+#
+# The model returns nothing but groups of ids: the merge itself (wording,
+# classification, union of citations) happens in merge_group, so no citation can
+# be invented, rewritten or lost by the model. Measured on the largest lab run to
+# date (82 requirements) this costs ~4.2k prompt tokens and 0.8k-5.2k completion
+# tokens depending on the model and effort, well inside the 128k output ceiling;
+# what grows with the list is latency, not the token budget.
+DEDUP_SYSTEM_PROMPT = """You deduplicate a list of admissibility requirements extracted from a single Uruguayan public tender.
+The list was produced batch by batch over overlapping chunks, so the same obligation can appear more than once with different wording.
+
+Your only job is to report which entries state the SAME obligation and must be merged.
+
+Rules:
+- Merge only when the entries impose the same obligation over the same document or act. Different documents are different requirements even if the wording is similar.
+- An entry that bundles several obligations is NOT the same as an entry covering only one of them: do not merge them.
+- When in doubt, do not merge. A surviving duplicate is noise; a wrong merge deletes an admissibility requirement.
+- Report only the groups to merge. Entries with no duplicate must not appear in the output.
+- canonical_id must be the member whose wording is the most complete and precise; the others are discarded.
+- reason: one short sentence in Spanish."""
+
+DEDUP_RESPONSE_FORMAT = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "dedup_groups",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "merge_groups": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "member_ids": {
+                                "type": "array",
+                                "items": {"type": "integer"},
+                            },
+                            "canonical_id": {"type": "integer"},
+                            "reason": {"type": "string"},
+                        },
+                        "required": ["member_ids", "canonical_id", "reason"],
+                        "additionalProperties": False,
+                    },
+                }
+            },
+            "required": ["merge_groups"],
+            "additionalProperties": False,
+        },
+    },
+}
+
+# Requirement texts are logged truncated: the event is there to audit what got
+# merged, not to store the requirements again.
+DEDUP_EVENT_TEXT_CHARS = 200
+
+
+class MergeGroup(BaseModel):
+    member_ids: List[int]
+    canonical_id: int
+    reason: str = ""
+
+
+class DedupResponse(BaseModel):
+    merge_groups: List[MergeGroup]
+
+
+def build_dedup_user_prompt(reqs: List[AdmissibilityRawRequirement]) -> str:
+    entries = "\n\n".join(
+        f"[{i}] domain={r.domain} verification={r.verification_method}\n{r.requirement_text}"
+        for i, r in enumerate(reqs, start=1)
+    )
+    return f"REQUIREMENTS:\n\n{entries}"
+
+
+def valid_merge_groups(
+    groups: List[MergeGroup], count: int
+) -> List[Tuple[List[int], int, str]]:
+    """Keep only the groups that are safe to apply: ids within range, no id in two
+    groups, canonical inside its own group. A model that returns garbage here must
+    cost us requirements, not corrupt them."""
+    taken: set = set()
+    valid = []
+    for g in groups:
+        members = [
+            i
+            for i in dict.fromkeys(g.member_ids)
+            if 1 <= i <= count and i not in taken
+        ]
+        if len(members) < 2:
+            continue
+        canonical = g.canonical_id if g.canonical_id in members else members[0]
+        taken.update(members)
+        valid.append((members, canonical, g.reason))
+    return valid
+
+
+def semantic_deduplicate(
+    gemini_client: genai.Client,
+    openai_client: OpenAI,
+    reqs: List[AdmissibilityRawRequirement],
 ) -> List[AdmissibilityRawRequirement]:
-    groups: Dict[str, List[AdmissibilityRawRequirement]] = {}
-    for req in raw_reqs:
-        key = hashlib.sha1(normalize_text(req.requirement_text).encode()).hexdigest()
-        groups.setdefault(key, []).append(req)
+    """Merge requirements that say the same thing. On any failure the input list is
+    returned untouched: a duplicate is a far smaller problem than a failed run."""
+    if len(reqs) < 2:
+        return reqs
+
+    result, err, _, _, _ = _run_llm_pass(
+        gemini_client,
+        openai_client,
+        DEDUP_SYSTEM_PROMPT,
+        build_dedup_user_prompt(reqs),
+        DedupResponse,
+        None,
+        "dedup",
+        openai_response_format=DEDUP_RESPONSE_FORMAT,
+        max_attempts=MAX_DEDUP_RETRIES,
+        unavailable_max_attempts=MAX_DEDUP_RETRIES,
+        abort_on_malformed=False,
+        timeout_seconds=DEDUP_TIMEOUT_SECONDS,
+    )
+    if result is None:
+        msg = (
+            f"Deduplicación semántica fallida tras {MAX_DEDUP_RETRIES} intentos: "
+            f"{type(err).__name__}: {str(err)[:200]}"
+        )
+        logger.warning(msg)
+        log_event(
+            ANALYSIS_ID,
+            "warning",
+            msg,
+            EVENT_SOURCE,
+            {"attempts": MAX_DEDUP_RETRIES, "requirement_count": len(reqs)},
+        )
+        return reqs
+
+    groups = valid_merge_groups(result.merge_groups, len(reqs))
+    canonical_of = {canonical: members for members, canonical, _ in groups}
+    absorbed = {
+        i for members, canonical, _ in groups for i in members if i != canonical
+    }
 
     merged = []
-    for group in groups.values():
-        if len(group) == 1:
-            merged.append(group[0])
-            continue
+    for i, req in enumerate(reqs, start=1):
+        if i in canonical_of:
+            merged.append(merge_group([reqs[m - 1] for m in canonical_of[i]], req))
+        elif i not in absorbed:
+            merged.append(req)
 
-        req_text = max((r.requirement_text for r in group), key=len)
-        req_summary = next(
-            (r.requirement_summary for r in group if r.requirement_summary), None
-        )
-
-        seen_roles: Dict[str, None] = {}
-        for r in group:
-            for role in r.roles:
-                seen_roles[role] = None
-        roles = list(seen_roles)
-
-        seen_cids: Dict[str, RequirementCitation] = {}
-        for r in group:
-            for c in r.citations:
-                if c.chunk_id not in seen_cids:
-                    seen_cids[c.chunk_id] = c
-        citations = list(seen_cids.values())
-
-        domain = _best_by_confidence(group, "domain")
-        verification_method = _best_by_confidence(group, "verification_method")
-        temporal_scope = _best_by_confidence(group, "temporal_scope")
-        confidence = max((r.confidence for r in group), key=_confidence_rank)
-        all_notes = [r.notes for r in group if r.notes]
-        notes = " | ".join(dict.fromkeys(all_notes)) if all_notes else None
-        extraction_batch_id = group[0].extraction_batch_id
-
-        merged.append(
-            AdmissibilityRawRequirement(
-                requirement_text=req_text,
-                requirement_summary=req_summary,
-                roles=roles,
-                domain=domain,
-                verification_method=verification_method,
-                temporal_scope=temporal_scope,
-                citations=citations,
-                confidence=confidence,
-                notes=notes,
-                extraction_batch_id=extraction_batch_id,
-            )
-        )
-
+    logged_groups = [
+        {
+            "reason": reason,
+            "canonical": reqs[canonical - 1].requirement_text[:DEDUP_EVENT_TEXT_CHARS],
+            "merged": [
+                reqs[m - 1].requirement_text[:DEDUP_EVENT_TEXT_CHARS]
+                for m in members
+                if m != canonical
+            ],
+        }
+        for members, canonical, reason in groups
+    ]
+    logger.info(
+        f"Semantic dedup: {len(reqs)} -> {len(merged)} requirements "
+        f"({len(groups)} groups merged)."
+    )
+    log_event(
+        ANALYSIS_ID,
+        "info",
+        f"Deduplicación semántica: {len(reqs)} requisitos -> {len(merged)} "
+        f"({len(groups)} grupos fusionados).",
+        EVENT_SOURCE,
+        {
+            "before": len(reqs),
+            "after": len(merged),
+            "groups_proposed": len(result.merge_groups),
+            "groups_applied": len(groups),
+            "merge_groups": logged_groups,
+        },
+    )
     return merged
 
 
@@ -1115,7 +1390,10 @@ def process_extraction():
         )
 
     # 5. Deduplicate -> assign codes -> enrich citations
-    deduped = deduplicate_admissibility(raw_results)
+    for req in raw_results:
+        req.citations = unique_citations(req.citations)
+
+    deduped = semantic_deduplicate(gemini_client, openai_client, raw_results)
     logger.info(
         f"After deduplication: {len(deduped)} requirements (from {len(raw_results)} raw)."
     )
@@ -1170,6 +1448,7 @@ def process_extraction():
         {
             "admissibility_requirement_count": len(with_codes),
             "raw_admissibility_count": len(raw_results),
+            "dedup_merged_away": len(raw_results) - len(with_codes),
             "batch_count": len(batches),
             "failed_batches": failed_batches,
             "failed_batch_ids": failed_batch_ids,

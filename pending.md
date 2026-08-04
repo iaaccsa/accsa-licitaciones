@@ -38,6 +38,21 @@ de los placeholders requeridos; NO detecta una llave suelta que rompa `.format()
 en runtime. Si esto causa problemas, agregar a futuro una validacion de
 `.format()` (intentar formatear con valores dummy y capturar `KeyError`/`ValueError`).
 
+## Prompt de admisibilidad: key renombrada en prod (2026-08-03)
+
+`service_prompts` tenia la fila bajo la key vieja
+`service-requirement-extractor/admissibility_extractor`, que ya no lee ningun
+service del repo, y no existia la key que pide `service-admissibility-extractor`
+(`load_prompt` no tiene fallback: sin fila el job falla al arrancar). Se hizo el
+UPDATE sobre la misma fila `0702d457-b445-45bd-b05d-4c5303c93a14`: key y
+`service` al nombre nuevo, y el body pasado al ganador del lab
+`v1.0.0 (variante 1 3.8)` (8128 chars, sha 11ec3fc93a).
+
+Consecuencia mientras no se despliegue: si en prod todavia corre la imagen vieja
+de `service-requirement-extractor` haciendo admisibilidad, esa imagen lee la key
+vieja y ahora falla. El body anterior (el ganador del 13/07, identico al lab
+`8.7.26 (variante 13.7) (variante2)`) sigue estando en el lab si hay que volver.
+
 ## Restos del esquema viejo de seleccion de modelo
 
 `model_tiers` ya paso a 2 filas por rol (2026-08-03), pero quedaron piezas del
