@@ -4,11 +4,11 @@ title: Preguntas frecuentes
 section: Ayuda
 order: 10
 keywords: [faq, preguntas, problemas, dudas, ayuda, errores, comunes]
-updated_at: 2026-06-25
+updated_at: 2026-08-05
 ---
 
 **¿Cuántos archivos puedo subir y de qué tipo?**
-Solo PDF, hasta 25 archivos de 10 MB cada uno, y al menos 2 para iniciar. Ver
+Solo PDF, hasta 50 archivos de 10 MB cada uno, y al menos 2 para iniciar. Ver
 [[subir-licitacion]].
 
 **¿Tengo que separar el pliego de las ofertas al subir?**

@@ -121,10 +121,10 @@ export function UploadSection() {
         <FileUploadZone
           title="Documentos"
           description="Subir pliegos, normativas y ofertas"
-          subtitle="Hasta 25 archivos PDF (máx. 10 MB c/u)"
+          subtitle="Hasta 50 archivos PDF (máx. 10 MB c/u)"
           icon="document"
           accept=".pdf"
-          maxFiles={25}
+          maxFiles={50}
           maxSizeMB={10}
           onFilesChange={handleFilesChange}
         />
