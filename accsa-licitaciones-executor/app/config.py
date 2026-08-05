@@ -23,8 +23,10 @@ class Settings(BaseSettings):
     EXECUTOR_MAX_QUEUE: int = 200
     EXECUTOR_CPUS: float = 1.0
     EXECUTOR_MEMORY: str = "1536m"
-    # Matches the --replica-timeout the Azure Container Apps Jobs used.
-    EXECUTOR_JOB_TIMEOUT_SECONDS: int = 3600
+    # Was 3600 (the --replica-timeout the Azure Container Apps Jobs used). Raised
+    # to 6h because files-converter-mistral OCRs every file of an analysis in a
+    # single sequential job, and an analysis can now carry hundreds of files.
+    EXECUTOR_JOB_TIMEOUT_SECONDS: int = 21600
 
     EXECUTOR_LOG_DIR: str = "/var/log/licitaciones-jobs"
     EXECUTOR_LOG_RETENTION_DAYS: int = 14

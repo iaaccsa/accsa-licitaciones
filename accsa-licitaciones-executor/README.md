@@ -75,7 +75,7 @@ Ver `.env.example`. Los valores que importan:
 | `EXECUTOR_ALLOWED_SERVICES` | (requerida) | los 16 nombres, separados por coma |
 | `EXECUTOR_MAX_CONCURRENCY` | `3` | VM2: 4 vCPU / 6 GB, compartidos con registry y builds |
 | `EXECUTOR_CPUS` / `EXECUTOR_MEMORY` | `1.0` / `1536m` | por contenedor |
-| `EXECUTOR_JOB_TIMEOUT_SECONDS` | `3600` | el mismo tope que tenia Azure |
+| `EXECUTOR_JOB_TIMEOUT_SECONDS` | `21600` | 6h; antes 3600 (el tope que tenia Azure), subido porque files-converter-mistral convierte todos los archivos del analisis en un solo job secuencial |
 | `EXECUTOR_LOG_DIR` | `/var/log/licitaciones-jobs` | bind mount desde el host |
 | `EXECUTOR_HISTORY_TTL_MINUTES` | `120` | cuanto sigue consultable una ejecucion terminada |
 

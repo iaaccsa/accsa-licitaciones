@@ -9,6 +9,8 @@ import { Loader2, CheckCircle, XCircle } from "lucide-react";
 type UploadStatus = "idle" | "success" | "error";
 type AnalysisResult = Record<string, unknown> | null;
 
+const MAX_UPLOAD_FILES = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_FILES) || 500;
+
 export function UploadSection() {
   const [files, setFiles] = useState<File[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -121,10 +123,10 @@ export function UploadSection() {
         <FileUploadZone
           title="Documentos"
           description="Subir pliegos, normativas y ofertas"
-          subtitle="Hasta 50 archivos PDF (máx. 10 MB c/u)"
+          subtitle={`Hasta ${MAX_UPLOAD_FILES} archivos PDF (máx. 10 MB c/u)`}
           icon="document"
           accept=".pdf"
-          maxFiles={50}
+          maxFiles={MAX_UPLOAD_FILES}
           maxSizeMB={10}
           onFilesChange={handleFilesChange}
         />

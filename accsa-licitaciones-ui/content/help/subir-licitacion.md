@@ -13,7 +13,8 @@ o seleccione los documentos en la zona de carga.
 Reglas de carga:
 
 - Solo archivos **PDF**.
-- Hasta **50 archivos**, máximo **10 MB cada uno**.
+- Hasta **500 archivos**, máximo **10 MB cada uno**. El texto bajo la zona de
+  carga siempre muestra el límite vigente.
 - Se necesitan **al menos 2 archivos** para poder iniciar.
 
 Suba en un mismo análisis el **pliego y sus normativas** junto con **las ofertas**
