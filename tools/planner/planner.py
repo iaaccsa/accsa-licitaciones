@@ -299,6 +299,15 @@ def cmd_update(args):
             uid: {"@odata.type": "#microsoft.graph.plannerAssignment", "orderHint": " !"}
             for uid in args.assign
         }
+    if args.assign_only:
+        # Graph merges assignments, so handing a task over means explicitly
+        # nulling everyone who is not in the new list.
+        current = gget(token, f"/planner/tasks/{args.task_id}").get("assignments") or {}
+        body["assignments"] = {uid: None for uid in current if uid not in args.assign_only}
+        body["assignments"].update({
+            uid: {"@odata.type": "#microsoft.graph.plannerAssignment", "orderHint": " !"}
+            for uid in args.assign_only
+        })
     if args.note:
         _append_note(token, args.task_id, args.note)
     if body:
@@ -391,6 +400,8 @@ def main():
     s.add_argument("task_id")
     s.add_argument("--bucket-id")
     s.add_argument("--assign", action="append", metavar="USER_ID")
+    s.add_argument("--assign-only", action="append", metavar="USER_ID",
+                   help="replace every assignee with this list")
     s.add_argument("--note")
     s.set_defaults(func=cmd_update)
 

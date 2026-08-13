@@ -19,10 +19,12 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 | Veredicto | Cant. |
 |---|---|
 | Bug real, confirmado en codigo | 16 |
-| Ya resuelto (cerrar) | 2 |
-| No es bug: configuracion o decision de producto | 2 |
-| Tarea de testing, no de desarrollo | 1 |
 | Necesita mas informacion antes de tocar codigo | 4 |
+
+De las 26 relevadas, 5 ya salieron de este archivo y estan en "Pendiente
+Testing" a nombre de Eduardo: CP-13 (resuelta), CP-11 y CP-16/17 (ya estaban
+resueltas de antes), CP-00 v2 (no es bug, es configuracion) e ID 212 (el testing
+ya se ejecuto y genero las tarjetas TC-CLI).
 
 **5 tarjetas distintas son el mismo bug de fondo**: TC-CLI-118/121/126/127,
 CP-51/32 y CP-155 salen todas del diseno de subida en el navegador.
@@ -37,53 +39,10 @@ CP-51/32 y CP-155 salen todas del diseno de subida en el navegador.
 - [ ] **Cancelar analisis.** Se removio a proposito el 2026-07-13 (commits
   `0f4932f` y `5545506`). La tarjeta no tiene descripcion. Averiguar quien la
   pidio y que espera: matar los jobs en curso u ocultar el analisis.
-- [ ] **CP-00 dominios.** Es config (`INVITE_ALLOWED_EMAIL_DOMAINS`), no codigo.
-  Decidir si se vacia la variable, se suman dominios puntuales, o se devuelve a
-  QA como decision de producto.
 - [ ] **CP-103 sesion unica.** Complejidad L, no hay nada de infraestructura hoy.
   Confirmar si es requisito real o una observacion de QA.
 - [ ] **CP-102 alcance.** Fijar `cookieOptions.maxAge` a sesion cierra la queja
   literal, pero mata cualquier "recordarme" futuro. Confirmar.
-
----
-
-## Para cerrar ya
-
-### Ya resueltas
-
-- [ ] **CP-11** criterio de contrasena. Ya esta en
-  `accsa-licitaciones-ui/src/app/auth/set-password/page.tsx:89-92`: "Minimo 6
-  caracteres. Se admiten letras (a-z, A-Z), numeros (0-9) y simbolos...", mas
-  `minLength={6}` (`:86`, `:109`) y mapa de errores en espanol (`:8-12`). El
-  servidor valida lo mismo en `api/auth/set-password/route.ts:5`.
-  Commit relacionado: `05009bd`.
-  `id: zJJYbPj2-kGXU2x26OCfKGQANHIx`
-
-- [ ] **CP-16 y CP-17** L&F en login. Ya esta:
-  `src/components/Navbar.tsx:15-39` renderiza `/images/logo-square.png`
-  (`:29-35`) mas el titulo, en modo "minimal" sobre `/login` y `/auth/*`
-  (`:18`, `:41-44`). El Navbar monta en todas las rutas
-  (`src/app/layout.tsx:38`).
-  **Salvedad:** la marca visible dice "Asistente de Compras Estatales", no
-  "Licitaciones", y la tarjeta del login en si no lleva logo (solo el header
-  "Iniciar Sesion", `login/page.tsx:61`). Confirmar con QA antes de cerrar.
-  `id: AA87Q1toEU-QNuaZ8o_LY2QABfMp`
-
-### No son bugs
-
-- [ ] **CP-00 (v2)** no permite crear usuarios fuera de ACCSA. Intencional y
-  configurable: `src/app/api/admin/users/invite/route.ts:32-39` lee
-  `INVITE_ALLOWED_EMAIL_DOMAINS`, separa por coma y devuelve 400
-  `domain_not_allowed`. Declarada en `src/lib/env.ts:32`, valor actual
-  `arnaldocastro.com.uy` (`.env.local:39`, `.env.example:56`). Documentado en
-  `features/done/00-verificaciones.md:22-24`. Ojo `:37`: **si la variable esta
-  vacia el chequeo se saltea entero**. El valor de produccion hay que mirarlo en
-  Vercel, no en el repo.
-  `id: IRIsMy3f_kGBgtHn3JuCXmQACdHe`
-
-- [ ] **ID 212** testing de 500 archivos / 1 GB. No es un bug: es el caso de
-  prueba que genero los TC-CLI. Se cierra cuando se resuelva el grupo de subida.
-  `id: CtuhIdGXmEav-6-Q1get8WQAKtgU`
 
 ---
 
@@ -581,7 +540,8 @@ Todo S, sin dependencias entre si, alto impacto visible en la proxima ronda de Q
 - [ ] Fix del `Dockerfile` (`NEXT_PUBLIC_MAX_UPLOAD_FILES`).
 - [ ] Dejar de tragarse la excepcion de `start_pipeline()`.
 
-Cierra TC-CLI-118/121/126/127, CP-155, CP-51/32 e ID 212.
+Cierra TC-CLI-118/121/126/127, CP-155 y CP-51/32, y habilita el re-test de
+ID 212, que quedo en espera en "Pendiente Testing".
 
 ### Ola 2 - Ciclo de vida (4-5 dias, 4 tarjetas)
 
@@ -613,4 +573,3 @@ lo que hoy impide a QA probar cualquier otra cosa con volumen real.
 | CP-149 y CP-150 | El pliego y la propuesta reales del caso, para reproducir y validar en el lab. |
 | CP-155 | El resultado esperado es ambiguo: reanudar solo, o avisar y reintentar sin rearmar. |
 | CP-28 | "En algunos navegadores pierde el formato": cuales. El bug de `min-w-fit` es de todos, puede haber un segundo problema. |
-| CP-16 y CP-17 | Confirmar si el logo actual mas "Asistente de Compras Estatales" alcanza, o exigen la palabra "Licitaciones". |
