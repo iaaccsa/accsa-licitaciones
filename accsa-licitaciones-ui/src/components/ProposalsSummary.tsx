@@ -10,6 +10,7 @@ interface Proposal {
     matching_status: "pending" | "matching" | "matrix_ready" | "summarizing" | "completed" | "failed" | "summary_failed";
     compliance_rate: number | null;
     critical_failures_count: number | null;
+    admissibility_status: string | null;
 }
 
 const STATUS_LABELS: Record<Proposal["matching_status"], string> = {
@@ -60,7 +61,12 @@ export default function ProposalsSummary({ analysisId }: Props) {
 
     if (!proposals || proposals.length === 0) return null;
 
-    const leaderId = proposals
+    // Rejected proposals are hidden here; anything without a resolved status stays visible.
+    const visible = proposals.filter((p) => p.admissibility_status !== "rechazada");
+
+    if (visible.length === 0) return null;
+
+    const leaderId = visible
         .filter((p) => p.matching_status === "completed" && p.compliance_rate !== null)
         .sort((a, b) => (b.compliance_rate ?? -1) - (a.compliance_rate ?? -1))[0]?.id ?? null;
 
@@ -71,9 +77,9 @@ export default function ProposalsSummary({ analysisId }: Props) {
                     <Users className="w-4 h-4 text-zinc-500 dark:text-zinc-400" />
                     Resumen de Propuestas
                 </h3>
-                <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{proposals.length}</span>
+                <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{visible.length}</span>
             </div>
-            {proposals.map((p) => {
+            {visible.map((p) => {
                 const isLeader = p.id === leaderId;
                 return (
                     <div

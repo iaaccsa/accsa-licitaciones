@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { spanishValidationProps } from "@/lib/form-validation";
@@ -20,6 +21,7 @@ function LoginForm() {
             : null
     );
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [showResetInfo, setShowResetInfo] = useState(false);
     const notice =
         searchParams.get("reason") === "timeout"
@@ -92,17 +94,28 @@ function LoginForm() {
                             <label htmlFor="password" className="block text-sm text-zinc-900 dark:text-zinc-200">
                                 Contraseña
                             </label>
-                            <input
-                                id="password"
-                                type="password"
-                                autoComplete="current-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                disabled={loading}
-                                required
-                                {...spanishValidationProps}
-                                className={inputClass}
-                            />
+                            <div className="relative">
+                                <input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    autoComplete="current-password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    disabled={loading}
+                                    required
+                                    {...spanishValidationProps}
+                                    className={`${inputClass} pr-10`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((v) => !v)}
+                                    tabIndex={-1}
+                                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                    className="absolute right-0 top-0 h-10 px-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-200"
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <button

@@ -10,6 +10,7 @@ interface Proposal {
     id: string;
     label: string;
     provider_name: string | null;
+    admissibility_status: string | null;
 }
 
 export default function EconomicComparisonTable({ analysisId }: { analysisId: string }) {
@@ -67,11 +68,16 @@ export default function EconomicComparisonTable({ analysisId }: { analysisId: st
         return null;
     }
 
-    if (offers.length === 0) {
+    // Offers of rejected proposals are hidden; anything without a resolved status stays visible.
+    const visibleOffers = offers.filter(
+        (o) => proposals[o.proposal_id]?.admissibility_status !== "rechazada",
+    );
+
+    if (visibleOffers.length === 0) {
         return null;
     }
 
-    const sorted = [...offers].sort((a, b) => {
+    const sorted = [...visibleOffers].sort((a, b) => {
         const aNum = a.total_amount == null ? Infinity : Number(a.total_amount);
         const bNum = b.total_amount == null ? Infinity : Number(b.total_amount);
         return aNum - bNum;
@@ -84,7 +90,7 @@ export default function EconomicComparisonTable({ analysisId }: { analysisId: st
                     <Coins className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                     Comparativa de Ofertas Económicas
                     <span className="text-xs font-normal text-zinc-400 dark:text-zinc-500 ml-2">
-                        ({offers.length} {offers.length === 1 ? "propuesta" : "propuestas"})
+                        ({visibleOffers.length} {visibleOffers.length === 1 ? "propuesta" : "propuestas"})
                     </span>
                 </CardTitle>
             </CardHeader>
@@ -145,7 +151,7 @@ export default function EconomicComparisonTable({ analysisId }: { analysisId: st
                         </tbody>
                     </table>
                 </div>
-                {offers.some((o) => o.total_amount == null) && (
+                {visibleOffers.some((o) => o.total_amount == null) && (
                     <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500 flex items-center gap-1">
                         <FileQuestion className="w-3.5 h-3.5" />
                         Algunas propuestas no pudieron extraer total. Revisar manualmente.

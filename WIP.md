@@ -18,13 +18,17 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 
 | Veredicto | Cant. |
 |---|---|
-| Bug real, confirmado en codigo | 16 |
+| Bug real, confirmado en codigo | 12 |
 | Necesita mas informacion antes de tocar codigo | 4 |
 
-De las 26 relevadas, 5 ya salieron de este archivo y estan en "Pendiente
-Testing" a nombre de Eduardo: CP-13 (resuelta), CP-11 y CP-16/17 (ya estaban
-resueltas de antes), CP-00 v2 (no es bug, es configuracion) e ID 212 (el testing
-ya se ejecuto y genero las tarjetas TC-CLI).
+De las 26 relevadas ya salieron 10 de este archivo:
+
+- En "Pendiente Testing" a nombre de Eduardo desde el 2026-08-13: CP-13
+  (resuelta), CP-11 y CP-16/17 (ya estaban resueltas de antes), CP-00 v2 (no es
+  bug, es configuracion) e ID 212 (el testing ya se ejecuto y genero las
+  tarjetas TC-CLI).
+- Resueltas el 2026-08-13 y todavia sin pasar a testing: CP-154, CP-29, CP-113,
+  CP-18, y la mitad de backend de CP-42.
 
 **5 tarjetas distintas son el mismo bug de fondo**: TC-CLI-118/121/126/127,
 CP-51/32 y CP-155 salen todas del diseno de subida en el navegador.
@@ -33,9 +37,6 @@ CP-51/32 y CP-155 salen todas del diseno de subida en el navegador.
 
 ## Decisiones pendientes (bloquean el plan)
 
-- [ ] **Orden de ataque.** Opciones: (a) Ola 0 primero, 6 quick wins en 2-3 dias;
-  (b) subida primero, 5-8 dias sin cerrar otras tarjetas; (c) parche de subida
-  de medio dia y despues Ola 0. Recomendacion: (a), o (c) si QA esta parado.
 - [ ] **Cancelar analisis.** Se removio a proposito el 2026-07-13 (commits
   `0f4932f` y `5545506`). La tarjeta no tiene descripcion. Averiguar quien la
   pidio y que espera: matar los jobs en curso u ocultar el analisis.
@@ -243,42 +244,12 @@ por memoria o por el timeout de 300 s.
 
 ---
 
-## Grupo C - Admisibilidad (2 tarjetas)
-
-- [ ] **CP-154** al rechazar una propuesta sigue visualizandose. **Alta / S.**
-  Mejor relacion costo/beneficio del lote.
-  El override manual escribe solo las dos columnas de estado, sin cascada y sin
-  guarda sobre el estado del analisis (asi que se puede hacer despues de
-  terminado):
-  - UI: `src/app/analyses/[id]/admissibility/page.tsx:53-77` y el mismo handler
-    en `proposals/page.tsx:126-150`.
-  - Proxy: `src/app/api/analyses/[id]/proposals/[proposalId]/admissibility-override/route.ts`
-  - API: `app/api/v1/endpoints/proposals.py:97-99` ->
-    `app/services/proposal_service.py:190-206`, setea `admissibility_status` y
-    `admissibility_overridden_by` y nada mas.
-
-  Ninguno de los dos consumidores filtra:
-  - **Resumen de Propuestas**: `src/components/ProposalsSummary.tsx:40` usa
-    `useProposals` (`src/lib/use-proposals.ts:9-13`) ->
-    `app/api/v1/endpoints/analyses.py:82-83` ->
-    `app/repositories/proposal_repository.py:10-19` (`proposals_view`, filtrado
-    solo por `analysis_id`). `admissibility_status` ni figura en la interfaz
-    `Proposal` del componente (`:7-13`), y el loop de render (`:76`) mapea todo.
-  - **Comparativa de Ofertas Economicas**:
-    `src/components/EconomicComparisonTable.tsx:24-38` ->
-    `app/api/v1/endpoints/economic_offers.py:30-31` ->
-    `app/repositories/economic_offer_repository.py:30-46`, que filtra solo por
-    `analysis_id` / `currency` / `is_verified` / `requires_manual_review`. La
-    tabla renderiza todas las ofertas (`:106`) y solo joinea `proposals` para
-    `label` y `provider_name` (`:107`, `:116`, `:119`).
-
-  El filtro correcto **ya existe** y lo usa el orquestador:
-  `proposal_repository.get_admitidas_by_analysis_id` (`:29`). Solo hay que
-  aplicarlo en esas dos vistas.
-  `id: pXHmsOlVp0uJjeR0dxIXB2QAOG-t`
+## Grupo C - Admisibilidad (1 tarjeta)
 
 - [ ] **CP-42** aunque no tenga admisibles se ve como aprobado y completado.
-  **Alta / M + S.** Son dos cosas.
+  **Alta / M.** Queda solo la mitad de UX: el bug del gate (la API no cortaba
+  cuando el usuario dejaba todos los requisitos sin confirmar) se corrigio el
+  2026-08-13.
 
   Lo que ya funciona (corte de backend):
   - Cero requisitos extraidos -> corta el pipeline
@@ -300,17 +271,7 @@ por memoria o por el timeout de 300 s.
   2. El caso "sin requisitos de admisibilidad" reusa la etiqueta equivocada:
      `apply_admissibility_cut` pinta "Sin admisibles" aunque la causa real sea
      cero requisitos extraidos.
-  3. **Bug real no reportado, y reproduce el sintoma de QA.** El gate carga solo
-     requisitos con `is_verified=true`
-     (`service-admissibility-gate/main.py:187-193`) y, si no encuentra ninguno,
-     **auto-admite todas las propuestas** (`:282-290`,
-     `mark_admissibility_result(..., "admitida", [])`). El corte de la API en
-     cambio consulta **sin** ese filtro
-     (`app/repositories/admissibility_requirement_repository.py:23-39`). O sea:
-     si en la pausa HITL el usuario desmarca todos los requisitos (hay accion
-     masiva, `admissibility-requirements/page.tsx:233`), la API no corta, el gate
-     admite todo, y el analisis termina completamente en verde.
-  4. Ya esta anotado como pendiente en
+  3. Ya esta anotado como pendiente en
      `features/backlog/analisis-sin-requisitos-admisibilidad.md:32-45`.
   `id: dV7rNbHwoUCiQgv3gKz4_2QAKOJh`
 
@@ -411,18 +372,12 @@ Keys relevantes:
 
 ---
 
-## Grupo E - Auth y seguridad (6 tarjetas)
+## Grupo E - Auth y seguridad (5 tarjetas)
 
 Todo vive en la UI con Supabase Auth via `@supabase/ssr`. La API de FastAPI no
 tiene nada de login: grep de `password|sign_in|ratelimit` en
 `accsa-licitaciones-api/app/` solo devuelve un comentario sobre el 429 de Azure
 en `core/azure.py:30`.
-
-- [ ] **CP-18** no permite ver los caracteres de la contrasena. **Baja / S.**
-  Login: `src/app/login/page.tsx:93-102`, `type="password"` hardcodeado.
-  Set password: `src/app/auth/set-password/page.tsx:77-88` y `:101-110`, los dos
-  hardcodeados. Grep de `showPassword|EyeOff|type={show` en `src/`: cero.
-  `id: WKY-ZaqYakOOQ9JHJXa8xWQAF2d1`
 
 - [ ] **CP-04** no permite recuperar contrasena. **Alta / M.** La mas critica
   del grupo.
@@ -478,59 +433,15 @@ en `core/azure.py:30`.
 
 ---
 
-## Grupo F - UX menor (2 tarjetas)
-
-- [ ] **CP-113** no permite busqueda ni ordenamiento. **Media / S.**
-  La lista principal es `/` -> `src/app/page.tsx:7-25` (solo un link "Nuevo
-  analisis"; `/analyses` redirige a `/`, `src/app/analyses/page.tsx:3-5`).
-  `src/components/AnalysisList.tsx` no tiene ni input, ni select, ni control de
-  orden. Solo: orden fijo por `created_at` desc (`:88-91`), split fijo en
-  "En Curso" / "Completados" (`:93-98`) y paginacion (`:100-105`, `:140-176`).
-  El backend tampoco: `GET /` filtra solo por `created_by`
-  (`app/api/v1/endpoints/analyses.py:26-34`) y el proxy
-  `src/app/api/analyses/list/route.ts` solo pasa `scope`.
-  Mismo caso en el admin (`src/app/admin/analyses/page.tsx` usa el mismo
-  componente).
-  Como la lista ya se pagina en cliente, filtrar y ordenar del lado del cliente
-  alcanza.
-  `id: jvqitmTSH0G-dyoa29S35WQAKO4j`
-
-- [ ] **CP-29** al editar el nombre no permite modificarlo. **Media / S.**
-  Las dos mitades de la queja son ciertas.
-  El input si es controlado (`value={nameDraft}` + `onChange`,
-  `src/app/analyses/[id]/page.tsx:229-241`), pero el borrador se siembra solo
-  desde `user_assigned_name`:
-  `setNameDraft(analysis.user_assigned_name ?? "")` (`:115-119`). Como el titulo
-  visible es `user_assigned_name || generated_name || slug` (`:266-268`), para
-  cualquier analisis nombrado por la IA (el caso normal: no hay campo de nombre
-  al subir) el lapiz abre una caja **vacia** con el nombre actual solo como
-  `placeholder` (`:239`). Hay que retipear todo.
-  El nombre viejo debajo tambien sigue: `:279-283` renderiza `generated_name`
-  como subtitulo siempre que haya `user_assigned_name`.
-  El refresco esta bien: `mutate(..., { revalidate: false })` (`:132-137`) es
-  optimista sobre `/api/analyses/${id}`, key que comparte el breadcrumb
-  (`AnalysisBreadcrumb.tsx:48-50`), y la lista (`AnalysisList.tsx:22-41`)
-  refetchea al remontar. Lo que se ve viejo es el subtitulo `generated_name`.
-  `id: 6fEcubCsHUShPBUY4IboGmQAMoqN`
-
----
-
 ## Plan de olas
 
-### Ola 0 - Quick wins (2-3 dias; 6 items pendientes, 7 tarjetas)
+### Ola 0 - Quick wins (1 item pendiente, 2 tarjetas)
 
-Todo S, sin dependencias entre si, alto impacto visible en la proxima ronda de QA.
+Los otros cinco items de esta ola se resolvieron el 2026-08-13. Queda solo el
+de prompts, bloqueado por falta del caso real para validar en el lab.
 
 - [ ] CP-149 y parte de CP-150: editar los 2 prompts `compliance_evaluator` en
   `/admin/prompts` y validar en el lab. Cero codigo.
-- [ ] CP-154: filtrar por `admissibility_status` en `ProposalsSummary` y
-  `EconomicComparisonTable`.
-- [ ] CP-42 (mitad bug): alinear el filtro `is_verified` entre el gate y el corte
-  de la API.
-- [ ] CP-29: sembrar el borrador con el nombre visible y sacar el subtitulo
-  duplicado.
-- [ ] CP-113: buscador y orden en cliente.
-- [ ] CP-18: toggle de ojito en los 3 campos de contrasena.
 
 ### Ola 1 - Subida (5-8 dias, 5 tarjetas)
 
@@ -558,8 +469,8 @@ ID 212, que quedo en espera en "Pendiente Testing".
 - [ ] CP-03: throttle propio.
 - [ ] CP-103: solo si se decide hacerla.
 
-**Razon del orden:** la Ola 0 sale casi gratis y limpia 6 tarjetas, y la Ola 1 es
-lo que hoy impide a QA probar cualquier otra cosa con volumen real.
+**Razon del orden:** la Ola 1 es lo que hoy impide a QA probar cualquier otra
+cosa con volumen real, asi que es la que sigue.
 
 ---
 

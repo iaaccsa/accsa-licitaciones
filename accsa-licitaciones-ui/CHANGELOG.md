@@ -12,8 +12,19 @@ se versionan y publican en conjunto.
 
 ### accsa-licitaciones-ui
 
+#### Added
+- La lista de análisis ahora permite buscar por nombre y elegir el orden (más recientes, más antiguos o alfabético). La búsqueda ignora mayúsculas y acentos, y al cambiarla se vuelve a la primera página.
+- Los campos de contraseña ahora tienen un botón para mostrar u ocultar lo escrito, en el inicio de sesión y en la creación de contraseña.
+
 #### Fixed
 - Los mensajes de validación de los formularios ahora se muestran siempre en español, sin importar el idioma configurado en el navegador. Antes, con el navegador en inglés, avisos como el de correo electrónico mal escrito aparecían en ese idioma. Alcanza a los campos de inicio de sesión, creación de contraseña, invitación de usuarios y filtros de fecha de auditoría.
+- Las propuestas rechazadas en la admisibilidad dejan de aparecer en "Resumen de Propuestas" y en "Comparativa de Ofertas Económicas". Las propuestas que todavía no tienen la admisibilidad resuelta se siguen mostrando.
+- Al editar el nombre de un análisis, el campo ahora abre con el nombre actual cargado y se puede corregir una parte sin reescribirlo entero. Además se quitó el nombre anterior que quedaba visible debajo del título después de renombrar.
+
+### accsa-licitaciones-api
+
+#### Fixed
+- Si en la revisión de los requisitos de admisibilidad se dejan todos sin confirmar, el análisis ahora se cierra explicando el motivo. Antes el chequeo de admisibilidad no encontraba ningún requisito que verificar y daba por admitidas a todas las propuestas, con lo que el análisis terminaba como aprobado sin haber controlado nada.
 
 ## [2.2.0] - 2026-07-28
 

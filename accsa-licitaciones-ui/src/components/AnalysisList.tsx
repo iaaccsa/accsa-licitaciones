@@ -1,10 +1,27 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Search } from "lucide-react";
 import { AnalysisCard, type Analysis } from "./AnalysisCard";
 import { Skeleton } from "./ui/skeleton";
 
 const PAGE_SIZE = 15;
+
+const controlClass =
+    "h-10 px-3 rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent";
+
+type SortOrder = "recent" | "oldest" | "name";
+
+function displayName(analysis: Analysis) {
+    return analysis.user_assigned_name || analysis.generated_name || analysis.slug;
+}
+
+function normalize(text: string) {
+    return text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase();
+}
 
 function getPageNumbers(current: number, total: number): (number | "...")[] {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
@@ -18,6 +35,8 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [page, setPage] = useState(1);
+    const [search, setSearch] = useState("");
+    const [sortOrder, setSortOrder] = useState<SortOrder>("recent");
 
     useEffect(() => {
         const fetchAnalyses = async () => {
@@ -85,10 +104,18 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
         );
     }
 
-    // Sort by date descending
-    const sortedAnalyses = [...analyses].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    const query = normalize(search.trim());
+    const filteredAnalyses = query
+        ? analyses.filter((a) => normalize(displayName(a)).includes(query))
+        : analyses;
+
+    const sortedAnalyses = [...filteredAnalyses].sort((a, b) => {
+        if (sortOrder === "name") {
+            return displayName(a).localeCompare(displayName(b), "es", { sensitivity: "base" });
+        }
+        const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        return sortOrder === "oldest" ? diff : -diff;
+    });
 
     const activeAnalyses = sortedAnalyses.filter((a) =>
         ["pending", "processing", "awaiting_approval"].includes(a.status)
@@ -106,6 +133,43 @@ export function AnalysisList({ basePath = "/analyses", scope }: { basePath?: str
 
     return (
         <div className="space-y-8">
+            {/* Search + sort */}
+            <div className="flex flex-col sm:flex-row gap-3">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                    <input
+                        type="search"
+                        value={search}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            setPage(1);
+                        }}
+                        placeholder="Buscar por nombre..."
+                        aria-label="Buscar análisis por nombre"
+                        className={`${controlClass} w-full pl-9 placeholder:text-zinc-400 dark:placeholder:text-zinc-400`}
+                    />
+                </div>
+                <select
+                    value={sortOrder}
+                    onChange={(e) => {
+                        setSortOrder(e.target.value as SortOrder);
+                        setPage(1);
+                    }}
+                    aria-label="Ordenar análisis"
+                    className={controlClass}
+                >
+                    <option value="recent">Más recientes primero</option>
+                    <option value="oldest">Más antiguos primero</option>
+                    <option value="name">Nombre (A-Z)</option>
+                </select>
+            </div>
+
+            {sortedAnalyses.length === 0 && (
+                <div className="text-center py-12 text-zinc-500 dark:text-zinc-400">
+                    <p>No hay análisis que coincidan con la búsqueda.</p>
+                </div>
+            )}
+
             {/* Active Analyses */}
             {activeAnalyses.length > 0 && (
                 <div>

@@ -114,7 +114,9 @@ export default function AnalysisDetailPage() {
 
   const startEditName = useCallback(() => {
     if (!analysis) return;
-    setNameDraft(analysis.user_assigned_name ?? "");
+    setNameDraft(
+      analysis.user_assigned_name || analysis.generated_name || analysis.slug,
+    );
     setIsEditingName(true);
   }, [analysis]);
 
@@ -275,11 +277,6 @@ export default function AnalysisDetailPage() {
                   <Pencil className="h-4 w-4" />
                 </button>
               </div>
-            )}
-            {analysis.user_assigned_name && analysis.generated_name && (
-              <p className="text-sm text-zinc-400 dark:text-zinc-500 truncate">
-                {analysis.generated_name}
-              </p>
             )}
           </div>
         </div>

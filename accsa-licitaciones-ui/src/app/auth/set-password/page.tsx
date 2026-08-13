@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { spanishValidationProps } from "@/lib/form-validation";
@@ -21,6 +22,8 @@ export default function SetPasswordPage() {
     const [confirm, setConfirm] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -75,19 +78,30 @@ export default function SetPasswordPage() {
                             >
                                 Nueva contraseña
                             </label>
-                            <input
-                                id="new-password"
-                                type="password"
-                                autoComplete="new-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                disabled={loading}
-                                autoFocus
-                                required
-                                minLength={6}
-                                {...spanishValidationProps}
-                                className={inputClass}
-                            />
+                            <div className="relative">
+                                <input
+                                    id="new-password"
+                                    type={showPassword ? "text" : "password"}
+                                    autoComplete="new-password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    disabled={loading}
+                                    autoFocus
+                                    required
+                                    minLength={6}
+                                    {...spanishValidationProps}
+                                    className={`${inputClass} pr-10`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((v) => !v)}
+                                    tabIndex={-1}
+                                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                    className="absolute right-0 top-0 h-10 px-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-200"
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">
                                 Mínimo 6 caracteres. Se admiten letras (a-z, A-Z),
                                 números (0-9) y símbolos (por ejemplo ! @ # $ % & * - _).
@@ -100,18 +114,29 @@ export default function SetPasswordPage() {
                             >
                                 Confirmar contraseña
                             </label>
-                            <input
-                                id="confirm-password"
-                                type="password"
-                                autoComplete="new-password"
-                                value={confirm}
-                                onChange={(e) => setConfirm(e.target.value)}
-                                disabled={loading}
-                                required
-                                minLength={6}
-                                {...spanishValidationProps}
-                                className={inputClass}
-                            />
+                            <div className="relative">
+                                <input
+                                    id="confirm-password"
+                                    type={showConfirm ? "text" : "password"}
+                                    autoComplete="new-password"
+                                    value={confirm}
+                                    onChange={(e) => setConfirm(e.target.value)}
+                                    disabled={loading}
+                                    required
+                                    minLength={6}
+                                    {...spanishValidationProps}
+                                    className={`${inputClass} pr-10`}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirm((v) => !v)}
+                                    tabIndex={-1}
+                                    aria-label={showConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                    className="absolute right-0 top-0 h-10 px-3 flex items-center text-zinc-400 hover:text-zinc-600 dark:text-zinc-400 dark:hover:text-zinc-200"
+                                >
+                                    {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
                         </div>
                         {error && (
                             <p className="text-sm text-red-600 dark:text-red-400" role="alert">

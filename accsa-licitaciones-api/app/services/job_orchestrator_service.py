@@ -559,6 +559,20 @@ class JobOrchestratorService:
             {"status": "processing", "paused_at_service": None}
         )
 
+        # Requirements are created already verified, so the pause is where the user
+        # unverifies the ones to discard. If none survive, the gate would find no
+        # requirement to check and admit every proposal: cut instead.
+        if paused_at_service == "service-admissibility-extractor" and not admissibility_requirement_repository.get_by_analysis_id(
+            str(analysis_id), is_verified=True, limit=1
+        ):
+            self._log_event(
+                analysis_id, "info",
+                "No quedaron requisitos de admisibilidad confirmados: se omiten los jobs restantes y se finaliza el análisis.",
+                {"verified_admissibility_requirement_count": 0},
+            )
+            self._complete_downstream_and_finalize(analysis_id, paused_at_service)
+            return []
+
         # Same cut as on_job_completed, which never runs for a job that pauses:
         # with no admitida proposal there is nothing left to extract or match.
         if paused_at_service == "service-admissibility-gate" and not proposal_repository.get_admitidas_by_analysis_id(analysis_id):
