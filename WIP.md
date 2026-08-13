@@ -517,7 +517,7 @@ en `core/azure.py:30`.
 
 ## Plan de olas
 
-### Ola 0 - Quick wins (2-3 dias, 5 tarjetas restantes)
+### Ola 0 - Quick wins (2-3 dias; 6 items pendientes, 7 tarjetas)
 
 Todo S, sin dependencias entre si, alto impacto visible en la proxima ronda de QA.
 
