@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
 import { UserPlus, RefreshCw, Trash2 } from "lucide-react";
+import { spanishValidationProps } from "@/lib/form-validation";
 
 type Role = "administrator" | "user";
 
@@ -180,6 +181,7 @@ export default function AdminUsersPage() {
                             onChange={(e) => setInviteEmail(e.target.value)}
                             disabled={inviting}
                             required
+                            {...spanishValidationProps}
                             placeholder="email@dominio.com"
                             aria-label="Email"
                             className="flex-1 h-10 px-3 rounded-md border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-700 text-sm dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"

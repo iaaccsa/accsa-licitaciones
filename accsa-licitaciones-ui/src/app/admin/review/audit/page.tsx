@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AdminPageHeader } from "@/components/AdminPageHeader";
+import { spanishValidationProps } from "@/lib/form-validation";
 
 interface AuditLog {
     id: string;
@@ -138,11 +139,11 @@ export default function AdminAuditPage() {
                         </label>
                         <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-400">
                             Desde
-                            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={inputClass} />
+                            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} {...spanishValidationProps} className={inputClass} />
                         </label>
                         <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-400">
                             Hasta
-                            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={inputClass} />
+                            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} {...spanishValidationProps} className={inputClass} />
                         </label>
                         <Button type="submit">Filtrar</Button>
                     </form>

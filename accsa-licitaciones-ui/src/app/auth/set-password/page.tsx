@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { spanishValidationProps } from "@/lib/form-validation";
 
 const ERROR_MESSAGES: Record<string, string> = {
     same_password: "La nueva contraseña debe ser distinta a la actual",
@@ -84,6 +85,7 @@ export default function SetPasswordPage() {
                                 autoFocus
                                 required
                                 minLength={6}
+                                {...spanishValidationProps}
                                 className={inputClass}
                             />
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -107,6 +109,7 @@ export default function SetPasswordPage() {
                                 disabled={loading}
                                 required
                                 minLength={6}
+                                {...spanishValidationProps}
                                 className={inputClass}
                             />
                         </div>

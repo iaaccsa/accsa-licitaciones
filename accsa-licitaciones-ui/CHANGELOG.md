@@ -10,6 +10,11 @@ se versionan y publican en conjunto.
 
 ## [Unreleased]
 
+### accsa-licitaciones-ui
+
+#### Fixed
+- Los mensajes de validación de los formularios ahora se muestran siempre en español, sin importar el idioma configurado en el navegador. Antes, con el navegador en inglés, avisos como el de correo electrónico mal escrito aparecían en ese idioma. Alcanza a los campos de inicio de sesión, creación de contraseña, invitación de usuarios y filtros de fecha de auditoría.
+
 ## [2.2.0] - 2026-07-28
 
 ### accsa-licitaciones-ui

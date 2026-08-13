@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { spanishValidationProps } from "@/lib/form-validation";
 
 const inputClass =
     "w-full h-10 px-3 rounded-lg border border-zinc-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900/15 focus:border-zinc-400 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-100 dark:focus:ring-zinc-100/20 dark:focus:border-zinc-500";
@@ -83,6 +84,7 @@ function LoginForm() {
                                 disabled={loading}
                                 autoFocus
                                 required
+                                {...spanishValidationProps}
                                 className={inputClass}
                             />
                         </div>
@@ -98,6 +100,7 @@ function LoginForm() {
                                 onChange={(e) => setPassword(e.target.value)}
                                 disabled={loading}
                                 required
+                                {...spanishValidationProps}
                                 className={inputClass}
                             />
                         </div>
