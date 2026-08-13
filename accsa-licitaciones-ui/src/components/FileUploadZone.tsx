@@ -27,6 +27,7 @@ interface FileUploadZoneProps {
     accept?: string;
     maxFiles?: number;
     maxSizeMB?: number;
+    disabled?: boolean;
     onFilesChange?: (files: File[]) => void;
 }
 
@@ -38,11 +39,13 @@ export function FileUploadZone({
     accept = "*",
     maxFiles = 1,
     maxSizeMB = 10,
+    disabled = false,
     onFilesChange,
 }: FileUploadZoneProps) {
     const [files, setFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [notice, setNotice] = useState<string | null>(null);
 
     const iconMap = {
         document: FileText,
@@ -77,7 +80,15 @@ export function FileUploadZone({
                     : null
             );
 
-            const updatedFiles = [...files, ...validFiles].slice(0, maxFiles);
+            const selected = [...files, ...validFiles];
+            const updatedFiles = selected.slice(0, maxFiles);
+            const discarded = selected.length - updatedFiles.length;
+            setNotice(
+                discarded > 0
+                    ? `Se alcanzó el máximo de ${maxFiles} archivos: ${discarded} ${discarded === 1 ? "archivo quedó fuera" : "archivos quedaron fuera"} de la selección.`
+                    : null
+            );
+
             setFiles(updatedFiles);
             onFilesChange?.(updatedFiles);
         },
@@ -86,17 +97,22 @@ export function FileUploadZone({
 
     const removeFile = useCallback(
         (index: number) => {
+            if (disabled) return;
             const updatedFiles = files.filter((_, i) => i !== index);
             setFiles(updatedFiles);
             onFilesChange?.(updatedFiles);
         },
-        [files, onFilesChange]
+        [files, disabled, onFilesChange]
     );
 
-    const handleDragOver = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
-        setIsDragging(true);
-    }, []);
+    const handleDragOver = useCallback(
+        (e: React.DragEvent) => {
+            e.preventDefault();
+            if (disabled) return;
+            setIsDragging(true);
+        },
+        [disabled]
+    );
 
     const handleDragLeave = useCallback((e: React.DragEvent) => {
         e.preventDefault();
@@ -107,12 +123,14 @@ export function FileUploadZone({
         (e: React.DragEvent) => {
             e.preventDefault();
             setIsDragging(false);
+            if (disabled) return;
             handleFiles(e.dataTransfer.files);
         },
-        [handleFiles]
+        [disabled, handleFiles]
     );
 
     const handleClick = useCallback(() => {
+        if (disabled) return;
         const input = document.createElement("input");
         input.type = "file";
         input.accept = accept;
@@ -122,7 +140,7 @@ export function FileUploadZone({
             handleFiles(target.files);
         };
         input.click();
-    }, [accept, maxFiles, handleFiles]);
+    }, [accept, maxFiles, handleFiles, disabled]);
 
     return (
         <Card className="flex-1 min-w-[280px]" >
@@ -141,8 +159,9 @@ export function FileUploadZone({
                     className={`
             flex flex-col items-center justify-center
             border-2 border-dashed rounded-lg
-            p-6 cursor-pointer
+            p-6
             transition-colors duration-200
+            ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
             ${isDragging
                             ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
                             : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
@@ -189,6 +208,9 @@ export function FileUploadZone({
                 </div>
                 {error ? (
                     <p className="text-xs text-red-600 dark:text-red-400 mt-2">{error}</p>
+                ) : null}
+                {notice ? (
+                    <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">{notice}</p>
                 ) : null}
             </CardContent>
         </Card >

@@ -17,6 +17,16 @@ export const CHECK_INTERVAL_MS = 15_000;
 // server-side activity cookie fresh without spamming a request per mousemove.
 export const HEARTBEAT_INTERVAL_MS = 60_000;
 
+// Synthetic activity event. Long running work started by the user (a batch
+// upload, for instance) is real activity even though it fires no input events,
+// so it dispatches this and the watcher treats it like a mousemove.
+export const APP_ACTIVITY_EVENT = "app:activity";
+
+export function signalActivity() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new Event(APP_ACTIVITY_EVENT));
+}
+
 // Last-activity cookie, bumped ONLY by login + heartbeat (never by background
 // polling), and read by the middleware to enforce the timeout server-side.
 export const ACTIVITY_COOKIE = "sb-activity";

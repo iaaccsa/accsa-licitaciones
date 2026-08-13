@@ -3,8 +3,8 @@ Public router for POST /analyses/ — accepts either X-API-Key or X-Upload-Token
 Mounted directly in main.py (outside the api_router that enforces X-API-Key globally)
 so that browser clients can reach this endpoint without exposing the API key.
 
-The browser uploads the ZIP directly to Supabase Storage and then calls this endpoint
-with the resulting storage_path.
+The browser uploads every PDF plus a manifest.json directly to Supabase Storage under
+a batch prefix, and then calls this endpoint with that prefix as storage_path.
 """
 from fastapi import APIRouter, HTTPException, Request, status
 from app.core.config import get_settings
@@ -39,8 +39,9 @@ async def create_analysis(
     body: AnalysisFromStoragePath,
 ):
     """
-    Create a new analysis. The ZIP file must already be uploaded to Supabase Storage.
-    Provide the resulting `storage_path` (e.g. `"{uuid}.zip"`) in the request body.
+    Create a new analysis. The documents and their `manifest.json` must already be
+    uploaded to Supabase Storage under a batch prefix. Provide that prefix as
+    `storage_path` (e.g. `"{batchId}/"`, with trailing slash) in the request body.
 
     Auth (one of):
     - `X-API-Key` — standard server-to-server auth

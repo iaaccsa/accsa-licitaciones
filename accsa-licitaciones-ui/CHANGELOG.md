@@ -12,6 +12,11 @@ se versionan y publican en conjunto.
 
 ### accsa-licitaciones-ui
 
+#### Changed
+- Los documentos ahora se suben de a uno en vez de empaquetarse todos juntos en el navegador antes de enviarlos. Con lotes de tamaño real el navegador se quedaba sin memoria y la pantalla quedaba detenida, sin barra de progreso ni mensaje de error. Ahora la subida muestra el avance ("Subiendo 137 de 420 archivos"), reintenta sola cuando se corta la conexión y, si un archivo no se puede subir, avisa cuál fue y no inicia el análisis. Deja de aplicar el tope de 1 GB por paquete: el límite pasa a ser el tamaño total del lote, configurable con `NEXT_PUBLIC_MAX_UPLOAD_TOTAL_MB` (2 GB por defecto).
+- Dos documentos con el mismo nombre en carpetas distintas ya no se pisan entre sí: antes uno reemplazaba al otro al desempaquetar y se perdía.
+- Una subida larga ya no cierra la sesión por inactividad mientras está en curso.
+
 #### Added
 - La lista de análisis ahora permite buscar por nombre y elegir el orden (más recientes, más antiguos o alfabético). La búsqueda ignora mayúsculas y acentos, y al cambiarla se vuelve a la primera página.
 - Los campos de contraseña ahora tienen un botón para mostrar u ocultar lo escrito, en el inicio de sesión y en la creación de contraseña.
@@ -21,9 +26,15 @@ se versionan y publican en conjunto.
 - Las propuestas rechazadas en la admisibilidad dejan de aparecer en "Resumen de Propuestas" y en "Comparativa de Ofertas Económicas". Las propuestas que todavía no tienen la admisibilidad resuelta se siguen mostrando.
 - Al editar el nombre de un análisis, el campo ahora abre con el nombre actual cargado y se puede corregir una parte sin reescribirlo entero. Además se quitó el nombre anterior que quedaba visible debajo del título después de renombrar.
 
+### accsa-licitaciones-services
+
+#### Changed
+- `service-file-extractor` deja de descargar y descomprimir un paquete único: ahora lee el listado del lote y procesa los documentos de a uno, descargándolos directo a disco. Antes cargaba el paquete entero en memoria, lo que hacía fallar el paso con lotes grandes. El análisis arranca más rápido porque se ahorra transferir todos los documentos dos veces.
+
 ### accsa-licitaciones-api
 
 #### Fixed
+- Si el análisis se crea pero el procesamiento no llega a arrancar, ahora se informa el error en vez de mostrar "Análisis iniciado con éxito" sobre un análisis que quedaba detenido para siempre.
 - Si en la revisión de los requisitos de admisibilidad se dejan todos sin confirmar, el análisis ahora se cierra explicando el motivo. Antes el chequeo de admisibilidad no encontraba ningún requisito que verificar y daba por admitidas a todas las propuestas, con lo que el análisis terminaba como aprobado sin haber controlado nada.
 
 ## [2.2.0] - 2026-07-28

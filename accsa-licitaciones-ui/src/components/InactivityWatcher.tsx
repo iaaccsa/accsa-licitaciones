@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import {
+    APP_ACTIVITY_EVENT,
     CHECK_INTERVAL_MS,
     HEARTBEAT_INTERVAL_MS,
     INACTIVITY_ENABLED,
@@ -16,6 +17,7 @@ const ACTIVITY_EVENTS = [
     "wheel",
     "scroll",
     "touchstart",
+    APP_ACTIVITY_EVENT,
 ] as const;
 
 // Watches for genuine user interaction and logs the user out after the

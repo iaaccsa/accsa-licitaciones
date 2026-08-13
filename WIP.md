@@ -18,7 +18,7 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 
 | Veredicto | Cant. |
 |---|---|
-| Bug real, confirmado en codigo | 12 |
+| Bug real, confirmado en codigo | 7 |
 | Necesita mas informacion antes de tocar codigo | 4 |
 
 De las 26 relevadas ya salieron 10 de este archivo:
@@ -28,10 +28,9 @@ De las 26 relevadas ya salieron 10 de este archivo:
   bug, es configuracion) e ID 212 (el testing ya se ejecuto y genero las
   tarjetas TC-CLI).
 - Resueltas el 2026-08-13 y todavia sin pasar a testing: CP-154, CP-29, CP-113,
-  CP-18, y la mitad de backend de CP-42.
-
-**5 tarjetas distintas son el mismo bug de fondo**: TC-CLI-118/121/126/127,
-CP-51/32 y CP-155 salen todas del diseno de subida en el navegador.
+  CP-18, la mitad de backend de CP-42, y el grupo entero de subida
+  (TC-CLI-118/127, TC-CLI-121, TC-CLI-126, CP-155, CP-51/32), que habilita
+  ademas el re-test de ID 212.
 
 ---
 
@@ -44,109 +43,6 @@ CP-51/32 y CP-155 salen todas del diseno de subida en el navegador.
   Confirmar si es requisito real o una observacion de QA.
 - [ ] **CP-102 alcance.** Fijar `cookieOptions.maxAge` a sesion cierra la queja
   literal, pero mata cualquier "recordarme" futuro. Confirmar.
-
----
-
-## Grupo A - Subida de archivos (5 tarjetas)
-
-### Causa raiz unica
-
-En `accsa-licitaciones-ui/src/components/UploadSection.tsx:48-73`:
-
-- Lazy `import("jszip")` (`:48-49`, jszip `^3.10.1`).
-- Loop `await file.arrayBuffer()` por archivo y `zip.file(name, buffer)`
-  (`:51-54`). Cada PDF queda materializado entero en el heap **ademas** del
-  handle `File`. Sin `streamFiles`, sin chunking.
-- `zip.generateAsync({ type: "blob" })` (`:56`). Sin callback `onUpdate` (JSZip
-  lo soporta), sin compresion, o sea STORE: el ZIP pesa la suma de los PDFs.
-  Pico de memoria aproximado: 2x el total de bytes.
-- **No hay validacion de tamano total en ningun lado.** Los unicos chequeos son
-  por archivo (10 MB) en `FileUploadZone.tsx:66-70` y el corte a `maxFiles` en
-  `:80`. Con 500 x 10 MB permitidos, una seleccion legal llega a ~5 GB.
-- Un solo `fetch` directo a Supabase Storage REST (`:63-73`),
-  `POST {SUPABASE_URL}/storage/v1/object/artifacts/{uuid}.zip` con la anon key.
-  Es el upload single-shot: **no** es signed URL, **no** es TUS/resumable.
-  Esto si esquiva bien el limite de 4.5 MB de Vercel (los bytes nunca pasan por
-  Next). Ver `accsa-licitaciones-ui/docs/UPLOAD_SIZE_ALTERNATIVES.md`.
-- Sin barra de progreso: solo un spinner "Enviando..." (`:184-188`). `fetch` no
-  expone progreso de subida y no hay XHR ni `ReadableStream` en todo `src/`.
-- Cuando el tab se queda sin memoria, el `try/catch` de `:103` **no lo captura**.
-  Un OOM de JS no es catcheable. Por eso el sintoma es "el boton desaparece y no
-  pasa nada", no un error mal manejado.
-
-Aguas abajo: `service-file-extractor/main.py:306` hace
-`requests.get(url, timeout=300).content`, o sea el ZIP entero a RAM, dentro de un
-contenedor limitado a `EXECUTOR_MEMORY = "1536m"`
-(`accsa-licitaciones-executor/app/config.py:25`). Un ZIP de ~1 GB revienta ahi
-por memoria o por el timeout de 300 s.
-
-### Hallazgos extra no reportados
-
-- **`Dockerfile` de la UI (lineas 16-28) no declara
-  `NEXT_PUBLIC_MAX_UPLOAD_FILES`**, aunque `.github/workflows/build-ui.yml:46-47`
-  reenvia todas las `NEXT_PUBLIC_*` de `ui-build.env` como build args. Como se
-  inlinean en build time, los contenedores siempre toman el fallback 500. El
-  limite "configurable" del commit `c258c7e` esta fijo en produccion.
-- **Truncado silencioso**: `FileUploadZone.tsx:80` descarta todo lo que pase de
-  `maxFiles` sin avisar.
-- **Colision de nombres silenciosa**: `UploadSection.tsx:53` aplana la ruta, asi
-  que dos PDFs con el mismo nombre en carpetas distintas se pisan en el
-  `extractall` (`service-file-extractor/main.py:320-321`).
-- **Codigo muerto**: `src/app/api/upload-token/route.ts` y el backend
-  `app/api/v1/endpoints/upload_token.py` + `app/core/upload_tokens.py`
-  implementan un flujo con token que ningun cliente llama.
-
-### Tarjetas
-
-- [ ] **TC-CLI-118/127** se traba al preparar los archivos, la capacidad
-  500 / 1 GB no es usable con tamanos reales. **Bloqueante.**
-  `id: gvcDB19NyEqupL2mU792e2QAGsED`
-- [ ] **TC-CLI-121** lotes bajo 1 GB no suben ni informan error. **Bloqueante.**
-  Parcial: los errores del camino feliz si se muestran
-  (`UploadSection.tsx:75-79`, `:99-102`, `:103-107`), pero quedan caminos mudos.
-  El mas grave es del lado del servidor:
-  `accsa-licitaciones-api/app/services/analysis_service.py:65-68` solo loguea las
-  excepciones de `start_pipeline()` y el endpoint igual devuelve 200. La UI
-  muestra "Analisis iniciado con exito" mientras el analisis queda `pending` para
-  siempre. Los diagnosticos son solo `console.error` (`:104`); el status y el
-  body de Storage nunca se leen ni se muestran.
-  `id: SLQWMVwJokq8f34f36-vz2QAIntE`
-- [ ] **TC-CLI-126** al superar 1 GB se cuelga sin el error esperado. **Alta.**
-  `id: V8t7zujHMEu4GcIIim4lB2QAPNv-`
-- [ ] **CP-155** cargar documentos y desconectar red. **Media.** Cero maquinaria
-  de reintento: no hay `retry`, `AbortController`, `tus`, `resumable` ni
-  `uploadToSignedUrl` en `src/`. Un solo `fetch`; al fallar se descarta el ZIP y
-  hay que rearmar todo. Agravante: `InactivityWatcher.tsx:51-58` fuerza
-  navegacion a `/login?reason=timeout` a los 30 min de inactividad
-  (`src/lib/session-timeout.ts:8-12`), y el timer solo se resetea con
-  pointer/key/scroll, asi que una subida larga desatendida se mata sola sin
-  mostrar error.
-  **Falta definir:** el resultado esperado es ambiguo. Reanudar solo al volver la
-  red, o avisar y permitir reintentar sin rearmar todo. Cambia el alcance.
-  `id: 31Fy4ecE1kqR1l4W3NIRfmQACi_g`
-- [ ] **CP-51 y 32** 25 documentos y se queda cargando. **Media.** Es de cuando
-  el limite era 25. Mitigaciones ya aplicadas: 25 -> 50 -> 500 (`4ab43f5`,
-  `c258c7e`) y timeout de job 3600 s -> 21600 s (`executor/app/config.py:26-29`,
-  aplicado en `app/runner.py:160-177`). Sigue sin resolverse: no hay watchdog de
-  jobs colgados en toda la API (grep de watchdog/stuck/stale sin resultados), el
-  fallo de arranque del pipeline se traga, la concurrencia del executor es 3 con
-  1.5 GB y 1 vCPU por job (`config.py:22-25`), y la descarga del extractor sigue
-  bufferizada. Un lote grande que se cuelga no llega nunca a un estado de fallo.
-  **Necesita re-test antes de gastar tiempo.**
-  `id: C0_tUop0Zkeo6zHtSSX6D2QAHaZQ`
-
-### Plan de arreglo
-
-- [ ] **Parche de feedback (S, medio dia).** Validar tamano total antes de
-  zipear con mensaje claro, y barra de progreso usando el callback `onUpdate` de
-  JSZip. No arregla el bug de fondo, pero elimina el cuelgue mudo de TC-CLI-126.
-- [ ] **Rework (L, 4-6 dias).** Dejar de armar el ZIP en el navegador: subir
-  archivo por archivo a Storage con upload resumable (TUS), concurrencia
-  limitada y progreso real. El backend arma o lee el lote.
-- [ ] **Streaming en `file-extractor` (M).** Bajar a disco en vez de a RAM.
-- [ ] **Fix del `Dockerfile`** de la UI: declarar `NEXT_PUBLIC_MAX_UPLOAD_FILES`.
-- [ ] **Superficie de error del servidor**: que `analysis_service.py:65-68` deje
-  de tragarse la excepcion de `start_pipeline()`.
 
 ---
 
@@ -443,17 +339,6 @@ de prompts, bloqueado por falta del caso real para validar en el lab.
 - [ ] CP-149 y parte de CP-150: editar los 2 prompts `compliance_evaluator` en
   `/admin/prompts` y validar en el lab. Cero codigo.
 
-### Ola 1 - Subida (5-8 dias, 5 tarjetas)
-
-- [ ] Parche de feedback (medio dia) para desbloquear a QA.
-- [ ] Rework a subida por archivo con TUS.
-- [ ] `file-extractor` bajando en streaming.
-- [ ] Fix del `Dockerfile` (`NEXT_PUBLIC_MAX_UPLOAD_FILES`).
-- [ ] Dejar de tragarse la excepcion de `start_pipeline()`.
-
-Cierra TC-CLI-118/121/126/127, CP-155 y CP-51/32, y habilita el re-test de
-ID 212, que quedo en espera en "Pendiente Testing".
-
 ### Ola 2 - Ciclo de vida (4-5 dias, 4 tarjetas)
 
 - [ ] CP-28: reconciliar progreso con estado, y el `min-w-fit`.
@@ -469,8 +354,7 @@ ID 212, que quedo en espera en "Pendiente Testing".
 - [ ] CP-03: throttle propio.
 - [ ] CP-103: solo si se decide hacerla.
 
-**Razon del orden:** la Ola 1 es lo que hoy impide a QA probar cualquier otra
-cosa con volumen real, asi que es la que sigue.
+**Razon del orden:** con la subida resuelta, sigue la Ola 2.
 
 ---
 
@@ -480,7 +364,5 @@ cosa con volumen real, asi que es la que sigue.
 |---|---|
 | Cancelar analisis | Sin descripcion, y contradice una decision del 2026-07-13. Quien la pidio y que espera. |
 | CP-032 | Descripcion generica. Tiene evidencias adjuntas que el CLI de Graph no baja. Necesito el id del analisis o la captura. |
-| CP-51 y 32 | Es de cuando el limite era 25. Re-test antes de gastar tiempo. |
 | CP-149 y CP-150 | El pliego y la propuesta reales del caso, para reproducir y validar en el lab. |
-| CP-155 | El resultado esperado es ambiguo: reanudar solo, o avisar y reintentar sin rearmar. |
 | CP-28 | "En algunos navegadores pierde el formato": cuales. El bug de `min-w-fit` es de todos, puede haber un segundo problema. |

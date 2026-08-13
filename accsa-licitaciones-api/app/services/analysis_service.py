@@ -51,7 +51,7 @@ class AnalysisService:
         event_data = EventBase(
             analysis_id=analysis.id,
             level="info",
-            message="Archivo ZIP recibido con todos los documentos.",
+            message="Documentos recibidos en el almacenamiento.",
             source="api",
             details={"storage_path": data.storage_path}
         )
@@ -62,10 +62,16 @@ class AnalysisService:
         workflow_phase_service.initialize_phases(str(analysis.id), hitl)
 
         # 4. Start Jobs Pipeline
+        # start_pipeline already marks the analysis as failed and logs the error
+        # event; propagate so the client never sees a success for an analysis
+        # that stayed pending.
         try:
             job_orchestrator_service.start_pipeline(analysis_id=analysis.id)
         except Exception as e:
             logger.error(f"Error starting jobs pipeline for analysis {analysis.id}: {e}")
+            raise RuntimeError(
+                f"El análisis se creó pero no se pudo iniciar el procesamiento: {e}"
+            ) from e
 
         return analysis
 

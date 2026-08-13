@@ -1,8 +1,9 @@
 """
 File Extractor Service
 ======================
-Queries the backend API for a specific analysis by ID, downloads the associated
-ZIP artifact, extracts it, and uploads files to Supabase Storage.
+Queries the backend API for a specific analysis by ID, reads the batch manifest
+the browser left under the artifact prefix, and moves every document listed in it
+to Supabase Storage, one file at a time.
 
 Required environment variables:
   - SUPABASE_URL               : Supabase project URL
@@ -20,7 +21,6 @@ Required environment variables:
 import os
 import sys
 import uuid
-import zipfile
 import mimetypes
 from datetime import datetime, timezone
 from pathlib import Path
@@ -98,97 +98,93 @@ class NoValidPdfError(Exception):
     """Raised when no valid PDF remains to process after skipping."""
 
 
-def upload_and_index_files(supabase: Client, analysis_id: str, slug: str, root_dir: Path):
+class IncompleteBatchError(Exception):
+    """Raised when the batch has no manifest, meaning the upload never finished."""
+
+
+def download_to_disk(url: str, dest: Path):
     """
-    Walk through the extracted files, upload them to 'files' bucket,
-    and insert records into 'files' table.
+    Download an object straight to disk in chunks. Never hold a whole file in
+    memory: the container is capped at 1536 MB and a batch can be gigabytes.
+    """
+    with requests.get(url, stream=True, timeout=300) as response:
+        response.raise_for_status()
+        with open(dest, "wb") as f:
+            for chunk in response.iter_content(chunk_size=1024 * 1024):
+                f.write(chunk)
+
+
+def upload_and_index_file(supabase: Client, analysis_id: str, slug: str, file_path: Path, file_name: str):
+    """
+    Upload one document to the 'files' bucket and insert its row via the API.
     Target path: files/<slug>/<file_id><suffix>
-    
-    Files are no longer organized in folders, so they are directly in the zip
-    and associated directly with the analysis_id under the 'tender' category.
+
+    `file_name` is the original name from the manifest, not the numeric storage
+    key, so the interface shows the document the user recognises.
     """
-    logger.info(f"Starting file upload and indexing for slug={slug}")
+    file_id = str(uuid.uuid4())
+    storage_path = f"{slug}/{file_id}{file_path.suffix}"
 
-    files_to_insert = []
+    mime_type, _ = mimetypes.guess_type(file_name)
+    if not mime_type:
+        mime_type = "application/octet-stream"
 
-    for current_root, _, files in os.walk(root_dir):
-        for filename in files:
-            # Skip the source zip to avoid re-uploading
-            if filename == "source.zip":
-                continue
+    try:
+        with open(file_path, "rb") as f:
+            supabase.storage.from_("files").upload(
+                path=storage_path,
+                file=f,
+                file_options={"content-type": mime_type}
+            )
+    except Exception as e:
+        logger.error(f"Failed to upload {file_name}: {e}")
+        raise e
 
-            file_path = Path(current_root) / filename
+    file_record = {
+        "analysis_id": analysis_id,
+        "file_name": file_name,
+        "storage_path": storage_path,
+        "category": None,
+        "file_size": file_path.stat().st_size,
+        "mime_type": mime_type,
+    }
 
-            # Skip anything that is not a valid PDF and record it as an event
-            reason = pdf_rejection_reason(file_path)
-            if reason:
-                logger.warning(f"Skipping non-PDF file {filename}: {reason}")
-                log_event(
-                    analysis_id,
-                    "warning",
-                    f"Archivo omitido (no es PDF): {filename} - {reason}",
-                    EVENT_SOURCE,
-                    {"file_name": filename, "reason": reason},
-                )
-                continue
+    try:
+        api_request("POST", API_ORIGINAL_FILES_PATH, file_record)
+    except Exception as e:
+        logger.error(f"Failed to insert file record for {file_name}: {e}")
+        raise e
 
-            # 1. Determine storage path
-            # Generate UUID for the file storage keys
-            file_id = str(uuid.uuid4())
 
-            # Since files are at root, no parent dir logic is required, just use root
-            storage_object_name = f"{file_id}{file_path.suffix}"
-            storage_path = f"{slug}/{storage_object_name}"
+def _is_object_not_found(response) -> bool:
+    """
+    Storage answers a missing object with HTTP 400 and a body whose statusCode
+    is 404, so the HTTP status on its own is not enough to tell it apart from a
+    real bad request.
+    """
+    if response.status_code == 404:
+        return True
+    if response.status_code != 400:
+        return False
+    try:
+        return response.json().get("statusCode") == "404"
+    except ValueError:
+        return False
 
-            # 2. Upload to Supabase Storage ('files' bucket)
-            try:
-                # Get MIME type
-                mime_type, _ = mimetypes.guess_type(file_path)
-                if not mime_type:
-                    mime_type = "application/octet-stream"
 
-                with open(file_path, "rb") as f:
-                    supabase.storage.from_("files").upload(
-                        path=storage_path,
-                        file=f,
-                        file_options={"content-type": mime_type}
-                    )
-            except Exception as e:
-                logger.error(f"Failed to upload {filename}: {e}")
-                raise e
-
-            # 3. Prepare DB record
-            file_stat = file_path.stat()
-
-            file_record = {
-                "analysis_id": analysis_id,
-                "file_name": filename,
-                "storage_path": storage_path,
-                "category": None,
-                "file_size": file_stat.st_size,
-                "mime_type": mime_type,
-            }
-
-            files_to_insert.append(file_record)
-
-    # Guard: fail the analysis if no valid PDF remained after skipping
-    if not files_to_insert:
-        raise NoValidPdfError(
-            "No se encontró ningún archivo PDF válido para procesar. "
-            "Todos los archivos fueron omitidos."
+def fetch_manifest(manifest_url: str) -> dict:
+    """
+    Read the batch manifest. It is uploaded last by the browser, so its absence
+    means the upload was cut short and the batch must not be processed.
+    """
+    response = requests.get(manifest_url, timeout=60)
+    if _is_object_not_found(response):
+        raise IncompleteBatchError(
+            "No se encontró el manifiesto del lote (manifest.json): la subida de "
+            "los documentos no llegó a completarse. Vuelva a cargar los archivos."
         )
-
-    # 4. Insert file records via API
-    if files_to_insert:
-        logger.info(f"Inserting {len(files_to_insert)} file records via API")
-        try:
-            for file_record in files_to_insert:
-                api_request("POST", API_ORIGINAL_FILES_PATH, file_record)
-        except Exception as e:
-            logger.error(f"Failed to insert file records: {e}")
-            raise e
-
-    logger.info("File upload and indexing complete.")
+    response.raise_for_status()
+    return response.json()
 
 
 def validate_env():
@@ -296,47 +292,67 @@ def process_analysis():
     # 3. Update status to 'processing' via API
     logger.info("Updating status to 'processing' …")
     api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}/status", {"status": "processing"})
-    log_event(ANALYSIS_ID, "info", "Inicio de descompresión de archivos", EVENT_SOURCE)
+    log_event(ANALYSIS_ID, "info", "Inicio de la carga de los documentos", EVENT_SOURCE)
 
-    # 4. Download the ZIP via HTTP from SUPABASE_ARTIFACTS_BASE_URL + artifact_path
-    download_url = f"{SUPABASE_ARTIFACTS_BASE_URL.rstrip('/')}/{artifact_path.lstrip('/')}"
-    logger.info(f"Downloading ZIP from {download_url}")
-    log_event(ANALYSIS_ID, "info", f"Downloading ZIP from {download_url}", EVENT_SOURCE)
-    
-    response = requests.get(download_url, timeout=300)
-    response.raise_for_status()
-    file_bytes = response.content
-
-    # 6. Save ZIP to workspace
-    output_dir = WORKSPACE_DIR / ANALYSIS_ID
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    zip_path = output_dir / "source.zip"
-    zip_path.write_bytes(file_bytes)
-    logger.info(f"ZIP saved to {zip_path} ({len(file_bytes)} bytes)")
-
-    # 7. Extract the ZIP
-    log_event(ANALYSIS_ID, "info", "Extracting ZIP", EVENT_SOURCE)
-    with zipfile.ZipFile(zip_path, "r") as zf:
-        zf.extractall(output_dir)
-        extracted_files = zf.namelist()
-    logger.info(f"Extracted {len(extracted_files)} files to {output_dir}")
+    # 4. Read the batch manifest under the artifact prefix
+    base_url = SUPABASE_ARTIFACTS_BASE_URL.rstrip("/")
+    prefix = artifact_path.lstrip("/")
+    manifest_url = f"{base_url}/{prefix}manifest.json"
+    logger.info(f"Downloading manifest from {manifest_url}")
+    entries = fetch_manifest(manifest_url)["files"]
+    logger.info(f"Manifest lists {len(entries)} file(s)")
     log_event(
         ANALYSIS_ID,
         "info",
-        f"Extraction complete — {len(extracted_files)} files",
+        f"Manifiesto del lote recibido: {len(entries)} archivo(s) por procesar",
         EVENT_SOURCE,
-        {"files": extracted_files},
+        {"total_files": len(entries)},
     )
 
-    # 8. Upload and Index Files
-    log_event(ANALYSIS_ID, "info", "Uploading extracted files to storage", EVENT_SOURCE)
-    upload_and_index_files(supabase, ANALYSIS_ID, analysis["slug"], output_dir)
-    log_event(ANALYSIS_ID, "info", "Files uploaded and indexed successfully", EVENT_SOURCE)
+    # 5. One file at a time: download to disk, validate, upload, index, delete.
+    # The temp file is removed before the next one starts, so disk usage stays
+    # flat at a single document instead of growing with the whole batch.
+    output_dir = WORKSPACE_DIR / ANALYSIS_ID
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 9. Clean up the ZIP after extraction (optional, saves space)
-    zip_path.unlink()
-    logger.info("Removed source.zip after extraction")
+    indexed_count = 0
+    for index, entry in enumerate(entries):
+        file_name = entry["name"]
+        # Local name built from the index, never from manifest-supplied text
+        local_path = output_dir / f"{index:04d}{Path(file_name).suffix}"
+        download_to_disk(f"{base_url}/{prefix}{entry['key']}", local_path)
+        try:
+            reason = pdf_rejection_reason(local_path)
+            if reason:
+                logger.warning(f"Skipping non-PDF file {file_name}: {reason}")
+                log_event(
+                    ANALYSIS_ID,
+                    "warning",
+                    f"Archivo omitido (no es PDF): {file_name} - {reason}",
+                    EVENT_SOURCE,
+                    {"file_name": file_name, "reason": reason},
+                )
+                continue
+            upload_and_index_file(supabase, ANALYSIS_ID, analysis["slug"], local_path, file_name)
+            indexed_count += 1
+        finally:
+            local_path.unlink(missing_ok=True)
+
+    # Guard: fail the analysis if no valid PDF remained after skipping
+    if not indexed_count:
+        raise NoValidPdfError(
+            "No se encontró ningún archivo PDF válido para procesar. "
+            "Todos los archivos fueron omitidos."
+        )
+
+    logger.info(f"Uploaded and indexed {indexed_count} file(s)")
+    log_event(
+        ANALYSIS_ID,
+        "info",
+        f"{indexed_count} archivo(s) subidos e indexados correctamente",
+        EVENT_SOURCE,
+        {"indexed_files": indexed_count},
+    )
 
     logger.info("File extraction complete ✓")
     log_event(ANALYSIS_ID, "info", "Proceso de extracción de archivos finalizado exitosamente", EVENT_SOURCE)
@@ -362,9 +378,8 @@ def main():
             error_msg += f" - Response: {e.response.text}"
         notify_failure(error_msg)
         sys.exit(0)
-    except zipfile.BadZipFile as e:
-        error_msg = f"Invalid ZIP file: {e}"
-        notify_failure(error_msg)
+    except IncompleteBatchError as e:
+        notify_failure(str(e))
         sys.exit(0)
     except NoValidPdfError as e:
         notify_failure(str(e))
