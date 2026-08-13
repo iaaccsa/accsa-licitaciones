@@ -288,6 +288,26 @@ def cmd_assignees(args):
             print(f"    - {title[:70]}")
 
 
+def cmd_update(args):
+    """Move an existing task to another bucket and/or (re)assign it."""
+    token = get_token()
+    body = {}
+    if args.bucket_id:
+        body["bucketId"] = args.bucket_id
+    if args.assign:
+        body["assignments"] = {
+            uid: {"@odata.type": "#microsoft.graph.plannerAssignment", "orderHint": " !"}
+            for uid in args.assign
+        }
+    if args.note:
+        _append_note(token, args.task_id, args.note)
+    if body:
+        t = gget(token, f"/planner/tasks/{args.task_id}")
+        gpatch(token, f"/planner/tasks/{args.task_id}", t["@odata.etag"], body)
+    t = gget(token, f"/planner/tasks/{args.task_id}")
+    print(f"Updated: {t.get('title')}")
+
+
 def cmd_create(args):
     token = get_token()
     plan_id = gget(token, f"/planner/buckets/{args.bucket_id}")["planId"]
@@ -366,6 +386,13 @@ def main():
     s = sub.add_parser("assignees")
     s.add_argument("--plan-id", required=True)
     s.set_defaults(func=cmd_assignees)
+
+    s = sub.add_parser("update")
+    s.add_argument("task_id")
+    s.add_argument("--bucket-id")
+    s.add_argument("--assign", action="append", metavar="USER_ID")
+    s.add_argument("--note")
+    s.set_defaults(func=cmd_update)
 
     s = sub.add_parser("create")
     s.add_argument("--bucket-id", required=True)

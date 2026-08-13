@@ -1,8 +1,12 @@
-# WIP - Bugs del Planner (26 tarjetas asignadas)
+# WIP - Bugs del Planner
 
-Relevamiento hecho el 2026-08-13. Cada tarjeta contrastada contra el codigo
-actual de `accsa-licitaciones-ui`, `accsa-licitaciones-api` y
-`accsa-licitaciones-services`. Marcar `[x]` al resolver.
+Relevamiento hecho el 2026-08-13 sobre 26 tarjetas asignadas. Cada tarjeta
+contrastada contra el codigo actual de `accsa-licitaciones-ui`,
+`accsa-licitaciones-api` y `accsa-licitaciones-services`.
+
+**Al resolver una tarjeta se la borra de este archivo**, no se la marca. El
+registro de lo hecho queda en el CHANGELOG, en `features/done/` y en el
+historial de git.
 
 Fuente: plan "MVP - Asistente de Compras Estatales" en MS Planner. Los ids de
 tarjeta estan al final de cada seccion para poder cerrarlas con
@@ -14,7 +18,7 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 
 | Veredicto | Cant. |
 |---|---|
-| Bug real, confirmado en codigo | 17 |
+| Bug real, confirmado en codigo | 16 |
 | Ya resuelto (cerrar) | 2 |
 | No es bug: configuracion o decision de producto | 2 |
 | Tarea de testing, no de desarrollo | 1 |
@@ -448,31 +452,12 @@ Keys relevantes:
 
 ---
 
-## Grupo E - Auth y seguridad (7 tarjetas)
+## Grupo E - Auth y seguridad (6 tarjetas)
 
 Todo vive en la UI con Supabase Auth via `@supabase/ssr`. La API de FastAPI no
 tiene nada de login: grep de `password|sign_in|ratelimit` en
 `accsa-licitaciones-api/app/` solo devuelve un comentario sobre el 429 de Azure
 en `core/azure.py:30`.
-
-- [x] **CP-13** mensaje de email invalido en ingles. **Baja / S. RESUELTO
-  2026-08-13, pendiente de commit y deploy.**
-  Causa confirmada: la burbuja la dibujaba el navegador con su propio idioma, no
-  el `<html lang="es">` de `layout.tsx:32`. No habia una sola llamada a
-  `setCustomValidity`, `onInvalid` ni `noValidate` en todo `src/`.
-  Arreglo: helper nuevo `src/lib/form-validation.ts` (`validationMessage` +
-  `spanishValidationProps` con `onInvalid` / `onInput`), spreadeado en los 7
-  controles con restricciones nativas del sistema: los 2 de `login/page.tsx`,
-  los 2 de `auth/set-password/page.tsx`, el email de invitacion de
-  `admin/config/users/page.tsx` y las 2 fechas de `admin/review/audit/page.tsx`.
-  Se mantiene la validacion HTML nativa; solo cambia el texto.
-  Spec: `features/done/13-validacion-html-espanol.md`.
-  Verificado con Playwright contra un dev server con `AUTH_DISABLED=true` y el
-  navegador forzado a `en-US`: 8/8 casos OK, incluida la regresion del
-  `customValidity` pegado. Control: un input nativo sin tocar, en el mismo
-  navegador, sigue dando "Please include an '@'...", asi que el espanol es
-  nuestro y no del locale. `pnpm build` y `pnpm lint` limpios.
-  `id: c2L52ZffykuD5tS4_6k-CGQAA4nS`
 
 - [ ] **CP-18** no permite ver los caracteres de la contrasena. **Baja / S.**
   Login: `src/app/login/page.tsx:93-102`, `type="password"` hardcodeado.
@@ -573,7 +558,7 @@ en `core/azure.py:30`.
 
 ## Plan de olas
 
-### Ola 0 - Quick wins (2-3 dias, 6 tarjetas)
+### Ola 0 - Quick wins (2-3 dias, 5 tarjetas restantes)
 
 Todo S, sin dependencias entre si, alto impacto visible en la proxima ronda de QA.
 
@@ -586,7 +571,6 @@ Todo S, sin dependencias entre si, alto impacto visible en la proxima ronda de Q
 - [ ] CP-29: sembrar el borrador con el nombre visible y sacar el subtitulo
   duplicado.
 - [ ] CP-113: buscador y orden en cliente.
-- [x] CP-13: `setCustomValidity` en espanol. Hecho 2026-08-13, sin commitear.
 - [ ] CP-18: toggle de ojito en los 3 campos de contrasena.
 
 ### Ola 1 - Subida (5-8 dias, 5 tarjetas)
