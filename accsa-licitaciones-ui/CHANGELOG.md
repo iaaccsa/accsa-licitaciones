@@ -22,6 +22,7 @@ se versionan y publican en conjunto.
 - Los campos de contraseña ahora tienen un botón para mostrar u ocultar lo escrito, en el inicio de sesión y en la creación de contraseña.
 
 #### Fixed
+- Al cerrar el navegador y volver a abrirlo, el sistema vuelve a pedir usuario y contraseña. Antes la sesión seguía abierta porque las credenciales se guardaban por 400 días. La expiración por inactividad (30 minutos) sigue funcionando igual que hasta ahora.
 - Un análisis fallido ahora explica qué pasó y ofrece reintentar. Antes solo mostraba un cartel rojo "Fallido" sin motivo ni forma de continuar, y había que crear un análisis nuevo desde cero. Ahora se indica en qué paso se detuvo y qué estaba haciendo el sistema en ese momento, con el detalle técnico disponible aparte para quien lo necesite, y un botón para reintentar desde ese paso sin volver a cargar los documentos.
 - En el diagrama de progreso, la etapa que falló ahora se ve en rojo. Antes quedaba en gris como si estuviera pendiente, y en los análisis cancelados por demora quedaba marcada como "En curso" para siempre.
 - Un análisis que todavía no tiene nombre ya no se muestra con un código como "375da665": ahora se identifica por su fecha de creación ("Análisis del 12/08/2026") hasta que la IA extrae el nombre real del pliego, cosa que ocurre promediando el procesamiento. El código sigue visible aparte como identificador. Además, si la IA no logra determinar un nombre, ahora se usa el organismo contratante en vez de dejar el análisis sin nombre.

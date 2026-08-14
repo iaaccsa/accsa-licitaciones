@@ -18,12 +18,12 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 
 | Veredicto | Cant. |
 |---|---|
-| Bug real, confirmado en codigo | 6 |
+| Bug real, confirmado en codigo | 5 |
 | Bloqueada por una decision, no por trabajo | 1 |
 
-Quedan 7 tarjetas abiertas: las 4 de seguridad de la Ola 3 (CP-04, CP-03,
-CP-102, CP-103), las 2 de prompts de IA (CP-149, CP-150) y la de cancelar un
-analisis.
+Quedan 6 tarjetas abiertas: 3 de seguridad (CP-04 y CP-03, reetiquetadas como
+Feature por el user el 2026-08-14, y CP-103, que no tiene etiqueta Bug), las 2
+de prompts de IA (CP-149, CP-150) y la de cancelar un analisis.
 
 De las 26 relevadas ya salieron 19 de este archivo, todas en "Pendiente
 Testing" a nombre de Eduardo:
@@ -47,8 +47,6 @@ Todo lo resuelto esta desplegado y verificado en produccion.
   pidio y que espera: matar los jobs en curso u ocultar el analisis.
 - [ ] **CP-103 sesion unica.** Complejidad L, no hay nada de infraestructura hoy.
   Confirmar si es requisito real o una observacion de QA.
-- [ ] **CP-102 alcance.** Fijar `cookieOptions.maxAge` a sesion cierra la queja
-  literal, pero mata cualquier "recordarme" futuro. Confirmar.
 
 ---
 
@@ -170,7 +168,7 @@ Keys relevantes:
 
 ---
 
-## Grupo E - Auth y seguridad (4 tarjetas)
+## Grupo E - Auth y seguridad (3 tarjetas)
 
 Todo vive en la UI con Supabase Auth via `@supabase/ssr`. La API de FastAPI no
 tiene nada de login: grep de `password|sign_in|ratelimit` en
@@ -202,24 +200,6 @@ en `core/azure.py:30`.
   429, y en la API nada de auth.
   `id: Mp6zydn7SUGkHMcawP8Qn2QAJXSx`
 
-- [ ] **CP-102** la sesion persiste al cerrar el navegador. **Media / S-M.**
-  Las cookies de auth son **persistentes, no de sesion**: `@supabase/ssr` las
-  escribe con `maxAge: 400 * 24 * 60 * 60` y ninguno de los dos clientes pasa
-  `cookieOptions` para pisarlo (`src/lib/supabase/server.ts:7-27`,
-  `src/lib/supabase/proxy.ts:49-69`).
-  La mitigacion que si existe es el timeout de inactividad, enforced en el
-  middleware (`src/lib/supabase/proxy.ts:96-121`, limpia todas las cookies `sb-*`
-  y redirige a `/login?reason=timeout`) mas el watcher de cliente
-  (`InactivityWatcher.tsx:51-58`), 30 min por defecto
-  (`src/lib/session-timeout.ts:7-12`).
-  La cookie `sb-activity` tiene 30 dias de max-age a proposito para que un
-  reinicio la deje vieja (`session-timeout.ts:22-26`), pero eso solo fuerza
-  logout si paso **mas** que la ventana. **Cerrar y reabrir en el momento sigue
-  logueado, asi que la queja literal de QA sigue reproduciendo.** El changelog
-  2.2.0 dice que se arreglo, pero lo que se arreglo fue la expiracion por
-  inactividad, que es otra cosa.
-  `id: IM4lMFcq-0e24fo37I5kBGQAICZt`
-
 - [ ] **CP-103** permite sesiones multiples. **Media / L.**
   Cero logica de sesion unica: no hay registro ni tabla de sesiones, ni "current
   session id" en `app_metadata`, ni `signOut({ scope: 'global' | 'others' })`. El
@@ -244,7 +224,6 @@ de prompts, bloqueado por falta del caso real para validar en el lab.
 ### Ola 3 - Seguridad (4-6 dias, 4 tarjetas)
 
 - [ ] CP-04: flujo real de recuperacion de contrasena. La mas critica del grupo.
-- [ ] CP-102: cookie de sesion.
 - [ ] CP-03: throttle propio.
 - [ ] CP-103: solo si se decide hacerla.
 

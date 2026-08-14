@@ -308,6 +308,25 @@ def cmd_update(args):
             uid: {"@odata.type": "#microsoft.graph.plannerAssignment", "orderHint": " !"}
             for uid in args.assign_only
         })
+    if args.label or args.unlabel:
+        # Labels are plan-wide slots (category1..25) whose names live in the plan
+        # details, so a name has to be resolved to its slot before patching.
+        task = gget(token, f"/planner/tasks/{args.task_id}")
+        names = gget(token, f"/planner/plans/{task['planId']}/details").get("categoryDescriptions") or {}
+        slot_of = {v.lower(): k for k, v in names.items() if v}
+        applied = {}
+        for name in (args.label or []):
+            slot = slot_of.get(name.lower())
+            if not slot:
+                sys.exit(f"Unknown label '{name}'. Defined: {', '.join(sorted(v for v in names.values() if v))}")
+            applied[slot] = True
+        for name in (args.unlabel or []):
+            slot = slot_of.get(name.lower())
+            if not slot:
+                sys.exit(f"Unknown label '{name}'. Defined: {', '.join(sorted(v for v in names.values() if v))}")
+            applied[slot] = False
+        body["appliedCategories"] = applied
+
     if args.note:
         _append_note(token, args.task_id, args.note)
     if body:
@@ -402,6 +421,8 @@ def main():
     s.add_argument("--assign", action="append", metavar="USER_ID")
     s.add_argument("--assign-only", action="append", metavar="USER_ID",
                    help="replace every assignee with this list")
+    s.add_argument("--label", action="append", metavar="NAME", help="apply a plan label")
+    s.add_argument("--unlabel", action="append", metavar="NAME", help="remove a plan label")
     s.add_argument("--note")
     s.set_defaults(func=cmd_update)
 
