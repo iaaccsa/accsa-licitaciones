@@ -6,6 +6,7 @@ import { useParams, usePathname } from "next/navigation";
 import useSWR from "swr";
 import { fetcher } from "@/lib/swr";
 import { Skeleton } from "@/components/ui/skeleton";
+import { displayAnalysisName } from "@/lib/analysis-name";
 
 interface Analysis {
     slug: string;
@@ -58,7 +59,7 @@ export function AnalysisBreadcrumb() {
     const isAdmin = pathname.startsWith("/admin/");
     const basePath = isAdmin ? `/admin/analyses/${id}` : `/analyses/${id}`;
     const analysisName = analysis
-        ? truncateName(analysis.user_assigned_name || analysis.generated_name || analysis.slug)
+        ? truncateName(displayAnalysisName(analysis))
         : null;
 
     const items: { label: ReactNode; href: string }[] = [

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { AnalysisCard, type Analysis } from "./AnalysisCard";
 import { Skeleton } from "./ui/skeleton";
+import { displayAnalysisName } from "@/lib/analysis-name";
 
 const PAGE_SIZE = 15;
 
@@ -13,7 +14,7 @@ const controlClass =
 type SortOrder = "recent" | "oldest" | "name";
 
 function displayName(analysis: Analysis) {
-    return analysis.user_assigned_name || analysis.generated_name || analysis.slug;
+    return displayAnalysisName(analysis);
 }
 
 function normalize(text: string) {

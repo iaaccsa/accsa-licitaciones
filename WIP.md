@@ -18,7 +18,7 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 
 | Veredicto | Cant. |
 |---|---|
-| Bug real, confirmado en codigo | 5 |
+| Bug real, confirmado en codigo | 4 |
 | Necesita mas informacion antes de tocar codigo | 4 |
 
 De las 26 relevadas ya salieron 10 de este archivo:
@@ -46,7 +46,7 @@ De las 26 relevadas ya salieron 10 de este archivo:
 
 ---
 
-## Grupo B - Estado y ciclo de vida del analisis (4 tarjetas)
+## Grupo B - Estado y ciclo de vida del analisis (3 tarjetas)
 
 - [ ] **CP-63 y 124** una vez fallido no permite reintentar. **Alta / M.**
   El backend **ya tiene** el retry: `POST /api/v1/analyses/{id}/retry-step`
@@ -114,38 +114,6 @@ De las 26 relevadas ya salieron 10 de este archivo:
   saco el boton). Reimplementar es revertir una decision, no arreglar un bug.
   **Falta info:** la tarjeta no tiene descripcion.
   `id: r9DgdP_b7U-PmRw70jRZDmQABfXU`
-
-- [ ] **No muestra el nombre, solo un codigo.** **Alta / M.**
-  El `375da665` es el `slug` de la tabla:
-  `supabase-backup/...20260624_112015.sql:458` ->
-  `"slug" character(8) DEFAULT substr(md5(gen_random_uuid()::text), 1, 8)`.
-  Cadena de fallback `user_assigned_name || generated_name || slug` en
-  `AnalysisCard.tsx:40`, `analyses/[id]/page.tsx:266-268`,
-  `AnalysisBreadcrumb.tsx:61`, `admin/analyses/[id]/page.tsx:129`.
-  El nombre real si se extrae, pero recien en el 6o paso del DAG:
-  `service-documents-grouper/main.py:322-382` (`generate_tender_info` ->
-  `NAMING_PROMPT` -> `PATCH /analyses/{id}` con `generated_name` en `:373-376`),
-  consumido por `app/api/v1/endpoints/analyses.py:158-172`.
-  Entonces se ve el hex cuando: (a) el analisis no llego todavia a
-  `documents-grouper`, (b) fallo antes, o (c) el LLM devolvio vacio
-  (`main.py:379-380` solo loguea un warning, sin fallback). No hay campo de
-  nombre al crear (`UploadSection.tsx` solo sube los documentos y postea el
-  prefijo del lote, `src/app/new/page.tsx` no tiene input), asi que
-  `user_assigned_name` arranca siempre NULL.
-  **Hallazgo 2026-08-13:** los tres codigos que QA cito textualmente en la
-  tarjeta (`375da665`, `a4f2c625`, `4fdcb552`) son analisis **fallidos**
-  (`is_success=false`, `generated_name=null`), los tres muertos en
-  `service-documents-classifier` con `Failed during processing: '"category"'`.
-  O sea que en esos casos el codigo no es un bug de nombrado: es el sintoma de
-  un analisis que murio antes de llegar al paso que asigna el nombre. El
-  nombrado funciona cuando el pipeline llega. Igual corresponde el arreglo (un
-  nombre provisorio decente y fallback), pero al pasar la tarjeta a testing hay
-  que explicar esto o la van a validar con analisis rotos. El error del
-  clasificador esta acotado a junio 2026 (v2.0.0) y no volvio a ocurrir, asi
-  que no se le abre tarjeta.
-  `id: P1hi6OYm40aVPDzcELqbKmQAHKWq`
-
----
 
 ---
 
@@ -319,7 +287,6 @@ de prompts, bloqueado por falta del caso real para validar en el lab.
 
 - [ ] CP-63/124 y CP-032: proxy y boton de reintento sobre el `retry-step` que ya
   existe, exponer el motivo del fallo, y que `normalizeStatus` maneje `failed`.
-- [ ] Nombre hex: fallback temprano.
 
 ### Ola 3 - Seguridad (4-6 dias, 4 tarjetas)
 

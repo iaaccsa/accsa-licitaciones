@@ -370,6 +370,14 @@ def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, fil
     contracting_entity = (result.get("contracting_entity")
                           or "").strip() or None
 
+    # Falling back to the contracting entity beats leaving the analysis unnamed:
+    # without this the interface can only show the creation date.
+    if not generated_name and contracting_entity:
+        generated_name = contracting_entity
+        logger.warning(
+            f"Empty generated_name, falling back to contracting_entity: '{generated_name}'"
+        )
+
     if generated_name:
         api_request("PATCH", f"{API_ANALYSES_PATH}{ANALYSIS_ID}", {
                     "generated_name": generated_name})
@@ -377,7 +385,7 @@ def generate_tender_info(gemini_client: genai.Client, openai_client: OpenAI, fil
         log_event(ANALYSIS_ID, "info",
                   f"Nombre del análisis generado: '{generated_name}'.", EVENT_SOURCE)
     else:
-        logger.warning("Gemini returned empty generated_name.")
+        logger.warning("The model returned neither a name nor a contracting entity.")
 
     return generated_name, contracting_entity
 

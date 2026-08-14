@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import ProposalsList from "@/components/ProposalsList";
 import AnalysisCostCard from "@/components/AnalysisCostCard";
+import { displayAnalysisName } from "@/lib/analysis-name";
 
 const ProposalsComplianceChart = dynamic(
   () => import("@/components/ProposalsComplianceChart"),
@@ -126,9 +127,7 @@ export default function AdminAnalysisDetailPage() {
       <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm dark:bg-zinc-900 dark:border-zinc-800">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
-            {analysis.user_assigned_name || analysis.generated_name || (
-              <span className="font-mono uppercase">{analysis.slug}</span>
-            )}
+            {displayAnalysisName(analysis)}
           </h1>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => mutate()}>

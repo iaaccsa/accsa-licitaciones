@@ -29,6 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowPhases from "@/components/WorkflowPhases";
 import ProposalsSummary from "@/components/ProposalsSummary";
 import EconomicComparisonTable from "@/components/EconomicComparisonTable";
+import { displayAnalysisName } from "@/lib/analysis-name";
 
 interface Analysis {
   id: string;
@@ -120,7 +121,7 @@ export default function AnalysisDetailPage() {
   const startEditName = useCallback(() => {
     if (!analysis) return;
     setNameDraft(
-      analysis.user_assigned_name || analysis.generated_name || analysis.slug,
+      displayAnalysisName(analysis),
     );
     setIsEditingName(true);
   }, [analysis]);
@@ -271,9 +272,7 @@ export default function AnalysisDetailPage() {
             ) : (
               <div className="flex items-center gap-2">
                 <h1 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                  {analysis.user_assigned_name || analysis.generated_name || (
-                    <span className="font-mono uppercase">{analysis.slug}</span>
-                  )}
+                  {displayAnalysisName(analysis)}
                 </h1>
                 <button
                   onClick={startEditName}

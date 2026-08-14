@@ -3,6 +3,7 @@
 import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, AlertTriangle, FileText, CalendarClock, FileStack, PauseCircle } from "lucide-react";
 import Link from "next/link";
 import { MetricBox } from "./MetricBox";
+import { displayAnalysisName } from "@/lib/analysis-name";
 
 export interface Analysis {
     id: string;
@@ -38,7 +39,7 @@ function getNameFontSize(name: string) {
 }
 
 export function AnalysisCard({ analysis, basePath = "/analyses" }: { analysis: Analysis; basePath?: string }) {
-    const displayName = analysis.user_assigned_name ?? analysis.generated_name ?? analysis.slug;
+    const displayName = displayAnalysisName(analysis);
     return (
         <Link
             href={`${basePath}/${analysis.id}`}

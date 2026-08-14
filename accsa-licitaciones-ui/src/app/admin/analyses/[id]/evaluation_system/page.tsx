@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { displayAnalysisName } from "@/lib/analysis-name";
 
 // --- Types ---
 
@@ -535,7 +536,7 @@ export default function AdminEvaluationSystemPage() {
 
     const [classification, setClassification] = useState<TenderClassification | null>(null);
     const [evaluationType, setEvaluationType] = useState<TenderEvaluationType | null>(null);
-    const [analysis, setAnalysis] = useState<{ slug: string; user_assigned_name?: string; generated_name?: string } | null>(null);
+    const [analysis, setAnalysis] = useState<{ slug: string; user_assigned_name?: string; generated_name?: string; created_at?: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [notFound, setNotFound] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -582,7 +583,7 @@ export default function AdminEvaluationSystemPage() {
     }, [id]);
 
     const analysisLabel = analysis
-        ? (analysis.user_assigned_name || analysis.generated_name || analysis.slug)
+        ? displayAnalysisName(analysis)
         : null;
 
     if (error) {
