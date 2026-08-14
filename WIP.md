@@ -18,19 +18,25 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 
 | Veredicto | Cant. |
 |---|---|
-| Bug real, confirmado en codigo | 2 |
-| Necesita mas informacion antes de tocar codigo | 4 |
+| Bug real, confirmado en codigo | 6 |
+| Bloqueada por una decision, no por trabajo | 1 |
 
-De las 26 relevadas ya salieron 10 de este archivo:
+Quedan 7 tarjetas abiertas: las 4 de seguridad de la Ola 3 (CP-04, CP-03,
+CP-102, CP-103), las 2 de prompts de IA (CP-149, CP-150) y la de cancelar un
+analisis.
 
-- En "Pendiente Testing" a nombre de Eduardo desde el 2026-08-13: CP-13
-  (resuelta), CP-11 y CP-16/17 (ya estaban resueltas de antes), CP-00 v2 (no es
-  bug, es configuracion) e ID 212 (el testing ya se ejecuto y genero las
-  tarjetas TC-CLI).
-- Resueltas el 2026-08-13 y todavia sin pasar a testing: CP-154, CP-29, CP-113,
-  CP-18, la mitad de backend de CP-42, y el grupo entero de subida
-  (TC-CLI-118/127, TC-CLI-121, TC-CLI-126, CP-155, CP-51/32), que habilita
-  ademas el re-test de ID 212.
+De las 26 relevadas ya salieron 19 de este archivo, todas en "Pendiente
+Testing" a nombre de Eduardo:
+
+- Ya estaban resueltas de antes: CP-11, CP-16/17.
+- No eran defectos: CP-00 v2 (configuracion) e ID 212 (el testing ya se habia
+  ejecutado y genero las tarjetas TC-CLI).
+- Resueltas el 2026-08-13: CP-13, CP-154, CP-29, CP-113, CP-18 y el grupo de
+  subida completo (TC-CLI-118/127, TC-CLI-121, TC-CLI-126, CP-155, CP-51/32).
+- Resueltas el 2026-08-14 (Ola 2): CP-28, CP-42, CP-63/124, CP-032 y la del
+  nombre hexadecimal.
+
+Todo lo resuelto esta desplegado y verificado en produccion.
 
 ---
 
@@ -164,7 +170,7 @@ Keys relevantes:
 
 ---
 
-## Grupo E - Auth y seguridad (5 tarjetas)
+## Grupo E - Auth y seguridad (4 tarjetas)
 
 Todo vive en la UI con Supabase Auth via `@supabase/ssr`. La API de FastAPI no
 tiene nada de login: grep de `password|sign_in|ratelimit` en
@@ -234,9 +240,6 @@ de prompts, bloqueado por falta del caso real para validar en el lab.
 
 - [ ] CP-149 y parte de CP-150: editar los 2 prompts `compliance_evaluator` en
   `/admin/prompts` y validar en el lab. Cero codigo.
-
-### Ola 2 - Ciclo de vida (4-5 dias, 4 tarjetas)
-
 
 ### Ola 3 - Seguridad (4-6 dias, 4 tarjetas)
 
