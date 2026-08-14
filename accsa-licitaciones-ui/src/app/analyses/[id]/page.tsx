@@ -285,6 +285,7 @@ export default function AnalysisDetailPage() {
       {/* Workflow Phases */}
       <WorkflowPhases
         analysisId={id}
+        isFinishedOk={analysis.status === "ready" && analysis.is_success === true}
         headerAction={
           analysis.status === "awaiting_approval" ? (
             <Button

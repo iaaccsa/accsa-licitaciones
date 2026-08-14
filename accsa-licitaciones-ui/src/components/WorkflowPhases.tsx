@@ -22,6 +22,10 @@ interface Phase {
 interface WorkflowPhasesProps {
   analysisId: string;
   headerAction?: ReactNode;
+  // The analysis finished successfully. The phase average alone cannot tell:
+  // a run cut short by the admissibility check leaves a phase at zero on
+  // purpose, which used to read "Completado" next to 75%.
+  isFinishedOk?: boolean;
 }
 
 type UiStatus = "done" | "running" | "pending" | "warning";
@@ -206,6 +210,7 @@ function FragmentKey({ children }: { children: React.ReactNode }) {
 export default function WorkflowPhases({
   analysisId,
   headerAction,
+  isFinishedOk = false,
 }: WorkflowPhasesProps) {
   const { data: phases = [], isLoading } = useSWR<Phase[]>(
     analysisId ? `/api/analyses/${analysisId}/phases` : null,
@@ -231,10 +236,15 @@ export default function WorkflowPhases({
 
   const overall = useMemo(() => {
     if (!sorted.length) return 0;
+    if (isFinishedOk) return 100;
     return Math.round(
       sorted.reduce((acc, s) => acc + (s.progress ?? 0), 0) / sorted.length,
     );
-  }, [sorted]);
+  }, [sorted, isFinishedOk]);
+
+  // Below this the fill is narrower than the label, so the percentage goes
+  // beside the bar instead of inside it.
+  const labelFitsInside = overall >= 12;
 
   if (isLoading) {
     return (
@@ -263,15 +273,25 @@ export default function WorkflowPhases({
         {headerAction}
       </header>
 
-      <div className="h-5 w-full rounded-full bg-zinc-200/60 dark:bg-zinc-800 overflow-hidden mt-4 mb-10">
+      <div className="relative h-5 w-full rounded-full bg-zinc-200/60 dark:bg-zinc-800 overflow-hidden mt-4 mb-10">
         <div
-          className="flex h-full min-w-fit items-center justify-end rounded-full bg-gradient-to-r from-blue-500 to-green-500 px-2 transition-all duration-700 ease-out"
+          className="flex h-full items-center justify-end rounded-full bg-gradient-to-r from-blue-500 to-green-500 px-2 transition-all duration-700 ease-out"
           style={{ width: `${overall}%` }}
         >
-          <span className="text-[11px] font-semibold leading-none text-white">
+          {labelFitsInside && (
+            <span className="text-[11px] font-semibold leading-none text-white">
+              {overall}%
+            </span>
+          )}
+        </div>
+        {!labelFitsInside && (
+          <span
+            className="absolute inset-y-0 flex items-center pl-2 text-[11px] font-semibold leading-none text-zinc-600 dark:text-zinc-300 transition-all duration-700 ease-out"
+            style={{ left: `${overall}%` }}
+          >
             {overall}%
           </span>
-        </div>
+        )}
       </div>
 
       <div className="flex items-start">

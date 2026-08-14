@@ -18,7 +18,7 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 
 | Veredicto | Cant. |
 |---|---|
-| Bug real, confirmado en codigo | 7 |
+| Bug real, confirmado en codigo | 6 |
 | Necesita mas informacion antes de tocar codigo | 4 |
 
 De las 26 relevadas ya salieron 10 de este archivo:
@@ -46,31 +46,7 @@ De las 26 relevadas ya salieron 10 de este archivo:
 
 ---
 
-## Grupo B - Estado y ciclo de vida del analisis (5 tarjetas)
-
-- [ ] **CP-28** el estado no coincide con el progreso real. **Alta / M.**
-  Hay dos fuentes de verdad que nadie reconcilia:
-  - El porcentaje se calcula en el cliente promediando las fases en
-    `processing`: `src/components/WorkflowPhases.tsx:232-237`, se pinta en
-    `:266-274`.
-  - El rotulo sale de `analysis.status` / `is_success`:
-    `src/app/analyses/[id]/page.tsx:218-221` y `:466-470`.
-  - Desajuste concreto: cuando ninguna propuesta pasa admisibilidad el backend
-    escribe `{"status": "ready", "is_success": True}`
-    (`job_orchestrator_service.py:680-684` y `:706-711`) **despues** de llamar a
-    `apply_admissibility_cut`, que a proposito deja la ultima fase en
-    `status: "pending", progress: 0` (`workflow_phase_service.py:172-184`). Con
-    las 5 fases de `app/config/phases_config.json`, una en cero da 80%; una a
-    medias (`progress = int(completed/total*100)`,
-    `workflow_phase_service.py:64`) baja a ~75%. Mismo efecto en el camino de
-    fallo (`:115-116`, `:171`), que marca `ready` con fases incompletas.
-  - Lo de "pierde el formato": el div de la barra tiene `min-w-fit` junto al
-    `style={{ width: X% }}` (`WorkflowPhases.tsx:266-274`), asi que con
-    porcentajes chicos el relleno se dibuja mas ancho que el progreso real. Es
-    de todos los navegadores, no de algunos.
-    **Falta info:** QA dice "en algunos navegadores". Preguntar cuales, puede
-    haber un segundo problema.
-  `id: weNq1Vb8nEiPNaC9vSDNzWQACAkR`
+## Grupo B - Estado y ciclo de vida del analisis (4 tarjetas)
 
 - [ ] **CP-63 y 124** una vez fallido no permite reintentar. **Alta / M.**
   El backend **ya tiene** el retry: `POST /api/v1/analyses/{id}/retry-step`
@@ -96,9 +72,28 @@ De las 26 relevadas ya salieron 10 de este archivo:
   `AnalysisCard.tsx:100-106`): sin texto de error, sin reintentar, sin recargar.
   La vista de archivos (`analyses/[id]/files/page.tsx`) solo tiene mover,
   excluir y resume (`:219`, `:238`, `:248`).
-  **Falta info:** la descripcion es generica y tiene "Evidencias Adjuntas" que el
-  CLI de Graph no baja. Necesito el id del analisis o la captura para saber que
-  paso revento. Puede ser el mismo bug de subida o algo distinto.
+  **Datos reales en produccion (relevado 2026-08-13), ya no hace falta la
+  evidencia adjunta:** hay **26 analisis fallidos** (`status=ready`,
+  `is_success=false`) para validar contra ellos.
+  - Los **26 tienen al menos un evento de error**, asi que el motivo siempre
+    existe: falta exponerlo, no capturarlo.
+  - Los **26 tienen un paso identificable en `failed`** en
+    `analysis_workflow_steps`, asi que el boton de reintentar sabe que service
+    relanzar sin adivinar (`retry_job` pide `service_name`).
+  - **`analysis_workflow_steps.error_log` existe y esta vacio en los 27 pasos
+    fallidos.** Es el lugar natural para guardar el motivo, sin cambio de
+    esquema.
+  - Los mensajes de hoy son para desarrollador, no para el usuario: `name
+    'mark_failed' is not defined`, `422 Client Error ... /api/v1/proposals/2cd`,
+    `Failed during processing: '"category"'`. **No se pueden mostrar crudos**:
+    no dicen nada al comprador y filtran URLs internas. Hace falta un mensaje
+    para el usuario mas el detalle tecnico separado.
+  - Tres formas de fallo a cubrir: `Job X failed with error: ...`,
+    `Failed to start job X` y `Análisis cancelado por timeout. Steps
+    timed-out: [...]`.
+  - Perfil julio-agosto (10 analisis): compliance_summarizer 3,
+    requirement_extraction 2, admissibility_extraction 2, y uno cada uno de
+    compliance_matcher, tender_classifier, build_proposal_index y converter.
   `id: MRI5IsXuPEOds6CbMdtu5mQAJs46`
 
 - [ ] **Agregar la posibilidad de cancelar un analisis.** **Media / M-L.**
@@ -134,8 +129,20 @@ De las 26 relevadas ya salieron 10 de este archivo:
   Entonces se ve el hex cuando: (a) el analisis no llego todavia a
   `documents-grouper`, (b) fallo antes, o (c) el LLM devolvio vacio
   (`main.py:379-380` solo loguea un warning, sin fallback). No hay campo de
-  nombre al crear (`UploadSection.tsx` solo postea el ZIP, `src/app/new/page.tsx`
-  no tiene input), asi que `user_assigned_name` arranca siempre NULL.
+  nombre al crear (`UploadSection.tsx` solo sube los documentos y postea el
+  prefijo del lote, `src/app/new/page.tsx` no tiene input), asi que
+  `user_assigned_name` arranca siempre NULL.
+  **Hallazgo 2026-08-13:** los tres codigos que QA cito textualmente en la
+  tarjeta (`375da665`, `a4f2c625`, `4fdcb552`) son analisis **fallidos**
+  (`is_success=false`, `generated_name=null`), los tres muertos en
+  `service-documents-classifier` con `Failed during processing: '"category"'`.
+  O sea que en esos casos el codigo no es un bug de nombrado: es el sintoma de
+  un analisis que murio antes de llegar al paso que asigna el nombre. El
+  nombrado funciona cuando el pipeline llega. Igual corresponde el arreglo (un
+  nombre provisorio decente y fallback), pero al pasar la tarjeta a testing hay
+  que explicar esto o la van a validar con analisis rotos. El error del
+  clasificador esta acotado a junio 2026 (v2.0.0) y no volvio a ocurrir, asi
+  que no se le abre tarjeta.
   `id: P1hi6OYm40aVPDzcELqbKmQAHKWq`
 
 ---
@@ -341,7 +348,6 @@ de prompts, bloqueado por falta del caso real para validar en el lab.
 
 ### Ola 2 - Ciclo de vida (4-5 dias, 4 tarjetas)
 
-- [ ] CP-28: reconciliar progreso con estado, y el `min-w-fit`.
 - [ ] CP-63/124 y CP-032: proxy y boton de reintento sobre el `retry-step` que ya
   existe, exponer el motivo del fallo, y que `normalizeStatus` maneje `failed`.
 - [ ] CP-42 (mitad UX): estado o cartel propio para "terminado sin admisibles".
@@ -363,6 +369,4 @@ de prompts, bloqueado por falta del caso real para validar en el lab.
 | Tarjeta | Que falta |
 |---|---|
 | Cancelar analisis | Sin descripcion, y contradice una decision del 2026-07-13. Quien la pidio y que espera. |
-| CP-032 | Descripcion generica. Tiene evidencias adjuntas que el CLI de Graph no baja. Necesito el id del analisis o la captura. |
 | CP-149 y CP-150 | El pliego y la propuesta reales del caso, para reproducir y validar en el lab. |
-| CP-28 | "En algunos navegadores pierde el formato": cuales. El bug de `min-w-fit` es de todos, puede haber un segundo problema. |

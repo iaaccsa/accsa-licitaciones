@@ -22,6 +22,8 @@ se versionan y publican en conjunto.
 - Los campos de contraseña ahora tienen un botón para mostrar u ocultar lo escrito, en el inicio de sesión y en la creación de contraseña.
 
 #### Fixed
+- La barra de progreso de un análisis terminado con éxito ahora marca 100%. Antes podía quedar en 75% u 80% junto al cartel "Completado", porque el porcentaje se calculaba promediando las etapas y las que el sistema saltea a propósito (por ejemplo cuando ninguna propuesta pasa la admisibilidad) contaban como no hechas. En los análisis en curso o fallidos la barra sigue mostrando el avance real.
+- La barra de progreso ya no se dibuja más llena de lo que corresponde cuando el porcentaje es bajo: con valores chicos el relleno ocupaba el ancho del número en vez del avance real.
 - Los mensajes de validación de los formularios ahora se muestran siempre en español, sin importar el idioma configurado en el navegador. Antes, con el navegador en inglés, avisos como el de correo electrónico mal escrito aparecían en ese idioma. Alcanza a los campos de inicio de sesión, creación de contraseña, invitación de usuarios y filtros de fecha de auditoría.
 - Las propuestas rechazadas en la admisibilidad dejan de aparecer en "Resumen de Propuestas" y en "Comparativa de Ofertas Económicas". Las propuestas que todavía no tienen la admisibilidad resuelta se siguen mostrando.
 - Al editar el nombre de un análisis, el campo ahora abre con el nombre actual cargado y se puede corregir una parte sin reescribirlo entero. Además se quitó el nombre anterior que quedaba visible debajo del título después de renombrar.
