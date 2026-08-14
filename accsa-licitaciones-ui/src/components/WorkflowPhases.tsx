@@ -3,7 +3,7 @@
 import { useMemo, type ReactNode } from "react";
 import useSWR from "swr";
 import { fetcher } from "@/lib/swr";
-import { Check, AlertTriangle } from "lucide-react";
+import { Check, AlertTriangle, X } from "lucide-react";
 
 interface Phase {
   id: string;
@@ -28,13 +28,14 @@ interface WorkflowPhasesProps {
   isFinishedOk?: boolean;
 }
 
-type UiStatus = "done" | "running" | "pending" | "warning";
+type UiStatus = "done" | "running" | "pending" | "warning" | "failed";
 
 const RING_R = 24;
 const CIRC = 2 * Math.PI * RING_R;
 
 function normalizeStatus(phase: Phase): UiStatus {
   if (phase.status === "warning") return "warning";
+  if (phase.status === "failed") return "failed";
   if (phase.status === "completed" || phase.progress >= 100) return "done";
   if (phase.status === "running") return "running";
   return "pending";
@@ -48,7 +49,7 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
   const uiStatus = normalizeStatus(stage);
   const progress = clamp(stage.progress ?? 0, 0, 100);
   const dashOffset =
-    uiStatus === "done" || uiStatus === "warning"
+    uiStatus === "done" || uiStatus === "warning" || uiStatus === "failed"
       ? 0
       : CIRC * (1 - progress / 100);
 
@@ -57,6 +58,7 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
     pending: "Pendiente",
     done: "Completado",
     warning: "Sin admisibles",
+    failed: "Falló",
   };
 
   const ringStroke =
@@ -64,27 +66,33 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
       ? "stroke-green-500"
       : uiStatus === "warning"
         ? "stroke-amber-400"
-        : uiStatus === "running"
-          ? "stroke-sky-400"
-          : "stroke-zinc-200 dark:stroke-zinc-700";
+        : uiStatus === "failed"
+          ? "stroke-red-500"
+          : uiStatus === "running"
+            ? "stroke-sky-400"
+            : "stroke-zinc-200 dark:stroke-zinc-700";
 
   const nodeStyle =
     uiStatus === "done"
       ? "bg-green-600 text-white"
       : uiStatus === "warning"
         ? "bg-amber-500 text-white"
-        : uiStatus === "running"
-          ? "bg-white dark:bg-zinc-900 text-sky-500 dark:text-sky-400 ring-4 ring-sky-100 dark:ring-sky-950"
-          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500";
+        : uiStatus === "failed"
+          ? "bg-red-600 text-white"
+          : uiStatus === "running"
+            ? "bg-white dark:bg-zinc-900 text-sky-500 dark:text-sky-400 ring-4 ring-sky-100 dark:ring-sky-950"
+            : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500";
 
   const statusColor =
     uiStatus === "done"
       ? "text-green-600 dark:text-green-400"
       : uiStatus === "warning"
         ? "text-amber-600 dark:text-amber-400"
-        : uiStatus === "running"
-          ? "text-sky-500 dark:text-sky-400"
-          : "text-zinc-400 dark:text-zinc-500";
+        : uiStatus === "failed"
+          ? "text-red-600 dark:text-red-400"
+          : uiStatus === "running"
+            ? "text-sky-500 dark:text-sky-400"
+            : "text-zinc-400 dark:text-zinc-500";
 
   return (
     <div className="flex flex-col items-center text-center w-[140px] sm:w-[170px] shrink-0">
@@ -124,6 +132,8 @@ function Step({ stage, index }: { stage: Phase; index: number }) {
             <Check className="w-5 h-5" strokeWidth={3} />
           ) : uiStatus === "warning" ? (
             <AlertTriangle className="w-5 h-5" strokeWidth={2.5} />
+          ) : uiStatus === "failed" ? (
+            <X className="w-5 h-5" strokeWidth={3} />
           ) : (
             index + 1
           )}

@@ -114,7 +114,12 @@ class WorkflowStepService:
             return False
         return self.repository.get_step_status(analysis_id, code) == "completed"
 
-    def fail_step_by_service(self, analysis_id: str, service_name: str) -> Optional[WorkflowStep]:
+    def fail_step_by_service(
+        self,
+        analysis_id: str,
+        service_name: str,
+        error_message: Optional[str] = None,
+    ) -> Optional[WorkflowStep]:
         config = self._get_step_config_by_service(service_name)
         code = config.get("code")
         if not code:
@@ -127,6 +132,8 @@ class WorkflowStepService:
             "status": "failed",
             "ended_at": datetime.now().isoformat()
         }
+        if error_message:
+            update_data["error_log"] = error_message
 
         data = self.repository.upsert(update_data)
         workflow_phase_service.update_phase_progress(analysis_id, code)

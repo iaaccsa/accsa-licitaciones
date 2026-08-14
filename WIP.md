@@ -18,7 +18,7 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 
 | Veredicto | Cant. |
 |---|---|
-| Bug real, confirmado en codigo | 4 |
+| Bug real, confirmado en codigo | 2 |
 | Necesita mas informacion antes de tocar codigo | 4 |
 
 De las 26 relevadas ya salieron 10 de este archivo:
@@ -46,55 +46,7 @@ De las 26 relevadas ya salieron 10 de este archivo:
 
 ---
 
-## Grupo B - Estado y ciclo de vida del analisis (3 tarjetas)
-
-- [ ] **CP-63 y 124** una vez fallido no permite reintentar. **Alta / M.**
-  El backend **ya tiene** el retry: `POST /api/v1/analyses/{id}/retry-step`
-  (`accsa-licitaciones-api/app/api/v1/endpoints/analyses.py:68-80`, implementado
-  en `app/services/job_orchestrator_service.py:499-522`).
-  No hay nada en la UI: no existe `src/app/api/analyses/[id]/retry-step/` y
-  `grep -rn "retry-step" accsa-licitaciones-ui` no devuelve nada. Solo `resume`
-  esta cableado (`analyses/[id]/page.tsx:146-164`).
-  El motivo del fallo tampoco se muestra: solo se escribe en un evento
-  (`job_orchestrator_service.py:167-172`) y no hay vista de eventos para el
-  usuario (solo `/admin/analyses/[id]/events`). El detalle solo pinta el badge
-  rojo "Fallido" (`analyses/[id]/page.tsx:466-476`).
-  Agravante: `WorkflowPhases.normalizeStatus` (`:32-37`) no maneja `"failed"` y
-  cae a `"pending"`, asi que la fase caida se ve gris como "Pendiente" (`:51-56`).
-  `id: ky4hFXQvZkeL16Ocb6OYkWQAKeFU`
-
-- [ ] **CP-032** al cargar documentos indica error en la pantalla de analisis.
-  **Alta / M.** Misma superficie que CP-63. Cualquier fallo de job justo despues
-  de la subida deja el analisis en `ready` / `is_success=false`
-  (`job_orchestrator_service.py:75` preflight de credenciales, `:115-116`
-  excepcion de `start_pipeline`, `:171` callback de job, `:587`). El usuario ve
-  solo el badge rojo (`analyses/[id]/page.tsx:471-475`,
-  `AnalysisCard.tsx:100-106`): sin texto de error, sin reintentar, sin recargar.
-  La vista de archivos (`analyses/[id]/files/page.tsx`) solo tiene mover,
-  excluir y resume (`:219`, `:238`, `:248`).
-  **Datos reales en produccion (relevado 2026-08-13), ya no hace falta la
-  evidencia adjunta:** hay **26 analisis fallidos** (`status=ready`,
-  `is_success=false`) para validar contra ellos.
-  - Los **26 tienen al menos un evento de error**, asi que el motivo siempre
-    existe: falta exponerlo, no capturarlo.
-  - Los **26 tienen un paso identificable en `failed`** en
-    `analysis_workflow_steps`, asi que el boton de reintentar sabe que service
-    relanzar sin adivinar (`retry_job` pide `service_name`).
-  - **`analysis_workflow_steps.error_log` existe y esta vacio en los 27 pasos
-    fallidos.** Es el lugar natural para guardar el motivo, sin cambio de
-    esquema.
-  - Los mensajes de hoy son para desarrollador, no para el usuario: `name
-    'mark_failed' is not defined`, `422 Client Error ... /api/v1/proposals/2cd`,
-    `Failed during processing: '"category"'`. **No se pueden mostrar crudos**:
-    no dicen nada al comprador y filtran URLs internas. Hace falta un mensaje
-    para el usuario mas el detalle tecnico separado.
-  - Tres formas de fallo a cubrir: `Job X failed with error: ...`,
-    `Failed to start job X` y `Análisis cancelado por timeout. Steps
-    timed-out: [...]`.
-  - Perfil julio-agosto (10 analisis): compliance_summarizer 3,
-    requirement_extraction 2, admissibility_extraction 2, y uno cada uno de
-    compliance_matcher, tender_classifier, build_proposal_index y converter.
-  `id: MRI5IsXuPEOds6CbMdtu5mQAJs46`
+## Grupo B - Estado y ciclo de vida del analisis (1 tarjeta)
 
 - [ ] **Agregar la posibilidad de cancelar un analisis.** **Media / M-L.**
   No existe: no hay endpoint en `app/api/v1/endpoints/analyses.py` (solo
@@ -285,8 +237,6 @@ de prompts, bloqueado por falta del caso real para validar en el lab.
 
 ### Ola 2 - Ciclo de vida (4-5 dias, 4 tarjetas)
 
-- [ ] CP-63/124 y CP-032: proxy y boton de reintento sobre el `retry-step` que ya
-  existe, exponer el motivo del fallo, y que `normalizeStatus` maneje `failed`.
 
 ### Ola 3 - Seguridad (4-6 dias, 4 tarjetas)
 

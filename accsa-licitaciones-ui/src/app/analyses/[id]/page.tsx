@@ -27,6 +27,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import WorkflowPhases from "@/components/WorkflowPhases";
+import AnalysisFailureNotice from "@/components/AnalysisFailureNotice";
 import ProposalsSummary from "@/components/ProposalsSummary";
 import EconomicComparisonTable from "@/components/EconomicComparisonTable";
 import { displayAnalysisName } from "@/lib/analysis-name";
@@ -171,6 +172,14 @@ export default function AnalysisDetailPage() {
     }
   }, [id, analysis, isResuming, mutate]);
 
+  const handleRetried = useCallback(() => {
+    if (!analysis) return;
+    mutate(
+      { ...analysis, status: "processing", is_success: null },
+      { revalidate: false },
+    );
+  }, [analysis, mutate]);
+
   if (error && !analysis) {
     return (
       <div className="max-w-6xl mx-auto py-12 px-4 text-center">
@@ -289,6 +298,10 @@ export default function AnalysisDetailPage() {
 
       {analysis.completion_reason && (
         <CutShortNotice reason={analysis.completion_reason} />
+      )}
+
+      {analysis.status === "ready" && analysis.is_success === false && (
+        <AnalysisFailureNotice analysisId={id} onRetried={handleRetried} />
       )}
 
       {/* Workflow Phases */}

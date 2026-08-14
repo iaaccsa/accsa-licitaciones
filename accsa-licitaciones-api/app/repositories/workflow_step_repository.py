@@ -26,9 +26,12 @@ class WorkflowStepRepository(BaseRepository):
         )
         return response.data[0]
 
-    def update_status_by_code(self, analysis_id: UUID, code: str, status: str) -> None:
+    def update_status_by_code(self, analysis_id: UUID, code: str, status: str, error_log: str | None = None) -> None:
+        update: Dict[str, Any] = {"status": status}
+        if error_log:
+            update["error_log"] = error_log
         supabase.table(self.table_name) \
-            .update({"status": status}) \
+            .update(update) \
             .eq("analysis_id", str(analysis_id)) \
             .eq("code", code) \
             .execute()

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 from app.core.audit import Actor, get_actor
 from app.services.audit_service import audit_service
 from app.schemas.analysis import (
     Analysis,
+    AnalysisFailure,
     AnalysisUpdate,
     AnalysisStatusUpdate,
     AnalysisSource,
@@ -76,6 +77,16 @@ def retry_step(analysis_id: UUID, request: RetryJobRequest):
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{analysis_id}/failure", response_model=Optional[AnalysisFailure])
+def get_analysis_failure(analysis_id: UUID):
+    """
+    Describe the step that made an analysis fail. Returns null if it did not fail.
+    """
+    try:
+        return analysis_service.get_failure(analysis_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

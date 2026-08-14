@@ -147,3 +147,22 @@ def get_step_code_for_service(service_name: str) -> Optional[str]:
         if entry.get("service") == service_name:
             return entry.get("code")
     return None
+
+
+def get_service_for_step_code(step_code: str) -> Optional[str]:
+    """Return the service name for a given step code, or None.
+
+    Virtual steps (is_initial) are excluded: they have no job to launch.
+    """
+    for entry in _pipeline_config:
+        if entry.get("code") == step_code and not entry.get("is_initial", False):
+            return entry.get("service")
+    return None
+
+
+def get_step_order(step_code: str) -> int:
+    """Return the position of a step code in the pipeline. Unknown codes go last."""
+    for index, entry in enumerate(_pipeline_config):
+        if entry.get("code") == step_code:
+            return index
+    return len(_pipeline_config)

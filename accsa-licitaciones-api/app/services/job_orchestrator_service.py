@@ -69,7 +69,10 @@ class JobOrchestratorService:
                 {"missing_provider_keys": missing},
             )
             try:
-                workflow_step_service.fail_step_by_service(str(analysis_id), first_job)
+                workflow_step_service.fail_step_by_service(
+                    str(analysis_id), first_job,
+                    f"Provider configuration missing: {', '.join(missing)}",
+                )
             except Exception as step_error:
                 logger.error(f"Failed to fail workflow step for {first_job}: {step_error}")
             analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
@@ -105,7 +108,9 @@ class JobOrchestratorService:
 
             # Mark the workflow step of the first job as failed
             try:
-                workflow_step_service.fail_step_by_service(str(analysis_id), first_job)
+                workflow_step_service.fail_step_by_service(
+                    str(analysis_id), first_job, f"Failed to start job {first_job}: {e}"
+                )
             except Exception as step_error:
                 logger.error(f"Failed to fail workflow step for {first_job}: {step_error}")
 
@@ -165,7 +170,7 @@ class JobOrchestratorService:
                 f" file_id={file_id}. Error: {error_message}. Pipeline halted."
             )
             try:
-                workflow_step_service.fail_step_by_service(str(analysis_id), service_name)
+                workflow_step_service.fail_step_by_service(str(analysis_id), service_name, error_message)
             except Exception as e:
                 logger.error(f"Failed to mark workflow step as failed for {service_name}: {e}")
             analysis_repository.update_by_id(str(analysis_id), {"status": "ready", "is_success": False})
@@ -267,7 +272,9 @@ class JobOrchestratorService:
                     f"Failed to launch job {next_job} after {service_name}: {e}"
                 )
                 try:
-                    workflow_step_service.fail_step_by_service(str(analysis_id), next_job)
+                    workflow_step_service.fail_step_by_service(
+                        str(analysis_id), next_job, f"Failed to start job {next_job}: {e}"
+                    )
                 except Exception as step_error:
                     logger.error(f"Failed to fail workflow step for {next_job}: {step_error}")
                 self._log_event(analysis_id, "error", f"Failed to start job {next_job}", {"error": str(e)})
@@ -520,7 +527,9 @@ class JobOrchestratorService:
         except Exception as e:
             logger.error(f"Failed to retry job {service_name} for analysis_id={analysis_id}: {e}")
             try:
-                workflow_step_service.fail_step_by_service(str(analysis_id), service_name)
+                workflow_step_service.fail_step_by_service(
+                    str(analysis_id), service_name, f"Retry of {service_name} failed: {e}"
+                )
             except Exception as step_error:
                 logger.error(f"Failed to fail workflow step for {service_name}: {step_error}")
             self._log_event(analysis_id, "error", f"Retry of {service_name} failed: {e}", {"error": str(e)})
@@ -602,7 +611,9 @@ class JobOrchestratorService:
             except Exception as e:
                 logger.error(f"Failed to launch job {next_job} during resume: {e}")
                 try:
-                    workflow_step_service.fail_step_by_service(str(analysis_id), next_job)
+                    workflow_step_service.fail_step_by_service(
+                        str(analysis_id), next_job, f"Failed to start job {next_job}: {e}"
+                    )
                 except Exception as step_error:
                     logger.error(f"Failed to fail workflow step for {next_job}: {step_error}")
                 self._log_event(analysis_id, "error", f"Failed to start job {next_job}", {"error": str(e)})
@@ -661,9 +672,14 @@ class JobOrchestratorService:
         job_repository.fail_all_running_jobs(analysis_id)
 
         # Marcar los workflow steps timed-out como failed
+        timeout_error = f"Análisis cancelado por timeout. Steps timed-out: {timed_out_step_codes}"
         for code in timed_out_step_codes:
             try:
-                workflow_step_repository.update_status_by_code(analysis_uuid, code, "failed")
+                workflow_step_repository.update_status_by_code(analysis_uuid, code, "failed", timeout_error)
+                # This path writes the step row directly instead of going through
+                # fail_step_by_service, so the phase has to be recomputed here or
+                # it stays "running" forever on a dead analysis.
+                workflow_phase_service.update_phase_progress(analysis_id, code)
             except Exception as e:
                 logger.error(f"[JobMonitor] Failed to update workflow step {code} to failed: {e}")
 

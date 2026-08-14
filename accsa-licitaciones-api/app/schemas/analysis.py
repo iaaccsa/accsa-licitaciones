@@ -89,3 +89,12 @@ class AnalysisSource(BaseModel):
     type: SourceType
     id: UUID
     label: str
+
+class AnalysisFailure(BaseModel):
+    """The step that broke a failed analysis, so the UI can explain it and offer a retry."""
+    step_code: str
+    display_name: str
+    service_name: Optional[str] = None
+    # Written since feature 16: analyses that failed before that have it empty.
+    error_log: Optional[str] = None
+    can_retry: bool

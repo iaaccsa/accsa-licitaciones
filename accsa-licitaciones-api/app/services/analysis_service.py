@@ -1,7 +1,9 @@
+from app.config.jobs_config import get_service_for_step_code, get_step_order
 from app.repositories.analysis_repository import analysis_repository
 from app.repositories.proposal_repository import proposal_repository
 from app.repositories.tender_repository import tender_repository
-from app.schemas.analysis import Analysis, AnalysisFromStoragePath, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
+from app.repositories.workflow_step_repository import workflow_step_repository
+from app.schemas.analysis import Analysis, AnalysisFailure, AnalysisFromStoragePath, AnalysisUpdate, AnalysisStatusUpdate, AnalysisSource
 from app.schemas.event import EventBase
 from app.services.app_settings_service import app_settings_service
 from app.services.event_service import event_service
@@ -90,6 +92,29 @@ class AnalysisService:
         update_data = status_update.model_dump(exclude_none=True)
         data = self.repository.update_by_id(str(analysis_id), update_data)
         return Analysis(**data)
+
+    def get_failure(self, analysis_id) -> AnalysisFailure | None:
+        """Describe why a failed analysis broke. None when it did not fail."""
+        analysis = self.repository.get_by_id(str(analysis_id))
+        if not analysis or analysis.get("is_success") is not False:
+            return None
+
+        steps = workflow_step_repository.get_by_analysis_id(analysis_id)
+        failed = [s for s in steps if s.get("status") == "failed"]
+        if not failed:
+            return None
+
+        # More than one step can end up failed; the earliest one is the one that
+        # cut the chain.
+        step = min(failed, key=lambda s: get_step_order(s["code"]))
+        service_name = get_service_for_step_code(step["code"])
+        return AnalysisFailure(
+            step_code=step["code"],
+            display_name=step.get("display_name") or step["code"],
+            service_name=service_name,
+            error_log=step.get("error_log"),
+            can_retry=service_name is not None,
+        )
 
     def get_sources(self, analysis_id) -> List[AnalysisSource]:
         sources = []
