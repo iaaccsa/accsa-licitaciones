@@ -11,6 +11,7 @@ import {
   XCircle,
   Clock,
   AlertCircle,
+  AlertTriangle,
   FileText,
   ClipboardList,
   Ban,
@@ -42,6 +43,10 @@ interface Analysis {
     | "awaiting_approval"
     | "cancelled";
   is_success: boolean | null;
+  completion_reason:
+    | "no_admissibility_requirements"
+    | "no_admitted_proposals"
+    | null;
   paused_at_service: string | null;
   hitl: boolean;
   created_at: string;
@@ -220,6 +225,7 @@ export default function AnalysisDetailPage() {
               <StatusBadge
                 status={analysis.status}
                 isSuccess={analysis.is_success}
+                completionReason={analysis.completion_reason}
               />
             </div>
           </div>
@@ -281,6 +287,10 @@ export default function AnalysisDetailPage() {
           </div>
         </div>
       </div>
+
+      {analysis.completion_reason && (
+        <CutShortNotice reason={analysis.completion_reason} />
+      )}
 
       {/* Workflow Phases */}
       <WorkflowPhases
@@ -435,12 +445,52 @@ function AnalysisDetailSkeleton() {
   );
 }
 
+// An analysis cut short by the admissibility check finishes successfully but
+// with nothing to show, so it gets its own wording instead of a green
+// "Completado" that reads like a normal run that came out empty.
+const CUT_SHORT_COPY = {
+  no_admissibility_requirements: {
+    badge: "Sin requisitos de admisibilidad",
+    title: "El análisis terminó sin requisitos de admisibilidad",
+    detail:
+      "No se encontraron requisitos de admisibilidad en el pliego, o se dejaron todos sin confirmar en la revisión. Sin requisitos que controlar, el análisis no evaluó las propuestas ni extrajo los otros requisitos. Revise el pliego cargado y los requisitos de admisibilidad detectados.",
+  },
+  no_admitted_proposals: {
+    badge: "Sin propuestas admitidas",
+    title: "El análisis terminó sin propuestas admitidas",
+    detail:
+      "Ninguna propuesta pasó el chequeo de admisibilidad, así que no se evaluó el cumplimiento ni se compararon ofertas económicas. Puede revisar el detalle por propuesta en la vista de Admisibilidad.",
+  },
+} as const;
+
+type CompletionReason = keyof typeof CUT_SHORT_COPY;
+
+function CutShortNotice({ reason }: { reason: CompletionReason }) {
+  const copy = CUT_SHORT_COPY[reason];
+  return (
+    <div
+      className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/40"
+      role="status"
+    >
+      <p className="flex items-center gap-2 text-sm font-medium text-amber-800 dark:text-amber-300">
+        <AlertTriangle className="h-4 w-4 shrink-0" />
+        {copy.title}
+      </p>
+      <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+        {copy.detail}
+      </p>
+    </div>
+  );
+}
+
 function StatusBadge({
   status,
   isSuccess,
+  completionReason,
 }: {
   status: string;
   isSuccess: boolean | null;
+  completionReason: CompletionReason | null;
 }) {
   if (status === "processing")
     return (
@@ -462,6 +512,14 @@ function StatusBadge({
       </span>
     );
   if (status === "ready") {
+    if (isSuccess && completionReason) {
+      return (
+        <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 flex items-center gap-1">
+          <AlertTriangle className="w-3 h-3" />{" "}
+          {CUT_SHORT_COPY[completionReason].badge}
+        </span>
+      );
+    }
     return isSuccess ? (
       <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-300 flex items-center gap-1">
         <CheckCircle className="w-3 h-3" /> Completado

@@ -18,7 +18,7 @@ tarjeta estan al final de cada seccion para poder cerrarlas con
 
 | Veredicto | Cant. |
 |---|---|
-| Bug real, confirmado en codigo | 6 |
+| Bug real, confirmado en codigo | 5 |
 | Necesita mas informacion antes de tocar codigo | 4 |
 
 De las 26 relevadas ya salieron 10 de este archivo:
@@ -146,37 +146,6 @@ De las 26 relevadas ya salieron 10 de este archivo:
   `id: P1hi6OYm40aVPDzcELqbKmQAHKWq`
 
 ---
-
-## Grupo C - Admisibilidad (1 tarjeta)
-
-- [ ] **CP-42** aunque no tenga admisibles se ve como aprobado y completado.
-  **Alta / M.** Queda solo la mitad de UX: el bug del gate (la API no cortaba
-  cuando el usuario dejaba todos los requisitos sin confirmar) se corrigio el
-  2026-08-13.
-
-  Lo que ya funciona (corte de backend):
-  - Cero requisitos extraidos -> corta el pipeline
-    (`job_orchestrator_service.py:205-212`).
-  - Cero propuestas `admitida` tras el gate -> corta en `:245-252` (sin HITL) y
-    `:564-571` (al reanudar con HITL).
-  - Pintado de fases: `_complete_downstream_and_finalize` (`:679`) ->
-    `workflow_phase_service.apply_admissibility_cut` (`:151-184`) deja
-    `award_check` en `warning` y resetea `final_compliance_check` a pending. La
-    UI lo muestra como nodo ambar "Sin admisibles"
-    (`WorkflowPhases.tsx:33`, `:55`, `:121-122`).
-
-  Lo que falta:
-  1. El analisis igual se finaliza como exito:
-     `job_orchestrator_service.py:681-684` escribe
-     `{"status": "ready", "is_success": True}` (idem `:708-711`), y la cabecera
-     pinta un "Completado" verde (`analyses/[id]/page.tsx:466-470`). No hay
-     estado propio ni cartel; la unica explicacion queda en un evento.
-  2. El caso "sin requisitos de admisibilidad" reusa la etiqueta equivocada:
-     `apply_admissibility_cut` pinta "Sin admisibles" aunque la causa real sea
-     cero requisitos extraidos.
-  3. Ya esta anotado como pendiente en
-     `features/backlog/analisis-sin-requisitos-admisibilidad.md:32-45`.
-  `id: dV7rNbHwoUCiQgv3gKz4_2QAKOJh`
 
 ---
 
@@ -350,7 +319,6 @@ de prompts, bloqueado por falta del caso real para validar en el lab.
 
 - [ ] CP-63/124 y CP-032: proxy y boton de reintento sobre el `retry-step` que ya
   existe, exponer el motivo del fallo, y que `normalizeStatus` maneje `failed`.
-- [ ] CP-42 (mitad UX): estado o cartel propio para "terminado sin admisibles".
 - [ ] Nombre hex: fallback temprano.
 
 ### Ola 3 - Seguridad (4-6 dias, 4 tarjetas)

@@ -208,7 +208,9 @@ class JobOrchestratorService:
                 "No se extrajeron requisitos de admisibilidad del pliego: se omiten los jobs restantes y se finaliza el análisis.",
                 {"admissibility_requirement_count": 0},
             )
-            self._complete_downstream_and_finalize(analysis_id, service_name)
+            self._complete_downstream_and_finalize(
+                analysis_id, service_name, "no_admissibility_requirements"
+            )
             return []
 
         # Check if pipeline should pause for user approval (skip when hitl is disabled)
@@ -248,7 +250,9 @@ class JobOrchestratorService:
                 "Sin propuestas admitidas tras el chequeo de admisibilidad: se omiten los jobs restantes y se finaliza el análisis.",
                 {"admitidas": 0}
             )
-            self._complete_downstream_and_finalize(analysis_id, service_name)
+            self._complete_downstream_and_finalize(
+                analysis_id, service_name, "no_admitted_proposals"
+            )
             return []
 
         # Find and launch next jobs
@@ -570,7 +574,9 @@ class JobOrchestratorService:
                 "No quedaron requisitos de admisibilidad confirmados: se omiten los jobs restantes y se finaliza el análisis.",
                 {"verified_admissibility_requirement_count": 0},
             )
-            self._complete_downstream_and_finalize(analysis_id, paused_at_service)
+            self._complete_downstream_and_finalize(
+                analysis_id, paused_at_service, "no_admissibility_requirements"
+            )
             return []
 
         # Same cut as on_job_completed, which never runs for a job that pauses:
@@ -581,7 +587,9 @@ class JobOrchestratorService:
                 "Sin propuestas admitidas tras el chequeo de admisibilidad: se omiten los jobs restantes y se finaliza el análisis.",
                 {"admitidas": 0}
             )
-            self._complete_downstream_and_finalize(analysis_id, paused_at_service)
+            self._complete_downstream_and_finalize(
+                analysis_id, paused_at_service, "no_admitted_proposals"
+            )
             return []
 
         # Launch next jobs from where we paused
@@ -672,8 +680,14 @@ class JobOrchestratorService:
             {"timed_out_steps": timed_out_step_codes, "source": "job_monitor"},
         )
 
-    def _complete_downstream_and_finalize(self, analysis_id: UUID, from_service: str) -> None:
-        """Auto-complete every job downstream of from_service (0 instances) and mark the analysis ready."""
+    def _complete_downstream_and_finalize(
+        self, analysis_id: UUID, from_service: str, reason: str
+    ) -> None:
+        """Auto-complete every job downstream of from_service (0 instances) and mark the analysis ready.
+
+        `reason` is persisted so the UI can explain why the analysis has no
+        results instead of showing a plain "Completado".
+        """
         visited = set()
         queue = list(get_next_jobs(from_service))
         while queue:
@@ -694,9 +708,9 @@ class JobOrchestratorService:
 
         analysis_repository.update_by_id(
             str(analysis_id),
-            {"status": "ready", "is_success": True},
+            {"status": "ready", "is_success": True, "completion_reason": reason},
         )
-        logger.info(f"Pipeline finalized (no admitida proposals) for analysis_id={analysis_id}.")
+        logger.info(f"Pipeline finalized early ({reason}) for analysis_id={analysis_id}.")
         self._notify_by_email(analysis_id, "completed")
 
     def _maybe_finalize_pipeline(self, analysis_id: UUID, completed_service: str) -> None:

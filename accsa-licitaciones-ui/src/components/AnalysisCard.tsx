@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, FileText, CalendarClock, FileStack, PauseCircle } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Clock, AlertCircle, AlertTriangle, FileText, CalendarClock, FileStack, PauseCircle } from "lucide-react";
 import Link from "next/link";
 import { MetricBox } from "./MetricBox";
 
@@ -11,6 +11,7 @@ export interface Analysis {
     generated_name: string | null;
     status: "pending" | "processing" | "ready" | "failed" | "awaiting_approval";
     is_success: boolean | null;
+    completion_reason?: "no_admissibility_requirements" | "no_admitted_proposals" | null;
     created_at: string;
     total_events: number;
     total_files: number;
@@ -47,7 +48,7 @@ export function AnalysisCard({ analysis, basePath = "/analyses" }: { analysis: A
                 <span className={`font-mono font-medium text-zinc-700 dark:text-zinc-300 uppercase ${getNameFontSize(displayName)}`}>
                     {displayName}
                 </span>
-                <StatusIcon status={analysis.status} isSuccess={analysis.is_success} />
+                <StatusIcon status={analysis.status} isSuccess={analysis.is_success} cutShort={!!analysis.completion_reason} />
             </div>
             {/* Metrics Grid */}
             <div className="grid grid-cols-3 gap-3 mb-4 mt-2">
@@ -73,17 +74,19 @@ export function AnalysisCard({ analysis, basePath = "/analyses" }: { analysis: A
                     <Clock className="w-3 h-3 mr-1.5" />
                     {getRelativeTime(analysis.created_at)}
                 </div>
-                <StatusBadge status={analysis.status} isSuccess={analysis.is_success} />
+                <StatusBadge status={analysis.status} isSuccess={analysis.is_success} cutShort={!!analysis.completion_reason} />
             </div>
         </Link>
     );
 }
 
-function StatusIcon({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {
+function StatusIcon({ status, isSuccess, cutShort }: { status: string; isSuccess: boolean | null; cutShort: boolean }) {
     if (status === "processing") return <Loader2 className="w-5 h-5 shrink-0 text-blue-500 dark:text-blue-400 animate-spin" />;
     if (status === "pending") return <Clock className="w-5 h-5 shrink-0 text-zinc-400 dark:text-zinc-500" />;
     if (status === "awaiting_approval") return <PauseCircle className="w-5 h-5 shrink-0 text-amber-500 dark:text-amber-400" />;
     if (status === "ready") {
+        if (isSuccess && cutShort)
+            return <AlertTriangle className="w-5 h-5 shrink-0 text-amber-500 dark:text-amber-400" />;
         return isSuccess ? (
             <CheckCircle className="w-5 h-5 shrink-0 text-green-500 dark:text-green-400" />
         ) : (
@@ -93,11 +96,13 @@ function StatusIcon({ status, isSuccess }: { status: string; isSuccess: boolean 
     return <AlertCircle className="w-5 h-5 shrink-0 text-gray-400 dark:text-zinc-500" />;
 }
 
-function StatusBadge({ status, isSuccess }: { status: string; isSuccess: boolean | null }) {
+function StatusBadge({ status, isSuccess, cutShort }: { status: string; isSuccess: boolean | null; cutShort: boolean }) {
     if (status === "processing") return <span className="text-blue-600 dark:text-blue-400">Procesando</span>;
     if (status === "pending") return <span className="text-zinc-500 dark:text-zinc-400">Pendiente</span>;
     if (status === "awaiting_approval") return <span className="text-amber-600 dark:text-amber-400">Esperando Aprobación</span>;
     if (status === "ready") {
+        if (isSuccess && cutShort)
+            return <span className="text-amber-600 dark:text-amber-400">Terminado sin resultados</span>;
         return isSuccess ? (
             <span className="text-green-600 dark:text-green-400">Completado</span>
         ) : (

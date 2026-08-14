@@ -44,6 +44,8 @@ class AnalysisBase(BaseModel):
     user_assigned_name: Optional[str] = None
     user_email: Optional[str] = None
     generated_name: Optional[str] = None
+    # Why a successful run produced no results. None means it ran to the end.
+    completion_reason: Optional[str] = None
     paused_at_service: Optional[str] = None
     hitl: Optional[bool] = None
     primary_model: Optional[PrimaryModel] = None
