@@ -14,6 +14,11 @@ type AnalysisResult = Record<string, unknown> | null;
 const MAX_UPLOAD_FILES = Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_FILES) || 500;
 const MAX_UPLOAD_TOTAL_MB =
   Number(process.env.NEXT_PUBLIC_MAX_UPLOAD_TOTAL_MB) || 2048;
+// Not configurable on purpose: it mirrors MAX_FILE_SIZE_MB in
+// service-files-converter-mistral, which is the ~50 MB ceiling of Mistral OCR.
+// A file over this limit uploads fine and is then skipped by the converter, so
+// it never reaches the analysis.
+const MAX_UPLOAD_FILE_MB = 45;
 
 // Uploads in flight at a time. Enough to keep the link busy without opening
 // one connection per file on a 500 file batch.
@@ -223,11 +228,11 @@ export function UploadSection() {
         <FileUploadZone
           title="Documentos"
           description="Subir pliegos, normativas y ofertas"
-          subtitle={`Hasta ${MAX_UPLOAD_FILES} archivos PDF (máx. 10 MB c/u)`}
+          subtitle={`Hasta ${MAX_UPLOAD_FILES} archivos PDF (máx. ${MAX_UPLOAD_FILE_MB} MB c/u)`}
           icon="document"
           accept=".pdf"
           maxFiles={MAX_UPLOAD_FILES}
-          maxSizeMB={10}
+          maxSizeMB={MAX_UPLOAD_FILE_MB}
           disabled={isBusy}
           onFilesChange={handleFilesChange}
         />

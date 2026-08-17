@@ -4,7 +4,7 @@ title: Iniciar un análisis (subir documentos)
 section: Primeros pasos
 order: 40
 keywords: [subir, cargar, nuevo analisis, pdf, documentos, pliego, ofertas, zip]
-updated_at: 2026-08-05
+updated_at: 2026-08-17
 ---
 
 Para empezar, en la pantalla de **Análisis** pulse **Nuevo análisis** y arrastre
@@ -13,7 +13,7 @@ o seleccione los documentos en la zona de carga.
 Reglas de carga:
 
 - Solo archivos **PDF**.
-- Hasta **500 archivos**, máximo **10 MB cada uno**. El texto bajo la zona de
+- Hasta **500 archivos**, máximo **45 MB cada uno**. El texto bajo la zona de
   carga siempre muestra el límite vigente.
 - Se necesitan **al menos 2 archivos** para poder iniciar.
 

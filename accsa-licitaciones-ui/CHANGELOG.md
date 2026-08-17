@@ -13,6 +13,7 @@ se versionan y publican en conjunto.
 ### accsa-licitaciones-ui
 
 #### Changed
+- El tamaño máximo por documento pasa de 10 MB a 45 MB. Es el techo que admite el motor de OCR que convierte los PDF: un archivo más grande se subiría bien pero después quedaría fuera del análisis sin aviso claro, así que el límite se corta antes, al seleccionar los archivos. El tope de 500 archivos y el total de 2 GB por análisis no cambian.
 - Los documentos ahora se suben de a uno en vez de empaquetarse todos juntos en el navegador antes de enviarlos. Con lotes de tamaño real el navegador se quedaba sin memoria y la pantalla quedaba detenida, sin barra de progreso ni mensaje de error. Ahora la subida muestra el avance ("Subiendo 137 de 420 archivos"), reintenta sola cuando se corta la conexión y, si un archivo no se puede subir, avisa cuál fue y no inicia el análisis. Deja de aplicar el tope de 1 GB por paquete: el límite pasa a ser el tamaño total del lote, configurable con `NEXT_PUBLIC_MAX_UPLOAD_TOTAL_MB` (2 GB por defecto).
 - Dos documentos con el mismo nombre en carpetas distintas ya no se pisan entre sí: antes uno reemplazaba al otro al desempaquetar y se perdía.
 - Una subida larga ya no cierra la sesión por inactividad mientras está en curso.
