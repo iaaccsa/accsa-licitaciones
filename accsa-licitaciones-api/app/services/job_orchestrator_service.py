@@ -205,6 +205,24 @@ class JobOrchestratorService:
             )
             return []
 
+        return self._advance_after_step(service_name, analysis_id, proposal_id)
+
+    def _advance_after_step(
+        self,
+        service_name: str,
+        analysis_id: UUID,
+        proposal_id: Optional[UUID] = None,
+        skipped_empty: bool = False,
+    ) -> List[str]:
+        """Move the pipeline past a step that just completed: early cuts, HITL
+        pause and the launch of the next jobs.
+
+        A fan-out job with no items to run reports no callback, so it gets here
+        from _launch_next_job instead of on_job_completed. `skipped_empty` marks
+        that case: nothing ran, so there is nothing for the user to review and
+        the pause is skipped, but the cuts still have to be evaluated or the
+        analysis walks past them and ends as a plain "Completado" with no results.
+        """
         # Nothing extracted from the pliego: there is no admissibility to approve or
         # check, so skip the remaining jobs instead of pausing on an empty list.
         if service_name == "service-admissibility-extractor" and not admissibility_requirement_repository.get_by_analysis_id(str(analysis_id), limit=1):
@@ -219,7 +237,7 @@ class JobOrchestratorService:
             return []
 
         # Check if pipeline should pause for user approval (skip when hitl is disabled)
-        should_pause = is_pause_after_job(service_name)
+        should_pause = is_pause_after_job(service_name) and not skipped_empty
         if should_pause:
             analysis = analysis_repository.get_by_id(str(analysis_id))
             if analysis and analysis.get("hitl") is False:
@@ -294,6 +312,33 @@ class JobOrchestratorService:
     ) -> List[str]:
         """Launch the next job(s). If it's a fan-out job, launch one instance per file."""
         launched = []
+
+        # Fan-in gate: if multiple services converge to next_job, wait for all to
+        # complete. It has to run before the fan-out branch below: the classifier
+        # has two parents and fans out over the files that already have metadata,
+        # so the signature extractor finishing first started it over an empty set,
+        # auto-completed it and dragged the grouper along with nothing classified.
+        parent_jobs = get_parent_jobs(next_job)
+        if len(parent_jobs) > 1:
+            for parent in parent_jobs:
+                if not workflow_step_service.is_step_completed_by_service(str(analysis_id), parent):
+                    logger.info(
+                        f"Fan-in: {parent} not yet completed, deferring launch of {next_job} "
+                        f"for analysis_id={analysis_id}"
+                    )
+                    return launched
+
+        # Atomic gate: only proceed if we can claim the step (pending → running).
+        # Prevents duplicate launches when several callbacks converge on the same
+        # next job at once, which the two parents of the classifier do routinely.
+        claimed = workflow_step_service.start_step_by_service_if_pending(str(analysis_id), next_job)
+        if not claimed:
+            logger.warning(
+                f"Skipping duplicate launch of {next_job} for analysis_id={analysis_id} "
+                f"— step already claimed by another callback"
+            )
+            return launched
+
         fan_out_type = get_fan_out_type(next_job)
 
         if fan_out_type in ("processed_file", "original_file", "merged_file", "file_with_metadata", "proposal"):
@@ -317,11 +362,13 @@ class JobOrchestratorService:
                     workflow_step_service.complete_step_by_service(str(analysis_id), next_job)
                 except Exception as e:
                     logger.error(f"Failed to auto-complete empty {next_job}: {e}")
-                if is_final_job(next_job):
-                    self._maybe_finalize_pipeline(analysis_id, next_job)
-                else:
-                    for downstream in get_next_jobs(next_job):
-                        launched += self._launch_next_job(downstream, analysis_id, proposal_id, next_job)
+                # No instance runs, so no callback arrives and on_job_completed never
+                # sees this step. Advance from here or the analysis skips its own
+                # cuts: an empty fan-out over proposals used to walk the whole
+                # admissibility chain and finish green with nothing evaluated.
+                launched += self._advance_after_step(
+                    next_job, analysis_id, proposal_id, skipped_empty=True
+                )
                 return launched
 
             logger.info(f"Fan-out: launching {len(items)} instances of {next_job} for analysis_id={analysis_id}")
@@ -348,27 +395,6 @@ class JobOrchestratorService:
                     logger.info(f"Launched fan-out job: {next_job} file_id={item_id} for analysis_id={analysis_id}")
                 launched.append(next_job)
         else:
-            # Fan-in gate: if multiple services converge to next_job, wait for all to complete.
-            parent_jobs = get_parent_jobs(next_job)
-            if len(parent_jobs) > 1:
-                for parent in parent_jobs:
-                    if not workflow_step_service.is_step_completed_by_service(str(analysis_id), parent):
-                        logger.info(
-                            f"Fan-in: {parent} not yet completed, deferring launch of {next_job} "
-                            f"for analysis_id={analysis_id}"
-                        )
-                        return launched
-
-            # Atomic gate: only proceed if we can claim the step (pending → running).
-            # Prevents duplicate Azure launches when multiple concurrent fan-out
-            # callbacks all pass the completed >= total check simultaneously.
-            claimed = workflow_step_service.start_step_by_service_if_pending(str(analysis_id), next_job)
-            if not claimed:
-                logger.warning(
-                    f"Skipping duplicate launch of {next_job} for analysis_id={analysis_id} "
-                    f"— step already claimed by another callback"
-                )
-                return launched
             azure_response = self._launch_job(next_job, analysis_id, proposal_id)
             self._log_event(analysis_id, "info", f"Started job {next_job}", azure_response)
             launched.append(next_job)

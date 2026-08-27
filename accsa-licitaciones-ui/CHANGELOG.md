@@ -44,6 +44,8 @@ se versionan y publican en conjunto.
 #### Fixed
 - Si el análisis se crea pero el procesamiento no llega a arrancar, ahora se informa el error en vez de mostrar "Análisis iniciado con éxito" sobre un análisis que quedaba detenido para siempre.
 - Si en la revisión de los requisitos de admisibilidad se dejan todos sin confirmar, el análisis ahora se cierra explicando el motivo. Antes el chequeo de admisibilidad no encontraba ningún requisito que verificar y daba por admitidas a todas las propuestas, con lo que el análisis terminaba como aprobado sin haber controlado nada.
+- La agrupación de documentos ya no puede adelantarse a la clasificación. La clasificación de documentos espera dos pasos previos (metadatos y firmas digitales) y arrancaba en cuanto terminaba el primero de los dos: si las firmas terminaban antes, la clasificación quedaba sin nada que clasificar y la agrupación corría sobre documentos todavía sin categoría. El análisis terminaba en verde pero sin pliego, sin propuestas y sin nombre, mostrando solo el código. Ahora cada paso espera a todos los anteriores y no se lanza dos veces.
+- Un análisis sin propuestas ya no recorre en falso todo el chequeo de admisibilidad. Los pasos que no tienen nada que procesar se saltean, pero antes ese salto también se llevaba puestas las pausas de revisión y el corte del análisis, y el resultado era un análisis "Completado" en verde sin nada evaluado. Ahora se cierra indicando que no hubo propuestas admitidas.
 
 ## [2.2.0] - 2026-07-28
 
