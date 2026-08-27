@@ -2,6 +2,11 @@
 
 SQL to recreate the four public views. Run these after modifying the base tables.
 
+A column added to a base table is NOT picked up by its view: the view has to be
+recreated, or the API keeps reading the old column list. `CREATE OR REPLACE VIEW`
+only accepts new columns at the end, and it drops the reloptions of the view, so
+re-apply `ALTER VIEW <name> SET (security_invoker = true)` right after.
+
 ---
 
 ## analyses_view
@@ -31,8 +36,13 @@ SELECT
     hitl,
     primary_model,
     intelligence_level,
-    created_by
+    created_by,
+    openai_reasoning_effort,
+    gemini_thinking_level,
+    completion_reason
 FROM analyses a;
+
+ALTER VIEW analyses_view SET (security_invoker = true);
 ```
 
 ---
