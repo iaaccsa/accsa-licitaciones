@@ -6,11 +6,14 @@ import { Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { spanishValidationProps } from "@/lib/form-validation";
+import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "@/lib/auth-limits";
+
+const LENGTH_MESSAGE = `La contraseña debe tener entre ${PASSWORD_MIN_LENGTH} y ${PASSWORD_MAX_LENGTH} caracteres`;
 
 const ERROR_MESSAGES: Record<string, string> = {
     same_password: "La nueva contraseña debe ser distinta a la actual",
     weak_password: "La contraseña es demasiado débil",
-    invalid_password_format: "La contraseña debe tener al menos 6 caracteres",
+    invalid_password_format: LENGTH_MESSAGE,
 };
 
 const inputClass =
@@ -27,8 +30,8 @@ export default function SetPasswordPage() {
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        if (password.length < 6) {
-            setError("La contraseña debe tener al menos 6 caracteres");
+        if (password.length < PASSWORD_MIN_LENGTH || password.length > PASSWORD_MAX_LENGTH) {
+            setError(LENGTH_MESSAGE);
             return;
         }
         if (password !== confirm) {
@@ -88,7 +91,8 @@ export default function SetPasswordPage() {
                                     disabled={loading}
                                     autoFocus
                                     required
-                                    minLength={6}
+                                    minLength={PASSWORD_MIN_LENGTH}
+                                    maxLength={PASSWORD_MAX_LENGTH}
                                     {...spanishValidationProps}
                                     className={`${inputClass} pr-10`}
                                 />
@@ -103,8 +107,9 @@ export default function SetPasswordPage() {
                                 </button>
                             </div>
                             <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                                Mínimo 6 caracteres. Se admiten letras (a-z, A-Z),
-                                números (0-9) y símbolos (por ejemplo ! @ # $ % & * - _).
+                                Entre {PASSWORD_MIN_LENGTH} y {PASSWORD_MAX_LENGTH} caracteres.
+                                Se admiten letras (a-z, A-Z), números (0-9) y símbolos
+                                (por ejemplo ! @ # $ % & * - _).
                             </p>
                         </div>
                         <div className="space-y-2">
@@ -123,7 +128,8 @@ export default function SetPasswordPage() {
                                     onChange={(e) => setConfirm(e.target.value)}
                                     disabled={loading}
                                     required
-                                    minLength={6}
+                                    minLength={PASSWORD_MIN_LENGTH}
+                                    maxLength={PASSWORD_MAX_LENGTH}
                                     {...spanishValidationProps}
                                     className={`${inputClass} pr-10`}
                                 />

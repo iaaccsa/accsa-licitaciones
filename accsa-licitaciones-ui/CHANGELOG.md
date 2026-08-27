@@ -32,6 +32,7 @@ se versionan y publican en conjunto.
 - La barra de progreso ya no se dibuja más llena de lo que corresponde cuando el porcentaje es bajo: con valores chicos el relleno ocupaba el ancho del número en vez del avance real.
 - Los mensajes de validación de los formularios ahora se muestran siempre en español, sin importar el idioma configurado en el navegador. Antes, con el navegador en inglés, avisos como el de correo electrónico mal escrito aparecían en ese idioma. Alcanza a los campos de inicio de sesión, creación de contraseña, invitación de usuarios y filtros de fecha de auditoría.
 - Las propuestas rechazadas en la admisibilidad dejan de aparecer en "Resumen de Propuestas" y en "Comparativa de Ofertas Económicas". Las propuestas que todavía no tienen la admisibilidad resuelta se siguen mostrando.
+- Los campos de inicio de sesión y de creación de contraseña ahora tienen un largo máximo, tanto en la pantalla como en el servidor: 254 caracteres para el correo, 128 para la contraseña con la que se ingresa y 72 para la contraseña que se crea. Antes se podía escribir o pegar texto de cualquier tamaño y se enviaba entero. El criterio de la contraseña que se muestra en el primer acceso pasa a decir "Entre 6 y 72 caracteres".
 - Al editar el nombre de un análisis, el campo ahora abre con el nombre actual cargado y se puede corregir una parte sin reescribirlo entero. Además se quitó el nombre anterior que quedaba visible debajo del título después de renombrar.
 
 ### accsa-licitaciones-services

@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { createClient } from "@/lib/supabase/server";
 import { ACTIVITY_COOKIE, ACTIVITY_COOKIE_MAX_AGE } from "@/lib/session-timeout";
+import { EMAIL_MAX_LENGTH, LOGIN_PASSWORD_MAX_LENGTH } from "@/lib/auth-limits";
 
 const bodySchema = z.object({
-    email: z.email(),
-    password: z.string().min(1),
+    email: z.email().max(EMAIL_MAX_LENGTH),
+    password: z.string().min(1).max(LOGIN_PASSWORD_MAX_LENGTH),
 });
 
 export async function POST(req: NextRequest) {
