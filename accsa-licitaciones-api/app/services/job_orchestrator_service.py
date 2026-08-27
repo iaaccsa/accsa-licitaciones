@@ -47,6 +47,16 @@ SERVICE_API_PATHS = {
     "API_USAGE_PATH": "/api/v1/ai-usage/",
 }
 
+# azure-core retries a connection that dies before any response only on the
+# methods it considers safe, and POST is not one of them. Starting a job is a
+# POST, so a dropped connection ended the analysis on the first try, while every
+# other call the SDK makes (the polling of the operation is a GET) was retried.
+# Starting a job is not idempotent, so a retry can start a second container if
+# the request did reach ARM before the connection died; that costs compute but
+# not correctness, because the second callback is discarded as a duplicate,
+# whereas not retrying costs the whole analysis.
+RETRY_METHODS_WITH_POST = ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"]
+
 
 class JobOrchestratorService:
     def start_pipeline(self, analysis_id: UUID, proposal_id: Optional[UUID] = None) -> str:
@@ -502,6 +512,7 @@ class JobOrchestratorService:
             resource_group_name=settings.AZURE_RESOURCE_GROUP,
             job_name=service_name,
             template=template,
+            retry_on_methods=RETRY_METHODS_WITH_POST,
         )
 
         result = poller.result()
